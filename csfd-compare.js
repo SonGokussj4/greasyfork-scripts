@@ -86,14 +86,6 @@ Glob = {
             this.stars = {};
             this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
             console.log(`Accessing LC: ${this.storageKey}`);
-            // Get how many pages will the script load
-            let lastPageUrl = $($('.box-content').find('.box-more-bar').find('.pagination')[0]).find('a:nth-last-child(2)').attr('href');
-            console.log("lastPageUrl", lastPageUrl);
-            let foundMatch = lastPageUrl.match(new RegExp("page=(.*)$"));
-            if (foundMatch.length == 2) {
-                this.endPageNum = parseInt(foundMatch[1]);
-            }
-            console.log("this.endPageNum", this.endPageNum);
 
             // Load user ratings...
             this.currentRequest = $.ajax({
@@ -103,6 +95,15 @@ Glob = {
             });
 
             this.currentRequest.done((data) => {
+                // Get how many pages will the script load
+                let lastPageUrl = $(data).find('.box-content').find('.box-more-bar').find('.pagination')[0];
+                console.log("lastPageUrl", lastPageUrl);
+                let lastPageHref = $(lastPageUrl).find('a:nth-last-child(2)').attr('href');
+                let foundMatch = lastPageHref.match(new RegExp("page=(.*)$"));
+                if (foundMatch.length == 2) {
+                    this.endPageNum = parseInt(foundMatch[1]);
+                }
+                console.log("this.endPageNum", this.endPageNum);
                 this.loadPageDone(data);
             });
 
