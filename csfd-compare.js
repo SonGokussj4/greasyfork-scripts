@@ -18,6 +18,8 @@
 
 // Aktuality (v0.3.4)
 // Refresh button přemístěn do uživ. menu dolů
+// Ovládací panel se otevírá po najetí myší, není třeba klikat
+
 Glob = {
     popupCounter: 0,
 
@@ -432,6 +434,39 @@ Glob = {
             });
         }
 
+        openControlPanelOnHover() {
+            let btn = $('.button-control-panel');
+            let panel = $('#dropdown-control-panel');
+
+            $(btn).on('hover mouseover', function () {
+                if (!panel.hasClass('active')) {
+                    panel.addClass('active');
+                }
+            });
+
+            $(panel).on('hover mouseover', function () {
+                if (!panel.hasClass('active')) {
+                    panel.addClass('active');
+                }
+            });
+
+            $(panel).on('mouseleave', function () {
+                if (panel.hasClass('active')) {
+                    // setTimeout(function () {
+                    panel.removeClass('active');
+                    // }, 500);
+                }
+            });
+
+            $(btn).on('mouseleave', function () {
+                if (panel.hasClass('active')) {
+                    // setTimeout(function () {
+                    panel.removeClass('active');
+                    // }, 500);
+                }
+            });
+        }
+
     }
 
     // SCRIPT START
@@ -440,6 +475,7 @@ Glob = {
     csfd.userUrl = csfd.getCurrentUser();
     if (csfd.userUrl !== undefined) {
 
+        csfd.openControlPanelOnHover();
         csfd.createRefreshButton();
 
         let ratingsLoaded = csfd.checkLocalStorageRatings();
