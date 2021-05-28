@@ -5,7 +5,7 @@
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
-// @include      *csfd.cz/uzivatel/*/hodnoceni*
+// @include      *csfd.cz/*
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @grant        none
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
@@ -16,6 +16,8 @@
 // @downloadURL https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @supportURL  https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
+// Aktuality (v0.3.4)
+// Refresh button přemístěn do uživ. menu dolů
 Glob = {
     popupCounter: 0,
 
@@ -60,9 +62,7 @@ Glob = {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
 
-    // var __webpack_exports__ = {};
-
-    const delay = ms => new Promise(res => setTimeout(res, ms));
+    // const delay = ms => new Promise(res => setTimeout(res, ms));
     const SCRIPTNAME = 'CSFD Compare';
 
     class Csfd {
@@ -74,12 +74,11 @@ Glob = {
             this.userUrl = undefined;
             this.endPageNum = 0;
 
-            // Ignore the ads... Make the table wider.
+            // Ignore the ads... Make 'hodnoceni' table wider.
             $('.column.column-80').attr('class', '.column column-90');
         }
 
         REFRESH_RATINGS() {
-            Glob.popup(`Oh hello there :-) ... ${this.userUrl}`);
             let hodnoceniUrl = `${this.userUrl}/hodnoceni`;
             console.log(`Going to page ${hodnoceniUrl} and loading ratings...`);
             // Empty LocalStorage
@@ -419,13 +418,12 @@ Glob = {
             console.log("fn: createRefreshButton()");
 
             let button = document.createElement("button");
-            button.innerHTML = "CSDF Compare reload";
-            button.className = "csfd-compare-manual-reload";
-            button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
+            button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload</span>`;
+            button.className = "csfd-compare-reload";
+            // button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
 
-            let body = document.getElementsByClassName("header-search")[0];
-            console.log("Body:", body);
-            body.appendChild(button);
+            let menu = document.getElementsByClassName("main-menu")[0];
+            menu.insertBefore(button, menu.lastChild);
 
             $(button).on("click", function () {
                 let csfd = new Csfd($('div.page-content'));
