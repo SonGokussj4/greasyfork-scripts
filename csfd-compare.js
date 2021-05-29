@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.3.1
+// @version      0.3.4
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -23,7 +23,7 @@
 Glob = {
     popupCounter: 0,
 
-    popup: async function (htmlContent, timeout = 3) {
+    popup: function (htmlContent, timeout = 3, width = 150) {
         var id = Glob.popupCounter++;
         if (!htmlContent) {
             return;
@@ -41,7 +41,7 @@ Glob = {
                     color:white;
                     position:absolute;
                     left:45%;
-                    width:150px;
+                    width:${width}px;
                     z-index:999;
                     top:${yOffset}px;
                     right:10px'
@@ -61,6 +61,7 @@ Glob = {
 (async () => {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
+    /* jshint -W069 */
 
     // const delay = ms => new Promise(res => setTimeout(res, ms));
     const SCRIPTNAME = 'CSFD Compare';
@@ -82,6 +83,7 @@ Glob = {
         }
 
         getEndPageNum(data) {
+            console.log("fn: getEndPageNum()");
             let $pagination = $(data).find('.box-content').find('.box-more-bar').find('.pagination')[0];
             let lastPageHref = $($pagination).find('a:nth-last-child(2)').attr('href');
                 let foundMatch = lastPageHref.match(new RegExp("page=(.*)$"));
@@ -90,6 +92,7 @@ Glob = {
                 if (foundMatch.length == 2) {
                 endPageNum = parseInt(foundMatch[1]);
                 }
+            console.log("  return:", endPageNum);
             return endPageNum;
         }
 
@@ -123,13 +126,6 @@ Glob = {
             return loggedInUser;
         }
 
-        forceRefreshCurrentUserRatings() {
-            this.refreshCurrentUserRatings();
-        }
-
-        /**
-        Return stars as json object.
-        */
         getStars() {
             if (localStorage[this.storageKey]) {
                 let stars = JSON.parse(localStorage[this.storageKey]);
@@ -142,10 +138,8 @@ Glob = {
 
             // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
             let navItemHref = this.csfdPage.find('.tab-nav-item-9 > a').attr('href');
-            // console.log("navItemHref:", navItemHref);
 
             let foundMatch = navItemHref.match(new RegExp("film/" + "(.*)" + "/diskuze"));
-            // console.log("foundMatch:", foundMatch);
             if (foundMatch == null) {
                 console.error("TODO: nenaslo to... vyhledat jinym zpusobem!");
                 throw (`${SCRIPTNAME} Exiting...`);
@@ -183,16 +177,16 @@ Glob = {
         }
 
         removeFromLocalStorage() {
-            console.log("Deleting item from LocalStorage...");
+            console.log("fn: removeFromLocalStorage()");
+            console.log("  Deleting item from LocalStorage...");
 
             // Check if film is in LocalStorage
             let filmUrl = this.getCurrentFilmUrl();
-            console.log("filmUrl:", filmUrl);
             let item = this.stars[filmUrl];
 
             // Item not in LocalStorage, everything is fine
             if (typeof item === 'undefined') {
-                console.log("Item not in LocalStorage, nothing happens");
+                console.log("  Item not in LocalStorage, nothing happens");
                 return null;
             }
 
@@ -200,7 +194,7 @@ Glob = {
             delete this.stars[filmUrl];
 
             // And resave it to LocalStorage
-            console.log("Resaving ratings into LocalStore");
+            console.log("  Resaving ratings into LocalStore");
             localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
 
             return true;
@@ -263,39 +257,6 @@ Glob = {
             }
         }
 
-        refreshCurrentUserRatings() {
-            console.log("fun: refreshCurrentUserRating()");
-            console.log("LOADING RATINGS...");
-
-            this.userUrl = this.getCurrentUser();
-            console.log("this.userUrl:", this.userUrl);
-
-            this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
-            console.log("this.storageKey", this.storageKey);
-
-            // Try cache
-            if (localStorage[this.storageKey]) {
-                this.stars = JSON.parse(localStorage[this.storageKey]);
-            }
-
-            // Cache does not exists...
-            if (Object.keys(this.stars).length == 0) {
-                // TODO: vyresit, pridat tlacitko, upozorneni float
-                Glob.popup("Načítam hodnocení. Bude trvat déle... Vyčkejte (trpělivě) na další informace....", 5);
-                console.log("CACHE NOT EXISTING MAN.... LOAD???");
-
-                // TODO: Add floating pregress notification {loading... 354/2049}
-                this.refresh();
-            }
-            // Cache exists
-            else {
-                if (!location.href.includes(this.userUrl)) {
-
-                    // TODO: Check if {goto users hodnoceni, see MAX page * 50, check length, if less, propose update}
-                    this.addRatingsColumn();
-                }
-            }
-        }
 
         refresh() {
             let url = this.userUrl + "hodnoceni/";
@@ -328,18 +289,35 @@ Glob = {
 
         getLocalStorageRatingsCount() {
             console.log(`fn: getLocalStorageRatingsCount()`);
-            this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
+            // this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
+            console.log("  this.storageKey:", this.storageKey);
             if (localStorage[this.storageKey]) {
                 let stars = JSON.parse(localStorage[this.storageKey]);
-                return Object.keys(stars).length;
+                let count = Object.keys(stars).length;
+                console.log("  return:", count);
+                return count;
             }
             return 0;
 
         }
 
+        onOtherUserHodnoceniPage() {
+            if (location.href.includes('/hodnoceni') && location.href.includes('/uzivatel/')) {
+                if (!location.href.includes(this.userUrl)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         exportRatings() {
             console.log(`fn: exportRatings()`);
+            console.log("  this.storageKey:", this.storageKey);
+            // console.log("JSON.stringify(this.stars):", JSON.stringify(this.stars));
             localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
+            if (this.onOtherUserHodnoceniPage()) {
+                this.addRatingsColumn();
+            }
         }
 
         importRatings() {
@@ -351,17 +329,18 @@ Glob = {
 
         async REFRESH_RATINGS() {
             // Load user ratings...
+            let $this = this;
             return new Promise((resolve, reject) => {
                 console.log("fn: REFRESH_RATINGS()");
-                console.log(`  Getting data from: '${this.userRatingsUrl}'...`);
+                console.log(`  Getting data from: '${$this.userRatingsUrl}'...`);
                 $.ajax({
                 type: "GET",
-                    url: this.userRatingsUrl,
+                    url: $this.userRatingsUrl,
                 async: true
                 }).done((data) => {
                     // Get how many pages will the script load
-                    this.endPageNum = this.getEndPageNum(data);
-                    console.log("  this.endPageNum:", this.endPageNum);
+                    $this.endPageNum = $this.getEndPageNum(data);
+                    console.log("  $this.endPageNum:", $this.endPageNum);
                     this.processRatingsPage(data);
                     resolve();
             });
@@ -415,7 +394,7 @@ Glob = {
                 $.ajax({
                     type: "GET",
                     url: url,
-                    async: false
+                    async: true
                 }).done((data) => {
                     this.processRatingsPage(data);
                     resolve();
@@ -428,17 +407,14 @@ Glob = {
             this.exportRatings();
             console.log("  Hotovo, hodnocení načteno");
             Glob.popup(`Vaše hodnocení byla načtena.`);
-
-            // if (!location.href.includes(this.userUrl)) {
-            //     this.addRatingsColumn();
-            // }
         }
 
         addRatingsColumn() {
+            console.log("fn: addRatingsColumn()");
             let $page = this.csfdPage;
 
             let $tbl = $page.find('#snippet--ratings table tbody');
-            let starsDict = this.stars;
+            let starsDict = this.getStars();
 
             $tbl.find('tr').each(function () {
                 let $row = $(this);
@@ -477,6 +453,8 @@ Glob = {
             $(button).on("click", function () {
                 let csfd = new Csfd($('div.page-content'));
                 csfd.userUrl = csfd.getCurrentUser();
+                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
                 csfd.REFRESH_RATINGS();
             });
         }
@@ -537,18 +515,35 @@ Glob = {
     // If logged in, do some stuff
     if (csfd.userUrl !== undefined) {
 
-        csfd.storageKey = "CsfdCompare_" + csfd.userUrl.split("/")[2].split("-")[1];
+        csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
         csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+        csfd.stars = csfd.getStars();
+
+        // console.log("BEFORE:", csfd.RESULT);
+        // await csfd.getAllPages();
+        // console.log("AFTER:", Object.keys(csfd.RESULT).length);
+
+        if (location.href.includes('/film/')) {
+            let currentFilmRating = csfd.getCurrentFilmRating();
+            console.log("currentFilmRating:", currentFilmRating);
+            if (currentFilmRating == null) {
+                // Check if record exists, if yes, remove it
+                csfd.removeFromLocalStorage();
+            } else {
+                // Check if current page rating corresponds with that in LocalStorage, if not, update it
+                csfd.updateInLocalStorage(csfd.getCurrentFilmRating());
+            }
+        }
 
         console.log("START... csfd.getCurrentUserRatingsCount()");
         csfd.userRatingsCount = csfd.getCurrentUserRatingsCount();
-        console.log("END... csfd.getCurrentUserRatingsCount()");
         console.log("userRatingsCount:", csfd.userRatingsCount);
+        console.log("END... csfd.getCurrentUserRatingsCount()");
 
         console.log("START... csfd.getLocalStorageRatingsCount()");
         csfd.localStorageRatingsCount = csfd.getLocalStorageRatingsCount();
+        console.log("csfd.localStorageRatingsCount:", csfd.localStorageRatingsCount);
         console.log("END... csfd.getLocalStorageRatingsCount()");
-        // console.log("csfd.localStorageRatingsCount:", csfd.localStorageRatingsCount);
 
         console.log("START... csfd.openControlPanelOnHover()");
         csfd.openControlPanelOnHover();
@@ -558,46 +553,28 @@ Glob = {
         csfd.createRefreshButton();
         console.log("END... csfd.createRefreshButton()");
 
-        // Force refresh ratings if user ratings and localStorage ratings count is not the same
-        if (csfd.userRatingsCount != csfd.localStorageRatingsCount) {
-            console.warn(`Current ${csfd.userRatingsCount} != LocalStorage ${csfd.localStorageRatingsCount} ... refreshing ratings.`);
+        // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
+        let ratingsCountOk = csfd.userRatingsCount == csfd.localStorageRatingsCount;
+        console.log("ratingsCountOk:", ratingsCountOk);
 
-            // Empty LocalStorage
-            console.log("  Emptying 'this.stars' (LocalStorage)");
-            csfd.stars = {};
-
-            console.log("START... csfd.REFRESH_RATINGS()");
-            await csfd.REFRESH_RATINGS();
-            console.log("END... csfd.REFRESH_RATINGS()");
+        if (!ratingsCountOk) {
+            console.warn(`Current ${csfd.userRatingsCount} != LocalStorage ${csfd.localStorageRatingsCount}.`);
+            Glob.popup(`
+                ${SCRIPTNAME}: Je třeba obnovit hodnocení<br>
+                - váš počet: ${csfd.userRatingsCount}<br>
+                - uloženo v prohlížeči: ${csfd.localStorageRatingsCount}<br>
+                <b>Nastavení uživatele --> CSFD-Compare reload</b>`, 8, 310);
     }
 
         console.log("CONTINUING AFTER REFRESH...............");
-        // csfd.stars = csfd.getStars();
-        // // Show user ratings on any other user but mine
-        // if (location.href.includes('/hodnoceni') && location.href.includes('/uzivatel/')) {
-        //     if (!location.href.includes(csfd.userUrl)) {
-        //         csfd.addRatingsColumn();
-        //     }
-        // }
 
-        // if (location.href.includes('/film/')) {
-        //     let currentRatingNum = csfd.getCurrentFilmRating();
-        //     console.log("currentRatingNum:", currentRatingNum);
-        //     // csfd.checkLocalStorageRatings();
-        //     // let currentRatingNum = csfd.getCurrentFilmRating();
-        //     if (currentRatingNum == null) {
-        //         // Check if record exists, if yes, remove it
-        //         console.log("Removing from localStorage:");
-        //         csfd.removeFromLocalStorage();
-        //         return;
-        //     }
-        //     // Check if current page rating corresponds with that in LocalStorage, if not, update it
-        //     csfd.updateInLocalStorage(currentRatingNum);
-        // }
-        // else if (location.href.includes('/uzivatel/')) {
-        //     // csfd.forceRefreshCurrentUserRatings();
-        //     csfd.refreshCurrentUserRatings();
-        // }
+        console.log("ratingsCountOk:", ratingsCountOk);
+        if (ratingsCountOk) {
+            // Show user ratings on any other user but mine
+            if (csfd.onOtherUserHodnoceniPage()) {
+                csfd.addRatingsColumn();
+            }
+        }
     }
 
 })();
