@@ -23,16 +23,13 @@
 Glob = {
     popupCounter: 0,
 
-    popup: function (htmlContent, timeout) {
+    popup: async function (htmlContent, timeout = 3) {
         var id = Glob.popupCounter++;
-        if (!timeout) {
-            timeout = 3;
-        }
         if (!htmlContent) {
             return;
         }
         var yOffset = 10;
-        $("body").append(`
+        $(".header-search").append(`
             <div class='SNPopup' id='SNPopup${id}'
                 style='
                     border: 1px solid black;
@@ -60,7 +57,8 @@ Glob = {
 };
 
 
-(() => {
+
+(async () => {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
 
@@ -75,47 +73,34 @@ Glob = {
             this.storageKey = undefined;
             this.userUrl = undefined;
             this.endPageNum = 0;
+            this.userRatingsCount = 0;
+            this.userRatingsUrl = undefined;
+            this.localStorageRatingsCount = 0;
 
             // Ignore the ads... Make 'hodnoceni' table wider.
             $('.column.column-80').attr('class', '.column column-90');
         }
 
-        REFRESH_RATINGS() {
-            let hodnoceniUrl = `${this.userUrl}/hodnoceni`;
-            console.log(`Going to page ${hodnoceniUrl} and loading ratings...`);
-            // Empty LocalStorage
-            this.stars = {};
-            this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
-            console.log(`Accessing LC: ${this.storageKey}`);
-
-            // Load user ratings...
-            this.currentRequest = $.ajax({
-                type: "GET",
-                url: hodnoceniUrl,
-                async: false
-            });
-
-            this.currentRequest.done((data) => {
-                // Get how many pages will the script load
-                let lastPageUrl = $(data).find('.box-content').find('.box-more-bar').find('.pagination')[0];
-                console.log("lastPageUrl", lastPageUrl);
-                let lastPageHref = $(lastPageUrl).find('a:nth-last-child(2)').attr('href');
+        getEndPageNum(data) {
+            let $pagination = $(data).find('.box-content').find('.box-more-bar').find('.pagination')[0];
+            let lastPageHref = $($pagination).find('a:nth-last-child(2)').attr('href');
                 let foundMatch = lastPageHref.match(new RegExp("page=(.*)$"));
-                if (foundMatch.length == 2) {
-                    this.endPageNum = parseInt(foundMatch[1]);
-                }
-                console.log("this.endPageNum", this.endPageNum);
-                this.loadPageDone(data);
-            });
 
+            let endPageNum = 0;
+                if (foundMatch.length == 2) {
+                endPageNum = parseInt(foundMatch[1]);
+                }
+            return endPageNum;
         }
 
         getCurrentUser() {
             console.log("fn getCurrentUser()");
 
             let loggedInUser = $('.profile.initialized').attr('href');
+            if (typeof loggedInUser !== 'undefined') {
             if (loggedInUser.length == 1) {
                 loggedInUser = loggedInUser[0];
+            }
             }
             console.log("loggedInUser:", loggedInUser);
 
@@ -123,7 +108,11 @@ Glob = {
                 console.log("Trying again...");
 
                 // [OLD Firefox] workaround (the first returns undefined....?)
-                loggedInUser = document.querySelectorAll('.profile')[0].getAttribute('href');
+                let profile = document.querySelectorAll('.profile');
+                if (profile.length == 0) {
+                    return undefined;
+                }
+                loggedInUser = profile[0].getAttribute('href');
                 console.log(`loggedInUser: ${loggedInUser}`);
 
                 if (typeof loggedInUser === 'undefined') {
@@ -136,6 +125,16 @@ Glob = {
 
         forceRefreshCurrentUserRatings() {
             this.refreshCurrentUserRatings();
+        }
+
+        /**
+        Return stars as json object.
+        */
+        getStars() {
+            if (localStorage[this.storageKey]) {
+                let stars = JSON.parse(localStorage[this.storageKey]);
+                return stars;
+            }
         }
 
         getCurrentFilmUrl() {
@@ -305,47 +304,77 @@ Glob = {
 
         }
 
+        getCurrentUserRatingsCount() {
+            console.log(`fn: getCurrentUserRatingsCount()`);
+            let count = 0;
+            let request = $.ajax({
+                type: "GET",
+                url: this.userRatingsUrl,
+                async: false
+            });
+            request.done((data) => {
+                // Get ratings: '(2 403)'
+                let $countSpan = $(data).find('span.count');
+                console.log(`  $countSpan: ${$countSpan}`);
+                if ($countSpan.length == 1) {
+                    // Strip it '(2 403)' --> '2403'
+                    count = $countSpan[0].innerText.replace('(', '').replace(')', '').replace(/ +/g, '').replace(/\xA0/g, '');
+                    count = parseInt(count);
+                }
+            });
+            console.log(`  Returning count: ${count}`);
+            return count;
+        }
+
+        getLocalStorageRatingsCount() {
+            console.log(`fn: getLocalStorageRatingsCount()`);
+            this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
+            if (localStorage[this.storageKey]) {
+                let stars = JSON.parse(localStorage[this.storageKey]);
+                return Object.keys(stars).length;
+            }
+            return 0;
+
+        }
+
         exportRatings() {
-            console.log("Settings this.stars --> localStorage");
+            console.log(`fn: exportRatings()`);
             localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
         }
 
         importRatings() {
+            console.log(`fn: importRatings()`);
             if (localStorage[this.storageKey]) {
                 this.stars = JSON.parse(localStorage[this.storageKey]);
             }
         }
 
-        loadHodnoceniPage(url) {
-            console.log(`LOADING URL... ${url}`);
-            let foundMatch = url.match(new RegExp("page=(.*)$"));
-            let currentNum;
-            if (foundMatch.length == 2) {
-                currentNum = foundMatch[1];
-            }
-            else {
-                currentNum = 1;
-            }
-            // let currentNum = foundMatch[1];
-            Glob.popup(`${SCRIPTNAME} - Nacitam stranku... ${currentNum}/${this.endPageNum}`);
-            this.currentRequest = $.ajax({
+        async REFRESH_RATINGS() {
+            // Load user ratings...
+            return new Promise((resolve, reject) => {
+                console.log("fn: REFRESH_RATINGS()");
+                console.log(`  Getting data from: '${this.userRatingsUrl}'...`);
+                $.ajax({
                 type: "GET",
-                url: url,
+                    url: this.userRatingsUrl,
                 async: true
+                }).done((data) => {
+                    // Get how many pages will the script load
+                    this.endPageNum = this.getEndPageNum(data);
+                    console.log("  this.endPageNum:", this.endPageNum);
+                    this.processRatingsPage(data);
+                    resolve();
             });
-
-            this.currentRequest.done((data) => {
-                this.loadPageDone(data);
             });
         }
 
-        loadPageDone(hodnoceniHTML) {
-            if (!hodnoceniHTML) {
+        async processRatingsPage(dataHTML) {
+            if (!dataHTML) {
                 return;
             }
 
             var $stars = this.stars;
-            $(hodnoceniHTML).find("tbody tr").each(function () {
+            $(dataHTML).find("tbody tr").each(function () {
                 var $row = $(this);
                 var filmURL = $("a.film-title-name", $row).attr("href");
                 var $rating = $("span .stars", $row);
@@ -356,19 +385,53 @@ Glob = {
                         starsRating = stars;
                     }
                 }
-
+                // Add to dict
                 $stars[filmURL] = starsRating;
             });
 
-            let nextPaginationURL = $(hodnoceniHTML).find("a.page-next").attr("href");
-
+            // Check if there is next page
+            let nextPaginationURL = $(dataHTML).find("a.page-next").attr("href");
             if (nextPaginationURL) {
-                // Next page exists, get it and repeat this function, add new ratins to `this.stars`
-                this.loadHodnoceniPage(nextPaginationURL);
+                // Next page exists, fetch it and repeat this function, add new ratings to `this.stars`
+                await this.loadPage(nextPaginationURL);
             } else {
                 // No next page, finish...
                 this.finishRefresh();
             }
+        }
+
+        async loadPage(url) {
+            console.log(`fn: loadPage(${url})`);
+            return new Promise((resolve, reject) => {
+                let foundMatch = url.match(new RegExp("page=(.*)$"));
+
+                let currentNum = 1;
+                if (foundMatch.length == 2) {
+                    currentNum = foundMatch[1];
+                }
+
+                Glob.popup(`${SCRIPTNAME} - Nacitam... ${currentNum}/${this.endPageNum}`);
+
+                $.ajax({
+                    type: "GET",
+                    url: url,
+                    async: false
+                }).done((data) => {
+                    this.processRatingsPage(data);
+                    resolve();
+                });
+            });
+        }
+
+        finishRefresh() {
+            console.log("fn: finishRefresh()");
+            this.exportRatings();
+            console.log("  Hotovo, hodnocení načteno");
+            Glob.popup(`Vaše hodnocení byla načtena.`);
+
+            // if (!location.href.includes(this.userUrl)) {
+            //     this.addRatingsColumn();
+            // }
         }
 
         addRatingsColumn() {
@@ -400,33 +463,17 @@ Glob = {
             });
         }
 
-        finishRefresh() {
-            this.exportRatings();
-            console.log("Hotovo, hodnocení načteno");
-            Glob.popup(`Vaše hodnocení byla načtena.`);
-
-            if (!location.href.includes(this.userUrl)) {
-                this.addRatingsColumn();
-            }
-        }
-
-        finishRefresh2() {
-            this.exportRatings();
-            Glob.popup(`Vaše hodnocení byla načtena.`);
-        }
-
         createRefreshButton() {
-            // TODO: CSS style to fix it to middle right and with ... icon?
-            console.log("fn: createRefreshButton()");
-
             let button = document.createElement("button");
-            button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload</span>`;
+            button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload<br>${this.localStorageRatingsCount}/${this.userRatingsCount}</span>`;
             button.className = "csfd-compare-reload";
             // button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
 
+            // Add at the end of the user main-menu
             let menu = document.getElementsByClassName("main-menu")[0];
             menu.insertBefore(button, menu.lastChild);
 
+            // Add event to refresh all rating into LocalStorage on click
             $(button).on("click", function () {
                 let csfd = new Csfd($('div.page-content'));
                 csfd.userUrl = csfd.getCurrentUser();
@@ -467,40 +514,90 @@ Glob = {
             });
         }
 
+        hideControlPanel() {
+            let btn = $('.button-control-panel');
+            btn.addClass('hidden');
+        }
     }
+
 
     // SCRIPT START
     let csfd = new Csfd($('div.page-content'));
 
     csfd.userUrl = csfd.getCurrentUser();
+
+    // Either logged in or not, do this...
+
+
+    // If not logged in, hide control panel
+    if (csfd.userUrl === undefined) {
+        csfd.hideControlPanel();
+    }
+
+    // If logged in, do some stuff
     if (csfd.userUrl !== undefined) {
 
+        csfd.storageKey = "CsfdCompare_" + csfd.userUrl.split("/")[2].split("-")[1];
+        csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+
+        console.log("START... csfd.getCurrentUserRatingsCount()");
+        csfd.userRatingsCount = csfd.getCurrentUserRatingsCount();
+        console.log("END... csfd.getCurrentUserRatingsCount()");
+        console.log("userRatingsCount:", csfd.userRatingsCount);
+
+        console.log("START... csfd.getLocalStorageRatingsCount()");
+        csfd.localStorageRatingsCount = csfd.getLocalStorageRatingsCount();
+        console.log("END... csfd.getLocalStorageRatingsCount()");
+        // console.log("csfd.localStorageRatingsCount:", csfd.localStorageRatingsCount);
+
+        console.log("START... csfd.openControlPanelOnHover()");
         csfd.openControlPanelOnHover();
+        console.log("END... csfd.openControlPanelOnHover()");
+
+        console.log("START... csfd.createRefreshButton()");
         csfd.createRefreshButton();
+        console.log("END... csfd.createRefreshButton()");
 
-        let ratingsLoaded = csfd.checkLocalStorageRatings();
-        if (ratingsLoaded != true) {
-            csfd.REFRESH_RATINGS();
-        }
-        // csfd.SHOW_COLUMN();
-        // csfd.addRatingsColumn();
+        // Force refresh ratings if user ratings and localStorage ratings count is not the same
+        if (csfd.userRatingsCount != csfd.localStorageRatingsCount) {
+            console.warn(`Current ${csfd.userRatingsCount} != LocalStorage ${csfd.localStorageRatingsCount} ... refreshing ratings.`);
+
+            // Empty LocalStorage
+            console.log("  Emptying 'this.stars' (LocalStorage)");
+            csfd.stars = {};
+
+            console.log("START... csfd.REFRESH_RATINGS()");
+            await csfd.REFRESH_RATINGS();
+            console.log("END... csfd.REFRESH_RATINGS()");
     }
 
-    if (location.href.includes('/film/')) {
-        // console.log("Jsem na filmu...");
-        csfd.checkLocalStorageRatings();
-        let currentRatingNum = csfd.getCurrentFilmRating();
-        if (currentRatingNum == null) {
-            // Check if record exists, if yes, remove it
-            csfd.removeFromLocalStorage();
-            return;
-        }
-        // Check if current page rating corresponds with that in LocalStorage, if not, update it
-        csfd.updateInLocalStorage(currentRatingNum);
-    }
-    else if (location.href.includes('/uzivatel/')) {
-        // csfd.forceRefreshCurrentUserRatings();
-        csfd.refreshCurrentUserRatings();
+        console.log("CONTINUING AFTER REFRESH...............");
+        // csfd.stars = csfd.getStars();
+        // // Show user ratings on any other user but mine
+        // if (location.href.includes('/hodnoceni') && location.href.includes('/uzivatel/')) {
+        //     if (!location.href.includes(csfd.userUrl)) {
+        //         csfd.addRatingsColumn();
+        //     }
+        // }
+
+        // if (location.href.includes('/film/')) {
+        //     let currentRatingNum = csfd.getCurrentFilmRating();
+        //     console.log("currentRatingNum:", currentRatingNum);
+        //     // csfd.checkLocalStorageRatings();
+        //     // let currentRatingNum = csfd.getCurrentFilmRating();
+        //     if (currentRatingNum == null) {
+        //         // Check if record exists, if yes, remove it
+        //         console.log("Removing from localStorage:");
+        //         csfd.removeFromLocalStorage();
+        //         return;
+        //     }
+        //     // Check if current page rating corresponds with that in LocalStorage, if not, update it
+        //     csfd.updateInLocalStorage(currentRatingNum);
+        // }
+        // else if (location.href.includes('/uzivatel/')) {
+        //     // csfd.forceRefreshCurrentUserRatings();
+        //     csfd.refreshCurrentUserRatings();
+        // }
     }
 
 })();
