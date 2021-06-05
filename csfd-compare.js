@@ -16,9 +16,8 @@
 // @downloadURL https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @supportURL  https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
-// Aktuality (v0.3.4)
-// Refresh button přemístěn do uživ. menu dolů
-// Ovládací panel se otevírá po najetí myší, není třeba klikat
+// Aktuality (v0.3.4.2)
+// Oprava zjištění názvu série (předtím fungovalo jen pro filmy)
 
 Glob = {
     popupCounter: 0,
