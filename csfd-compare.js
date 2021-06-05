@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.3.4
+// @version      0.3.4.2
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -137,7 +137,11 @@ Glob = {
             console.log("fn: getCurrentFilmUrl()");
 
             // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
+            // TODO: kdyz je to serial, diskuze je na pozici 10, kdyz film, 9... Problem i jinde?
             let navItemHref = this.csfdPage.find('.tab-nav-item-9 > a').attr('href');
+            if (navItemHref.includes("javascript")) {
+                navItemHref = this.csfdPage.find('.tab-nav-item-10 > a').attr('href');
+            }
 
             let foundMatch = navItemHref.match(new RegExp("film/" + "(.*)" + "/diskuze"));
             if (foundMatch == null) {
