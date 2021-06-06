@@ -130,6 +130,9 @@ Glob = {
                 let stars = JSON.parse(localStorage[this.storageKey]);
                 return stars;
             }
+            else {
+                return {};
+            }
         }
 
         getCurrentFilmUrl() {
