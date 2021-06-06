@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.3.4.2
+// @version      0.3.5
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -497,6 +497,42 @@ Glob = {
             let btn = $('.button-control-panel');
             btn.addClass('hidden');
         }
+
+        addWarningToUserProfile() {
+            $(".profile.initialized").append(`
+                <div class='counter'>
+                    <span><b>!</b></span>
+                </div>
+            `);
+        }
+
+        addWarningToRefreshButton() {
+            // TODO: predelat na button, vypada to lip
+            let button = $(".dropdown-content.main-menu > ul:first").prepend(`
+                <li style="background-color: #ba0305; border: 4px solid black;">
+                    <a href="#" style="color: white">
+                        <center>
+                            <b>
+                                CSFD-Compare<br>
+                                Uložené: [${csfd.localStorageRatingsCount}] != Celkem: [${csfd.userRatingsCount}]</br>
+                                <hr>
+                                >>> Načíst hodnocení <<<
+                                <hr>
+                            </b>
+                        </center>
+                    </a>
+                </li>
+            `);
+
+            $(button).on("click", function () {
+                let csfd = new Csfd($('div.page-content'));
+                csfd.userUrl = csfd.getCurrentUser();
+                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
+                csfd.REFRESH_RATINGS();
+            });
+        }
+
     }
 
 
@@ -550,21 +586,23 @@ Glob = {
         csfd.openControlPanelOnHover();
         console.log("END... csfd.openControlPanelOnHover()");
 
-        console.log("START... csfd.createRefreshButton()");
-        csfd.createRefreshButton();
-        console.log("END... csfd.createRefreshButton()");
+        // console.log("START... csfd.createRefreshButton()");
+        // csfd.createRefreshButton();
+        // console.log("END... csfd.createRefreshButton()");
 
         // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
         let ratingsCountOk = csfd.userRatingsCount == csfd.localStorageRatingsCount;
         console.log("ratingsCountOk:", ratingsCountOk);
 
         if (!ratingsCountOk) {
-            console.warn(`Current ${csfd.userRatingsCount} != LocalStorage ${csfd.localStorageRatingsCount}.`);
-            Glob.popup(`
-                ${SCRIPTNAME}: Je třeba obnovit hodnocení<br>
-                - váš počet: ${csfd.userRatingsCount}<br>
-                - uloženo v prohlížeči: ${csfd.localStorageRatingsCount}<br>
-                <b>Nastavení uživatele --> CSFD-Compare reload</b>`, 8, 310);
+            csfd.addWarningToUserProfile();
+            csfd.addWarningToRefreshButton();
+            // console.warn(`Current ${csfd.userRatingsCount} != LocalStorage ${csfd.localStorageRatingsCount}.`);
+            // Glob.popup(`
+            //     ${SCRIPTNAME}: Je třeba obnovit hodnocení<br>
+            //     - váš počet: ${csfd.userRatingsCount}<br>
+            //     - uloženo v prohlížeči: ${csfd.localStorageRatingsCount}<br>
+            //     <b>Nastavení uživatele --> CSFD-Compare reload</b>`, 8, 310);
     }
 
         console.log("CONTINUING AFTER REFRESH...............");
