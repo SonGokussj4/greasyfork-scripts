@@ -12,12 +12,17 @@
 // ==/UserScript==
 
 
+// @include      *csfd.cz/uzivatel/*/hodnoceni*
 // @updateURL   https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @downloadURL https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @supportURL  https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
-// Aktuality (v0.3.4.2)
-// Oprava zjištění názvu série (předtím fungovalo jen pro filmy)
+// Aktuality (v0.3.5)
+// Fix: zjištění názvu série (předtím fungovalo jen pro filmy)
+// Fix: při nenačteném hodnocení a koukání na profil filmu/série, skript zkolaboval
+// New: Popup o nenačtených filmech je nyní vykřičník u uživ profilu
+// New: Tlačítko pro obnovení hodnocení se objeví jen pokus nesouhlasí počet uložených v prohlížeči vs počet v profilu
+
 
 Glob = {
     popupCounter: 0,
@@ -55,6 +60,20 @@ Glob = {
     }
 };
 
+// new MutationObserver(function (mutations) {
+//     // check at least two H1 exist using the extremely fast getElementsByTagName
+//     // which is faster than enumerating all the added nodes in mutations
+//     let btn = $('.button-control-panel');
+//     btn.addClass('hidden');
+//     // if (document.getElementsByTagName('h1')[1]) {
+//     //     var ibmlogo = document.querySelectorAll('h1.logo.floatLeft')[1];
+//     //     if (ibmlogo) {
+//     //         ibmlogo.remove();
+//     //         this.disconnect(); // disconnect the observer
+//     //     }
+//     // }
+// }).observe(document, { childList: true, subtree: true });
+// // the above observes added/removed nodes on all descendants recursively
 
 
 (async () => {
@@ -77,6 +96,8 @@ Glob = {
             this.userRatingsUrl = undefined;
             this.localStorageRatingsCount = 0;
 
+            this.RESULT = {};
+
             // Ignore the ads... Make 'hodnoceni' table wider.
             $('.column.column-80').attr('class', '.column column-90');
         }
@@ -85,12 +106,12 @@ Glob = {
             console.log("fn: getEndPageNum()");
             let $pagination = $(data).find('.box-content').find('.box-more-bar').find('.pagination')[0];
             let lastPageHref = $($pagination).find('a:nth-last-child(2)').attr('href');
-                let foundMatch = lastPageHref.match(new RegExp("page=(.*)$"));
+            let foundMatch = lastPageHref.match(new RegExp("page=(.*)$"));
 
             let endPageNum = 0;
-                if (foundMatch.length == 2) {
+            if (foundMatch.length == 2) {
                 endPageNum = parseInt(foundMatch[1]);
-                }
+            }
             console.log("  return:", endPageNum);
             return endPageNum;
         }
@@ -100,9 +121,9 @@ Glob = {
 
             let loggedInUser = $('.profile.initialized').attr('href');
             if (typeof loggedInUser !== 'undefined') {
-            if (loggedInUser.length == 1) {
-                loggedInUser = loggedInUser[0];
-            }
+                if (loggedInUser.length == 1) {
+                    loggedInUser = loggedInUser[0];
+                }
             }
             console.log("loggedInUser:", loggedInUser);
 
@@ -335,16 +356,16 @@ Glob = {
                 console.log("fn: REFRESH_RATINGS()");
                 console.log(`  Getting data from: '${$this.userRatingsUrl}'...`);
                 $.ajax({
-                type: "GET",
+                    type: "GET",
                     url: $this.userRatingsUrl,
-                async: true
+                    async: true
                 }).done((data) => {
                     // Get how many pages will the script load
                     $this.endPageNum = $this.getEndPageNum(data);
                     console.log("  $this.endPageNum:", $this.endPageNum);
                     this.processRatingsPage(data);
                     resolve();
-            });
+                });
             });
         }
 
@@ -440,25 +461,25 @@ Glob = {
             });
         }
 
-        createRefreshButton() {
-            let button = document.createElement("button");
-            button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload<br>${this.localStorageRatingsCount}/${this.userRatingsCount}</span>`;
-            button.className = "csfd-compare-reload";
-            // button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
+        // createRefreshButton() {
+        //     let button = document.createElement("button");
+        //     button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload<br>${this.localStorageRatingsCount}/${this.userRatingsCount}</span>`;
+        //     button.className = "csfd-compare-reload";
+        //     // button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
 
-            // Add at the end of the user main-menu
-            let menu = document.getElementsByClassName("main-menu")[0];
-            menu.insertBefore(button, menu.lastChild);
+        //     // Add at the end of the user main-menu
+        //     let menu = document.getElementsByClassName("main-menu")[0];
+        //     menu.insertBefore(button, menu.lastChild);
 
-            // Add event to refresh all rating into LocalStorage on click
-            $(button).on("click", function () {
-                let csfd = new Csfd($('div.page-content'));
-                csfd.userUrl = csfd.getCurrentUser();
-                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
-                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
-                csfd.REFRESH_RATINGS();
-            });
-        }
+        //     // Add event to refresh all rating into LocalStorage on click
+        //     $(button).on("click", function () {
+        //         let csfd = new Csfd($('div.page-content'));
+        //         csfd.userUrl = csfd.getCurrentUser();
+        //         csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+        //         csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
+        //         csfd.REFRESH_RATINGS();
+        //     });
+        // }
 
         openControlPanelOnHover() {
             let btn = $('.button-control-panel');
@@ -533,6 +554,46 @@ Glob = {
             });
         }
 
+        // async getAllPages() {
+        //     this.RESULT['one'] = 1;
+        //     var $stars = this.RESULT;
+        //     try {
+        //         var data = await Promise.all([
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=2').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=3').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=4').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=5').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=6').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=7').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=8').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=9').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=10').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=11').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=12').then((response) => response.text()),
+        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=13').then((response) => response.text()),
+        //         ]);
+
+        //         for (var dataHTML of data) {
+
+        //             $(dataHTML).find("tbody tr").each(function () {
+        //                 var $row = $(this);
+        //                 var filmURL = $("a.film-title-name", $row).attr("href");
+        //                 var $rating = $("span .stars", $row);
+
+        //                 let starsRating = 0;
+        //                 for (let stars = 0; stars <= 5; stars++) {
+        //                     if ($rating.hasClass('stars-' + stars)) {
+        //                         starsRating = stars;
+        //                     }
+        //                 }
+        //                 // Add to dict
+        //                 $stars[filmURL] = starsRating;
+        //             });
+        //         }
+        //     } catch (error) {
+        //         console.log(error);
+        //     }
+        // }
     }
 
 
@@ -555,6 +616,8 @@ Glob = {
         csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
         csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
         csfd.stars = csfd.getStars();
+
+        // TODO: Co dělat, když nejsou csfd.stars (není vůbec načteno)
 
         // console.log("BEFORE:", csfd.RESULT);
         // await csfd.getAllPages();
@@ -603,7 +666,7 @@ Glob = {
             //     - váš počet: ${csfd.userRatingsCount}<br>
             //     - uloženo v prohlížeči: ${csfd.localStorageRatingsCount}<br>
             //     <b>Nastavení uživatele --> CSFD-Compare reload</b>`, 8, 310);
-    }
+        }
 
         console.log("CONTINUING AFTER REFRESH...............");
 
