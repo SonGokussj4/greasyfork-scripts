@@ -95,6 +95,10 @@ Glob = {
             return endPageNum;
         }
 
+        isLoggedIn() {
+            return $('.profile.initialized').length > 0;
+        }
+
         getCurrentUser() {
             console.log("fn getCurrentUser()");
 
@@ -201,35 +205,35 @@ Glob = {
             return true;
         }
 
-        checkLocalStorageRatings() {
-            console.log("fun: checkLocalStorageRatings()");
-            //TODO: Duplicitni, nejak to sloucit...
-            console.log("LOADING RATINGS...");
+        // checkLocalStorageRatings() {
+        //     console.log("fun: checkLocalStorageRatings()");
+        //     //TODO: Duplicitni, nejak to sloucit...
+        //     console.log("LOADING RATINGS...");
 
-            this.userUrl = this.getCurrentUser();
-            console.log("this.userUrl:", this.userUrl);
+        //     this.userUrl = this.getCurrentUser();
+        //     console.log("this.userUrl:", this.userUrl);
 
-            this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
-            console.log("this.storageKey", this.storageKey);
+        //     this.storageKey = "CsfdCompare_" + this.userUrl.split("/")[2].split("-")[1];
+        //     console.log("this.storageKey", this.storageKey);
 
-            // Try cache
-            if (localStorage[this.storageKey]) {
-                this.stars = JSON.parse(localStorage[this.storageKey]);
-            }
+        //     // Try cache
+        //     if (localStorage[this.storageKey]) {
+        //         this.stars = JSON.parse(localStorage[this.storageKey]);
+        //     }
 
-            if (this.stars != {}) {
-                return true;
-            }
+        //     if (this.stars != {}) {
+        //         return true;
+        //     }
 
-            return false;
-            // // Cache does not exists...
-            // if (Object.keys(this.stars).length == 0) {
-            //     Glob.popup("Načítam hodnocení...");
-            //     // TODO: Add floating pregress notification {loading... 354/2049}
-            //     this.refresh();
-            // }
+        //     return false;
+        //     // // Cache does not exists...
+        //     // if (Object.keys(this.stars).length == 0) {
+        //     //     Glob.popup("Načítam hodnocení...");
+        //     //     // TODO: Add floating pregress notification {loading... 354/2049}
+        //     //     this.refresh();
+        //     // }
 
-        }
+        // }
 
         getCurrentFilmRating() {
             let $currentUserRating = this.csfdPage.find('.current-user-rating .stars');
@@ -440,25 +444,25 @@ Glob = {
             });
         }
 
-        createRefreshButton() {
-            let button = document.createElement("button");
-            button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload<br>${this.localStorageRatingsCount}/${this.userRatingsCount}</span>`;
-            button.className = "csfd-compare-reload";
-            // button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
+        // createRefreshButton() {
+        //     let button = document.createElement("button");
+        //     button.innerHTML = `<span style="text-transform: initial;">CSFD-Compare reload<br>${this.localStorageRatingsCount}/${this.userRatingsCount}</span>`;
+        //     button.className = "csfd-compare-reload";
+        //     // button.setAttribute("style", "margin-top: 3px; margin-left: 20px; align: right; font-size: 0.7em;");
 
-            // Add at the end of the user main-menu
-            let menu = document.getElementsByClassName("main-menu")[0];
-            menu.insertBefore(button, menu.lastChild);
+        //     // Add at the end of the user main-menu
+        //     let menu = document.getElementsByClassName("main-menu")[0];
+        //     menu.insertBefore(button, menu.lastChild);
 
-            // Add event to refresh all rating into LocalStorage on click
-            $(button).on("click", function () {
-                let csfd = new Csfd($('div.page-content'));
-                csfd.userUrl = csfd.getCurrentUser();
-                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
-                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
-                csfd.REFRESH_RATINGS();
-            });
-        }
+        //     // Add event to refresh all rating into LocalStorage on click
+        //     $(button).on("click", function () {
+        //         let csfd = new Csfd($('div.page-content'));
+        //         csfd.userUrl = csfd.getCurrentUser();
+        //         csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+        //         csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
+        //         csfd.REFRESH_RATINGS();
+        //     });
+        // }
 
         openControlPanelOnHover() {
             let btn = $('.button-control-panel');
@@ -533,6 +537,11 @@ Glob = {
             });
         }
 
+        removeRegistrujSeBox() {
+            $('section.box--homepage-motivation').parent().remove();
+            $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
+        }
+
     }
 
 
@@ -550,11 +559,12 @@ Glob = {
     }
 
     // If logged in, do some stuff
-    if (csfd.userUrl !== undefined) {
-
+    if (csfd.isLoggedIn()) {
         csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
         csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
         csfd.stars = csfd.getStars();
+
+        csfd.removeRegistrujSeBox();
 
         // console.log("BEFORE:", csfd.RESULT);
         // await csfd.getAllPages();
