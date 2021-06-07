@@ -13,15 +13,9 @@
 
 
 // @include      *csfd.cz/uzivatel/*/hodnoceni*
-// @updateURL   https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
-// @downloadURL https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
-// @supportURL  https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
-
-// Aktuality (v0.3.5)
-// Fix: zjištění názvu série (předtím fungovalo jen pro filmy)
-// Fix: při nenačteném hodnocení a koukání na profil filmu/série, skript zkolaboval
-// New: Popup o nenačtených filmech je nyní vykřičník u uživ profilu
-// New: Tlačítko pro obnovení hodnocení se objeví jen pokus nesouhlasí počet uložených v prohlížeči vs počet v profilu
+// @updateURL    https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
+// @downloadURL  https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
+// @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
 Glob = {
