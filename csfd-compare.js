@@ -18,7 +18,10 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-Glob = {
+const SETTINGSNAME = 'CSFD-Compare-settings';
+
+
+let Glob = {
     popupCounter: 0,
 
     popup: function (htmlContent, timeout = 3, width = 150) {
@@ -54,6 +57,19 @@ Glob = {
     }
 };
 
+let defaultSettings = {
+    showSendMessageToUser: true
+};
+
+function getSettings() {
+    if (!localStorage[SETTINGSNAME]) {
+        localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
+        return defaultSettings;
+    } else {
+        return JSON.parse(localStorage[SETTINGSNAME]);
+    }
+}
+
 // new MutationObserver(function (mutations) {
 //     // check at least two H1 exist using the extremely fast getElementsByTagName
 //     // which is faster than enumerating all the added nodes in mutations
@@ -78,6 +94,7 @@ Glob = {
     // const delay = ms => new Promise(res => setTimeout(res, ms));
     const SCRIPTNAME = 'CSFD-Compare';
 
+
     class Csfd {
 
         constructor(csfdPage) {
@@ -89,6 +106,7 @@ Glob = {
             this.userRatingsCount = 0;
             this.userRatingsUrl = undefined;
             this.localStorageRatingsCount = 0;
+            this.settings = undefined;
 
             this.RESULT = {};
 
@@ -264,6 +282,19 @@ Glob = {
                 }
             });
             return count;
+        }
+
+        loadInitialSettings() {
+            $('#chkMessages').attr('checked', settings.showSendMessageToUser);
+        }
+
+        addSettingsEvents() {
+            // Checkbox - showSendMessageToUser
+            $('#chkMessages').change(function () {
+                settings.showSendMessageToUser = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
         }
 
         getLocalStorageRatingsCount() {
@@ -530,6 +561,39 @@ Glob = {
             $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
         }
 
+        addSettingsPanel() {
+            let button = document.createElement('li');
+            button.innerHTML = `
+                <a href="#show-search" class="user-link initialized">CC</a>
+                <div class="dropdown-content">
+                    <div class="dropdown-content-head">
+                        <h2>CSFD-Compare nastavení</h2>
+                    </div>
+                    <article class="article">
+                        <div class="article-content">
+                            <input type="checkbox" id="chkMessages" name="hmm">
+                            <span>Zobrazit tlačítko odeslání zprávy uživatelovi</span>
+                        </div>
+                    </article>
+                </div>
+            `;
+            $('.header-bar').prepend(button);
+
+            $(button).on("hover mouseover", function () {
+                if (!$(button).hasClass("active")) {
+                    $(button).addClass("active");
+                }
+            });
+
+            $(button).on("mouseleave", function () {
+                if ($(button).hasClass("active")) {
+                    $(button).removeClass("active");
+                }
+            });
+
+
+
+        }
     }
 
     // SCRIPT START
@@ -539,7 +603,10 @@ Glob = {
     // =================================
     // EVERY TIME
     // =================================
-    // Nothing here for now...
+    let settings = getSettings();
+    csfd.addSettingsPanel();
+    csfd.loadInitialSettings();
+    csfd.addSettingsEvents();
 
 
     // =================================
@@ -583,7 +650,8 @@ Glob = {
         }
 
         if (location.href.includes('/uzivatel/')) {
-            csfd.createSendMessageButton();
+            if (settings.showSendMessageToUser == true) { csfd.createSendMessageButton(); }
+
         }
 
         // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
