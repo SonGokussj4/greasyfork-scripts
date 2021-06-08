@@ -1,5 +1,7 @@
 # CSFD-Compare
 
+**New:** U profilů uživatelů přidáno tlačítko pro zaslání zprávy (místo klikání v ovládacím panelu)  
+
 > **v0.3.5** _(2021-06-08)_
 
 **New:** Už žádné vyskakovací okno když nejsou načteny filmy. Nyní jen vykřičník u uživatelského profilu  

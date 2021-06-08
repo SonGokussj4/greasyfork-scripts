@@ -475,6 +475,24 @@ Glob = {
             });
         }
 
+        createSendMessageButton() {
+            let userHref = $('#dropdown-control-panel li a.ajax').attr('href');
+            if (userHref === undefined) {
+                console.log("fn createSendMessageButton(): can't find user href, exiting function...");
+                return;
+            }
+            let button = document.createElement("button");
+            button.setAttribute("style", "float: right; border-radius: 5px;");
+            button.setAttribute("title", "Poslat zprávu");
+            button.innerHTML = `
+                <a class="ajax"
+                    rel="contentModal"
+                    data-mfp-src="#panelModal"
+                    href="${userHref}"><i class="icon icon-messages"></i></a>
+            `;
+            $(".user-profile-content > h1").append(button);
+        }
+
         // async getAllPages() {
         //     this.RESULT['one'] = 1;
         //     var $stars = this.RESULT;
@@ -562,6 +580,10 @@ Glob = {
                 // Check if current page rating corresponds with that in LocalStorage, if not, update it
                 csfd.updateInLocalStorage(csfd.getCurrentFilmRating());
             }
+        }
+
+        if (location.href.includes('/uzivatel/')) {
+            csfd.createSendMessageButton();
         }
 
         // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
