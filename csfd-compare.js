@@ -126,7 +126,6 @@ function getSettings() {
             if (foundMatch.length == 2) {
                 endPageNum = parseInt(foundMatch[1]);
             }
-            console.log("  return:", endPageNum);
             return endPageNum;
         }
 
@@ -135,15 +134,12 @@ function getSettings() {
         }
 
         getCurrentUser() {
-            console.log("fn getCurrentUser()");
-
             let loggedInUser = $('.profile.initialized').attr('href');
             if (typeof loggedInUser !== 'undefined') {
                 if (loggedInUser.length == 1) {
                     loggedInUser = loggedInUser[0];
                 }
             }
-            console.log("loggedInUser:", loggedInUser);
 
             if (typeof loggedInUser === 'undefined') {
                 console.log("Trying again...");
@@ -154,7 +150,6 @@ function getSettings() {
                     return undefined;
                 }
                 loggedInUser = profile[0].getAttribute('href');
-                console.log(`loggedInUser: ${loggedInUser}`);
 
                 if (typeof loggedInUser === 'undefined') {
                     console.error(`${SCRIPTNAME}: Can't find logged in username...`);
@@ -175,8 +170,6 @@ function getSettings() {
         }
 
         getCurrentFilmUrl() {
-            console.log("fn: getCurrentFilmUrl()");
-
             // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
             let foundMatch = $('a[href$="/diskuze/"]:first').attr('href');
             foundMatch = foundMatch.match(new RegExp("film/" + "(.*)" + "/diskuze"));
@@ -317,7 +310,6 @@ function getSettings() {
             if (localStorage[this.storageKey]) {
                 let stars = JSON.parse(localStorage[this.storageKey]);
                 let count = Object.keys(stars).length;
-                console.log("  return:", count);
                 return count;
             }
             return 0;
@@ -640,9 +632,18 @@ function getSettings() {
                     $(button).removeClass("active");
                 }
             });
+        }
 
+        checkAndUpdateRatings() {
+            let currentFilmRating = this.getCurrentFilmRating();
 
-
+            if (currentFilmRating == null) {
+                // Check if record exists, if yes, remove it
+                this.removeFromLocalStorage();
+            } else {
+                // Check if current page rating corresponds with that in LocalStorage, if not, update it
+                this.updateInLocalStorage(this.getCurrentFilmRating());
+            }
         }
     }
 
@@ -688,15 +689,7 @@ function getSettings() {
 
         // Dynamic LocalStorage update on Film/Series in case user changes ratings
         if (location.href.includes('/film/')) {
-            let currentFilmRating = csfd.getCurrentFilmRating();
-
-            if (currentFilmRating == null) {
-                // Check if record exists, if yes, remove it
-                csfd.removeFromLocalStorage();
-            } else {
-                // Check if current page rating corresponds with that in LocalStorage, if not, update it
-                csfd.updateInLocalStorage(csfd.getCurrentFilmRating());
-            }
+            csfd.checkAndUpdateRatings();
         }
 
         if (location.href.includes('/uzivatel/')) {
