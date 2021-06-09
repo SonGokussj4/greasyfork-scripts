@@ -163,8 +163,7 @@ function getSettings() {
             if (localStorage[this.storageKey]) {
                 let stars = JSON.parse(localStorage[this.storageKey]);
                 return stars;
-            }
-            else {
+            } else {
                 return {};
             }
         }
@@ -432,8 +431,7 @@ function getSettings() {
                 let $span = "";
                 if (ratingNum == 0) {
                     $span = `<span class="stars trash">odpad!</span>`;
-                }
-                else {
+                } else {
                     $span = `<span class="stars stars-${ratingNum}"></span>`;
                 }
 
@@ -705,15 +703,12 @@ function getSettings() {
         csfd.userRatingsCount = csfd.getCurrentUserRatingsCount();
         csfd.localStorageRatingsCount = csfd.getLocalStorageRatingsCount();
 
-        let ratingsCountSame = csfd.userRatingsCount == csfd.localStorageRatingsCount;
-
-        if (ratingsCountSame) {
-            // Show user ratings on any other user but mine
+        if (csfd.userRatingsCount == csfd.localStorageRatingsCount) {
+            // Show user ratings on any other user page but mine
             if (csfd.onOtherUserHodnoceniPage()) {
                 csfd.addRatingsColumn();
             }
-        }
-        else {
+        } else {
             // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
             csfd.addWarningToUserProfile();
         }
