@@ -647,6 +647,17 @@ function getSettings() {
                 this.updateInLocalStorage(this.getCurrentFilmRating());
             }
         }
+
+        noMoreViceButton() {
+            //*[@id="page-wrapper"]/header/div[1]/ul/li[4]/div/div
+            let headers = $('.dropdown-content-head');
+            console.log(headers);
+            for (const element of headers) {
+                let bnt = $(element).find('button');
+                console.log("btn:", bnt);
+                // element.setAttribute("style", "background-color: red;");
+            }
+        }
     }
 
     // SCRIPT START
@@ -678,6 +689,7 @@ function getSettings() {
         // User pleasure
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
         if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
+        csfd.noMoreViceButton();
 
         // Load initial class properties
         csfd.userUrl = csfd.getCurrentUser();
