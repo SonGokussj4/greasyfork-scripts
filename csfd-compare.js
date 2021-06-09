@@ -652,10 +652,27 @@ function getSettings() {
             //*[@id="page-wrapper"]/header/div[1]/ul/li[4]/div/div
             let headers = $('.dropdown-content-head');
             console.log(headers);
-            for (const element of headers) {
-                let bnt = $(element).find('button');
-                console.log("btn:", bnt);
-                // element.setAttribute("style", "background-color: red;");
+            for (const div of headers) {
+                console.log(div);
+                let btn = $(div).find('a.button');
+                let btnHref = $(div).find('a.button').attr('href');
+                btn.remove();
+
+                if (btnHref !== undefined) {
+                    div.setAttribute("style", "cursor: pointer;");
+                    $(div).on("click", () => {
+                        window.location = btnHref;
+                    });
+                    $(div)
+                        .mouseover(() => {
+                            // div.setAttribute("style", "background-color: #ECEABD;");
+                            div.style.backgroundColor = '#ba0305';
+                        })
+                        .mouseout(() => {
+                            // div.setAttribute("style", "background-color: #ececec;");
+                            div.style.backgroundColor = '#ececec';
+                        });
+                }
             }
         }
     }
