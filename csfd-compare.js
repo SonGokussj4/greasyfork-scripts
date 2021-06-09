@@ -58,7 +58,9 @@ let Glob = {
 };
 
 let defaultSettings = {
-    showSendMessageToUser: true
+    showSendMessageToUser: true,
+    showControlPanelOnHover: true,
+    removeRegistrationPanel: true,
 };
 
 function getSettings() {
@@ -286,12 +288,26 @@ function getSettings() {
 
         loadInitialSettings() {
             $('#chkMessages').attr('checked', settings.showSendMessageToUser);
+            $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
+            $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
         }
 
         addSettingsEvents() {
             // Checkbox - showSendMessageToUser
             $('#chkMessages').change(function () {
                 settings.showSendMessageToUser = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkControlPanelOnHover').change(function () {
+                settings.showControlPanelOnHover = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkRemoveRegistrationPanel').change(function () {
+                settings.removeRegistrationPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -563,18 +579,52 @@ function getSettings() {
 
         addSettingsPanel() {
             let button = document.createElement('li');
+            let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
             button.innerHTML = `
                 <a href="#show-search" class="user-link initialized">CC</a>
-                <div class="dropdown-content">
+                <div class="dropdown-content notifications" style="right: 150px; width: max-content;">
+
                     <div class="dropdown-content-head">
                         <h2>CSFD-Compare nastavení</h2>
                     </div>
+
                     <article class="article">
-                        <div class="article-content">
-                            <input type="checkbox" id="chkMessages" name="hmm">
-                            <span>Zobrazit tlačítko odeslání zprávy uživatelovi</span>
-                        </div>
+                        <h2 class="article-header">Globální úpravy</h2>
+                        <section>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveRegistrationPanel" name="hmm">
+                                <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle}">Nezobrazovat na domácí stránce panel "Registruj se"</label>
+                            </div>
+                            <div class="">
+                                <input type="checkbox" id="chkControlPanelOnHover" name="hmm">
+                                <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší (netřeba klikat)</label>
+                            </div>
+                        </section>
                     </article>
+
+                    <article class="article">
+                        <h2 class="article-header">Uživatelé</h2>
+                        <section>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkMessages" name="hmm">
+                                <label for="chkMessages" style="${resetLabelStyle}">Tlačítko odeslání zprávy</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkDisplayFavoriteButton" name="hmm" disabled>
+                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle}" disabled><del>Tlačítko přidat/odebrat z oblíbených</del></label>
+                            </div>
+                        </section>
+                    </article>
+
+
+
+                    <article class="article">
+                        <h2 class="article-header">Film/Seriál</h2>
+                        <section>
+
+                        </section>
+                    </article>
+
                 </div>
             `;
             $('.header-bar').prepend(button);
@@ -623,8 +673,8 @@ function getSettings() {
     if (csfd.isLoggedIn()) {
 
         // User pleasure
-        csfd.removeBox_RegistrujSe();
-        csfd.openControlPanelOnHover();
+        if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
+        if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
 
         // Load initial class properties
         csfd.userUrl = csfd.getCurrentUser();
