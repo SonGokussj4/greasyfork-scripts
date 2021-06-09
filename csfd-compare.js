@@ -266,13 +266,16 @@ function getSettings() {
                 type: "GET",
                 url: this.userRatingsUrl,
                 async: false
-            });
-            request.done((data) => {
+            }).done((data) => {
                 // Get ratings: '(2 403)'
                 let $countSpan = $(data).find('span.count');
                 if ($countSpan.length == 1) {
                     // Strip it '(2 403)' --> '2403'
-                    count = $countSpan[0].innerText.replace('(', '').replace(')', '').replace(/ +/g, '').replace(/\xA0/g, '');
+                    count = $countSpan[0].innerText
+                        .replace('(', '')
+                        .replace(')', '')
+                        .replace(/ +/g, '')  // any number of spaces
+                        .replace(/\xA0/g, '');  // weird space thingie...
                     count = parseInt(count);
                 }
             });
@@ -488,6 +491,7 @@ function getSettings() {
                     <span><b>!</b></span>
                 </div>
             `);
+            this.createRefreshButton();
         }
 
         createRefreshButton() {
@@ -712,7 +716,6 @@ function getSettings() {
         else {
             // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
             csfd.addWarningToUserProfile();
-            csfd.createRefreshButton();
         }
     }
 
