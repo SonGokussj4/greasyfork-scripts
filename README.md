@@ -1,7 +1,8 @@
 # CSFD-Compare
 
 **New:** U profilů uživatelů přidáno tlačítko pro zaslání zprávy (místo klikání v ovládacím panelu)  
-**New:** První nástřel "nastavení", kde si uživatel vybere, co zapne/vypne
+**New:** První nástřel "nastavení", kde si uživatel vybere, co zapne/vypne  
+**New:** Klikatelné boxy místo tlačítka "VÍCE"  
 
 > **v0.3.5** _(2021-06-08)_
 

@@ -567,8 +567,8 @@ function getSettings() {
         // }
 
         removeBox_RegistrujSe() {
-            $('section.box--homepage-motivation').parent().remove();
-            $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
+            $('.box--homepage-motivation-middle').remove();
+            // $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
         }
 
         addSettingsPanel() {
@@ -648,32 +648,72 @@ function getSettings() {
             }
         }
 
-        noMoreViceButton() {
+        clickableHeaderBoxes() {
             //*[@id="page-wrapper"]/header/div[1]/ul/li[4]/div/div
             let headers = $('.dropdown-content-head');
             console.log(headers);
             for (const div of headers) {
                 console.log(div);
                 let btn = $(div).find('a.button');
-                let btnHref = $(div).find('a.button').attr('href');
-                btn.remove();
+                if (btn.length === 0) { continue; }
 
-                if (btnHref !== undefined) {
-                    div.setAttribute("style", "cursor: pointer;");
-                    $(div).on("click", () => {
-                        window.location = btnHref;
+                btn[0].innerHTML = "Otevřít";
+                btn[0].style.visibility = 'hidden';
+
+                div.setAttribute("style", "cursor: pointer;");
+                $(div).on("click", () => {
+                    window.location = btn.attr('href');
+                });
+                let h2 = $(div).find('h2');
+                $(div)
+                    .mouseover(() => {
+                        div.style.backgroundColor = '#ba0305';
+                        h2[0].style.backgroundColor = '#ba0305';
+                        h2[0].style.color = '#fff';
+                        btn[0].style.visibility = 'visible';
+
+                    })
+                    .mouseout(() => {
+                        div.style.backgroundColor = '#ececec';
+                        h2[0].style.backgroundColor = 'initial';
+                        h2[0].style.color = 'initial';
+                        btn[0].style.visibility = 'hidden';
                     });
-                    $(div)
-                        .mouseover(() => {
-                            // div.setAttribute("style", "background-color: #ECEABD;");
-                            div.style.backgroundColor = '#ba0305';
-                        })
-                        .mouseout(() => {
-                            // div.setAttribute("style", "background-color: #ececec;");
-                            div.style.backgroundColor = '#ececec';
-                        });
-                }
             }
+
+            let boxHeaders = $('.box-header');
+            console.log("boxHeaders:", boxHeaders);
+            for (const headerBox of boxHeaders) {
+                let btn = $(headerBox).find('a.button');
+                if (btn.length === 0) { continue; }
+
+                btn[0].innerHTML = ">";
+                // btn[0].style.visibility = 'hidden';
+
+                headerBox.setAttribute("style", "cursor: pointer;");
+                $(headerBox).on("click", () => {
+                    window.location = btn.attr('href');
+                });
+                let h2 = $(headerBox).find('h2');
+                let spanCount = h2.find('span.count');
+                $(headerBox)
+                    .mouseover(() => {
+                        headerBox.style.backgroundColor = '#ba0305';
+                        h2[0].style.backgroundColor = '#ba0305';
+                        h2[0].style.color = '#fff';
+                        btn[0].style.visibility = 'visible';
+                        spanCount[0].style.color = '#fff';
+
+                    })
+                    .mouseout(() => {
+                        headerBox.style.backgroundColor = '#ececec';
+                        h2[0].style.backgroundColor = 'initial';
+                        h2[0].style.color = 'initial';
+                        // btn[0].style.visibility = 'hidden';
+                        spanCount[0].style.color = 'initial';
+                    });
+            }
+
         }
     }
 
@@ -706,7 +746,7 @@ function getSettings() {
         // User pleasure
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
         if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
-        csfd.noMoreViceButton();
+        csfd.clickableHeaderBoxes();
 
         // Load initial class properties
         csfd.userUrl = csfd.getCurrentUser();
