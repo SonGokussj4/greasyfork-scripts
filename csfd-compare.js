@@ -558,15 +558,15 @@ function getSettings() {
             });
         }
 
-        createSendMessageButton() {
+        displayMessageButton() {
             let userHref = $('#dropdown-control-panel li a.ajax').attr('href');
             if (userHref === undefined) {
-                console.log("fn createSendMessageButton(): can't find user href, exiting function...");
+                console.log("fn displayMessageButton(): can't find user href, exiting function...");
                 return;
             }
             let button = document.createElement("button");
+            button.setAttribute("data-tippy-content", $('#dropdown-control-panel li a.ajax')[0].text);
             button.setAttribute("style", "float: right; border-radius: 5px;");
-            button.setAttribute("title", "Poslat zprávu");
             button.innerHTML = `
                 <a class="ajax"
                     rel="contentModal"
@@ -582,16 +582,21 @@ function getSettings() {
                 console.log("fn displayFavoriteButton(): can't find user href, exiting function...");
                 return;
             }
-            let href = favoriteButton.attr('href');
-            let text = favoriteButton[0].text;
             let button = document.createElement("button");
+            let tooltipText = favoriteButton[0].text;
+            let addRemoveIndicator = "+";
+            if (tooltipText.includes("Odebrat")) {
+                addRemoveIndicator = "-";
+            }
             button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
-            button.setAttribute("title", text);
+            button.setAttribute("data-tippy-content", tooltipText);
             button.innerHTML = `
+                <span style="font-size: 1.5em; padding-top: 5px; margin-right: 0px;">${addRemoveIndicator}</span>
                 <a class="ajax"
                     rel="contentModal"
                     data-mfp-src="#panelModal"
-                    href="${href}"><i class="icon icon-favorites"></i></a>
+                    href="${favoriteButton.attr('href')}"><i class="icon icon-favorites"></i></a>
+
             `;
             $(".user-profile-content > h1").append(button);
         }
@@ -848,7 +853,7 @@ function getSettings() {
         }
 
         if (location.href.includes('/uzivatel/')) {
-            if (settings.displayMessageButton == true) { csfd.createSendMessageButton(); }
+            if (settings.displayMessageButton == true) { csfd.displayMessageButton(); }
             if (settings.displayFavoriteButton == true) { csfd.displayFavoriteButton(); }
         }
 
@@ -865,6 +870,12 @@ function getSettings() {
             // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
             csfd.addWarningToUserProfile();
         }
+
+        // Call TippyJs constructor
+        tippy('[data-tippy-content]', {
+            // interactive: true,
+            popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
+        });
     }
 
 })();
