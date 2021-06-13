@@ -60,6 +60,7 @@ let Glob = {
 let defaultSettings = {
     displayMessageButton: true,
     displayFavoriteButton: true,
+    hideUserControlPanel: true,
     showControlPanelOnHover: true,
     removeRegistrationPanel: true,
     clickableHeaderBoxes: true,
@@ -301,6 +302,7 @@ function refreshTooltips() {
             // USER
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
             $('#chkDisplayFavoriteButton').attr('checked', settings.displayFavoriteButton);
+            $('#chkHideUserControlPanel').attr('checked', settings.hideUserControlPanel);
 
             // FILM/SERIES
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
@@ -341,6 +343,13 @@ function refreshTooltips() {
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
 
+            $('#chkHideUserControlPanel').change(function () {
+                settings.hideUserControlPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            // FILM/SERIES
             $('#chkHideSelectedUserReviews').change(function () {
                 settings.hideSelectedUserReviews = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -348,7 +357,6 @@ function refreshTooltips() {
                 $('#txtHideSelectedUserReviews').parent().toggle();
             });
 
-            // FILM/SERIES
             $('#txtHideSelectedUserReviews').change(function () {
                 let ignoredUsers = this.value.replace(/\s/g, '').split(",");
                 settings.hideSelectedUserReviewsList = ignoredUsers;
@@ -571,6 +579,7 @@ function refreshTooltips() {
                 console.log("fn displayMessageButton(): can't find user href, exiting function...");
                 return;
             }
+
             let button = document.createElement("button");
             button.setAttribute("data-tippy-content", $('#dropdown-control-panel li a.ajax')[0].text);
             button.setAttribute("style", "float: right; border-radius: 5px;");
@@ -596,7 +605,6 @@ function refreshTooltips() {
             }
 
             let button = document.createElement("button");
-            // button.setAttribute("id", "btn-add-to-favorite");
             button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
             button.setAttribute("data-tippy-content", tooltipText);
             button.innerHTML = `
@@ -611,9 +619,6 @@ function refreshTooltips() {
             $(".user-profile-content > h1").append(button);
 
             $(button).on('click', function () {
-                console.log("addRemoveIndicator:", addRemoveIndicator);
-                console.log("button:", button);
-                console.log("$('#add-remove-indicator'):", $('#add-remove-indicator'));
                 if (addRemoveIndicator == "+") {
                     $('#add-remove-indicator')[0].innerText = '-';
                     button._tippy.setContent("Odebrat z oblíbených");
@@ -623,6 +628,12 @@ function refreshTooltips() {
                 }
                 refreshTooltips();
             });
+        }
+
+        hideUserControlPanel() {
+            let panel = $('.button-control-panel:not(.small)');
+            if (panel.length !== 1) { return };
+            panel.hide();
         }
 
         // async getAllPages() {
@@ -701,6 +712,10 @@ function refreshTooltips() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button">
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle}">Tlačítko přidat/odebrat z oblíbených</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkHideUserControlPanel" name="display-favorite-button">
+                                <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
                             </div>
                         </section>
                     </article>
@@ -879,6 +894,7 @@ function refreshTooltips() {
         if (location.href.includes('/uzivatel/')) {
             if (settings.displayMessageButton == true) { csfd.displayMessageButton(); }
             if (settings.displayFavoriteButton == true) { csfd.displayFavoriteButton(); }
+            if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
         }
 
         // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
