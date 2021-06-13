@@ -58,9 +58,13 @@ let Glob = {
 };
 
 let defaultSettings = {
-    showSendMessageToUser: true,
+    displayMessageButton: true,
+    displayFavoriteButton: true,
     showControlPanelOnHover: true,
     removeRegistrationPanel: true,
+    clickableHeaderBoxes: true,
+    hideSelectedUserReviews: false,
+    hideSelectedUserReviewsList: [],
 };
 
 function getSettings() {
@@ -282,15 +286,25 @@ function getSettings() {
         }
 
         loadInitialSettings() {
-            $('#chkMessages').attr('checked', settings.showSendMessageToUser);
-            $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
+            // GLOBAL
             $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
+            $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
+            $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
+
+            // USER
+            $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
+            $('#chkDisplayFavoriteButton').attr('checked', settings.displayFavoriteButton);
+
+            // FILM/SERIES
+            $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
+            if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
+            $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', '));
         }
 
         addSettingsEvents() {
-            // Checkbox - showSendMessageToUser
-            $('#chkMessages').change(function () {
-                settings.showSendMessageToUser = this.checked;
+            // GLOBAL
+            $('#chkRemoveRegistrationPanel').change(function () {
+                settings.removeRegistrationPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -301,10 +315,38 @@ function getSettings() {
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
 
-            $('#chkRemoveRegistrationPanel').change(function () {
-                settings.removeRegistrationPanel = this.checked;
+            $('#chkClickableHeaderBoxes').change(function () {
+                settings.clickableHeaderBoxes = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            // USER
+            $('#chkDisplayMessageButton').change(function () {
+                settings.displayMessageButton = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkDisplayFavoriteButton').change(function () {
+                settings.displayFavoriteButton = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkHideSelectedUserReviews').change(function () {
+                settings.hideSelectedUserReviews = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+                $('#txtHideSelectedUserReviews').parent().toggle();
+            });
+
+            // FILM/SERIES
+            $('#txtHideSelectedUserReviews').change(function () {
+                let ignoredUsers = this.value.replace(/\s/g, '').split(",");
+                settings.hideSelectedUserReviewsList = ignoredUsers;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup(`Ignorovaní uživatelé:\n${ignoredUsers.join(', ')}`, 4);
             });
         }
 
@@ -534,6 +576,26 @@ function getSettings() {
             $(".user-profile-content > h1").append(button);
         }
 
+        displayFavoriteButton() {
+            let favoriteButton = $('#snippet--menuFavorite > a');
+            if (favoriteButton.length !== 1) {
+                console.log("fn displayFavoriteButton(): can't find user href, exiting function...");
+                return;
+            }
+            let href = favoriteButton.attr('href');
+            let text = favoriteButton[0].text;
+            let button = document.createElement("button");
+            button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
+            button.setAttribute("title", text);
+            button.innerHTML = `
+                <a class="ajax"
+                    rel="contentModal"
+                    data-mfp-src="#panelModal"
+                    href="${href}"><i class="icon icon-favorites"></i></a>
+            `;
+            $(".user-profile-content > h1").append(button);
+        }
+
         // async getAllPages() {
         //     this.RESULT['one'] = 1;
         //     var $stars = this.RESULT;
@@ -586,12 +648,16 @@ function getSettings() {
                         <h2 class="article-header">Globální úpravy</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveRegistrationPanel" name="hmm">
-                                <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle}">Nezobrazovat na domácí stránce panel "Registruj se"</label>
+                                <input type="checkbox" id="chkRemoveRegistrationPanel" name="remove-registration-panel">
+                                <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle}">Skrýt panel "Registruj se" (dom. stránka)</label>
                             </div>
-                            <div class="">
-                                <input type="checkbox" id="chkControlPanelOnHover" name="hmm">
+                            <div class="article-content">
+                                <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
                                 <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší (netřeba klikat)</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkClickableHeaderBoxes" name="control-panel-on-hover">
+                                <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Klikatelný celý box, ne jen tlačítko "VÍCE"</label>
                             </div>
                         </section>
                     </article>
@@ -600,22 +666,27 @@ function getSettings() {
                         <h2 class="article-header">Uživatelé</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkMessages" name="hmm">
-                                <label for="chkMessages" style="${resetLabelStyle}">Tlačítko odeslání zprávy</label>
+                                <input type="checkbox" id="chkDisplayMessageButton" name="messages">
+                                <label for="chkDisplayMessageButton" style="${resetLabelStyle}">Tlačítko odeslání zprávy</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkDisplayFavoriteButton" name="hmm" disabled>
-                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle}" disabled><del>Tlačítko přidat/odebrat z oblíbených</del></label>
+                                <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button">
+                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle}">Tlačítko přidat/odebrat z oblíbených</label>
                             </div>
                         </section>
                     </article>
 
-
-
                     <article class="article">
                         <h2 class="article-header">Film/Seriál</h2>
                         <section>
-
+                            <div class="article-content">
+                                <input type="checkbox" id="chkHideSelectedUserReviews" name="ignore-people">
+                                <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
+                                <div>
+                                    <input type="textbox" id="txtHideSelectedUserReviews" name="ignore-people-list">
+                                    <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
+                                </div>
+                            </div>
                         </section>
                     </article>
 
@@ -649,21 +720,26 @@ function getSettings() {
         }
 
         clickableHeaderBoxes() {
-            //*[@id="page-wrapper"]/header/div[1]/ul/li[4]/div/div
+            // // Does not work, the hell...
+            // let userLinks = $('.user-link');
+            // for (const element of userLinks) {
+            //     let href = window.location.origin + $(element).attr('href');
+            //     $(element).unbind();
+            //     $(element).wrap(`<a href="${href}"></a>`);
+            // }
+
             let headers = $('.dropdown-content-head');
             console.log(headers);
             for (const div of headers) {
-                console.log(div);
                 let btn = $(div).find('a.button');
                 if (btn.length === 0) { continue; }
+                if (btn[0].text !== "více") { continue; }
+
+                $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
                 btn[0].innerHTML = "Otevřít";
                 btn[0].style.visibility = 'hidden';
 
-                div.setAttribute("style", "cursor: pointer;");
-                $(div).on("click", () => {
-                    window.location = btn.attr('href');
-                });
                 let h2 = $(div).find('h2');
                 $(div)
                     .mouseover(() => {
@@ -686,14 +762,10 @@ function getSettings() {
             for (const headerBox of boxHeaders) {
                 let btn = $(headerBox).find('a.button');
                 if (btn.length === 0) { continue; }
+                if (btn[0].text !== "více") { continue; }
 
-                btn[0].innerHTML = ">";
-                // btn[0].style.visibility = 'hidden';
+                $(headerBox).wrap(`<a href="${btn.attr('href')}"></a>`);
 
-                headerBox.setAttribute("style", "cursor: pointer;");
-                $(headerBox).on("click", () => {
-                    window.location = btn.attr('href');
-                });
                 let h2 = $(headerBox).find('h2');
                 let spanCount = h2.find('span.count');
                 $(headerBox)
@@ -701,19 +773,30 @@ function getSettings() {
                         headerBox.style.backgroundColor = '#ba0305';
                         h2[0].style.backgroundColor = '#ba0305';
                         h2[0].style.color = '#fff';
-                        btn[0].style.visibility = 'visible';
-                        spanCount[0].style.color = '#fff';
+                        // btn[0].style.visibility = 'visible';
+                        if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
+
 
                     })
                     .mouseout(() => {
-                        headerBox.style.backgroundColor = '#ececec';
+                        headerBox.style.backgroundColor = '#e3e3e3';
                         h2[0].style.backgroundColor = 'initial';
                         h2[0].style.color = 'initial';
                         // btn[0].style.visibility = 'hidden';
-                        spanCount[0].style.color = 'initial';
+                        if (spanCount.length == 1) { spanCount[0].style.color = 'initial'; }
                     });
             }
+        }
 
+        hideSelectedUserReviews() {
+            let articleHeaders = $('.article-header-review-name');
+            for (const element of articleHeaders) {
+                let userTitle = $(element).find('.user-title-name');
+                if (userTitle.length != 1) { continue; }
+                let ignoredUser = settings.hideSelectedUserReviewsList.includes(userTitle[0].text);
+                if (!ignoredUser) { continue; }
+                $(element).closest('article').hide();
+            }
         }
     }
 
@@ -746,7 +829,7 @@ function getSettings() {
         // User pleasure
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
         if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
-        csfd.clickableHeaderBoxes();
+        if (settings.clickableHeaderBoxes == true) { csfd.clickableHeaderBoxes(); }
 
         // Load initial class properties
         csfd.userUrl = csfd.getCurrentUser();
@@ -761,11 +844,12 @@ function getSettings() {
         // Dynamic LocalStorage update on Film/Series in case user changes ratings
         if (location.href.includes('/film/')) {
             csfd.checkAndUpdateRatings();
+            if (settings.hideSelectedUserReviews == true) { csfd.hideSelectedUserReviews(); }
         }
 
         if (location.href.includes('/uzivatel/')) {
-            if (settings.showSendMessageToUser == true) { csfd.createSendMessageButton(); }
-
+            if (settings.displayMessageButton == true) { csfd.createSendMessageButton(); }
+            if (settings.displayFavoriteButton == true) { csfd.displayFavoriteButton(); }
         }
 
         // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings

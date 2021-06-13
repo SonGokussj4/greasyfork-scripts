@@ -3,6 +3,8 @@
 **New:** U profilů uživatelů přidáno tlačítko pro zaslání zprávy (místo klikání v ovládacím panelu)  
 **New:** První nástřel "nastavení", kde si uživatel vybere, co zapne/vypne  
 **New:** Klikatelné boxy místo tlačítka "VÍCE"  
+**New:** Tlačítko pro přidání/odebrání z oblíbených na profilu uživatele  
+**New:** Možnost filtrovat uživatele, jejichž recenze nebudou zobrazeny  
 
 > **v0.3.5** _(2021-06-08)_
 
