@@ -76,6 +76,13 @@ function getSettings() {
     }
 }
 
+function refreshTooltips() {
+    tippy('[data-tippy-content]', {
+        // interactive: true,
+        popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
+    });
+}
+
 // new MutationObserver(function (mutations) {
 //     // check at least two H1 exist using the extremely fast getElementsByTagName
 //     // which is faster than enumerating all the added nodes in mutations
@@ -582,23 +589,40 @@ function getSettings() {
                 console.log("fn displayFavoriteButton(): can't find user href, exiting function...");
                 return;
             }
-            let button = document.createElement("button");
             let tooltipText = favoriteButton[0].text;
             let addRemoveIndicator = "+";
             if (tooltipText.includes("Odebrat")) {
                 addRemoveIndicator = "-";
             }
+
+            let button = document.createElement("button");
+            // button.setAttribute("id", "btn-add-to-favorite");
             button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
             button.setAttribute("data-tippy-content", tooltipText);
             button.innerHTML = `
-                <span style="font-size: 1.5em; padding-top: 5px; margin-right: 0px;">${addRemoveIndicator}</span>
                 <a class="ajax"
                     rel="contentModal"
                     data-mfp-src="#panelModal"
-                    href="${favoriteButton.attr('href')}"><i class="icon icon-favorites"></i></a>
-
+                    href="${favoriteButton.attr('href')}">
+                        <span id="add-remove-indicator" style="font-size: 1.5em; color: white;">${addRemoveIndicator}</span>
+                        <i class="icon icon-favorites"></i>
+                </a>
             `;
             $(".user-profile-content > h1").append(button);
+
+            $(button).on('click', function () {
+                console.log("addRemoveIndicator:", addRemoveIndicator);
+                console.log("button:", button);
+                console.log("$('#add-remove-indicator'):", $('#add-remove-indicator'));
+                if (addRemoveIndicator == "+") {
+                    $('#add-remove-indicator')[0].innerText = '-';
+                    button._tippy.setContent("Odebrat z oblíbených");
+                } else {
+                    $('#add-remove-indicator')[0].innerText = '+';
+                    button._tippy.setContent("Přidat do oblíbených");
+                }
+                refreshTooltips();
+            });
         }
 
         // async getAllPages() {
@@ -872,10 +896,7 @@ function getSettings() {
         }
 
         // Call TippyJs constructor
-        tippy('[data-tippy-content]', {
-            // interactive: true,
-            popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
-        });
+        refreshTooltips();
     }
 
 })();
