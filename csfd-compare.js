@@ -264,10 +264,10 @@ function refreshTooltips() {
             }
         }
 
-        refresh() {
-            let url = this.userUrl + "hodnoceni/";
-            this.loadHodnoceniPage(url);
-        }
+        // refresh() {
+        //     let url = this.userUrl + "hodnoceni/";
+        //     this.loadHodnoceniPage(url);
+        // }
 
         getCurrentUserRatingsCount() {
             let count = 0;
@@ -547,24 +547,15 @@ function refreshTooltips() {
 
             $(panel).on('mouseleave', function () {
                 if (panel.hasClass('active')) {
-                    // setTimeout(function () {
                     panel.removeClass('active');
-                    // }, 500);
                 }
             });
 
             $(btn).on('mouseleave', function () {
                 if (panel.hasClass('active')) {
-                    // setTimeout(function () {
                     panel.removeClass('active');
-                    // }, 500);
                 }
             });
-        }
-
-        hideControlPanel() {
-            let btn = $('.button-control-panel');
-            btn.addClass('hidden');
         }
 
         addWarningToUserProfile() {
@@ -659,7 +650,7 @@ function refreshTooltips() {
 
         hideUserControlPanel() {
             let panel = $('.button-control-panel:not(.small)');
-            if (panel.length !== 1) { return };
+            if (panel.length !== 1) { return; }
             panel.hide();
         }
 
@@ -726,20 +717,20 @@ function refreshTooltips() {
                         <h2 class="article-header">Globální úpravy</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveRegistrationPanel" name="remove-registration-panel">
-                                <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle}">Skrýt panel "Registruj se" (dom. stránka)</label>
-                            </div>
-                            <div class="article-content">
                                 <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
                                 <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší (netřeba klikat)</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkClickableHeaderBoxes" name="control-panel-on-hover">
+                                <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Klikatelný celý box, ne jen tlačítko "VÍCE"</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkClickableMessages" name="control-panel-on-hover">
-                                <label for="chkClickableMessages" style="${resetLabelStyle}">Klikatelné zprávy (bez tlačítko "více...")</label>
+                                <input type="checkbox" id="chkRemoveRegistrationPanel" name="remove-registration-panel" ${disabled}>
+                                <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel "Registruj se" (dom. stránka)</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
+                                <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
                             </div>
                         </section>
                     </article>
@@ -748,14 +739,17 @@ function refreshTooltips() {
                         <h2 class="article-header">Uživatelé</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkDisplayMessageButton" name="messages">
-                                <label for="chkDisplayMessageButton" style="${resetLabelStyle}">Tlačítko odeslání zprávy</label>
+                                <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel">
+                                <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button">
-                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle}">Tlačítko přidat/odebrat z oblíbených</label>
+                                <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
+                                <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
                             </div>
                             <div class="article-content">
+                                <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
+                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
+                            </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
                                 <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
@@ -767,10 +761,10 @@ function refreshTooltips() {
                         <h2 class="article-header">Film/Seriál</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkHideSelectedUserReviews" name="ignore-people">
+                                <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
                                 <div>
-                                    <input type="textbox" id="txtHideSelectedUserReviews" name="ignore-people-list">
+                                    <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
                                 </div>
                             </div>
@@ -809,12 +803,10 @@ function refreshTooltips() {
         }
 
         clickableMessages() {
-            console.log("=============== START ================");
             let $messagesBox = $('.dropdown-content.messages');
-
             let $more = $messagesBox.find('.span-more-small');
-
             if ($more.length < 1) { return; }
+
             for (const $span of $more) {
 
                 // Hide "... více" button
@@ -822,7 +814,7 @@ function refreshTooltips() {
 
                 let $content = $($span).closest('.article-content');
                 let $article = $content.closest('article');
-                $content.hover( function() {
+                $content.hover(function () {
                     // $(this).css('background-color', '#e1e0e0');
                     $article.css('background-color', '#e1e0e0');
                 }, function () {
@@ -833,7 +825,6 @@ function refreshTooltips() {
                 let href = $($span).find('a').attr('href');
                 $content.wrap(`<a href="${href}"></a>`);
             }
-            console.log("=============== END ================");
         }
         clickableHeaderBoxes() {
             // // Does not work, the hell...
@@ -928,10 +919,24 @@ function refreshTooltips() {
 
 
     // =================================
+    // GLOBAL
+    // =================================
+    if (settings.clickableHeaderBoxes == true) { csfd.clickableHeaderBoxes(); }
+    if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
+    // Film/Series page
+    if (location.href.includes('/film/')) {
+        if (settings.hideSelectedUserReviews == true) { csfd.hideSelectedUserReviews(); }
+    }
+
+
+    // =================================
     // NOT LOGGED IN
     // =================================
     if (!csfd.isLoggedIn()) {
-        csfd.hideControlPanel();
+        // Use page
+        if (location.href.includes('/uzivatel/')) {
+            if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
+        }
     }
 
 
@@ -940,10 +945,10 @@ function refreshTooltips() {
     // =================================
     if (csfd.isLoggedIn()) {
 
-        // User pleasure
+        // Global settings without category
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
-        if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
-        if (settings.clickableHeaderBoxes == true) { csfd.clickableHeaderBoxes(); }
+
+        // Header modifications
         if (settings.clickableMessages == true) { csfd.clickableMessages(); }
 
         // User page
@@ -954,39 +959,39 @@ function refreshTooltips() {
 
             if (settings.compareUserRatings == true) {
 
-        // Load initial class properties
-        csfd.userUrl = csfd.getCurrentUser();
-        csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
-        csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
-        csfd.stars = csfd.getStars();
+                // Load initial class properties
+                csfd.userUrl = csfd.getCurrentUser();
+                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
+                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                csfd.stars = csfd.getStars();
 
-        // console.log("BEFORE:", csfd.RESULT);
-        // await csfd.getAllPages();
-        // console.log("AFTER:", Object.keys(csfd.RESULT).length);
+                // console.log("BEFORE:", csfd.RESULT);
+                // await csfd.getAllPages();
+                // console.log("AFTER:", Object.keys(csfd.RESULT).length);
 
-        // Dynamic LocalStorage update on Film/Series in case user changes ratings
-        if (location.href.includes('/film/')) {
-            csfd.checkAndUpdateRatings();
-        }
+                // Dynamic LocalStorage update on Film/Series in case user changes ratings
+                if (location.href.includes('/film/')) {
+                    csfd.checkAndUpdateRatings();
+                }
 
-        // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
-        csfd.userRatingsCount = csfd.getCurrentUserRatingsCount();
-        csfd.localStorageRatingsCount = csfd.getLocalStorageRatingsCount();
+                // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
+                csfd.userRatingsCount = csfd.getCurrentUserRatingsCount();
+                csfd.localStorageRatingsCount = csfd.getLocalStorageRatingsCount();
 
-        if (csfd.userRatingsCount == csfd.localStorageRatingsCount) {
-            // Show user ratings on any other user page but mine
-            if (csfd.onOtherUserHodnoceniPage()) {
-                csfd.addRatingsColumn();
-            }
-        } else {
-            // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
-            csfd.addWarningToUserProfile();
-        }
+                if (csfd.userRatingsCount == csfd.localStorageRatingsCount) {
+                    // Show user ratings on any other user page but mine
+                    if (csfd.onOtherUserHodnoceniPage()) {
+                        csfd.addRatingsColumn();
+                    }
+                } else {
+                    // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
+                    csfd.addWarningToUserProfile();
+                }
             }
         }
     }
 
-        // Call TippyJs constructor
-        refreshTooltips();
+    // Call TippyJs constructor
+    refreshTooltips();
 
 })();
