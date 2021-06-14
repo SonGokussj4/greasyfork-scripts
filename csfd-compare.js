@@ -194,29 +194,25 @@ function refreshTooltips() {
         }
 
         updateInLocalStorage(ratingNum) {
-            console.log("Checking if in LocalStorage...");
-
             // Check if film is in LocalStorage
             let filmUrl = this.getCurrentFilmUrl();
-            console.log("filmUrl:", filmUrl);
             let item = this.stars[filmUrl];
 
             // Item not in LocalStorage, add it then!
             if (typeof item === 'undefined') {
-                console.log(`Item not in LocalStorage, adding... ${filmUrl}: ${ratingNum}`);
+                // Item not in LocalStorage, add
                 this.stars[filmUrl] = ratingNum;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
                 return true;
             }
 
-            if (item != ratingNum) {
-                console.log(`LocalStorage rating [${item}] != current rating [${ratingNum}], updating...`);
+            if (item !== ratingNum) {
+                // LocalStorage rating != current rating, update
                 this.stars[filmUrl] = ratingNum;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
                 return true;
             }
 
-            console.log(`Rating same in LocalStorage, everything ok`);
             return true;
         }
 
@@ -321,7 +317,6 @@ function refreshTooltips() {
             // FILM/SERIES
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
-            console.log("BABA YAGA:", settings.hideSelectedUserReviewsList);
             if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
 
         }
@@ -789,7 +784,6 @@ function refreshTooltips() {
             // }
 
             let headers = $('.dropdown-content-head');
-            console.log(headers);
             for (const div of headers) {
                 let btn = $(div).find('a.button');
                 if (btn.length === 0) { continue; }
@@ -818,7 +812,6 @@ function refreshTooltips() {
             }
 
             let boxHeaders = $('.box-header');
-            console.log("boxHeaders:", boxHeaders);
             for (const headerBox of boxHeaders) {
                 let btn = $(headerBox).find('a.button');
                 if (btn.length === 0) { continue; }
