@@ -5,6 +5,7 @@
 **New:** Klikatelné boxy místo tlačítka "VÍCE"  
 **New:** Tlačítko pro přidání/odebrání z oblíbených na profilu uživatele  
 **New:** Možnost filtrovat uživatele, jejichž recenze nebudou zobrazeny  
+**New:** Klikatelný box se zprávou od uživatele místo tlačítka "... více"  
 
 > **v0.3.5** _(2021-06-08)_
 

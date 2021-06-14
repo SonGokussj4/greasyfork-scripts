@@ -64,6 +64,7 @@ let defaultSettings = {
     showControlPanelOnHover: true,
     removeRegistrationPanel: true,
     clickableHeaderBoxes: true,
+    clickableMessages: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
 };
@@ -308,6 +309,7 @@ function refreshTooltips() {
             $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
+            $('#chkClickableMessages').attr('checked', settings.clickableMessages);
 
             // USER
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
@@ -337,6 +339,12 @@ function refreshTooltips() {
 
             $('#chkClickableHeaderBoxes').change(function () {
                 settings.clickableHeaderBoxes = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkClickableMessages').change(function () {
+                settings.clickableMessages = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -710,6 +718,10 @@ function refreshTooltips() {
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="control-panel-on-hover">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Klikatelný celý box, ne jen tlačítko "VÍCE"</label>
                             </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkClickableMessages" name="control-panel-on-hover">
+                                <label for="chkClickableMessages" style="${resetLabelStyle}">Klikatelné zprávy (bez tlačítko "více...")</label>
+                            </div>
                         </section>
                     </article>
 
@@ -774,6 +786,33 @@ function refreshTooltips() {
             }
         }
 
+        clickableMessages() {
+            console.log("=============== START ================");
+            let $messagesBox = $('.dropdown-content.messages');
+
+            let $more = $messagesBox.find('.span-more-small');
+
+            if ($more.length < 1) { return; }
+            for (const $span of $more) {
+
+                // Hide "... více" button
+                $($span).hide();
+
+                let $content = $($span).closest('.article-content');
+                let $article = $content.closest('article');
+                $content.hover( function() {
+                    // $(this).css('background-color', '#e1e0e0');
+                    $article.css('background-color', '#e1e0e0');
+                }, function () {
+                    // $(this).css('background-color', 'initial');
+                    $article.css('background-color', 'initial');
+                });
+
+                let href = $($span).find('a').attr('href');
+                $content.wrap(`<a href="${href}"></a>`);
+            }
+            console.log("=============== END ================");
+        }
         clickableHeaderBoxes() {
             // // Does not work, the hell...
             // let userLinks = $('.user-link');
@@ -885,6 +924,7 @@ function refreshTooltips() {
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
         if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
         if (settings.clickableHeaderBoxes == true) { csfd.clickableHeaderBoxes(); }
+        if (settings.clickableMessages == true) { csfd.clickableMessages(); }
 
         // Load initial class properties
         csfd.userUrl = csfd.getCurrentUser();
