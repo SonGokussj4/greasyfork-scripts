@@ -776,6 +776,7 @@ function refreshTooltips() {
             $(button).on("mouseover", function () {
                 if (timer) {
                     clearTimeout(timer);
+                    timer = null;
                 }
                 if (!$(button).hasClass("active")) {
                     $(button).addClass("active");
