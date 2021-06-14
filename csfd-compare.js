@@ -293,6 +293,20 @@ function refreshTooltips() {
             return count;
         }
 
+        fillMissingSettingsKeys() {
+            let settings = getSettings();
+
+            let currentKeys = Object.keys(settings);
+            let defaultKeys = Object.keys(defaultSettings);
+            for (const defaultKey of defaultKeys) {
+                let exists = currentKeys.includes(defaultKey);
+                if (!exists) {
+                    settings[defaultKey] = defaultSettings[defaultKey];
+                }
+            }
+            localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+        }
+
         loadInitialSettings() {
             // GLOBAL
             $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
@@ -307,7 +321,9 @@ function refreshTooltips() {
             // FILM/SERIES
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
-            $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', '));
+            console.log("BABA YAGA:", settings.hideSelectedUserReviewsList);
+            if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
+
         }
 
         addSettingsEvents() {
@@ -851,6 +867,8 @@ function refreshTooltips() {
     // =================================
     // EVERY TIME
     // =================================
+    csfd.fillMissingSettingsKeys();
+
     let settings = getSettings();
     csfd.addSettingsPanel();
     csfd.loadInitialSettings();
