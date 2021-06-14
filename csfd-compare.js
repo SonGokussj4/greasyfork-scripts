@@ -264,11 +264,6 @@ function refreshTooltips() {
             }
         }
 
-        // refresh() {
-        //     let url = this.userUrl + "hodnoceni/";
-        //     this.loadHodnoceniPage(url);
-        // }
-
         getCurrentUserRatingsCount() {
             let count = 0;
             let request = $.ajax({
@@ -279,7 +274,7 @@ function refreshTooltips() {
                 // Get ratings: '(2 403)'
                 let $countSpan = $(data).find('span.count');
                 if ($countSpan.length == 1) {
-                    // Strip it '(2 403)' --> '2403'
+                    // Strip it '(2 403)' --> '2403'  // TODO: new Regex(/\s/g)?
                     count = $countSpan[0].innerText
                         .replace('(', '')
                         .replace(')', '')
@@ -777,7 +772,11 @@ function refreshTooltips() {
 
             refreshTooltips();
 
-            $(button).on("hover mouseover", function () {
+            let timer;
+            $(button).on("mouseover", function () {
+                if (timer) {
+                    clearTimeout(timer);
+                }
                 if (!$(button).hasClass("active")) {
                     $(button).addClass("active");
                 }
@@ -785,7 +784,9 @@ function refreshTooltips() {
 
             $(button).on("mouseleave", function () {
                 if ($(button).hasClass("active")) {
-                    $(button).removeClass("active");
+                    timer = setTimeout(() => {
+                        $(button).removeClass("active");
+                    }, 200);
                 }
             });
         }
