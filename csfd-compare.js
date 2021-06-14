@@ -19,7 +19,7 @@
 
 
 const SETTINGSNAME = 'CSFD-Compare-settings';
-
+const VERSION = '<a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.0</a>';
 
 let Glob = {
     popupCounter: 0,
@@ -706,6 +706,7 @@ function refreshTooltips() {
 
                     <div class="dropdown-content-head">
                         <h2>CSFD-Compare nastavení</h2>
+                        <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">${VERSION}</span>
                     </div>
 
                     <article class="article">
