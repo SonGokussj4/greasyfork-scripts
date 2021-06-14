@@ -1,5 +1,9 @@
 # CSFD-Compare
 
+**New:** Nově funkcionalita i pro nepřihlášené uživatele (omezená)  
+**New:** Nastavení - zobrazit porovnání svých hodoncení v profilu jiného uživatele s jeho  
+**Fix:** Zbavení se nepotřebného kódu
+
 > **v0.4.0** _(2021-06-14)_
 
 **New:** U profilů uživatelů přidáno tlačítko pro zaslání zprávy (místo klikání v ovládacím panelu)  
