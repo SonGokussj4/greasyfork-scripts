@@ -1,10 +1,13 @@
 # CSFD-Compare
 
-**New:** Nově funkcionalita i pro nepřihlášené uživatele (omezená)  
-**New:** Nastavení - zobrazit porovnání svých hodoncení v profilu jiného uživatele s jeho  
-**Fix:** Zbavení se nepotřebného kódu
+> **v0.4.1** _(2021-06-14)_  
 
-> **v0.4.0** _(2021-06-14)_
+**New:** Nově funguje i pro nepřihlášené uživatele (omezeně)  
+**New:** Nastavení: zobrazit porovnání hodnocení MOJE x UŽIVATEL (v tabulce hodnocení)  
+**New:** Panel nastavení: přidána verze skriptu  
+**Fix:** Zbavení se nepotřebného kódu  
+
+> **v0.4.0** _(2021-06-14)_  
 
 **New:** U profilů uživatelů přidáno tlačítko pro zaslání zprávy (místo klikání v ovládacím panelu)  
 **New:** První nástřel "nastavení", kde si uživatel vybere, co zapne/vypne  
@@ -13,7 +16,7 @@
 **New:** Možnost filtrovat uživatele, jejichž recenze nebudou zobrazeny  
 **New:** Klikatelný box se zprávou od uživatele místo tlačítka "... více"  
 
-> **v0.3.5** _(2021-06-08)_
+> **v0.3.5** _(2021-06-08)_  
 
 **New:** Už žádné vyskakovací okno když nejsou načteny filmy. Nyní jen vykřičník u uživatelského profilu  
 **New:** Tlačítko pro obnovení hodnocení se objeví jen pokud nesouhlasí počet uložených záznamů v prohlížeči (LocalStorage) vs počet v profilu uživatele  
