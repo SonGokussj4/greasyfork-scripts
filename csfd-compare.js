@@ -65,6 +65,7 @@ let defaultSettings = {
     removeRegistrationPanel: true,
     clickableHeaderBoxes: true,
     clickableMessages: true,
+    compareUserRatings: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
 };
@@ -317,6 +318,7 @@ function refreshTooltips() {
             $('#chkHideUserControlPanel').attr('checked', settings.hideUserControlPanel);
 
             // FILM/SERIES
+            $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
             if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
@@ -369,6 +371,12 @@ function refreshTooltips() {
             });
 
             // FILM/SERIES
+            $('#chkCompareUserRatings').change(function () {
+                settings.compareUserRatings = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
             $('#chkHideSelectedUserReviews').change(function () {
                 settings.hideSelectedUserReviews = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -693,11 +701,22 @@ function refreshTooltips() {
         }
 
         addSettingsPanel() {
+            let dropdownStyle = 'right: 150px; width: max-content;';
+            let disabled = '';
+            let needToLoginTooltip = '';
+            let needToLoginStyle = '';
+            if (!this.isLoggedIn()) {
+                dropdownStyle = 'right: 50px; width: max-content;';
+                disabled = 'disabled';
+                needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení"`;
+                needToLoginStyle = 'color: grey;';
+            }
+
             let button = document.createElement('li');
             let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
             button.innerHTML = `
                 <a href="#show-search" class="user-link initialized">CC</a>
-                <div class="dropdown-content notifications" style="right: 150px; width: max-content;">
+                <div class="dropdown-content notifications" style="${dropdownStyle}">
 
                     <div class="dropdown-content-head">
                         <h2>CSFD-Compare nastavení</h2>
@@ -737,8 +756,9 @@ function refreshTooltips() {
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle}">Tlačítko přidat/odebrat z oblíbených</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkHideUserControlPanel" name="display-favorite-button">
-                                <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
+                                <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
                             </div>
                         </section>
                     </article>
@@ -760,6 +780,8 @@ function refreshTooltips() {
                 </div>
             `;
             $('.header-bar').prepend(button);
+
+            refreshTooltips();
 
             $(button).on("hover mouseover", function () {
                 if (!$(button).hasClass("active")) {
@@ -826,7 +848,7 @@ function refreshTooltips() {
             for (const div of headers) {
                 let btn = $(div).find('a.button');
                 if (btn.length === 0) { continue; }
-                if (btn[0].text !== "více") { continue; }
+                if (btn[0].text.toLowerCase() !== "více") { continue; }
 
                 $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -840,7 +862,6 @@ function refreshTooltips() {
                         h2[0].style.backgroundColor = '#ba0305';
                         h2[0].style.color = '#fff';
                         btn[0].style.visibility = 'visible';
-
                     })
                     .mouseout(() => {
                         div.style.backgroundColor = '#ececec';
@@ -850,11 +871,12 @@ function refreshTooltips() {
                     });
             }
 
+            // TODO: Zaimplementovat do Headers, sjednotit styl
             let boxHeaders = $('.box-header');
             for (const headerBox of boxHeaders) {
                 let btn = $(headerBox).find('a.button');
                 if (btn.length === 0) { continue; }
-                if (btn[0].text !== "více") { continue; }
+                if (btn[0].text.toLowerCase() !== "více") { continue; }
 
                 $(headerBox).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -867,8 +889,6 @@ function refreshTooltips() {
                         h2[0].style.color = '#fff';
                         // btn[0].style.visibility = 'visible';
                         if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
-
-
                     })
                     .mouseout(() => {
                         headerBox.style.backgroundColor = '#e3e3e3';
@@ -897,7 +917,7 @@ function refreshTooltips() {
     let csfd = new Csfd($('div.page-content'));
 
     // =================================
-    // EVERY TIME
+    // LOAD SETTINGS
     // =================================
     csfd.fillMissingSettingsKeys();
 
@@ -926,6 +946,14 @@ function refreshTooltips() {
         if (settings.clickableHeaderBoxes == true) { csfd.clickableHeaderBoxes(); }
         if (settings.clickableMessages == true) { csfd.clickableMessages(); }
 
+        // User page
+        if (location.href.includes('/uzivatel/')) {
+            if (settings.displayMessageButton == true) { csfd.displayMessageButton(); }
+            if (settings.displayFavoriteButton == true) { csfd.displayFavoriteButton(); }
+            if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
+
+            if (settings.compareUserRatings == true) {
+
         // Load initial class properties
         csfd.userUrl = csfd.getCurrentUser();
         csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
@@ -939,13 +967,6 @@ function refreshTooltips() {
         // Dynamic LocalStorage update on Film/Series in case user changes ratings
         if (location.href.includes('/film/')) {
             csfd.checkAndUpdateRatings();
-            if (settings.hideSelectedUserReviews == true) { csfd.hideSelectedUserReviews(); }
-        }
-
-        if (location.href.includes('/uzivatel/')) {
-            if (settings.displayMessageButton == true) { csfd.displayMessageButton(); }
-            if (settings.displayFavoriteButton == true) { csfd.displayFavoriteButton(); }
-            if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
         }
 
         // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
@@ -961,9 +982,11 @@ function refreshTooltips() {
             // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
             csfd.addWarningToUserProfile();
         }
+            }
+        }
+    }
 
         // Call TippyJs constructor
         refreshTooltips();
-    }
 
 })();
