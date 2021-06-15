@@ -80,10 +80,14 @@ function getSettings() {
 }
 
 function refreshTooltips() {
-    tippy('[data-tippy-content]', {
-        // interactive: true,
-        popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
-    });
+    try {
+        tippy('[data-tippy-content]', {
+            // interactive: true,
+            popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
+        });
+    } catch (err) {
+        console.log("Error: refreshTooltips():", err);
+    }
 }
 
 // new MutationObserver(function (mutations) {
