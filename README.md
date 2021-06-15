@@ -1,5 +1,7 @@
 # CSFD-Compare
 
+> **v0.4.2** _(2021-06-15)_  
+
 **New:** Kompatibilita s csfd.sk
 
 > **v0.4.1** _(2021-06-14)_  
