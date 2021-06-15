@@ -398,7 +398,7 @@ function refreshTooltips() {
         }
 
         onOtherUserHodnoceniPage() {
-            if (location.href.includes('/hodnoceni') && location.href.includes('/uzivatel/')) {
+            if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
                 if (!location.href.includes(this.userUrl)) {
                     return true;
                 }
@@ -581,6 +581,7 @@ function refreshTooltips() {
                 let csfd = new Csfd($('div.page-content'));
                 csfd.userUrl = csfd.getCurrentUser();
                 csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                if (location.origin.endsWith('sk')) { csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`; }
                 csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
                 csfd.REFRESH_RATINGS();
             });
@@ -613,7 +614,7 @@ function refreshTooltips() {
             }
             let tooltipText = favoriteButton[0].text;
             let addRemoveIndicator = "+";
-            if (tooltipText.includes("Odebrat")) {
+            if (tooltipText.includes("Odebrat") || tooltipText.includes("Odobrať")) {
                 addRemoveIndicator = "-";
             }
 
@@ -842,7 +843,7 @@ function refreshTooltips() {
             for (const div of headers) {
                 let btn = $(div).find('a.button');
                 if (btn.length === 0) { continue; }
-                if (btn[0].text.toLowerCase() !== "více") { continue; }
+                if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
 
                 $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -870,7 +871,7 @@ function refreshTooltips() {
             for (const headerBox of boxHeaders) {
                 let btn = $(headerBox).find('a.button');
                 if (btn.length === 0) { continue; }
-                if (btn[0].text.toLowerCase() !== "více") { continue; }
+                if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
 
                 $(headerBox).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -966,6 +967,7 @@ function refreshTooltips() {
                 csfd.userUrl = csfd.getCurrentUser();
                 csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
                 csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                if (location.origin.endsWith('sk')) { csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`; }
                 csfd.stars = csfd.getStars();
 
                 // console.log("BEFORE:", csfd.RESULT);

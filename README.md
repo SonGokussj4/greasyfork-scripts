@@ -1,5 +1,7 @@
 # CSFD-Compare
 
+**New:** Kompatibilita s csfd.sk
+
 > **v0.4.1** _(2021-06-14)_  
 
 **New:** Nově funguje i pro nepřihlášené uživatele (omezeně)  
