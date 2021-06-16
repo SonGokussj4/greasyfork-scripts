@@ -70,7 +70,7 @@ let defaultSettings = {
     hideSelectedUserReviewsList: [],
 };
 
-function getSettings() {
+async function getSettings() {
     if (!localStorage[SETTINGSNAME]) {
         localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
         return defaultSettings;
@@ -110,8 +110,8 @@ function refreshTooltips() {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
     /* jshint -W069 */
+    /* jshint -W083 */
 
-    // const delay = ms => new Promise(res => setTimeout(res, ms));
     const SCRIPTNAME = 'CSFD-Compare';
 
 
@@ -131,6 +131,7 @@ function refreshTooltips() {
             this.RESULT = {};
 
             // Ignore the ads... Make 'hodnoceni' table wider.
+            // TODO: Toto do hodnoceni!
             $('.column.column-80').attr('class', '.column column-90');
         }
 
@@ -147,13 +148,14 @@ function refreshTooltips() {
             return endPageNum;
         }
 
-        isLoggedIn() {
+        async isLoggedIn() {
             return $('.profile.initialized').length > 0;
         }
 
         getCurrentUser() {
             let loggedInUser = $('.profile.initialized').attr('href');
-            if (typeof loggedInUser !== 'undefined') {
+            console.log(loggedInUser.length);
+            if (loggedInUser !== undefined) {
                 if (loggedInUser.length == 1) {
                     loggedInUser = loggedInUser[0];
                 }
@@ -920,7 +922,7 @@ function refreshTooltips() {
     // =================================
     csfd.fillMissingSettingsKeys();
 
-    let settings = getSettings();
+    let settings = await getSettings();
     csfd.addSettingsPanel();
     csfd.loadInitialSettings();
     csfd.addSettingsEvents();
@@ -940,7 +942,7 @@ function refreshTooltips() {
     // =================================
     // NOT LOGGED IN
     // =================================
-    if (!csfd.isLoggedIn()) {
+    if (await !csfd.isLoggedIn()) {
         // Use page
         if (location.href.includes('/uzivatel/')) {
             if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
@@ -951,7 +953,7 @@ function refreshTooltips() {
     // =================================
     // LOGGED IN
     // =================================
-    if (csfd.isLoggedIn()) {
+    if (await csfd.isLoggedIn()) {
 
         // Global settings without category
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
