@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.1
+// @version      0.4.2.3
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -19,7 +19,7 @@
 
 
 const SETTINGSNAME = 'CSFD-Compare-settings';
-const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.1</a>';
+const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.2.3</a>';
 
 let Glob = {
     popupCounter: 0,
@@ -70,7 +70,7 @@ let defaultSettings = {
     hideSelectedUserReviewsList: [],
 };
 
-function getSettings() {
+async function getSettings() {
     if (!localStorage[SETTINGSNAME]) {
         localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
         return defaultSettings;
@@ -80,10 +80,14 @@ function getSettings() {
 }
 
 function refreshTooltips() {
-    tippy('[data-tippy-content]', {
-        // interactive: true,
-        popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
-    });
+    try {
+        tippy('[data-tippy-content]', {
+            // interactive: true,
+            popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
+        });
+    } catch (err) {
+        console.log("Error: refreshTooltips():", err);
+    }
 }
 
 // new MutationObserver(function (mutations) {
@@ -106,8 +110,8 @@ function refreshTooltips() {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
     /* jshint -W069 */
+    /* jshint -W083 */
 
-    // const delay = ms => new Promise(res => setTimeout(res, ms));
     const SCRIPTNAME = 'CSFD-Compare';
 
 
@@ -127,6 +131,7 @@ function refreshTooltips() {
             this.RESULT = {};
 
             // Ignore the ads... Make 'hodnoceni' table wider.
+            // TODO: Toto do hodnoceni!
             $('.column.column-80').attr('class', '.column column-90');
         }
 
@@ -143,13 +148,14 @@ function refreshTooltips() {
             return endPageNum;
         }
 
-        isLoggedIn() {
+        async isLoggedIn() {
             return $('.profile.initialized').length > 0;
         }
 
         getCurrentUser() {
             let loggedInUser = $('.profile.initialized').attr('href');
-            if (typeof loggedInUser !== 'undefined') {
+            console.log(loggedInUser.length);
+            if (loggedInUser !== undefined) {
                 if (loggedInUser.length == 1) {
                     loggedInUser = loggedInUser[0];
                 }
@@ -398,7 +404,7 @@ function refreshTooltips() {
         }
 
         onOtherUserHodnoceniPage() {
-            if (location.href.includes('/hodnoceni') && location.href.includes('/uzivatel/')) {
+            if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
                 if (!location.href.includes(this.userUrl)) {
                     return true;
                 }
@@ -581,6 +587,7 @@ function refreshTooltips() {
                 let csfd = new Csfd($('div.page-content'));
                 csfd.userUrl = csfd.getCurrentUser();
                 csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                if (location.origin.endsWith('sk')) { csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`; }
                 csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
                 csfd.REFRESH_RATINGS();
             });
@@ -613,7 +620,7 @@ function refreshTooltips() {
             }
             let tooltipText = favoriteButton[0].text;
             let addRemoveIndicator = "+";
-            if (tooltipText.includes("Odebrat")) {
+            if (tooltipText.includes("Odebrat") || tooltipText.includes("Odobrať")) {
                 addRemoveIndicator = "-";
             }
 
@@ -842,7 +849,7 @@ function refreshTooltips() {
             for (const div of headers) {
                 let btn = $(div).find('a.button');
                 if (btn.length === 0) { continue; }
-                if (btn[0].text.toLowerCase() !== "více") { continue; }
+                if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
 
                 $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -870,7 +877,7 @@ function refreshTooltips() {
             for (const headerBox of boxHeaders) {
                 let btn = $(headerBox).find('a.button');
                 if (btn.length === 0) { continue; }
-                if (btn[0].text.toLowerCase() !== "více") { continue; }
+                if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
 
                 $(headerBox).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -922,7 +929,7 @@ function refreshTooltips() {
     // =================================
     csfd.fillMissingSettingsKeys();
 
-    let settings = getSettings();
+    let settings = await getSettings();
     csfd.addSettingsPanel();
     csfd.loadInitialSettings();
     csfd.addSettingsEvents();
@@ -942,7 +949,7 @@ function refreshTooltips() {
     // =================================
     // NOT LOGGED IN
     // =================================
-    if (!csfd.isLoggedIn()) {
+    if (await !csfd.isLoggedIn()) {
         // Use page
         if (location.href.includes('/uzivatel/')) {
             if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
@@ -953,7 +960,7 @@ function refreshTooltips() {
     // =================================
     // LOGGED IN
     // =================================
-    if (csfd.isLoggedIn()) {
+    if (await csfd.isLoggedIn()) {
 
         // Global settings without category
         if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
@@ -973,6 +980,7 @@ function refreshTooltips() {
                 csfd.userUrl = csfd.getCurrentUser();
                 csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
                 csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
+                if (location.origin.endsWith('sk')) { csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`; }
                 csfd.stars = csfd.getStars();
 
                 // console.log("BEFORE:", csfd.RESULT);
