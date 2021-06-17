@@ -19,7 +19,7 @@
 
 
 const SETTINGSNAME = 'CSFD-Compare-settings';
-const VERSION = '<a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.1</a>';
+const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.1</a>';
 
 let Glob = {
     popupCounter: 0,
@@ -904,6 +904,13 @@ function refreshTooltips() {
                 $(element).closest('article').hide();
             }
         }
+
+        async checkForUpdate() {
+            return $.ajax({
+                type: "GET",
+                url: 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare',
+            });
+        }
     }
 
     // SCRIPT START
@@ -993,6 +1000,15 @@ function refreshTooltips() {
             }
         }
     }
+
+    csfd.checkForUpdate().then(function(data) {
+        let version = $(data).find('dd.script-show-version > span').text();
+        let curVersion = $(VERSION).text().replace('v', '');
+        if (version !== curVersion) {
+            let $ver = $('#script-version');
+            $ver.text(`${$ver.text()} (Nová v${version}!)`);
+        }
+    });
 
     // Call TippyJs constructor
     refreshTooltips();
