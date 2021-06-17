@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.2.3
+// @version      0.4.2.4
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -19,7 +19,7 @@
 
 
 const SETTINGSNAME = 'CSFD-Compare-settings';
-const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.2.3</a>';
+const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.2.4</a>';
 
 let Glob = {
     popupCounter: 0,
@@ -71,10 +71,13 @@ let defaultSettings = {
 };
 
 async function getSettings() {
+    console.log("FN: getSettings()");
     if (!localStorage[SETTINGSNAME]) {
+        console.log("  Setting item....");
         localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
         return defaultSettings;
     } else {
+        console.log("  local storage exists, returning existing...");
         return JSON.parse(localStorage[SETTINGSNAME]);
     }
 }
@@ -292,8 +295,8 @@ function refreshTooltips() {
             return count;
         }
 
-        fillMissingSettingsKeys() {
-            let settings = getSettings();
+        async fillMissingSettingsKeys() {
+            let settings = await getSettings();
 
             let currentKeys = Object.keys(settings);
             let defaultKeys = Object.keys(defaultSettings);
@@ -927,7 +930,7 @@ function refreshTooltips() {
     // =================================
     // LOAD SETTINGS
     // =================================
-    csfd.fillMissingSettingsKeys();
+    await csfd.fillMissingSettingsKeys();
 
     let settings = await getSettings();
     csfd.addSettingsPanel();
@@ -1009,7 +1012,7 @@ function refreshTooltips() {
         }
     }
 
-    csfd.checkForUpdate().then(function(data) {
+    csfd.checkForUpdate().then(function (data) {
         let version = $(data).find('dd.script-show-version > span').text();
         let curVersion = $(VERSION).text().replace('v', '');
         if (version !== curVersion) {
