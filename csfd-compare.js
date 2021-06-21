@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.2.4
+// @version      0.4.3
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -19,7 +19,7 @@
 
 
 const SETTINGSNAME = 'CSFD-Compare-settings';
-const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.2.4</a>';
+const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.3</a>';
 
 let Glob = {
     popupCounter: 0,
@@ -62,7 +62,7 @@ let defaultSettings = {
     displayFavoriteButton: true,
     hideUserControlPanel: true,
     showControlPanelOnHover: true,
-    removeRegistrationPanel: true,
+    // removeRegistrationPanel: true,
     clickableHeaderBoxes: true,
     clickableMessages: true,
     compareUserRatings: true,
@@ -311,7 +311,7 @@ function refreshTooltips() {
 
         loadInitialSettings() {
             // GLOBAL
-            $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
+            // $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
@@ -331,11 +331,11 @@ function refreshTooltips() {
 
         addSettingsEvents() {
             // GLOBAL
-            $('#chkRemoveRegistrationPanel').change(function () {
-                settings.removeRegistrationPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
+            // $('#chkRemoveRegistrationPanel').change(function () {
+            //     settings.removeRegistrationPanel = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
             $('#chkControlPanelOnHover').change(function () {
                 settings.showControlPanelOnHover = this.checked;
@@ -730,10 +730,12 @@ function refreshTooltips() {
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Klikatelný celý box, ne jen tlačítko "VÍCE"</label>
                             </div>
+                            <!--
                             <div class="article-content">
                                 <input type="checkbox" id="chkRemoveRegistrationPanel" name="remove-registration-panel" ${disabled}>
                                 <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel "Registruj se" (dom. stránka)</label>
                             </div>
+                            -->
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
@@ -966,7 +968,7 @@ function refreshTooltips() {
     if (await csfd.isLoggedIn()) {
 
         // Global settings without category
-        if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
+        // if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
 
         // Header modifications
         if (settings.clickableMessages == true) { csfd.clickableMessages(); }
