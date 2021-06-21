@@ -63,6 +63,10 @@ let defaultSettings = {
     hideUserControlPanel: true,
     showControlPanelOnHover: true,
     // removeRegistrationPanel: true,
+    removeContestPanel: false,
+    removeCsfdCinemaPanel: false,
+    removeVideoPanel: false,
+    removeMoviesOfferPanel: false,
     clickableHeaderBoxes: true,
     clickableMessages: true,
     compareUserRatings: true,
@@ -312,6 +316,10 @@ function refreshTooltips() {
         async loadInitialSettings() {
             // GLOBAL
             // $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
+            $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
+            $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
+            $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
+            $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
@@ -336,6 +344,29 @@ function refreshTooltips() {
             //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
             //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             // });
+            $('#chkRemoveContestPanel').change(function () {
+                settings.removeContestPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkRemoveCsfdCinemaPanel').change(function () {
+                settings.removeCsfdCinemaPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkRemoveVideoPanel').change(function () {
+                settings.removeVideoPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkRemoveMoviesOfferPanel').change(function () {
+                settings.removeMoviesOfferPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
 
             $('#chkControlPanelOnHover').change(function () {
                 settings.showControlPanelOnHover = this.checked;
@@ -691,9 +722,25 @@ function refreshTooltips() {
         //     }
         // }
 
-        removeBox_RegistrujSe() {
-            $('.box--homepage-motivation-middle').remove();
-            // $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
+        // removeBox_RegistrujSe() {
+        //     $('.box--homepage-motivation-middle').remove();
+        //     // $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
+        // }
+
+        removeBox_ContestPanel() {
+            $('.box--homepage-contest').remove();
+        }
+
+        removeBox_CsfdCinemaPanel() {
+            $('.box--homepage-csfd-cinema').remove();
+        }
+
+        removeBox_VideoPanel() {
+            $('.box--homepage-video').remove();
+        }
+
+        removeBox_MoviesOfferPanel() {
+            $('.box--movies-offer').remove();
         }
 
         async addSettingsPanel() {
@@ -731,6 +778,10 @@ function refreshTooltips() {
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Klikatelný celý box, ne jen tlačítko "VÍCE"</label>
                             </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
+                                <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
+                            </div>
                             <!--
                             <div class="article-content">
                                 <input type="checkbox" id="chkRemoveRegistrationPanel" name="remove-registration-panel" ${disabled}>
@@ -738,8 +789,20 @@ function refreshTooltips() {
                             </div>
                             -->
                             <div class="article-content">
-                                <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
-                                <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
+                                <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel" ${disabled}>
+                                <label for="chkRemoveContestPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Soutěž" (dom. stránka)</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-contest-panel" ${disabled}>
+                                <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "ČSFD sál" (dom. stránka)</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel" ${disabled}>
+                                <label for="chkRemoveVideoPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Nové trailery" (dom. stránka)</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel" ${disabled}>
+                                <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Sledujte online / DVD tipy" (dom. stránka)</label>
                             </div>
                         </section>
                     </article>
@@ -950,6 +1013,11 @@ function refreshTooltips() {
     if (location.href.includes('/film/')) {
         if (settings.hideSelectedUserReviews == true) { csfd.hideSelectedUserReviews(); }
     }
+
+    if (settings.removeContestPanel == true) { csfd.removeBox_ContestPanel(); }
+    if (settings.removeCsfdCinemaPanel == true) { csfd.removeBox_CsfdCinemaPanel(); }
+    if (settings.removeVideoPanel == true) { csfd.removeBox_VideoPanel(); }
+    if (settings.removeMoviesOfferPanel == true) { csfd.removeBox_MoviesOfferPanel(); }
 
 
     // =================================
