@@ -987,6 +987,13 @@ function refreshTooltips() {
                 url: 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare',
             });
         }
+
+        async getChangelog() {
+            return $.ajax({
+                type: "GET",
+                url: 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare/versions',
+            });
+        }
     }
 
     // SCRIPT START
@@ -1083,12 +1090,19 @@ function refreshTooltips() {
         }
     }
 
-    csfd.checkForUpdate().then(function (data) {
+    await csfd.checkForUpdate().then(async function (data) {
         let version = $(data).find('dd.script-show-version > span').text();
         let curVersion = $(VERSION).text().replace('v', '');
         if (version !== curVersion) {
-            let $ver = $('#script-version');
-            $ver.text(`${$ver.text()} (Nová v${version}!)`);
+            let $verLink = $('#script-version');
+            $verLink.text(`${$verLink.text()} (Nová v${version}!)`);
+
+            await csfd.getChangelog().then(function (data) {
+                let changelogText = $(data).find('.version-date').first().text() + "<br>";
+                changelogText += $(data).find('.version-changelog').html();
+                $verLink.attr("data-tippy-content", changelogText);
+            });
+
         }
     });
 

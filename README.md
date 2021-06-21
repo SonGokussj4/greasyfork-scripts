@@ -1,5 +1,14 @@
 # CSFD-Compare
 
+> **v0.4.#** _(2021-06-21)_  
+
+**Fix:** Odebráno nastavení: Skrýt registrační box (čsfd to teď dělá defaultně)
+**New:** Přidáno nastavení: Skrýt panel - Soutěž
+**New:** Přidáno nastavení: Skrýt panel - ČSFD sál
+**New:** Přidáno nastavení: Skrýt panel - Nové trailery a rozhovory
+**New:** Přidáno nastavení: Skrýt panel - Sledujte online / Žhavé DVD tipy
+**New:** Upozornění na aktualizaci nyní ukazuje poslední changelog
+
 > **v0.4.2** _(2021-06-15)_  
 
 **New:** Kompatibilita s csfd.sk
