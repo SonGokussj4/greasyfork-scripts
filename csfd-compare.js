@@ -309,7 +309,7 @@ function refreshTooltips() {
             localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         }
 
-        loadInitialSettings() {
+        async loadInitialSettings() {
             // GLOBAL
             // $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
@@ -329,7 +329,7 @@ function refreshTooltips() {
 
         }
 
-        addSettingsEvents() {
+        async addSettingsEvents() {
             // GLOBAL
             // $('#chkRemoveRegistrationPanel').change(function () {
             //     settings.removeRegistrationPanel = this.checked;
@@ -696,12 +696,13 @@ function refreshTooltips() {
             // $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
         }
 
-        addSettingsPanel() {
+        async addSettingsPanel() {
             let dropdownStyle = 'right: 150px; width: max-content;';
             let disabled = '';
             let needToLoginTooltip = '';
             let needToLoginStyle = '';
-            if (!this.isLoggedIn()) {
+
+            if (!await this.isLoggedIn()) {
                 dropdownStyle = 'right: 50px; width: max-content;';
                 disabled = 'disabled';
                 needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení"`;
@@ -935,9 +936,9 @@ function refreshTooltips() {
     await csfd.fillMissingSettingsKeys();
 
     let settings = await getSettings();
-    csfd.addSettingsPanel();
-    csfd.loadInitialSettings();
-    csfd.addSettingsEvents();
+    await csfd.addSettingsPanel();
+    await csfd.loadInitialSettings();
+    await csfd.addSettingsEvents();
 
 
     // =================================
@@ -954,7 +955,7 @@ function refreshTooltips() {
     // =================================
     // NOT LOGGED IN
     // =================================
-    if (await !csfd.isLoggedIn()) {
+    if (!await csfd.isLoggedIn()) {
         // Use page
         if (location.href.includes('/uzivatel/')) {
             if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
