@@ -259,7 +259,7 @@ function refreshTooltips() {
         getCurrentFilmRating2() {
             let $activeStars = this.csfdPage.find('.star.active');
             // No rating
-            if ($activeStars.length == 0) { return 0; }
+            if ($activeStars.length == 0) { return null; }
             // Rating "odpad" or "1"
             if ($activeStars.length == 1) {
                 if ($activeStars.attr('data-rating') === "0") {
