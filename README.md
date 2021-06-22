@@ -1,6 +1,8 @@
 # CSFD-Compare
 
-> **v0.4.#** _(2021-06-21)_  
+**Quality:** Lepší načítání informací o nové verzi. Jen jednou za session
+
+> **v0.4.3** _(2021-06-21)_  
 
 **Fix:** Odebráno nastavení: Skrýt registrační box (čsfd to teď dělá defaultně)
 **New:** Přidáno nastavení: Skrýt panel - Soutěž
