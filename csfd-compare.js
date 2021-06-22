@@ -75,13 +75,10 @@ let defaultSettings = {
 };
 
 async function getSettings() {
-    console.log("FN: getSettings()");
     if (!localStorage[SETTINGSNAME]) {
-        console.log("  Setting item....");
         localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
         return defaultSettings;
     } else {
-        console.log("  local storage exists, returning existing...");
         return JSON.parse(localStorage[SETTINGSNAME]);
     }
 }
@@ -1090,21 +1087,31 @@ function refreshTooltips() {
         }
     }
 
-    await csfd.checkForUpdate().then(async function (data) {
-        let version = $(data).find('dd.script-show-version > span').text();
-        let curVersion = $(VERSION).text().replace('v', '');
-        if (version !== curVersion) {
-            let $verLink = $('#script-version');
-            $verLink.text(`${$verLink.text()} (Nová v${version}!)`);
+    // If not already in session storage, get new version from greasyfork and display changelog over version link
+    if (!sessionStorage.updateChecked) {
+        await csfd.checkForUpdate().then(async function (data) {
+            let version = $(data).find('dd.script-show-version > span').text();
+            let curVersion = $(VERSION).text().replace('v', '');
+            if (version !== curVersion) {
+                let $verLink = $('#script-version');
+                let versionText = `${$verLink.text()} (Nová v${version})`;
+                $verLink.text(versionText);
+                sessionStorage.versionText = versionText;
 
-            await csfd.getChangelog().then(function (data) {
-                let changelogText = $(data).find('.version-date').first().text() + "<br>";
-                changelogText += $(data).find('.version-changelog').html();
-                $verLink.attr("data-tippy-content", changelogText);
-            });
-
-        }
-    });
+                await csfd.getChangelog().then(function (data) {
+                    let changelogText = $(data).find('.version-date').first().text() + "<br>";
+                    changelogText += $(data).find('.version-changelog').html();
+                    $verLink.attr("data-tippy-content", changelogText);
+                    sessionStorage.changelogText = changelogText;
+                });
+            }
+        });
+        sessionStorage.updateChecked = "true";
+    } else {
+        $('#script-version')
+            .text(sessionStorage.versionText)
+            .attr("data-tippy-content", sessionStorage.changelogText);
+    }
 
     // Call TippyJs constructor
     refreshTooltips();
