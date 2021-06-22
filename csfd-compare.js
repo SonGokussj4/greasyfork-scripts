@@ -158,7 +158,6 @@ function refreshTooltips() {
 
         getCurrentUser() {
             let loggedInUser = $('.profile.initialized').attr('href');
-            console.log(loggedInUser.length);
             if (loggedInUser !== undefined) {
                 if (loggedInUser.length == 1) {
                     loggedInUser = loggedInUser[0];
@@ -284,12 +283,13 @@ function refreshTooltips() {
                 // Get ratings: '(2 403)'
                 let $countSpan = $(data).find('span.count');
                 if ($countSpan.length == 1) {
-                    // Strip it '(2 403)' --> '2403'  // TODO: new Regex(/\s/g)?
-                    count = $countSpan[0].innerText
-                        .replace('(', '')
-                        .replace(')', '')
-                        .replace(/ +/g, '')  // any number of spaces
-                        .replace(/\xA0/g, '');  // weird space thingie...
+                    // Strip it '(2 403)' --> '2403'
+                    // count = $countSpan[0].innerText
+                    //     .replace('(', '')
+                    //     .replace(')', '')
+                    //     .replace(/ +/g, '')  // any number of spaces
+                    //     .replace(/\xA0/g, '');  // weird space thingie...
+                    count = $countSpan[0].innerText.replace(/[\s()]/g, '');
                     count = parseInt(count);
                 }
             });
