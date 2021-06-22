@@ -1,5 +1,8 @@
 # CSFD-Compare
 
+> **v0.4.4** _(2021-06-22)_  
+
+**New:** Zobrazení data ohodnocení filmu/seriálu
 **Quality:** Lepší načítání informací o nové verzi. Jen jednou za session
 
 > **v0.4.3** _(2021-06-21)_  
