@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.4
+// @version      0.4.4.1
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -21,7 +21,7 @@
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
-const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.4</a>`;
+const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.4.1</a>`;
 
 let Glob = {
     popupCounter: 0,
@@ -230,30 +230,44 @@ function refreshTooltips() {
             return true;
         }
 
-        getCurrentFilmRating() {
-            let $currentUserRating = this.csfdPage.find('.current-user-rating .stars');
+        // getCurrentFilmRating() {
+        //     let $currentUserRating = this.csfdPage.find('.current-user-rating .stars');
 
-            // Exit if no user rating found
-            if ($currentUserRating.length == 0) {
-                return null;
-            }
+        //     // Exit if no user rating found
+        //     if ($currentUserRating.length == 0) {
+        //         return null;
+        //     }
 
-            // Ignore 'computed' ratings - black stars (exit)
-            if ($currentUserRating.parent().hasClass('computed')) {
-                return null;
-            }
+        //     // Ignore 'computed' ratings - black stars (exit)
+        //     if ($currentUserRating.parent().hasClass('computed')) {
+        //         return null;
+        //     }
 
-            // Find the rating
-            for (let num = 0; num <= 5; num++) {
-                if ($currentUserRating.hasClass(`stars-${num}`)) {
-                    return num;
+        //     // Find the rating
+        //     for (let num = 0; num <= 5; num++) {
+        //         if ($currentUserRating.hasClass(`stars-${num}`)) {
+        //             return num;
+        //         }
+        //     }
+
+        //     // If not numeric rating, return 0 (Odpad!)
+        //     if ($currentUserRating.find('.trash').length > 0) {
+        //         return 0;
+        //     }
+        // }
+
+        getCurrentFilmRating2() {
+            let $activeStars = this.csfdPage.find('.star.active');
+            // No rating
+            if ($activeStars.length == 0) { return 0; }
+            // Rating "odpad" or "1"
+            if ($activeStars.length == 1) {
+                if ($activeStars.attr('data-rating') === "0") {
+                    return 0;
                 }
             }
-
-            // If not numeric rating, return 0 (Odpad!)
-            if ($currentUserRating.find('.trash').length > 0) {
-                return 0;
-            }
+            // Rating "1" to "5"
+            return $activeStars.length;
         }
 
         getCurrentUserRatingsCount() {
@@ -512,6 +526,9 @@ function refreshTooltips() {
         }
 
         addRatingsColumn() {
+            if (!this.onOtherUserHodnoceniPage()) { return; }
+            if (this.userRatingsCount === 0) { return; }
+
             let $page = this.csfdPage;
 
             let $tbl = $page.find('#snippet--ratings table tbody');
@@ -842,14 +859,13 @@ function refreshTooltips() {
         }
 
         checkAndUpdateRatings() {
-            let currentFilmRating = this.getCurrentFilmRating();
-
+            let currentFilmRating = this.getCurrentFilmRating2();
             if (currentFilmRating == null) {
                 // Check if record exists, if yes, remove it
                 this.removeFromLocalStorage();
             } else {
                 // Check if current page rating corresponds with that in LocalStorage, if not, update it
-                this.updateInLocalStorage(this.getCurrentFilmRating());
+                this.updateInLocalStorage(this.getCurrentFilmRating2());
             }
         }
 
@@ -977,6 +993,21 @@ function refreshTooltips() {
                 url: `${GREASYFORK_URL}/versions`,
             });
         }
+
+        async checkRatingsCount() {
+            this.userUrl = this.getCurrentUser();
+            this.storageKey = `${SCRIPTNAME}_${this.userUrl.split("/")[2].split("-")[1]}`;
+            this.userRatingsUrl = `${this.userUrl}/hodnoceni`;
+            if (location.origin.endsWith('sk')) { this.userRatingsUrl = `${this.userUrl}/hodnotenia`; }
+            this.stars = this.getStars();
+
+            this.userRatingsCount = this.getCurrentUserRatingsCount();
+            this.localStorageRatingsCount = this.getLocalStorageRatingsCount();
+
+            if (this.userRatingsCount !== this.localStorageRatingsCount) {
+                this.addWarningToUserProfile();
+            }
+        }
     }
 
     // SCRIPT START
@@ -1027,49 +1058,28 @@ function refreshTooltips() {
     if (await csfd.isLoggedIn()) {
 
         // Global settings without category
-        csfd.addRatingsDate();
+        csfd.checkRatingsCount();
 
         // Header modifications
         if (settings.clickableMessages == true) { csfd.clickableMessages(); }
 
+        // Film/Series page
+        if (location.href.includes('/film/')) {
+            csfd.addRatingsDate();
+            // Dynamic LocalStorage update on Film/Series in case user changes ratings
+            csfd.checkAndUpdateRatings();
+        }
+
         // User page
         if (location.href.includes('/uzivatel/')) {
-            if (settings.displayMessageButton == true) { csfd.displayMessageButton(); }
-            if (settings.displayFavoriteButton == true) { csfd.displayFavoriteButton(); }
-            if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
+            if (settings.displayMessageButton === true) { csfd.displayMessageButton(); }
+            if (settings.displayFavoriteButton === true) { csfd.displayFavoriteButton(); }
+            if (settings.hideUserControlPanel === true) { csfd.hideUserControlPanel(); }
+            if (settings.compareUserRatings === true) { csfd.addRatingsColumn(); }
 
-            if (settings.compareUserRatings == true) {
-
-                // Load initial class properties
-                csfd.userUrl = csfd.getCurrentUser();
-                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
-                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
-                if (location.origin.endsWith('sk')) { csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`; }
-                csfd.stars = csfd.getStars();
-
-                // console.log("BEFORE:", csfd.RESULT);
-                // await csfd.getAllPages();
-                // console.log("AFTER:", Object.keys(csfd.RESULT).length);
-
-                // Dynamic LocalStorage update on Film/Series in case user changes ratings
-                if (location.href.includes('/film/')) {
-                    csfd.checkAndUpdateRatings();
-                }
-
-                // Load UserRatings from /uzivatel/xxx/hodnoceni and LocalStorageRatings
-                csfd.userRatingsCount = csfd.getCurrentUserRatingsCount();
-                csfd.localStorageRatingsCount = csfd.getLocalStorageRatingsCount();
-
-                if (csfd.userRatingsCount == csfd.localStorageRatingsCount) {
-                    // Show user ratings on any other user page but mine
-                    if (csfd.onOtherUserHodnoceniPage()) {
-                        csfd.addRatingsColumn();
-                    }
-                } else {
-                    // Show user that his 'user ratings' and 'local storage ratings' are not the same and he should refresh
-                    csfd.addWarningToUserProfile();
-                }
-            }
+            // // console.log("BEFORE:", csfd.RESULT);
+            // // await csfd.getAllPages();
+            // // console.log("AFTER:", Object.keys(csfd.RESULT).length);
         }
     }
 
