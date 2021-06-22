@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.4.1
+// @version      0.4.4.2
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -21,7 +21,7 @@
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
-const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.4.1</a>`;
+const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.4.2</a>`;
 
 let Glob = {
     popupCounter: 0,
