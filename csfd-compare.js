@@ -18,8 +18,10 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
+const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
-const VERSION = '<a id="script-version" href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v0.4.3</a>';
+const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
+const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.3</a>`;
 
 let Glob = {
     popupCounter: 0,
@@ -62,7 +64,6 @@ let defaultSettings = {
     displayFavoriteButton: true,
     hideUserControlPanel: true,
     showControlPanelOnHover: true,
-    // removeRegistrationPanel: true,
     removeContestPanel: false,
     removeCsfdCinemaPanel: false,
     removeVideoPanel: false,
@@ -94,30 +95,12 @@ function refreshTooltips() {
     }
 }
 
-// new MutationObserver(function (mutations) {
-//     // check at least two H1 exist using the extremely fast getElementsByTagName
-//     // which is faster than enumerating all the added nodes in mutations
-//     let btn = $('.button-control-panel');
-//     btn.addClass('hidden');
-//     // if (document.getElementsByTagName('h1')[1]) {
-//     //     var ibmlogo = document.querySelectorAll('h1.logo.floatLeft')[1];
-//     //     if (ibmlogo) {
-//     //         ibmlogo.remove();
-//     //         this.disconnect(); // disconnect the observer
-//     //     }
-//     // }
-// }).observe(document, { childList: true, subtree: true });
-// // the above observes added/removed nodes on all descendants recursively
-
 
 (async () => {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
     /* jshint -W069 */
     /* jshint -W083 */
-
-    const SCRIPTNAME = 'CSFD-Compare';
-
 
     class Csfd {
 
@@ -336,11 +319,6 @@ function refreshTooltips() {
 
         async addSettingsEvents() {
             // GLOBAL
-            // $('#chkRemoveRegistrationPanel').change(function () {
-            //     settings.removeRegistrationPanel = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
             $('#chkRemoveContestPanel').change(function () {
                 settings.removeContestPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -618,7 +596,9 @@ function refreshTooltips() {
                 let csfd = new Csfd($('div.page-content'));
                 csfd.userUrl = csfd.getCurrentUser();
                 csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
-                if (location.origin.endsWith('sk')) { csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`; }
+                if (location.origin.endsWith('sk')) {
+                    csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`;
+                }
                 csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
                 csfd.REFRESH_RATINGS();
             });
@@ -779,12 +759,6 @@ function refreshTooltips() {
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
                             </div>
-                            <!--
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveRegistrationPanel" name="remove-registration-panel" ${disabled}>
-                                <label for="chkRemoveRegistrationPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel "Registruj se" (dom. stránka)</label>
-                            </div>
-                            -->
                             <div class="article-content">
                                 <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel" ${disabled}>
                                 <label for="chkRemoveContestPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Soutěž" (dom. stránka)</label>
@@ -846,6 +820,7 @@ function refreshTooltips() {
 
             refreshTooltips();
 
+            // Don't hide settings popup when mouse leaves within interval of 0.2s
             let timer;
             $(button).on("mouseover", function () {
                 if (timer) {
@@ -903,7 +878,7 @@ function refreshTooltips() {
             }
         }
         clickableHeaderBoxes() {
-            // // Does not work, the hell...
+            // // Does not work, the hell... Trying to unbind click for header buttons...
             // let userLinks = $('.user-link');
             // for (const element of userLinks) {
             //     let href = window.location.origin + $(element).attr('href');
@@ -914,6 +889,7 @@ function refreshTooltips() {
             let headers = $('.dropdown-content-head');
             for (const div of headers) {
                 let btn = $(div).find('a.button');
+
                 if (btn.length === 0) { continue; }
                 if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
 
@@ -981,14 +957,14 @@ function refreshTooltips() {
         async checkForUpdate() {
             return $.ajax({
                 type: "GET",
-                url: 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare',
+                url: GREASYFORK_URL,
             });
         }
 
         async getChangelog() {
             return $.ajax({
                 type: "GET",
-                url: 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare/versions',
+                url: `${GREASYFORK_URL}/versions`,
             });
         }
     }
@@ -1041,7 +1017,6 @@ function refreshTooltips() {
     if (await csfd.isLoggedIn()) {
 
         // Global settings without category
-        // if (settings.removeRegistrationPanel == true) { csfd.removeBox_RegistrujSe(); }
 
         // Header modifications
         if (settings.clickableMessages == true) { csfd.clickableMessages(); }
