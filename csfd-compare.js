@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.4.2
+// @version      0.4.5
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -21,7 +21,7 @@
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
-const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.4.2</a>`;
+const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.5</a>`;
 
 let Glob = {
     popupCounter: 0,
@@ -306,9 +306,11 @@ function refreshTooltips() {
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
             $('#chkDisplayFavoriteButton').attr('checked', settings.displayFavoriteButton);
             $('#chkHideUserControlPanel').attr('checked', settings.hideUserControlPanel);
+            $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
 
             // FILM/SERIES
-            $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
+            $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
+            $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
             if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
@@ -387,6 +389,17 @@ function refreshTooltips() {
 
             // FILM/SERIES
             $('#chkAddRatingsDate').change(function () {
+                settings.addRatingsDate = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkAddRatingsComputedCount').change(function () {
+                settings.addRatingsComputedCount = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
             $('#chkHideSelectedUserReviews').change(function () {
                 settings.hideSelectedUserReviews = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -812,6 +825,14 @@ function refreshTooltips() {
                         <h2 class="article-header">Film/Seriál</h2>
                         <section>
                             <div class="article-content">
+                                <input type="checkbox" id="chkAddRatingsDate" name="compare-user-ratings" ${disabled}>
+                                <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
+                                <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
+                            </div>
+                            <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
                                 <div>
@@ -979,6 +1000,19 @@ function refreshTooltips() {
             }
         }
 
+        async addRatingsComputedCount() {
+            let $computedStars = $('.star.active.computed');
+            let isComputed = $computedStars.length != 0;
+            if (!isComputed) { return; }
+            let $starsRating = $($computedStars[0]).closest('.stars-rating.initialized');
+            let fromRatingsText = $starsRating.attr('title');
+            if (fromRatingsText === undefined) {
+                return;
+            }
+            let $myRatingCaption = $('.my-rating h3');
+            $myRatingCaption.html(`${$myRatingCaption.text()}<br>${fromRatingsText}`);
+        }
+
         async checkForUpdate() {
             return $.ajax({
                 type: "GET",
@@ -1066,7 +1100,9 @@ function refreshTooltips() {
 
         // Film/Series page
         if (location.href.includes('/film/')) {
-            csfd.addRatingsDate();
+            if (settings.addRatingsDate) { csfd.addRatingsDate(); }
+            if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
+
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
             await csfd.checkAndUpdateRatings();
             await csfd.checkRatingsCount();

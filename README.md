@@ -1,5 +1,10 @@
 # CSFD-Compare
 
+> **v0.4.5** _(2021-06-23)_  
+
+**New:** Panel nastavení: Přidána sekce "Domácí stránka"
+**New:** Přidáno nastavení: Zobrazit datum ohodnocení
+**New:** Přidáno nastavení: Zobrazit spočteno ze sérií
 **Fix:** Chyby u načítání hodnocení sérií pro "compare" z vypočtených hodnocení
 **Quality:** Nesrovnalost mezi uloženým/reálným počtem hodnocení pro "compare" nyní ukazuje stále
 
