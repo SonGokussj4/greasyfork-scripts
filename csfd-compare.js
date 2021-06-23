@@ -691,37 +691,46 @@ function refreshTooltips() {
             panel.hide();
         }
 
-        // async getAllPages() {
-        //     this.RESULT['one'] = 1;
-        //     var $stars = this.RESULT;
-        //     try {
-        //         var data = await Promise.all([
-        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=2').then((response) => response.text()),
-        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=3').then((response) => response.text()),
-        //             fetch('/uzivatel/78145-songokussj/hodnoceni/?page=4').then((response) => response.text()),
-        //         ]);
+        async doSomething(idx, url) {
+            console.log(`doSomething(${idx}) START`);
+            let data = await $.get(url);
+            let names = $(data).find('td.name a').text();
+            console.log(`NAMES(${idx}): ${names}`);
+            return names;
+        }
+        async getAllPages() {
+            console.log("getAllPages() START");
+            let $content = await $.get('/uzivatel/78145-songokussj/hodnoceni');
+            // console.log("content:", content);
+            let $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
+            let maxPageNum = $href.text();
+            console.log("maxPageNum:", maxPageNum);
+            let ls = [];
+            for (let idx = 1; idx < maxPageNum - 35; idx += 1) {
+            // for (let idx = 1; idx < maxPageNum - 25; idx += 5) {
+                let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
+                console.log(`url(${idx}): ${url}`);
 
-        //         for (var dataHTML of data) {
+                // var data = await Promise.all([
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
+                // ]);
+                // for (var dataHTML of data) {
+                //     $(dataHTML).find("tbody tr").each(function () {
+                //     ...
+                //     ls.push(found_objects);
 
-        //             $(dataHTML).find("tbody tr").each(function () {
-        //                 var $row = $(this);
-        //                 var filmURL = $("a.film-title-name", $row).attr("href");
-        //                 var $rating = $("span .stars", $row);
-
-        //                 let starsRating = 0;
-        //                 for (let stars = 0; stars <= 5; stars++) {
-        //                     if ($rating.hasClass('stars-' + stars)) {
-        //                         starsRating = stars;
-        //                     }
-        //                 }
-        //                 // Add to dict
-        //                 $stars[filmURL] = starsRating;
-        //             });
-        //         }
-        //     } catch (error) {
-        //         console.log(error);
-        //     }
-        // }
+                let res = await this.doSomething(idx, url);
+                // console.log(`res(${idx}): ${res}`);
+                ls.push(res);
+            }
+            console.log("LS:", ls);
+            console.log("getAllPages() END");
+            return ls;
+        }
 
         // removeBox_RegistrujSe() {
         //     $('.box--homepage-motivation-middle').remove();
@@ -1118,6 +1127,9 @@ function refreshTooltips() {
             await csfd.checkRatingsCount();
         }
 
+        let allPages = await csfd.getAllPages();
+        console.log("allPages:", allPages);
+
         // User page
         if (location.href.includes('/uzivatel/')) {
             if (settings.displayMessageButton) { csfd.displayMessageButton(); }
@@ -1126,7 +1138,8 @@ function refreshTooltips() {
             if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
 
             // console.log("BEFORE:", csfd.RESULT);
-            // await csfd.getAllPages();
+            // let allPages = await csfd.getAllPages();
+            // console.log("allPages:", allPages);
             // console.log("AFTER:", Object.keys(csfd.RESULT).length);
         }
     }
