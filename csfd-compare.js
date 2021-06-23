@@ -24,7 +24,7 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.5</a>`;
 let LOGGED_IN = false;
 
-$( document ).ready(function() {
+$(document).ready(function () {
     LOGGED_IN = $('.profile.initialized').length > 0;
     console.log("LOGGED_IN:", LOGGED_IN);
 });
@@ -691,12 +691,13 @@ function refreshTooltips() {
             panel.hide();
         }
 
-        async doSomething(idx, url) {
+        doSomething(idx, url) {
             console.log(`doSomething(${idx}) START`);
-            let data = await $.get(url);
+            let data = $.get(url);
             let names = $(data).find('td.name a').text();
             console.log(`NAMES(${idx}): ${names}`);
             return names;
+            // web workers - vyšší dívčí - více vláken z browseru
         }
         async getAllPages() {
             console.log("getAllPages() START");
@@ -706,25 +707,25 @@ function refreshTooltips() {
             let maxPageNum = $href.text();
             console.log("maxPageNum:", maxPageNum);
             let ls = [];
-            for (let idx = 1; idx < maxPageNum - 35; idx += 1) {
-            // for (let idx = 1; idx < maxPageNum - 25; idx += 5) {
+            for (let idx = 1; idx < maxPageNum - 25; idx++) {
+                // for (let idx = 1; idx < maxPageNum - 25; idx += 5) {
                 let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
                 console.log(`url(${idx}): ${url}`);
 
-                // var data = await Promise.all([
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
+                // var data = Promise.all([
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()).then((x) => { console.log(idx); return x; }),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()).then((x) => { console.log(idx + 1); return x; }),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()).then((x) => { console.log(idx + 2); return x; }),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()).then((x) => { console.log(idx + 3); return x; }),
+                //     // fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
                 // ]);
                 // for (var dataHTML of data) {
                 //     $(dataHTML).find("tbody tr").each(function () {
                 //     ...
-                //     ls.push(found_objects);
+                // data.then((resolved_data) => ls.push(resolved_data));
 
-                let res = await this.doSomething(idx, url);
-                // console.log(`res(${idx}): ${res}`);
+                let res = this.doSomething(idx, url);
+                console.log(`res(${idx}): ${res}`);
                 ls.push(res);
             }
             console.log("LS:", ls);
