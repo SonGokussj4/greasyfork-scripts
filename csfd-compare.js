@@ -6,13 +6,12 @@
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
 // @include      *csfd.cz/*
+// @include      *csfd.sk/*
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
-// @grant        none
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
 // ==/UserScript==
 
 
-// @include      *csfd.cz/uzivatel/*/hodnoceni*
 // @updateURL    https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @downloadURL  https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
@@ -68,10 +67,10 @@ let Glob = {
 
 let defaultSettings = {
     // HOME PAGE
+    removeMotivationPanel: false,
     removeContestPanel: false,
     removeCsfdCinemaPanel: false,
     removeVideoPanel: false,
-    removeMotivationPanel: false,
     removeMoviesOfferPanel: false,
     // GLOBAL
     showControlPanelOnHover: true,
@@ -109,6 +108,14 @@ function refreshTooltips() {
     }
 }
 
+function mergeDict(list) {
+    // Take a list of dictionaries and return merged dictionary
+    const merged = list.reduce(function (r, o) {
+        Object.keys(o).forEach(function (k) { r[k] = o[k]; });
+        return r;
+    }, {});
+    return merged;
+}
 
 (async () => {
     "use strict";
@@ -301,9 +308,9 @@ function refreshTooltips() {
 
         async loadInitialSettings() {
             // HOME PAGE
+            $('#chkRemoveMotivationPanel').attr('checked', settings.removeMotivationPanel);
             $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
             $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
-            $('#chkRemoveMotivationPanel').attr('checked', settings.removeMotivationPanel);
             $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
             $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
 
@@ -329,6 +336,12 @@ function refreshTooltips() {
 
         async addSettingsEvents() {
             // HOME PAGE
+            $('#chkRemoveMotivationPanel').change(function () {
+                settings.removeMotivationPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
             $('#chkRemoveContestPanel').change(function () {
                 settings.removeContestPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -337,12 +350,6 @@ function refreshTooltips() {
 
             $('#chkRemoveCsfdCinemaPanel').change(function () {
                 settings.removeCsfdCinemaPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
-
-            $('#chkRemoveMotivationPanel').change(function () {
-                settings.removeMotivationPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -699,12 +706,25 @@ function refreshTooltips() {
             panel.hide();
         }
 
-        doSomething(idx, url) {
+        async doSomething(idx, url) {
             console.log(`doSomething(${idx}) START`);
-            let data = $.get(url);
-            let names = $(data).find('td.name a').text();
-            console.log(`NAMES(${idx}): ${names}`);
-            return names;
+            let data = await $.get(url);
+            let $rows = $(data).find('#snippet--ratings tr');
+            let dc = {};
+            for (const $row of $rows) {
+                let name = $($row).find('td.name a').attr('href');
+                let $ratings = $($row).find('span.stars');
+                let rating = 0;
+                for (let stars = 0; stars <= 5; stars++) {
+                    if ($ratings.hasClass('stars-' + stars)) {
+                        rating = stars;
+                    }
+                }
+                let date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
+                dc[name] = { 'rating': rating, 'date': date };
+                // console.log("dc[name]:", name, dc[name]);
+            }
+            return dc;
             // web workers - vyšší dívčí - více vláken z browseru
         }
         async getAllPages() {
@@ -713,53 +733,35 @@ function refreshTooltips() {
             // console.log("content:", content);
             let $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
             let maxPageNum = $href.text();
-            console.log("maxPageNum:", maxPageNum);
-            // let ls = [];
-            // for (let idx = 1; idx < maxPageNum - 25; idx++) {
-            //     // for (let idx = 1; idx < maxPageNum - 25; idx += 5) {
-            //     let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
-            //     console.log(`url(${idx}): ${url}`);
+            // console.log("maxPageNum:", maxPageNum);
+            let ls = [];
+            for (let idx = 1; idx < maxPageNum - 35; idx++) {
+                let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
+                // console.log(`url(${idx}): ${url}`);
 
-            //     // var data = Promise.all([
-            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()).then((x) => { console.log(idx); return x; }),
-            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()).then((x) => { console.log(idx + 1); return x; }),
-            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()).then((x) => { console.log(idx + 2); return x; }),
-            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()).then((x) => { console.log(idx + 3); return x; }),
-            //     //     // fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
-            //     // ]);
-            //     // for (var dataHTML of data) {
-            //     //     $(dataHTML).find("tbody tr").each(function () {
-            //     //     ...
-            //     // data.then((resolved_data) => ls.push(resolved_data));
+                // var data = Promise.all([
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()).then((x) => { console.log(idx); return x; }),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()).then((x) => { console.log(idx + 1); return x; }),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()).then((x) => { console.log(idx + 2); return x; }),
+                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()).then((x) => { console.log(idx + 3); return x; }),
+                //     // fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
+                // ]);
+                // for (var dataHTML of data) {
+                //     $(dataHTML).find("tbody tr").each(function () {
+                //     ...
+                // data.then((resolved_data) => ls.push(resolved_data));
 
-            //     let res = this.doSomething(idx, url);
-            //     console.log(`res(${idx}): ${res}`);
-            //     ls.push(res);
-            // }
-            // console.log("LS:", ls);
-            const urls = [];
-            for (let idx = 1; idx <= 5; idx++) {
-                const url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
-                urls.push(url);
+                let res = await this.doSomething(idx, url);
+                // console.log(`res(${idx}): ${res}`);
+                ls.push(res);
             }
-            let data = await Promise.all(
-                urls.map(async url => {
-                    console.log("URL:", url);
-                    let response = await fetch(url);
-                    console.log("response:", response);
-                    return response.json();
-                })
-            );
-            console.log("DATA:", data);
             console.log("getAllPages() END");
             return ls;
         }
 
-        // removeBox_RegistrujSe() {
-        //     $('.box--homepage-motivation-middle').remove();
-        //     // $('section.box--homepage-video').parent().toggleClass('column-70 column-100');
-        // }
-
+        removeBox_MotivationPanel() {
+            $('.box--homepage-motivation-middle').remove();
+        }
         removeBox_ContestPanel() {
             $('.box--homepage-contest').remove();
         }
@@ -770,10 +772,6 @@ function refreshTooltips() {
 
         removeBox_VideoPanel() {
             $('.box--homepage-video').remove();
-        }
-
-        removeBox_MotivationPanel() {
-            $('.box--homepage-motivation-middle').remove();
         }
 
         removeBox_MoviesOfferPanel() {
@@ -1159,8 +1157,10 @@ function refreshTooltips() {
             await csfd.checkRatingsCount();
         }
 
-        // let allPages = await csfd.getAllPages();
-        // console.log("allPages:", allPages);
+        let allPages = await csfd.getAllPages();
+        console.log("allPages:", allPages);
+        let merged = mergeDict(allPages);
+        console.log("MERGED:", merged);
 
         // User page
         if (location.href.includes('/uzivatel/')) {
@@ -1173,7 +1173,7 @@ function refreshTooltips() {
 
     // If not already in session storage, get new version from greasyfork and display changelog over version link
     if (!sessionStorage.updateChecked) {
-        await csfd.checkForUpdate().then(async function (data) {
+        csfd.checkForUpdate().then(function (data) {
             let version = $(data).find('dd.script-show-version > span').text();
             let curVersion = $(VERSION).text().replace('v', '');
             if (version !== curVersion) {
@@ -1182,7 +1182,7 @@ function refreshTooltips() {
                 $verLink.text(versionText);
                 sessionStorage.versionText = versionText;
 
-                await csfd.getChangelog().then(function (data) {
+                csfd.getChangelog().then(function (data) {
                     let changelogText = $(data).find('.version-date').first().text() + "<br>";
                     changelogText += $(data).find('.version-changelog').html();
                     $verLink.attr("data-tippy-content", changelogText);
