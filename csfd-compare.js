@@ -255,7 +255,7 @@ function refreshTooltips() {
 
         getCurrentUserRatingsCount() {
             let count = 0;
-            let request = $.ajax({
+            $.ajax({
                 type: "GET",
                 url: this.userRatingsUrl,
                 async: false
@@ -264,11 +264,6 @@ function refreshTooltips() {
                 let $countSpan = $(data).find('span.count');
                 if ($countSpan.length == 1) {
                     // Strip it '(2 403)' --> '2403'
-                    // count = $countSpan[0].innerText
-                    //     .replace('(', '')
-                    //     .replace(')', '')
-                    //     .replace(/ +/g, '')  // any number of spaces
-                    //     .replace(/\xA0/g, '');  // weird space thingie...
                     count = $countSpan[0].innerText.replace(/[\s()]/g, '');
                     count = parseInt(count);
                 }
@@ -598,13 +593,13 @@ function refreshTooltips() {
             button.setAttribute("style", "text-transform: initial; font-size: 0.9em; padding: 5px; border: 4px solid whitesmoke;");
             button.className = "csfd-compare-reload";
             button.innerHTML = `
-                        <center>
-                                CSFD-Compare<br>
-                                Uložené: [${csfd.localStorageRatingsCount}] != Celkem: [${csfd.userRatingsCount}]</br>
-                                <hr>
+                <center>
+                    CSFD-Compare<br>
+                    Uložené: [${csfd.localStorageRatingsCount}] != Celkem: [${csfd.userRatingsCount}]</br>
+                    <hr>
                     <b> >>> Načíst hodnocení <<< </b>
-                                <hr>
-                        </center>
+                    <hr>
+                </center>
             `;
             $(".dropdown-content.main-menu > ul:first").prepend(button);
 
@@ -1053,7 +1048,7 @@ function refreshTooltips() {
     // =================================
     await csfd.fillMissingSettingsKeys();
 
-    let settings = await getSettings();
+    const settings = await getSettings();
     await csfd.addSettingsPanel();
     await csfd.loadInitialSettings();
     await csfd.addSettingsEvents();
@@ -1080,7 +1075,7 @@ function refreshTooltips() {
     // NOT LOGGED IN
     // =================================
     if (!await csfd.isLoggedIn()) {
-        // Use page
+        // User page
         if (location.href.includes('/uzivatel/')) {
             if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
         }
