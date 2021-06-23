@@ -1,5 +1,8 @@
 # CSFD-Compare
 
+**Fix:** Chyby u načítání hodnocení sérií pro "compare" z vypočtených hodnocení
+**Quality:** Nesrovnalost mezi uloženým/reálným počtem hodnocení pro "compare" nyní ukazuje stále
+
 > **v0.4.4** _(2021-06-22)_  
 
 **New:** Zobrazení data ohodnocení filmu/seriálu

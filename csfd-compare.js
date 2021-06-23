@@ -60,17 +60,23 @@ let Glob = {
 };
 
 let defaultSettings = {
-    displayMessageButton: true,
-    displayFavoriteButton: true,
-    hideUserControlPanel: true,
-    showControlPanelOnHover: true,
+    // HOME PAGE
     removeContestPanel: false,
     removeCsfdCinemaPanel: false,
     removeVideoPanel: false,
     removeMoviesOfferPanel: false,
+    // GLOBAL
+    showControlPanelOnHover: true,
     clickableHeaderBoxes: true,
     clickableMessages: true,
+    // USER
+    displayMessageButton: true,
+    displayFavoriteButton: true,
+    hideUserControlPanel: true,
     compareUserRatings: true,
+    // FILM/SERIES
+    addRatingsDate: true,
+    addRatingsComputedCount: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
 };
@@ -230,42 +236,19 @@ function refreshTooltips() {
             return true;
         }
 
-        // getCurrentFilmRating() {
-        //     let $currentUserRating = this.csfdPage.find('.current-user-rating .stars');
+        getCurrentFilmRating() {
+            let $activeStars = this.csfdPage.find(".star.active:not('.computed')");
 
-        //     // Exit if no user rating found
-        //     if ($currentUserRating.length == 0) {
-        //         return null;
-        //     }
-
-        //     // Ignore 'computed' ratings - black stars (exit)
-        //     if ($currentUserRating.parent().hasClass('computed')) {
-        //         return null;
-        //     }
-
-        //     // Find the rating
-        //     for (let num = 0; num <= 5; num++) {
-        //         if ($currentUserRating.hasClass(`stars-${num}`)) {
-        //             return num;
-        //         }
-        //     }
-
-        //     // If not numeric rating, return 0 (Odpad!)
-        //     if ($currentUserRating.find('.trash').length > 0) {
-        //         return 0;
-        //     }
-        // }
-
-        getCurrentFilmRating2() {
-            let $activeStars = this.csfdPage.find('.star.active');
             // No rating
             if ($activeStars.length == 0) { return null; }
+
             // Rating "odpad" or "1"
             if ($activeStars.length == 1) {
                 if ($activeStars.attr('data-rating') === "0") {
                     return 0;
                 }
             }
+
             // Rating "1" to "5"
             return $activeStars.length;
         }
@@ -308,12 +291,13 @@ function refreshTooltips() {
         }
 
         async loadInitialSettings() {
-            // GLOBAL
-            // $('#chkRemoveRegistrationPanel').attr('checked', settings.removeRegistrationPanel);
+            // HOME PAGE
             $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
             $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
             $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
             $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
+
+            // GLOBAL
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
@@ -332,7 +316,7 @@ function refreshTooltips() {
         }
 
         async addSettingsEvents() {
-            // GLOBAL
+            // HOME PAGE
             $('#chkRemoveContestPanel').change(function () {
                 settings.removeContestPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -357,6 +341,7 @@ function refreshTooltips() {
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
 
+            // GLOBAL
             $('#chkControlPanelOnHover').change(function () {
                 settings.showControlPanelOnHover = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -394,13 +379,14 @@ function refreshTooltips() {
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
 
-            // FILM/SERIES
             $('#chkCompareUserRatings').change(function () {
                 settings.compareUserRatings = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
 
+            // FILM/SERIES
+            $('#chkAddRatingsDate').change(function () {
             $('#chkHideSelectedUserReviews').change(function () {
                 settings.hideSelectedUserReviews = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -762,35 +748,40 @@ function refreshTooltips() {
                     </div>
 
                     <article class="article">
+                        <h2 class="article-header">Domácí stránka</h2>
+                        <section>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel" ${disabled}>
+                                <label for="chkRemoveContestPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Soutěž"</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-contest-panel" ${disabled}>
+                                <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "ČSFD sál"</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel" ${disabled}>
+                                <label for="chkRemoveVideoPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Nové trailery"</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel" ${disabled}>
+                                <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Sledujte online / DVD tipy"</label>
+                            </div>
+                        </section>
+                    </article>
+                    <article class="article">
                         <h2 class="article-header">Globální úpravy</h2>
                         <section>
                             <div class="article-content">
                                 <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
-                                <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší (netřeba klikat)</label>
+                                <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší</label>
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
-                                <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Klikatelný celý box, ne jen tlačítko "VÍCE"</label>
+                                <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Boxy s tlačítkem "VÍCE" jsou klikatelné celé</label>
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel" ${disabled}>
-                                <label for="chkRemoveContestPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Soutěž" (dom. stránka)</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-contest-panel" ${disabled}>
-                                <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "ČSFD sál" (dom. stránka)</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel" ${disabled}>
-                                <label for="chkRemoveVideoPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Nové trailery" (dom. stránka)</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel" ${disabled}>
-                                <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Sledujte online / DVD tipy" (dom. stránka)</label>
                             </div>
                         </section>
                     </article>
@@ -858,14 +849,14 @@ function refreshTooltips() {
             });
         }
 
-        checkAndUpdateRatings() {
-            let currentFilmRating = this.getCurrentFilmRating2();
-            if (currentFilmRating == null) {
+        async checkAndUpdateRatings() {
+            let currentFilmRating = this.getCurrentFilmRating();
+            if (currentFilmRating === null) {
                 // Check if record exists, if yes, remove it
                 this.removeFromLocalStorage();
             } else {
                 // Check if current page rating corresponds with that in LocalStorage, if not, update it
-                this.updateInLocalStorage(this.getCurrentFilmRating2());
+                this.updateInLocalStorage(this.getCurrentFilmRating());
             }
         }
 
@@ -971,7 +962,15 @@ function refreshTooltips() {
         }
 
         async addRatingsDate() {
-            let ratingText = $('.mobile-film-rating-detail a span').attr('title');
+            // Grab the rating date from stars-rating
+            let ratingText = $('span.stars-rating.initialized').attr('title');
+            if (ratingText === undefined) {
+                // Grab the rating date from mobile-rating
+                ratingText = $('.mobile-film-rating-detail a span').attr('title');
+                if (ratingText === undefined) {
+                    return;
+                }
+            }
             let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
             if (match !== null) {
                 let ratingDate = match[0];
@@ -997,8 +996,9 @@ function refreshTooltips() {
         async checkRatingsCount() {
             this.userUrl = this.getCurrentUser();
             this.storageKey = `${SCRIPTNAME}_${this.userUrl.split("/")[2].split("-")[1]}`;
-            this.userRatingsUrl = `${this.userUrl}/hodnoceni`;
-            if (location.origin.endsWith('sk')) { this.userRatingsUrl = `${this.userUrl}/hodnotenia`; }
+            // this.userRatingsUrl = `${this.userUrl}/hodnoceni`;
+            // if (location.origin.endsWith('sk')) { this.userRatingsUrl = `${this.userUrl}/hodnotenia`; }
+            this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
             this.stars = this.getStars();
 
             this.userRatingsCount = this.getCurrentUserRatingsCount();
@@ -1028,17 +1028,18 @@ function refreshTooltips() {
     // =================================
     // GLOBAL
     // =================================
-    if (settings.clickableHeaderBoxes == true) { csfd.clickableHeaderBoxes(); }
-    if (settings.showControlPanelOnHover == true) { csfd.openControlPanelOnHover(); }
+    if (settings.clickableHeaderBoxes) { csfd.clickableHeaderBoxes(); }
+    if (settings.showControlPanelOnHover) { csfd.openControlPanelOnHover(); }
+
     // Film/Series page
     if (location.href.includes('/film/')) {
-        if (settings.hideSelectedUserReviews == true) { csfd.hideSelectedUserReviews(); }
+        if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
     }
 
-    if (settings.removeContestPanel == true) { csfd.removeBox_ContestPanel(); }
-    if (settings.removeCsfdCinemaPanel == true) { csfd.removeBox_CsfdCinemaPanel(); }
-    if (settings.removeVideoPanel == true) { csfd.removeBox_VideoPanel(); }
-    if (settings.removeMoviesOfferPanel == true) { csfd.removeBox_MoviesOfferPanel(); }
+    if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
+    if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
+    if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
+    if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
 
 
     // =================================
@@ -1047,7 +1048,7 @@ function refreshTooltips() {
     if (!await csfd.isLoggedIn()) {
         // Use page
         if (location.href.includes('/uzivatel/')) {
-            if (settings.hideUserControlPanel == true) { csfd.hideUserControlPanel(); }
+            if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
         }
     }
 
@@ -1061,25 +1062,26 @@ function refreshTooltips() {
         csfd.checkRatingsCount();
 
         // Header modifications
-        if (settings.clickableMessages == true) { csfd.clickableMessages(); }
+        if (settings.clickableMessages) { csfd.clickableMessages(); }
 
         // Film/Series page
         if (location.href.includes('/film/')) {
             csfd.addRatingsDate();
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
-            csfd.checkAndUpdateRatings();
+            await csfd.checkAndUpdateRatings();
+            await csfd.checkRatingsCount();
         }
 
         // User page
         if (location.href.includes('/uzivatel/')) {
-            if (settings.displayMessageButton === true) { csfd.displayMessageButton(); }
-            if (settings.displayFavoriteButton === true) { csfd.displayFavoriteButton(); }
-            if (settings.hideUserControlPanel === true) { csfd.hideUserControlPanel(); }
-            if (settings.compareUserRatings === true) { csfd.addRatingsColumn(); }
+            if (settings.displayMessageButton) { csfd.displayMessageButton(); }
+            if (settings.displayFavoriteButton) { csfd.displayFavoriteButton(); }
+            if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
+            if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
 
-            // // console.log("BEFORE:", csfd.RESULT);
-            // // await csfd.getAllPages();
-            // // console.log("AFTER:", Object.keys(csfd.RESULT).length);
+            // console.log("BEFORE:", csfd.RESULT);
+            // await csfd.getAllPages();
+            // console.log("AFTER:", Object.keys(csfd.RESULT).length);
         }
     }
 
