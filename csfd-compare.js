@@ -22,6 +22,13 @@ const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
 const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.5</a>`;
+let LOGGED_IN = false;
+
+$( document ).ready(function() {
+    LOGGED_IN = $('.profile.initialized').length > 0;
+    console.log("LOGGED_IN:", LOGGED_IN);
+});
+
 
 let Glob = {
     popupCounter: 0,
@@ -142,10 +149,16 @@ function refreshTooltips() {
         }
 
         async isLoggedIn() {
-            return $('.profile.initialized').length > 0;
+            const $profile = $('.profile.initialized');
+            return $profile.length > 0;
         }
 
-        getCurrentUser() {
+        isLoggedInOld() {
+            const $profile = $('.profile.initialized');
+            return $profile.length > 0;
+        }
+
+        async getCurrentUser() {
             let loggedInUser = $('.profile.initialized').attr('href');
             if (loggedInUser !== undefined) {
                 if (loggedInUser.length == 1) {
@@ -737,6 +750,8 @@ function refreshTooltips() {
             let needToLoginTooltip = '';
             let needToLoginStyle = '';
 
+            let isLoggedIn = this.isLoggedInOld();
+            console.log("isLoggedIn:", isLoggedIn);
             if (!await this.isLoggedIn()) {
                 dropdownStyle = 'right: 50px; width: max-content;';
                 disabled = 'disabled';
@@ -759,20 +774,20 @@ function refreshTooltips() {
                         <h2 class="article-header">Domácí stránka</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel" ${disabled}>
-                                <label for="chkRemoveContestPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Soutěž"</label>
+                                <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel">
+                                <label for="chkRemoveContestPanel" style="${resetLabelStyle}">Skrýt panel: "Soutěž"</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-contest-panel" ${disabled}>
-                                <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "ČSFD sál"</label>
+                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-contest-panel">
+                                <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle}">Skrýt panel: "ČSFD sál"</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel" ${disabled}>
-                                <label for="chkRemoveVideoPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Nové trailery"</label>
+                                <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel">
+                                <label for="chkRemoveVideoPanel" style="${resetLabelStyle}">Skrýt panel: "Nové trailery"</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel" ${disabled}>
-                                <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt panel: "Sledujte online / DVD tipy"</label>
+                                <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel">
+                                <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle}">Skrýt panel: "Sledujte online / DVD tipy"</label>
                             </div>
                         </section>
                     </article>
@@ -1023,7 +1038,7 @@ function refreshTooltips() {
         }
 
         async checkRatingsCount() {
-            this.userUrl = this.getCurrentUser();
+            this.userUrl = await this.getCurrentUser();
             this.storageKey = `${SCRIPTNAME}_${this.userUrl.split("/")[2].split("-")[1]}`;
             // this.userRatingsUrl = `${this.userUrl}/hodnoceni`;
             // if (location.origin.endsWith('sk')) { this.userRatingsUrl = `${this.userUrl}/hodnotenia`; }
