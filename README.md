@@ -1,5 +1,7 @@
 # CSFD-Compare
 
+**New:** Přidáno nastavení: Skrýt panel - Vítej na ČSFD  
+
 > **v0.4.5** _(2021-06-23)_  
 
 **New:** Panel nastavení: Přidána sekce "Domácí stránka"  

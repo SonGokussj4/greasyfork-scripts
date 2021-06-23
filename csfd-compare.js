@@ -71,6 +71,7 @@ let defaultSettings = {
     removeContestPanel: false,
     removeCsfdCinemaPanel: false,
     removeVideoPanel: false,
+    removeMotivationPanel: false,
     removeMoviesOfferPanel: false,
     // GLOBAL
     showControlPanelOnHover: true,
@@ -302,6 +303,7 @@ function refreshTooltips() {
             // HOME PAGE
             $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
             $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
+            $('#chkRemoveMotivationPanel').attr('checked', settings.removeMotivationPanel);
             $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
             $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
 
@@ -335,6 +337,12 @@ function refreshTooltips() {
 
             $('#chkRemoveCsfdCinemaPanel').change(function () {
                 settings.removeCsfdCinemaPanel = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkRemoveMotivationPanel').change(function () {
+                settings.removeMotivationPanel = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -706,29 +714,43 @@ function refreshTooltips() {
             let $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
             let maxPageNum = $href.text();
             console.log("maxPageNum:", maxPageNum);
-            let ls = [];
-            for (let idx = 1; idx < maxPageNum - 25; idx++) {
-                // for (let idx = 1; idx < maxPageNum - 25; idx += 5) {
-                let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
-                console.log(`url(${idx}): ${url}`);
+            // let ls = [];
+            // for (let idx = 1; idx < maxPageNum - 25; idx++) {
+            //     // for (let idx = 1; idx < maxPageNum - 25; idx += 5) {
+            //     let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
+            //     console.log(`url(${idx}): ${url}`);
 
-                // var data = Promise.all([
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()).then((x) => { console.log(idx); return x; }),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()).then((x) => { console.log(idx + 1); return x; }),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()).then((x) => { console.log(idx + 2); return x; }),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()).then((x) => { console.log(idx + 3); return x; }),
-                //     // fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
-                // ]);
-                // for (var dataHTML of data) {
-                //     $(dataHTML).find("tbody tr").each(function () {
-                //     ...
-                // data.then((resolved_data) => ls.push(resolved_data));
+            //     // var data = Promise.all([
+            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()).then((x) => { console.log(idx); return x; }),
+            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()).then((x) => { console.log(idx + 1); return x; }),
+            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()).then((x) => { console.log(idx + 2); return x; }),
+            //     //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()).then((x) => { console.log(idx + 3); return x; }),
+            //     //     // fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
+            //     // ]);
+            //     // for (var dataHTML of data) {
+            //     //     $(dataHTML).find("tbody tr").each(function () {
+            //     //     ...
+            //     // data.then((resolved_data) => ls.push(resolved_data));
 
-                let res = this.doSomething(idx, url);
-                console.log(`res(${idx}): ${res}`);
-                ls.push(res);
+            //     let res = this.doSomething(idx, url);
+            //     console.log(`res(${idx}): ${res}`);
+            //     ls.push(res);
+            // }
+            // console.log("LS:", ls);
+            const urls = [];
+            for (let idx = 1; idx <= 5; idx++) {
+                const url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
+                urls.push(url);
             }
-            console.log("LS:", ls);
+            let data = await Promise.all(
+                urls.map(async url => {
+                    console.log("URL:", url);
+                    let response = await fetch(url);
+                    console.log("response:", response);
+                    return response.json();
+                })
+            );
+            console.log("DATA:", data);
             console.log("getAllPages() END");
             return ls;
         }
@@ -748,6 +770,10 @@ function refreshTooltips() {
 
         removeBox_VideoPanel() {
             $('.box--homepage-video').remove();
+        }
+
+        removeBox_MotivationPanel() {
+            $('.box--homepage-motivation-middle').remove();
         }
 
         removeBox_MoviesOfferPanel() {
@@ -784,11 +810,15 @@ function refreshTooltips() {
                         <h2 class="article-header">Domácí stránka</h2>
                         <section>
                             <div class="article-content">
+                                <input type="checkbox" id="chkRemoveMotivationPanel" name="remove-motivation-panel">
+                                <label for="chkRemoveMotivationPanel" style="${resetLabelStyle}">Skrýt panel: "Vítej na ČSFD"</label>
+                            </div>
+                            <div class="article-content">
                                 <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel">
                                 <label for="chkRemoveContestPanel" style="${resetLabelStyle}">Skrýt panel: "Soutěž"</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-contest-panel">
+                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-csfd-cinema-panel">
                                 <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle}">Skrýt panel: "ČSFD sál"</label>
                             </div>
                             <div class="article-content">
@@ -1090,9 +1120,10 @@ function refreshTooltips() {
         if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
     }
 
+    if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
+    if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
     if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
     if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
-    if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
     if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
 
 
@@ -1128,8 +1159,8 @@ function refreshTooltips() {
             await csfd.checkRatingsCount();
         }
 
-        let allPages = await csfd.getAllPages();
-        console.log("allPages:", allPages);
+        // let allPages = await csfd.getAllPages();
+        // console.log("allPages:", allPages);
 
         // User page
         if (location.href.includes('/uzivatel/')) {
@@ -1137,11 +1168,6 @@ function refreshTooltips() {
             if (settings.displayFavoriteButton) { csfd.displayFavoriteButton(); }
             if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
             if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
-
-            // console.log("BEFORE:", csfd.RESULT);
-            // let allPages = await csfd.getAllPages();
-            // console.log("allPages:", allPages);
-            // console.log("AFTER:", Object.keys(csfd.RESULT).length);
         }
     }
 
