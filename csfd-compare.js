@@ -88,6 +88,12 @@ let defaultSettings = {
     hideSelectedUserReviewsList: [],
 };
 
+async function delay(t) {
+    return new Promise(resolve => {
+        setTimeout(resolve, t);
+    });
+}
+
 async function getSettings() {
     if (!localStorage[SETTINGSNAME]) {
         localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
@@ -1094,6 +1100,7 @@ function mergeDict(list) {
 
     // SCRIPT START
     // ============================================================================================
+    await delay(20);  // Greasemonkey workaround, wait a little bit for page to somehow load
     let csfd = new Csfd($('div.page-content'));
 
     // =================================

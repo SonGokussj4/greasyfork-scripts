@@ -1,6 +1,7 @@
 # CSFD-Compare
 
 **New:** Přidáno nastavení: Skrýt panel - Vítej na ČSFD  
+**Fix:** Oprava detekce logovaného uživatele u Greasemonkey  
 
 > **v0.4.5** _(2021-06-23)_  
 
