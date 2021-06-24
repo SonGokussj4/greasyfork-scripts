@@ -21,47 +21,44 @@ const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
 const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.5</a>`;
-let LOGGED_IN = false;
-
-$(document).ready(function () {
-    LOGGED_IN = $('.profile.initialized').length > 0;
-    console.log("LOGGED_IN:", LOGGED_IN);
-});
 
 
 let Glob = {
     popupCounter: 0,
 
-    popup: function (htmlContent, timeout = 3, width = 150) {
+    popup: function (htmlContent, timeout = 3, width = 150, slideTime = 100) {
         var id = Glob.popupCounter++;
         if (!htmlContent) {
             return;
         }
         var yOffset = 10;
-        $(".header-search").append(`
-            <div class='SNPopup' id='SNPopup${id}'
-                style='
-                    border: 1px solid black;
-                    border-radius:4px;
-                    display:none;
-                    padding:10px;
-                    opacity:0.95;
-                    background:#820001;
-                    color:white;
-                    position:absolute;
-                    left:45%;
-                    width:${width}px;
-                    z-index:999;
-                    top:${yOffset}px;
-                    right:10px'
-            >${htmlContent}</div>`);
-        var $me = $(`#SNPopup${id}`);
-        $me.slideDown(100);
-        (function (id) {
+        let $popup = $(`<div>`, {
+            id: `SNPopup${id}`,
+            "class": "SNPopup",
+            html: htmlContent,
+            })
+            .css({
+                border: "1px solid black",
+                borderRadius: "4px",
+                display: "none",
+                padding: "10px",
+                opacity: "0.95",
+                background: "#820001",
+                color: "white",
+                position: "absolute",
+                left: "45%",
+                width: `${width}px`,
+                zIndex: "999",
+                top: `${yOffset}px`,
+                right: "10px"
+            });
+        $(".header-search").append($popup);
+        $popup.slideDown(slideTime);
+        (function ($popup) {
             setTimeout(function () {
-                $(`#SNPopup${id}`).slideUp(100);
+                $popup.slideUp(slideTime);
             }, timeout * 1000);
-        })(id);
+        })($popup);
     }
 };
 
@@ -584,7 +581,7 @@ function mergeDict(list) {
             });
         }
 
-        openControlPanelOnHover() {
+        async openControlPanelOnHover() {
             let btn = $('.button-control-panel');
             let panel = $('#dropdown-control-panel');
 
@@ -730,35 +727,24 @@ function mergeDict(list) {
                 dc[name] = { 'rating': rating, 'date': date };
                 // console.log("dc[name]:", name, dc[name]);
             }
+            console.log(`doSomething(${idx}) END`);
             return dc;
             // web workers - vyšší dívčí - více vláken z browseru
         }
         async getAllPages() {
             console.log("getAllPages() START");
-            let $content = await $.get('/uzivatel/78145-songokussj/hodnoceni');
-            // console.log("content:", content);
-            let $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
-            let maxPageNum = $href.text();
-            // console.log("maxPageNum:", maxPageNum);
-            let ls = [];
+
+            const $content = await $.get('/uzivatel/78145-songokussj/hodnoceni');
+            const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
+            const maxPageNum = $href.text();
+
+            const ls = [];
             for (let idx = 1; idx < maxPageNum - 35; idx++) {
-                let url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
-                // console.log(`url(${idx}): ${url}`);
+                console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
+                Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
 
-                // var data = Promise.all([
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`).then((data) => data.text()).then((x) => { console.log(idx); return x; }),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 1}`).then((data) => data.text()).then((x) => { console.log(idx + 1); return x; }),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 2}`).then((data) => data.text()).then((x) => { console.log(idx + 2); return x; }),
-                //     fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 3}`).then((data) => data.text()).then((x) => { console.log(idx + 3); return x; }),
-                //     // fetch(`/uzivatel/78145-songokussj/hodnoceni/?page=${idx + 4}`).then((data) => data.text()),
-                // ]);
-                // for (var dataHTML of data) {
-                //     $(dataHTML).find("tbody tr").each(function () {
-                //     ...
-                // data.then((resolved_data) => ls.push(resolved_data));
-
-                let res = await this.doSomething(idx, url);
-                // console.log(`res(${idx}): ${res}`);
+                const url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
+                const res = await this.doSomething(idx, url);
                 ls.push(res);
             }
             console.log("getAllPages() END");
@@ -959,7 +945,7 @@ function mergeDict(list) {
                 $content.wrap(`<a href="${href}"></a>`);
             }
         }
-        clickableHeaderBoxes() {
+        async clickableHeaderBoxes() {
             // // Does not work, the hell... Trying to unbind click for header buttons...
             // let userLinks = $('.user-link');
             // for (const element of userLinks) {
@@ -1084,8 +1070,6 @@ function mergeDict(list) {
         async checkRatingsCount() {
             this.userUrl = await this.getCurrentUser();
             this.storageKey = `${SCRIPTNAME}_${this.userUrl.split("/")[2].split("-")[1]}`;
-            // this.userRatingsUrl = `${this.userUrl}/hodnoceni`;
-            // if (location.origin.endsWith('sk')) { this.userRatingsUrl = `${this.userUrl}/hodnotenia`; }
             this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
             this.stars = this.getStars();
 
@@ -1178,6 +1162,15 @@ function mergeDict(list) {
         }
     }
 
+    // let t0 = performance.now();
+    // const $siteHtml = await $.get(GREASYFORK_URL);
+    // let t1 = performance.now();
+    // console.log("Call to 'await $.get(GREASYFORK_URL)' took " + (t1 - t0) + " ms.");
+    // // console.log("siteHtml:", $siteHtml);
+    // let version = $($siteHtml).find('dd.script-show-version > span').text();
+    // let curVersion = $(VERSION).text().replace('v', '');
+    // console.log("version:", version);
+    // console.log("curVersion:", curVersion);
     // If not already in session storage, get new version from greasyfork and display changelog over version link
     if (!sessionStorage.updateChecked) {
         csfd.checkForUpdate().then(function (data) {
@@ -1185,7 +1178,7 @@ function mergeDict(list) {
             let curVersion = $(VERSION).text().replace('v', '');
             if (version !== curVersion) {
                 let $verLink = $('#script-version');
-                let versionText = `${$verLink.text()} (Nová v${version})`;
+                let versionText = `${$verLink.text()} (Update v${version})`;
                 $verLink.text(versionText);
                 sessionStorage.versionText = versionText;
 
