@@ -36,7 +36,7 @@ let Glob = {
             id: `SNPopup${id}`,
             "class": "SNPopup",
             html: htmlContent,
-            })
+        })
             .css({
                 border: "1px solid black",
                 borderRadius: "4px",
@@ -223,7 +223,7 @@ function mergeDict(list) {
             let item = this.stars[filmUrl];
 
             // Item not in LocalStorage, add it then!
-            if (typeof item === 'undefined') {
+            if (item === undefined) {
                 // Item not in LocalStorage, add
                 this.stars[filmUrl] = ratingNum;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
@@ -912,6 +912,7 @@ function mergeDict(list) {
 
         async checkAndUpdateRatings() {
             let currentFilmRating = this.getCurrentFilmRating();
+
             if (currentFilmRating === null) {
                 // Check if record exists, if yes, remove it
                 this.removeFromLocalStorage();
@@ -1133,7 +1134,7 @@ function mergeDict(list) {
     if (await csfd.isLoggedIn()) {
 
         // Global settings without category
-        csfd.checkRatingsCount();
+        await csfd.checkRatingsCount();
 
         // Header modifications
         if (settings.clickableMessages) { csfd.clickableMessages(); }
@@ -1145,13 +1146,13 @@ function mergeDict(list) {
 
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
             await csfd.checkAndUpdateRatings();
-            await csfd.checkRatingsCount();
+            // await csfd.checkRatingsCount();
         }
 
-        let allPages = await csfd.getAllPages();
-        console.log("allPages:", allPages);
-        let merged = mergeDict(allPages);
-        console.log("MERGED:", merged);
+        // let allPages = await csfd.getAllPages();
+        // console.log("allPages:", allPages);
+        // let merged = mergeDict(allPages);
+        // console.log("MERGED:", merged);
 
         // User page
         if (location.href.includes('/uzivatel/')) {
