@@ -658,7 +658,7 @@ async function mergeDict(list) {
             const maxPageNum = $href.text();
 
             const ls = [];
-            for (let idx = 1; idx <= maxPageNum - 40; idx++) {
+            for (let idx = 1; idx <= maxPageNum; idx++) {
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
                 const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
