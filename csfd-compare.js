@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.4.5
+// @version      0.5.0
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -17,10 +17,11 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
+const VERSION_NUM = 'v0.5.0';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
-const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">v0.4.5</a>`;
+const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">${VERSION_NUM}</a>`;
 
 
 let Glob = {
@@ -100,7 +101,7 @@ async function getSettings() {
     }
 }
 
-function refreshTooltips() {
+async function refreshTooltips() {
     try {
         tippy('[data-tippy-content]', {
             // interactive: true,
@@ -111,7 +112,7 @@ function refreshTooltips() {
     }
 }
 
-function mergeDict(list) {
+async function mergeDict(list) {
     // Take a list of dictionaries and return merged dictionary
     const merged = list.reduce(function (r, o) {
         Object.keys(o).forEach(function (k) { r[k] = o[k]; });
@@ -125,6 +126,7 @@ function mergeDict(list) {
     /* globals jQuery, $, waitForKeyElements */
     /* jshint -W069 */
     /* jshint -W083 */
+    /* jshint -W075 */
 
     class Csfd {
 
@@ -164,11 +166,6 @@ function mergeDict(list) {
             return $profile.length > 0;
         }
 
-        isLoggedInOld() {
-            const $profile = $('.profile.initialized');
-            return $profile.length > 0;
-        }
-
         async getCurrentUser() {
             let loggedInUser = $('.profile.initialized').attr('href');
             if (loggedInUser !== undefined) {
@@ -204,6 +201,20 @@ function mergeDict(list) {
             }
         }
 
+        async getLocalStorageRatings() {
+            if (localStorage[this.storageKey]) {
+                let stars = JSON.parse(localStorage[this.storageKey]);
+                return stars;
+            } else {
+                return {};
+            }
+        }
+
+        async getLocalStorageRatingsCount() {
+            const ratings = await this.getLocalStorageRatings();
+            return Object.keys(ratings).length;
+        }
+
         getCurrentFilmUrl() {
             // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
             let foundMatch = $('a[href$="/diskuze/"]:first').attr('href');
@@ -217,22 +228,22 @@ function mergeDict(list) {
             return filmUrl;
         }
 
-        updateInLocalStorage(ratingNum) {
+        updateInLocalStorage(ratingsObject) {
             // Check if film is in LocalStorage
             let filmUrl = this.getCurrentFilmUrl();
-            let item = this.stars[filmUrl];
+            let myRating = this.stars[filmUrl] || undefined;
 
             // Item not in LocalStorage, add it then!
-            if (item === undefined) {
+            if (myRating === undefined) {
                 // Item not in LocalStorage, add
-                this.stars[filmUrl] = ratingNum;
+                this.stars[filmUrl] = ratingsObject;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
                 return true;
             }
 
-            if (item !== ratingNum) {
+            if (myRating.rating !== ratingsObject.rating) {
                 // LocalStorage rating != current rating, update
-                this.stars[filmUrl] = ratingNum;
+                this.stars[filmUrl] = ratingsObject;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
                 return true;
             }
@@ -247,7 +258,7 @@ function mergeDict(list) {
             let item = this.stars[filmUrl];
 
             // Item not in LocalStorage, everything is fine
-            if (typeof item === 'undefined') {
+            if (item === undefined) {
                 return null;
             }
 
@@ -260,14 +271,14 @@ function mergeDict(list) {
             return true;
         }
 
-        getCurrentFilmRating() {
+        async getCurrentFilmRating() {
             let $activeStars = this.csfdPage.find(".star.active:not('.computed')");
 
             // No rating
-            if ($activeStars.length == 0) { return null; }
+            if ($activeStars.length === 0) { return null; }
 
             // Rating "odpad" or "1"
-            if ($activeStars.length == 1) {
+            if ($activeStars.length === 1) {
                 if ($activeStars.attr('data-rating') === "0") {
                     return 0;
                 }
@@ -277,22 +288,15 @@ function mergeDict(list) {
             return $activeStars.length;
         }
 
-        getCurrentUserRatingsCount() {
-            let count = 0;
-            $.ajax({
-                type: "GET",
-                url: this.userRatingsUrl,
-                async: false
-            }).done((data) => {
-                // Get ratings: '(2 403)'
-                let $countSpan = $(data).find('span.count');
-                if ($countSpan.length == 1) {
-                    // Strip it '(2 403)' --> '2403'
-                    count = $countSpan[0].innerText.replace(/[\s()]/g, '');
-                    count = parseInt(count);
-                }
-            });
-            return count;
+        async getCurrentUserRatingsCount2() {
+            return $.get(this.userRatingsUrl)
+                .then(function (data) {
+                    const count = $(data).find('.box-user-rating span.count').text().replace(/[\s()]/g, '');
+                    if (count) {
+                        return parseInt(count);
+                    }
+                    return 0;
+                });
         }
 
         async fillMissingSettingsKeys() {
@@ -441,17 +445,7 @@ function mergeDict(list) {
             });
         }
 
-        getLocalStorageRatingsCount() {
-            if (localStorage[this.storageKey]) {
-                let stars = JSON.parse(localStorage[this.storageKey]);
-                let count = Object.keys(stars).length;
-                return count;
-            }
-            return 0;
-
-        }
-
-        onOtherUserHodnoceniPage() {
+        async onOtherUserHodnoceniPage() {
             if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
                 if (!location.href.includes(this.userUrl)) {
                     return true;
@@ -460,12 +454,17 @@ function mergeDict(list) {
             return false;
         }
 
-        exportRatings() {
-            // console.log("JSON.stringify(this.stars):", JSON.stringify(this.stars));
-            localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
-            if (this.onOtherUserHodnoceniPage()) {
-                this.addRatingsColumn();
+        async onOtherUserPage() {
+            if (location.href.includes('/uzivatel/')) {
+                if (!location.href.includes(this.userUrl)) {
+                    return true;
+                }
             }
+            return false;
+        }
+
+        exportRatings() {
+            localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
         }
 
         importRatings() {
@@ -474,84 +473,7 @@ function mergeDict(list) {
             }
         }
 
-        async REFRESH_RATINGS() {
-            // Load user ratings...
-            let $this = this;
-            return new Promise((resolve, reject) => {
-                $.ajax({
-                    type: "GET",
-                    url: $this.userRatingsUrl,
-                    async: true
-                }).done((data) => {
-                    // Get how many pages will the script load
-                    $this.endPageNum = $this.getEndPageNum(data);
-                    this.processRatingsPage(data);
-                    resolve();
-                });
-            });
-        }
-
-        async processRatingsPage(dataHTML) {
-            if (!dataHTML) {
-                return;
-            }
-
-            var $stars = this.stars;
-            $(dataHTML).find("tbody tr").each(function () {
-                var $row = $(this);
-                var filmURL = $("a.film-title-name", $row).attr("href");
-                var $rating = $("span .stars", $row);
-
-                let starsRating = 0;
-                for (let stars = 0; stars <= 5; stars++) {
-                    if ($rating.hasClass('stars-' + stars)) {
-                        starsRating = stars;
-                    }
-                }
-                // Add to dict
-                $stars[filmURL] = starsRating;
-            });
-
-            // Check if there is next page
-            let nextPaginationURL = $(dataHTML).find("a.page-next").attr("href");
-            if (nextPaginationURL) {
-                // Next page exists, fetch it and repeat this function, add new ratings to `this.stars`
-                await this.loadPage(nextPaginationURL);
-            } else {
-                // No next page, finish...
-                this.finishRefresh();
-            }
-        }
-
-        async loadPage(url) {
-            return new Promise((resolve, reject) => {
-                let foundMatch = url.match(new RegExp("page=(.*)$"));
-
-                let currentNum = 1;
-                if (foundMatch.length == 2) {
-                    currentNum = foundMatch[1];
-                }
-
-                Glob.popup(`${SCRIPTNAME} - Nacitam... ${currentNum}/${this.endPageNum}`);
-
-                $.ajax({
-                    type: "GET",
-                    url: url,
-                    async: true
-                }).done((data) => {
-                    this.processRatingsPage(data);
-                    resolve();
-                });
-            });
-        }
-
-        finishRefresh() {
-            this.exportRatings();
-            Glob.popup(`Vaše hodnocení byla načtena.`);
-        }
-
         addRatingsColumn() {
-            if (!this.onOtherUserHodnoceniPage()) { return; }
             if (this.userRatingsCount === 0) { return; }
 
             let $page = this.csfdPage;
@@ -562,13 +484,13 @@ function mergeDict(list) {
             $tbl.find('tr').each(function () {
                 let $row = $(this);
                 let url = $($row).find('.name').find('a').attr('href');
-                let ratingNum = starsDict[url];
+                const myRating = starsDict[url] || {};
 
                 let $span = "";
-                if (ratingNum == 0) {
+                if (myRating.rating === 0) {
                     $span = `<span class="stars trash">odpad!</span>`;
                 } else {
-                    $span = `<span class="stars stars-${ratingNum}"></span>`;
+                    $span = `<span class="stars stars-${myRating.rating}" title="${myRating.date}"></span>`;
                 }
 
                 $row.find('td:nth-child(2)').after(`
@@ -584,66 +506,64 @@ function mergeDict(list) {
         async openControlPanelOnHover() {
             let btn = $('.button-control-panel');
             let panel = $('#dropdown-control-panel');
-
-            $(btn).on('hover mouseover', function () {
-                if (!panel.hasClass('active')) {
-                    panel.addClass('active');
-                }
+            $(btn).on('mouseover', () => {
+                if (!panel.hasClass('active')) panel.addClass('active');
+            });
+            $(btn).on('mouseleave', () => {
+                if (panel.hasClass('active')) panel.removeClass('active');
+            });
+            $(panel).on('mouseover', () => {
+                if (!panel.hasClass('active')) panel.addClass('active');
+            });
+            $(panel).on('mouseleave', () => {
+                if (panel.hasClass('active')) panel.removeClass('active');
             });
 
-            $(panel).on('hover mouseover', function () {
-                if (!panel.hasClass('active')) {
-                    panel.addClass('active');
-                }
-            });
-
-            $(panel).on('mouseleave', function () {
-                if (panel.hasClass('active')) {
-                    panel.removeClass('active');
-                }
-            });
-
-            $(btn).on('mouseleave', function () {
-                if (panel.hasClass('active')) {
-                    panel.removeClass('active');
-                }
-            });
         }
 
         addWarningToUserProfile() {
-            $(".profile.initialized").append(`
+            $(".csfd-compare-menu").append(`
                 <div class='counter'>
                     <span><b>!</b></span>
                 </div>
             `);
-            this.createRefreshButton();
         }
 
-        createRefreshButton() {
-            let button = document.createElement("button");
-            button.setAttribute("style", "text-transform: initial; font-size: 0.9em; padding: 5px; border: 4px solid whitesmoke;");
-            button.className = "csfd-compare-reload";
-            button.innerHTML = `
-                <center>
-                    CSFD-Compare<br>
-                    Uložené: [${csfd.localStorageRatingsCount}] != Celkem: [${csfd.userRatingsCount}]</br>
-                    <hr>
-                    <b> >>> Načíst hodnocení <<< </b>
-                    <hr>
-                </center>
-            `;
-            $(".dropdown-content.main-menu > ul:first").prepend(button);
-
-            $(button).on("click", function () {
-                let csfd = new Csfd($('div.page-content'));
-                csfd.userUrl = csfd.getCurrentUser();
-                csfd.userRatingsUrl = `${csfd.userUrl}/hodnoceni`;
-                if (location.origin.endsWith('sk')) {
-                    csfd.userRatingsUrl = `${csfd.userUrl}/hodnotenia`;
-                }
-                csfd.storageKey = `${SCRIPTNAME}_${csfd.userUrl.split("/")[2].split("-")[1]}`;
-                csfd.REFRESH_RATINGS();
+        async showRefreshRatingsButton(ratingsInLS, curUserRatings) {
+            let $button = $('<button>', {
+                id: 'refr-ratings-button',
+                "class": 'csfd-compare-reload',
+                html: `
+                    <center>
+                        <b> >> Načíst hodnocení << </b> <br>
+                        Uložené: [${ratingsInLS}] != Celkem: [${curUserRatings}]
+                    </center>
+                `,
+            }).css({
+                textTransform: "initial",
+                fontSize: "0.9em",
+                padding: "5px",
+                border: "4px solid whitesmoke",
+                width: "-moz-available",
+                width: "-webkit-fill-available",
+                width: "100%",
             });
+            let $div = $('<div>', {
+                html: $button,
+            });
+            $('#chkCompareUserRatings').parent().append($div);
+
+            $($button).on("click", async function () {
+                let csfd = new Csfd($('div.page-content'));
+                csfd.refreshAllRatings(csfd);
+            });
+        }
+
+        async refreshAllRatings(csfd) {
+            await csfd.initializeClassVariables();
+            csfd.stars = await csfd.getAllPages();
+            csfd.exportRatings();
+            Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
         }
 
         displayMessageButton() {
@@ -665,7 +585,7 @@ function mergeDict(list) {
             $(".user-profile-content > h1").append(button);
         }
 
-        displayFavoriteButton() {
+        async displayFavoriteButton() {
             let favoriteButton = $('#snippet--menuFavorite > a');
             if (favoriteButton.length !== 1) {
                 console.log("fn displayFavoriteButton(): can't find user href, exiting function...");
@@ -691,7 +611,7 @@ function mergeDict(list) {
             `;
             $(".user-profile-content > h1").append(button);
 
-            $(button).on('click', function () {
+            $(button).on('click', async function () {
                 if (addRemoveIndicator == "+") {
                     $('#add-remove-indicator')[0].innerText = '-';
                     button._tippy.setContent("Odebrat z oblíbených");
@@ -699,7 +619,7 @@ function mergeDict(list) {
                     $('#add-remove-indicator')[0].innerText = '+';
                     button._tippy.setContent("Přidat do oblíbených");
                 }
-                refreshTooltips();
+                await refreshTooltips();
             });
         }
 
@@ -710,7 +630,7 @@ function mergeDict(list) {
         }
 
         async doSomething(idx, url) {
-            console.log(`doSomething(${idx}) START`);
+            // console.log(`doSomething(${idx}) START`);
             let data = await $.get(url);
             let $rows = $(data).find('#snippet--ratings tr');
             let dc = {};
@@ -725,34 +645,31 @@ function mergeDict(list) {
                 }
                 let date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
                 dc[name] = { 'rating': rating, 'date': date };
-                // console.log("dc[name]:", name, dc[name]);
             }
-            console.log(`doSomething(${idx}) END`);
+            // console.log(`doSomething(${idx}) END`);
             return dc;
             // web workers - vyšší dívčí - více vláken z browseru
         }
-        async getAllPages() {
-            console.log("getAllPages() START");
 
+        async getAllPages() {
             const $content = await $.get('/uzivatel/78145-songokussj/hodnoceni');
             const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
             const maxPageNum = $href.text();
 
             const ls = [];
-            for (let idx = 1; idx < maxPageNum - 35; idx++) {
+            for (let idx = 1; idx <= maxPageNum; idx++) {
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
-
-                const url = `/uzivatel/78145-songokussj/hodnoceni/?page=${idx}`;
+                const url = `${this.userUrl}hodnoceni/?page=${idx}`;
                 const res = await this.doSomething(idx, url);
                 ls.push(res);
             }
-            console.log("getAllPages() END");
-            return ls;
+            const dict = await mergeDict(ls);
+            return dict;
         }
 
         removeBox_MotivationPanel() {
-            $('.box--homepage-motivation-middle').remove();
+            $('.box--homepage-motivation-middle,.box--homepage-motivation').remove();
         }
         removeBox_ContestPanel() {
             $('.box--homepage-contest').remove();
@@ -776,8 +693,6 @@ function mergeDict(list) {
             let needToLoginTooltip = '';
             let needToLoginStyle = '';
 
-            let isLoggedIn = this.isLoggedInOld();
-            console.log("isLoggedIn:", isLoggedIn);
             if (!await this.isLoggedIn()) {
                 dropdownStyle = 'right: 50px; width: max-content;';
                 disabled = 'disabled';
@@ -788,7 +703,7 @@ function mergeDict(list) {
             let button = document.createElement('li');
             let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
             button.innerHTML = `
-                <a href="#show-search" class="user-link initialized">CC</a>
+                <a href="#" class="user-link initialized csfd-compare-menu">CC</a>
                 <div class="dropdown-content notifications" style="${dropdownStyle}">
 
                     <div class="dropdown-content-head">
@@ -887,7 +802,7 @@ function mergeDict(list) {
             `;
             $('.header-bar').prepend(button);
 
-            refreshTooltips();
+            await refreshTooltips();
 
             // Don't hide settings popup when mouse leaves within interval of 0.2s
             let timer;
@@ -911,14 +826,19 @@ function mergeDict(list) {
         }
 
         async checkAndUpdateRatings() {
-            let currentFilmRating = this.getCurrentFilmRating();
+            let currentFilmRating = await this.getCurrentFilmRating();
+            let currentFilmDateAdded = await this.getCurrentFilmDateAdded();
 
             if (currentFilmRating === null) {
                 // Check if record exists, if yes, remove it
                 this.removeFromLocalStorage();
             } else {
                 // Check if current page rating corresponds with that in LocalStorage, if not, update it
-                this.updateInLocalStorage(this.getCurrentFilmRating());
+                const obj = {
+                    rating: currentFilmRating,
+                    date: currentFilmDateAdded
+                };
+                this.updateInLocalStorage(obj);
             }
         }
 
@@ -947,15 +867,19 @@ function mergeDict(list) {
             }
         }
         async clickableHeaderBoxes() {
-            // // Does not work, the hell... Trying to unbind click for header buttons...
-            // let userLinks = $('.user-link');
-            // for (const element of userLinks) {
-            //     let href = window.location.origin + $(element).attr('href');
-            //     $(element).unbind();
-            //     $(element).wrap(`<a href="${href}"></a>`);
-            // }
+            // CLICKABLE HEADER BUTTONS
+            $(".user-link.messages").on("click", function () {
+                location.href = "/posta/";
+            });
+            $(".user-link.wantsee").on("click", function () {
+                location.href = "/chci-videt/";
+            });
+            $(".user-link.favorites").on("click", function () {
+                location.href = "/oblibene/";
+            });
 
-            let headers = $('.dropdown-content-head');
+            // CLICKABLE HEADER DIVS
+            let headers = $('.dropdown-content-head,.box-header');
             for (const div of headers) {
                 let btn = $(div).find('a.button');
 
@@ -964,49 +888,23 @@ function mergeDict(list) {
 
                 $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
-                btn[0].innerHTML = "Otevřít";
-                btn[0].style.visibility = 'hidden';
-
                 let h2 = $(div).find('h2');
+                let spanCount = h2.find('span.count');
                 $(div)
                     .mouseover(() => {
                         div.style.backgroundColor = '#ba0305';
                         h2[0].style.backgroundColor = '#ba0305';
                         h2[0].style.color = '#fff';
-                        btn[0].style.visibility = 'visible';
-                    })
-                    .mouseout(() => {
-                        div.style.backgroundColor = '#ececec';
-                        h2[0].style.backgroundColor = 'initial';
-                        h2[0].style.color = 'initial';
-                        btn[0].style.visibility = 'hidden';
-                    });
-            }
-
-            // TODO: Zaimplementovat do Headers, sjednotit styl
-            let boxHeaders = $('.box-header');
-            for (const headerBox of boxHeaders) {
-                let btn = $(headerBox).find('a.button');
-                if (btn.length === 0) { continue; }
-                if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
-
-                $(headerBox).wrap(`<a href="${btn.attr('href')}"></a>`);
-
-                let h2 = $(headerBox).find('h2');
-                let spanCount = h2.find('span.count');
-                $(headerBox)
-                    .mouseover(() => {
-                        headerBox.style.backgroundColor = '#ba0305';
-                        h2[0].style.backgroundColor = '#ba0305';
-                        h2[0].style.color = '#fff';
-                        // btn[0].style.visibility = 'visible';
                         if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
                     })
                     .mouseout(() => {
-                        headerBox.style.backgroundColor = '#e3e3e3';
+                        if ($(div).hasClass('dropdown-content-head')) {
+                            div.style.backgroundColor = '#ececec';
+                        } else {
+                            div.style.backgroundColor = '#e3e3e3';
+                        }
                         h2[0].style.backgroundColor = 'initial';
                         h2[0].style.color = 'initial';
-                        // btn[0].style.visibility = 'hidden';
                         if (spanCount.length == 1) { spanCount[0].style.color = 'initial'; }
                     });
             }
@@ -1021,6 +919,24 @@ function mergeDict(list) {
                 if (!ignoredUser) { continue; }
                 $(element).closest('article').hide();
             }
+        }
+        async getCurrentFilmDateAdded() {
+            let ratingText = this.csfdPage.find('span.stars-rating.initialized').attr('title');
+            if (ratingText === undefined) {
+                // Grab the rating date from mobile-rating
+                ratingText = this.csfdPage.find('.mobile-film-rating-detail a span').attr('title');
+                if (ratingText === undefined) {
+                    return;
+                }
+            }
+            let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+            if (match !== null) {
+                let ratingDate = match[0];
+                return ratingDate;
+                // let $myRatingCaption = $('.my-rating h3');
+                // $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
+            }
+            return undefined;
         }
 
         async addRatingsDate() {
@@ -1055,38 +971,44 @@ function mergeDict(list) {
         }
 
         async checkForUpdate() {
-            return $.ajax({
-                type: "GET",
-                url: GREASYFORK_URL,
-            });
+            let pageHtml = await $.get(GREASYFORK_URL);
+            let version = $(pageHtml).find('dd.script-show-version > span').text();
+            return version;
         }
 
         async getChangelog() {
-            return $.ajax({
-                type: "GET",
-                url: `${GREASYFORK_URL}/versions`,
-            });
+            let pageHtml = await $.get(`${GREASYFORK_URL}/versions`);
+            let versionDateTime = $(pageHtml).find('.version-date').first().attr('datetime');
+            let versionNumber = $(pageHtml).find('.version-number a').first().text()
+            let versionDate = versionDateTime.substring(0, 10);
+            let versionTime = versionDateTime.substring(11, 16);
+            let changelogText = `
+                <div style="font-size: 0.8rem; line-height: 1.5;">${versionDate} ${versionTime} (${versionNumber})<br>
+                    <hr>
+                    ${$(pageHtml).find('.version-changelog').html()}
+                </div>
+            `;
+            return changelogText;
         }
 
-        async checkRatingsCount() {
+        async initializeClassVariables() {
             this.userUrl = await this.getCurrentUser();
             this.storageKey = `${SCRIPTNAME}_${this.userUrl.split("/")[2].split("-")[1]}`;
             this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
             this.stars = this.getStars();
-
-            this.userRatingsCount = this.getCurrentUserRatingsCount();
-            this.localStorageRatingsCount = this.getLocalStorageRatingsCount();
-
-            if (this.userRatingsCount !== this.localStorageRatingsCount) {
-                this.addWarningToUserProfile();
-            }
         }
     }
 
+    // $(document).on('click', '#refr-ratings-button', function () {
+    //     alert("hihi");
+    // });
+
+    // ============================================================================================
     // SCRIPT START
     // ============================================================================================
     await delay(20);  // Greasemonkey workaround, wait a little bit for page to somehow load
     let csfd = new Csfd($('div.page-content'));
+
 
     // =================================
     // LOAD SETTINGS
@@ -1134,32 +1056,47 @@ function mergeDict(list) {
     if (await csfd.isLoggedIn()) {
 
         // Global settings without category
-        await csfd.checkRatingsCount();
+        await csfd.initializeClassVariables();
 
         // Header modifications
         if (settings.clickableMessages) { csfd.clickableMessages(); }
 
-        // Film/Series page
+        // Film page
         if (location.href.includes('/film/')) {
             if (settings.addRatingsDate) { csfd.addRatingsDate(); }
             if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
 
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
             await csfd.checkAndUpdateRatings();
-            // await csfd.checkRatingsCount();
         }
 
-        // let allPages = await csfd.getAllPages();
-        // console.log("allPages:", allPages);
-        // let merged = mergeDict(allPages);
-        // console.log("MERGED:", merged);
+        // Compare - check if number of ratings saved and current are the same
+        if (settings.compareUserRatings) {
+            let ratingsInLocalStorage = await csfd.getLocalStorageRatingsCount();
+            let currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
+            if (ratingsInLocalStorage === currentUserRatingsCount) {
+                csfd.userRatingsCount = currentUserRatingsCount;
+                const $span = $("<span>", { html: "✔️", title: "Přenačíst všechna hodnocení" }).css({ cursor: "pointer" });
+                $('#chkCompareUserRatings').parent().append($span);
+                $span.on("click", async function () {
+                    let csfd = new Csfd($('div.page-content'));
+                    csfd.refreshAllRatings(csfd);
+                });
+            } else {
+                $('#chkCompareUserRatings').parent().append('<span>⚠️</span>');
+                csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
+                csfd.addWarningToUserProfile();
+            }
+        }
 
         // User page
-        if (location.href.includes('/uzivatel/')) {
+        if (await csfd.onOtherUserPage()) {
             if (settings.displayMessageButton) { csfd.displayMessageButton(); }
             if (settings.displayFavoriteButton) { csfd.displayFavoriteButton(); }
             if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
-            if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
+            if (await csfd.onOtherUserHodnoceniPage()) {
+                if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
+            }
         }
     }
 
@@ -1167,38 +1104,71 @@ function mergeDict(list) {
     // const $siteHtml = await $.get(GREASYFORK_URL);
     // let t1 = performance.now();
     // console.log("Call to 'await $.get(GREASYFORK_URL)' took " + (t1 - t0) + " ms.");
-    // // console.log("siteHtml:", $siteHtml);
-    // let version = $($siteHtml).find('dd.script-show-version > span').text();
-    // let curVersion = $(VERSION).text().replace('v', '');
-    // console.log("version:", version);
-    // console.log("curVersion:", curVersion);
+
     // If not already in session storage, get new version from greasyfork and display changelog over version link
-    if (!sessionStorage.updateChecked) {
-        csfd.checkForUpdate().then(function (data) {
-            let version = $(data).find('dd.script-show-version > span').text();
-            let curVersion = $(VERSION).text().replace('v', '');
+    let updateCheckJson = sessionStorage.updateChecked !== undefined ? JSON.parse(sessionStorage.updateChecked) : {};
+    let $verLink = $('#script-version');
+    if (Object.keys(updateCheckJson).length !== 0) {
+        const difference = (Date.now() - updateCheckJson.lastCheck) / 60 / 60 / 60;
+        const curVersion = VERSION_NUM.replace('v', '');
+        // If more than 5 minutes, check for update
+        if (difference >= 5) {
+            let version = await csfd.checkForUpdate();
+            let changelogText = await csfd.getChangelog();
+            updateCheckJson.changelogText = changelogText;
+            $verLink.attr("data-tippy-content", changelogText);
             if (version !== curVersion) {
-                let $verLink = $('#script-version');
+                updateCheckJson.newVersion = true;
+                updateCheckJson.newVersionNumber = version;
+
                 let versionText = `${$verLink.text()} (Update v${version})`;
                 $verLink.text(versionText);
-                sessionStorage.versionText = versionText;
-
-                csfd.getChangelog().then(function (data) {
-                    let changelogText = $(data).find('.version-date').first().text() + "<br>";
-                    changelogText += $(data).find('.version-changelog').html();
-                    $verLink.attr("data-tippy-content", changelogText);
-                    sessionStorage.changelogText = changelogText;
-                });
+                updateCheckJson.versionText = versionText;
+            } else {
+                updateCheckJson.newVersion = false;
+                updateCheckJson.versionText = VERSION_NUM;
             }
-        });
-        sessionStorage.updateChecked = "true";
+            updateCheckJson.lastCheck = Date.now();
+            sessionStorage.updateChecked = JSON.stringify(updateCheckJson);
+        } else {
+            if (updateCheckJson.newVersion === true) {
+                if (updateCheckJson.newVersionNumber === curVersion) {
+                    $verLink.text(`v${curVersion}`);
+                } else {
+                    const versionText = `${$verLink.text()} (Update v${updateCheckJson.newVersionNumber})`;
+                    $verLink.text(versionText);
+                }
+                $verLink.attr("data-tippy-content", updateCheckJson.changelogText);
+            } else {
+                $verLink.attr("data-tippy-content", updateCheckJson.changelogText);
+            }
+            // $('#script-version')
+            //     .text(updateCheckJson.versionText)
+            //     .attr("data-tippy-content", updateCheckJson.changelogText);
+        }
+
     } else {
-        $('#script-version')
-            .text(sessionStorage.versionText)
-            .attr("data-tippy-content", sessionStorage.changelogText);
+        let version = await csfd.checkForUpdate();
+        let curVersion = VERSION_NUM.replace('v', '');
+        if (version !== curVersion) {
+            updateCheckJson.newVersion = true;
+            let $verLink = $('#script-version');
+            let versionText = `${$verLink.text()} (Update v${version})`;
+            updateCheckJson.versionText = versionText;
+            updateCheckJson.newVersionNumber = version;
+            let changelogText = await csfd.getChangelog();
+            $verLink.text(versionText);
+            updateCheckJson.changelogText = changelogText;
+            $verLink.attr("data-tippy-content", changelogText);
+        } else {
+            updateCheckJson.newVersion = false;
+            updateCheckJson.versionText = VERSION_NUM;
+        }
+        updateCheckJson.lastCheck = Date.now();
+        sessionStorage.updateChecked = JSON.stringify(updateCheckJson);
     }
 
     // Call TippyJs constructor
-    refreshTooltips();
+    await refreshTooltips();
 
 })();

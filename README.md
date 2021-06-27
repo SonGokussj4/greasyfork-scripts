@@ -1,7 +1,15 @@
 # CSFD-Compare
 
+> **v0.5.0** _(2021-06-27)_  
+
+**New:** Zcela přepracovaná logika načítání a porovnávání hodnocení (rychlejší)  
+**New:** U porovnávání hodnocení přejetím myší nad mým hodnocením se zobrazí datum  
+**New:** Tlačítko pro obnovení hodnocení přesunuto do csfd-compare settings panelu (původně v uživ.)  
+**New:** Přidáno tlačítko do nastavení: "Přenačíst hodnocení" - zelená fajfka  
 **New:** Přidáno nastavení: Skrýt panel - Vítej na ČSFD  
+**New:** Vylepšené zjišťování updatů, nyní jednou za 5 minut, ale info si drží v mezipaměti  
 **Fix:** Oprava detekce logovaného uživatele u Greasemonkey  
+**Fix:** Oprava skrytí registračního panelu v SK verzi  
 
 > **v0.4.5** _(2021-06-23)_  
 
