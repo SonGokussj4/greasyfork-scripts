@@ -652,15 +652,16 @@ async function mergeDict(list) {
         }
 
         async getAllPages() {
-            const $content = await $.get('/uzivatel/78145-songokussj/hodnoceni');
+            const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
+            const $content = await $.get(url);
             const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
             const maxPageNum = $href.text();
 
             const ls = [];
-            for (let idx = 1; idx <= maxPageNum; idx++) {
+            for (let idx = 1; idx <= maxPageNum - 40; idx++) {
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
-                const url = `${this.userUrl}hodnoceni/?page=${idx}`;
+                const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
                 const res = await this.doSomething(idx, url);
                 ls.push(res);
             }
