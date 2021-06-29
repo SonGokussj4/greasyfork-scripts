@@ -873,7 +873,7 @@ async function mergeDict(list) {
                 location.href = "/chci-videt/";
             });
             $(".user-link.favorites").on("click", function () {
-                location.href = "/soukrome/oblibene/";
+                location.href = "/soukrome/oblibene/";  // TODO: Toto pry nefunguje
             });
             $(".user-link.messages").on("click", function () {
                 location.href = "/posta/";
@@ -893,19 +893,17 @@ async function mergeDict(list) {
                 let spanCount = h2.find('span.count');
                 $(div)
                     .mouseover(() => {
-                        div.style.backgroundColor = '#ba0305';
-                        h2[0].style.backgroundColor = '#ba0305';
-                        h2[0].style.color = '#fff';
+                        $(div).css({ backgroundColor: '#ba0305' });
+                        $(h2[0]).css({ backgroundColor: '#ba0305', color: '#fff' });
                         if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
                     })
                     .mouseout(() => {
                         if ($(div).hasClass('dropdown-content-head')) {
-                            div.style.backgroundColor = '#ececec';
+                            $(div).css({ backgroundColor: '#ececec' });
                         } else {
-                            div.style.backgroundColor = '#e3e3e3';
+                            $(div).css({ backgroundColor: '#e3e3e3' });
                         }
-                        h2[0].style.backgroundColor = 'initial';
-                        h2[0].style.color = 'initial';
+                        $(h2[0]).css({ backgroundColor: 'initial', color: 'initial' });
                         if (spanCount.length == 1) { spanCount[0].style.color = 'initial'; }
                     });
             }
