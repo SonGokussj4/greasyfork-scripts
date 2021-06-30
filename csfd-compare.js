@@ -474,6 +474,10 @@ async function mergeDict(list) {
         }
 
         addStars() {
+            if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
+                return;
+            }
+
             let $links = $('a.film-title-name');
             for (const $link of $links) {
                 let href = $($link).attr('href');
