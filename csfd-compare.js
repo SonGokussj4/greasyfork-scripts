@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.5.1
+// @version      0.5.2
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -17,7 +17,7 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION_NUM = 'v0.5.1';
+const VERSION_NUM = 'v0.5.2';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -74,6 +74,7 @@ let defaultSettings = {
     showControlPanelOnHover: true,
     clickableHeaderBoxes: true,
     clickableMessages: true,
+    addStars: true,
     // USER
     displayMessageButton: true,
     displayFavoriteButton: true,
@@ -325,6 +326,7 @@ async function mergeDict(list) {
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
+            $('#chkAddStars').attr('checked', settings.addStars);
 
             // USER
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
@@ -388,6 +390,12 @@ async function mergeDict(list) {
 
             $('#chkClickableMessages').change(function () {
                 settings.clickableMessages = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkAddStars').change(function () {
+                settings.addStars = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -473,7 +481,7 @@ async function mergeDict(list) {
             }
         }
 
-        addStars() {
+        async addStars() {
             if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
                 return;
             }
@@ -491,14 +499,17 @@ async function mergeDict(list) {
                 }
                 let starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
                 let starText = res.rating !== 0 ? "" : "odpad!";
-                let html = $("<span>", {
-                    'class': `csfd-compare-film-rating star-rating`,
+                let $starSpan = $("<span>", {
+                    'class': `star-rating`,
                     html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
                 }).css({
-                    color: '#00D300',
-                    marginLeft: "4px",
+                    // color: '#00D300',
+                    marginLeft: "5px",
+                    // display: 'inherit',
                 });
-                $($link).append(html);
+                // $($link).append($starSpan);
+                // $($starSpan).insertAfter($($link));
+                $($link).after($starSpan);
             }
         }
 
@@ -767,7 +778,7 @@ async function mergeDict(list) {
                         </section>
                     </article>
                     <article class="article">
-                        <h2 class="article-header">Globální úpravy</h2>
+                        <h2 class="article-header">Globální</h2>
                         <section>
                             <div class="article-content">
                                 <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
@@ -780,6 +791,10 @@ async function mergeDict(list) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
+                                <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů</label>
                             </div>
                         </section>
                     </article>
@@ -1085,6 +1100,7 @@ async function mergeDict(list) {
 
         // Global settings without category
         await csfd.initializeClassVariables();
+        if (settings.addStars) { csfd.addStars(); }
 
         // Header modifications
         if (settings.clickableMessages) { csfd.clickableMessages(); }
@@ -1115,8 +1131,6 @@ async function mergeDict(list) {
                 csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
                 csfd.addWarningToUserProfile();
             }
-
-            csfd.addStars();
         }
 
         // User page
