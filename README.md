@@ -1,5 +1,9 @@
 # CSFD-Compare
 
+> **v0.5.x** _(2021-06-30)_  
+
+**New:** Přidáno zobrazování hodnocení (hvězd) u viděných filmů/sérií (StarNames obdoba)  
+
 > **v0.5.0** _(2021-06-27)_  
 
 **New:** Zcela přepracovaná logika načítání a porovnávání hodnocení (rychlejší)  
