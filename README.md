@@ -1,9 +1,13 @@
 # CSFD-Compare
 
+> **v0.5.XX** _(2021-07-XX)_  
+
+**Fix:** Po najetí kurzorem na verzi už nyní zobrazuje správně changelog  
+
 > **v0.5.3** _(2021-07-01)_  
 
 **New:** Rychlejší obnovení DB, pokud už je částečně načtena  
-**New:** Tlačítko pro obnovení přesunuto nahoru, zelenou fajfku teď zobrazuje i StarNames
+**New:** Tlačítko pro obnovení přesunuto nahoru, zelenou fajfku teď zobrazuje i StarNames  
 
 > **v0.5.2** _(2021-06-30)_  
 

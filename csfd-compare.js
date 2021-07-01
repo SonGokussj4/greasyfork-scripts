@@ -1229,8 +1229,10 @@ async function mergeDict(list) {
             updateCheckJson.changelogText = changelogText;
             $verLink.attr("data-tippy-content", changelogText);
         } else {
+            updateCheckJson.changelogText = await csfd.getChangelog();
             updateCheckJson.newVersion = false;
             updateCheckJson.versionText = VERSION_NUM;
+            $('#script-version').attr("data-tippy-content", updateCheckJson.changelogText);
         }
         updateCheckJson.lastCheck = Date.now();
         sessionStorage.updateChecked = JSON.stringify(updateCheckJson);
