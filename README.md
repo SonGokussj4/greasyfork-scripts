@@ -1,6 +1,11 @@
 # CSFD-Compare
 
-> **v0.5.x** _(2021-06-30)_  
+> **v0.5.3** _(2021-07-01)_  
+
+**New:** Rychlejší obnovení DB, pokud už je částečně načtena  
+**New:** Tlačítko pro obnovení přesunuto nahoru, zelenou fajfku teď zobrazuje i StarNames
+
+> **v0.5.2** _(2021-06-30)_  
 
 **New:** Přidáno zobrazování hodnocení (hvězd) u viděných filmů/sérií (StarNames obdoba)  
 
