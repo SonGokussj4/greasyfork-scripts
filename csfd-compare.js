@@ -24,6 +24,15 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">${VERSION_NUM}</a>`;
 
 
+
+$('<div id="movie-preview" style="display: none; z-index: 999; width: 400px; background-color: #efefef; padding: 6px; ' +
+    'border-radius: 4px; box-shadow: 0 0 10px 4px #777777"><table border="1"><tr><td id="movie-preview-poster" width="120" ' +
+    'style="text-align: center"></td><td id="movie-preview-content" style="vertical-align: top; padding-left: 7px"></td>' +
+    '</tr></table></div>').appendTo('body');
+var movieBox = $('div#movie-preview');
+var movieBoxPoster = movieBox.find('#movie-preview-poster');
+var movieBoxContent = movieBox.find('#movie-preview-content');
+
 let Glob = {
     popupCounter: 0,
 
@@ -75,6 +84,7 @@ let defaultSettings = {
     clickableHeaderBoxes: true,
     clickableMessages: true,
     addStars: true,
+    moviePreview: true,
     // USER
     displayMessageButton: true,
     displayFavoriteButton: true,
@@ -327,6 +337,7 @@ async function mergeDict(list) {
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
             $('#chkAddStars').attr('checked', settings.addStars);
+            $('#chkMoviePreview').attr('checked', settings.moviePreview);
 
             // USER
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
@@ -396,6 +407,12 @@ async function mergeDict(list) {
 
             $('#chkAddStars').change(function () {
                 settings.addStars = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+
+            $('#chkMoviePreview').change(function () {
+                settings.moviePreview = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -480,12 +497,77 @@ async function mergeDict(list) {
                 this.stars = JSON.parse(localStorage[this.storageKey]);
             }
         }
+        async moviePreview() {
+            console.log("moviePreview() START");
+
+            const $links = $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]');
+            this.initializeImageFloatingPreview($links);
+            // for (const $link of $links) {
+            //     this.addMoviePreviewHandler($($link));
+            // }
+
+            console.log("moviePreview() END");
+        }
+
+        async initializeImageFloatingPreview($links) {
+            this.popup = $('<img>');
+            let $this = this;
+            $('body').append(this.popup);
+            for (const $link of $links) {
+                $($link).bind('mouseenter', async (e) => {
+                    console.log("$link.attr('src'):", $($link).attr('src'));
+                    await this.addMoviePreviewHandler($link);
+                    // this.refreshPopupPosition(e.pageX, e.pageY);
+                })
+                    .bind('mousemove', (e) => this.refreshPopupPosition(e.pageX, e.pageY))
+                    .bind('mouseleave', () => this.abort());
+            }
+        }
+        showPopup(imageUrl) {
+            this.popup.attr('src', imageUrl);
+            this.popup.show();
+        }
+        hidePopup() {
+            this.popup.attr('src', '');
+            this.popup.hide();
+        }
+        refreshPopupPosition(x, y) {
+            this.popup.css({
+                'position': 'absolute',
+                'left': x + 15,
+                'top': y + 15,
+                'z-index': 999,
+            });
+        }
+        abort() {
+            let controller = new AbortController();
+            controller.abort();
+            // this.currentRequest.abort();
+            this.hidePopup();
+        }
+
+        async addMoviePreviewHandler(element) {
+            console.log("$(element):", $(element));
+            const url = $(element).attr('href');
+            console.log("URL:", url);
+
+            this.html = await $.get(url);
+            if (this.html.redirect) {
+                this.html = await $.get(this.html.redirect);
+            }
+
+            let img = $(this.html).find('div.film-posters img[src]').attr('src');
+            console.log("img:", img);
+
+            if (img !== undefined) {
+                this.showPopup(img);
+            }
+        }
 
         async addStars() {
             if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
                 return;
             }
-
             let $links = $('a.film-title-name');
             for (const $link of $links) {
                 let href = $($link).attr('href');
@@ -799,6 +881,10 @@ async function mergeDict(list) {
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
                                 <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů</label>
                             </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkMoviePreview" name="add-stars">
+                                <label for="chkMoviePreview" style="${resetLabelStyle}">Náhledy filmů/seriálů</label>
+                            </div>
                         </section>
                     </article>
 
@@ -1083,6 +1169,8 @@ async function mergeDict(list) {
     if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
     if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
     if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
+
+    if (settings.moviePreview) { csfd.moviePreview(); }
 
 
     // =================================
