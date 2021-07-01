@@ -591,7 +591,7 @@ async function mergeDict(list) {
             let $div = $('<div>', {
                 html: $button,
             });
-            $('#chkCompareUserRatings').parent().append($div);
+            $('.csfd-compare-settings').after($div);
 
             $($button).on("click", async function () {
                 let csfd = new Csfd($('div.page-content'));
@@ -747,7 +747,7 @@ async function mergeDict(list) {
                 <a href="#" class="user-link initialized csfd-compare-menu">CC</a>
                 <div class="dropdown-content notifications" style="${dropdownStyle}">
 
-                    <div class="dropdown-content-head">
+                    <div class="dropdown-content-head csfd-compare-settings">
                         <h2>CSFD-Compare nastavení</h2>
                         <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">${VERSION}</span>
                     </div>
@@ -1102,6 +1102,19 @@ async function mergeDict(list) {
         await csfd.initializeClassVariables();
         if (settings.addStars) { csfd.addStars(); }
 
+        let ratingsInLocalStorage = 0;
+        let currentUserRatingsCount = 0;
+        if (settings.addStars || settings.compareUserRatings) {
+            ratingsInLocalStorage = await csfd.getLocalStorageRatingsCount();
+            currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
+            if (ratingsInLocalStorage !== currentUserRatingsCount) {
+                csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
+                csfd.addWarningToUserProfile();
+            } else {
+                csfd.userRatingsCount = currentUserRatingsCount;
+            }
+        }
+
         // Header modifications
         if (settings.clickableMessages) { csfd.clickableMessages(); }
 
@@ -1114,22 +1127,30 @@ async function mergeDict(list) {
             await csfd.checkAndUpdateRatings();
         }
 
-        // Compare - check if number of ratings saved and current are the same
-        if (settings.compareUserRatings) {
-            let ratingsInLocalStorage = await csfd.getLocalStorageRatingsCount();
-            let currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
+        // Ratings DB - check if number of ratings saved and current are the same
+        if (settings.compareUserRatings || settings.addStars) {
             if (ratingsInLocalStorage === currentUserRatingsCount) {
-                csfd.userRatingsCount = currentUserRatingsCount;
                 const $span = $("<span>", { html: "✔️", title: "Přenačíst všechna hodnocení" }).css({ cursor: "pointer" });
-                $('#chkCompareUserRatings').parent().append($span);
                 $span.on("click", async function () {
                     let csfd = new Csfd($('div.page-content'));
                     csfd.refreshAllRatings(csfd);
                 });
+                // OK or WARN icon for compareUserRatings
+                if (settings.compareUserRatings) {
+                    $('#chkCompareUserRatings').parent().append($span.clone(true));
+                }
+                // OK or WARN icon for addStars
+                if (settings.addStars) {
+                    $('#chkAddStars').parent().append($span.clone(true));
+                }
             } else {
-                $('#chkCompareUserRatings').parent().append('<span>⚠️</span>');
-                csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
-                csfd.addWarningToUserProfile();
+                const $span = $("<span>", { html: "⚠️", title: "Nejsou načtena všechna hodnocení" }).css({ cursor: "pointer" });
+                if (settings.compareUserRatings) {
+                    $('#chkCompareUserRatings').parent().append($span.clone());
+                }
+                if (settings.addStars) {
+                    $('#chkAddStars').parent().append($span.clone());
+                }
             }
         }
 
