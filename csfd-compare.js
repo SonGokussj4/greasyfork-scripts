@@ -599,13 +599,6 @@ async function mergeDict(list) {
             });
         }
 
-        async refreshAllRatings(csfd) {
-            await csfd.initializeClassVariables();
-            csfd.stars = await csfd.getAllPages();
-            csfd.exportRatings();
-            Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
-        }
-
         displayMessageButton() {
             let userHref = $('#dropdown-control-panel li a.ajax').attr('href');
             if (userHref === undefined) {
@@ -691,22 +684,32 @@ async function mergeDict(list) {
             // web workers - vyšší dívčí - více vláken z browseru
         }
 
-        async getAllPages() {
+        async getAllPages(force = false) {
             const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
             const $content = await $.get(url);
             const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
             const maxPageNum = $href.text();
-
-            const ls = [];
+            this.userRatingsCount = await this.getCurrentUserRatingsCount2();
+            let dict = this.stars;
+            let ls = force ? [] : [dict];
             for (let idx = 1; idx <= maxPageNum; idx++) {
+                if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
                 const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
                 const res = await this.doSomething(idx, url);
                 ls.push(res);
+                if (!force) dict = await mergeDict(ls);
             }
-            const dict = await mergeDict(ls);
+            if (force) dict = await mergeDict(ls);
             return dict;
+        }
+
+        async refreshAllRatings(csfd, force = false) {
+            await csfd.initializeClassVariables();
+            csfd.stars = await csfd.getAllPages(force);
+            csfd.exportRatings();
+            Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
         }
 
         removeBox_MotivationPanel() {
@@ -1133,7 +1136,7 @@ async function mergeDict(list) {
                 const $span = $("<span>", { html: "✔️", title: "Přenačíst všechna hodnocení" }).css({ cursor: "pointer" });
                 $span.on("click", async function () {
                     let csfd = new Csfd($('div.page-content'));
-                    csfd.refreshAllRatings(csfd);
+                    csfd.refreshAllRatings(csfd, true);
                 });
                 // OK or WARN icon for compareUserRatings
                 if (settings.compareUserRatings) {
