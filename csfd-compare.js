@@ -24,15 +24,6 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">${VERSION_NUM}</a>`;
 
 
-
-$('<div id="movie-preview" style="display: none; z-index: 999; width: 400px; background-color: #efefef; padding: 6px; ' +
-    'border-radius: 4px; box-shadow: 0 0 10px 4px #777777"><table border="1"><tr><td id="movie-preview-poster" width="120" ' +
-    'style="text-align: center"></td><td id="movie-preview-content" style="vertical-align: top; padding-left: 7px"></td>' +
-    '</tr></table></div>').appendTo('body');
-var movieBox = $('div#movie-preview');
-var movieBoxPoster = movieBox.find('#movie-preview-poster');
-var movieBoxContent = movieBox.find('#movie-preview-content');
-
 let Glob = {
     popupCounter: 0,
 
@@ -138,6 +129,116 @@ async function mergeDict(list) {
     /* jshint -W069 */
     /* jshint -W083 */
     /* jshint -W075 */
+
+    class ImageFloatingPreview {
+
+        constructor(csfd) {
+            this.csfd = csfd;
+            this.initializeImageFloatingPreview();
+        }
+
+        initializeImageFloatingPreview() {
+            this.popup = $('<img>')
+                .css({
+                    // 'box-shadow': '5px 5px 14px 8px rgba(0,0,0,0.75)',
+                    'z-index': 999,
+                });
+            $('body').append(this.popup);
+
+            $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]')
+                .on('mouseenter', (e) => {
+                    let creatorUrl = $(e.target).attr('href');
+                    this.hoverCreatorLink(creatorUrl);
+                    this.refreshPopupPosition(e.pageX, e.pageY);
+                })
+                .on('mousemove', (e) => this.refreshPopupPosition(e.pageX, e.pageY))
+                .on('mouseleave', () => this.abort());
+        }
+
+        showPopup(imageUrl) {
+            this.popup.attr('src', imageUrl);
+            this.popup.show();
+        }
+
+        hidePopup() {
+            this.popup.attr('src', '');
+            this.popup.hide();
+        }
+
+        refreshPopupPosition(x, y) {
+            this.popup.css({
+                'position': 'absolute',
+                'left': x + 15,
+                'top': y + 15,
+            });
+        }
+
+        abort() {
+            if (this.currentRequest !== undefined) {
+                this.currentRequest.abort();
+            }
+            this.hidePopup();
+        }
+
+        hoverCreatorLink(linkHref, oldLinkHref) {
+            const CACHE_MINUTES = 60;
+            var existing = localStorage.getItem('CSFD-Compare-films');
+            existing = existing ? JSON.parse(existing) : {};
+            console.log(`hoverCreatorLink(${linkHref}, ${oldLinkHref})`);
+            // console.log("existing[linkHref]:", existing[linkHref]);
+            let difference = CACHE_MINUTES;
+            if (existing[linkHref] !== undefined) {
+                difference = (Date.now() - existing[linkHref].date) / 60 / 60 / 60;
+            }
+            console.log("difference:", difference);
+            if (existing[linkHref] !== undefined && difference < CACHE_MINUTES) {
+                const img = existing[linkHref].imageUrl;
+                this.showPopup(img);
+                return;
+            } else {
+                this.currentRequest = $.get(linkHref);
+                // console.log("linkHref to get:", linkHref);
+
+                // Show loading animation
+                this.showPopup('https://i.imgur.com/2y770Xz.gif');
+
+                this.currentRequest.done((response) => {
+                    if (typeof response === 'object' && 'redirect' in response) {
+                        this.hoverCreatorLink(response.redirect, linkHref);
+                        return;
+                    }
+
+                    let imageUrl = $(response).find('div.film-posters img').attr('src');
+                    if (imageUrl !== undefined) {
+                        if (oldLinkHref !== undefined) {
+                            if (imageUrl.includes(';base64,')) {
+                                imageUrl = '';
+                            }
+                            existing[oldLinkHref] = {
+                                imageUrl: imageUrl,
+                                date: Date.now(),
+                            };
+                        } else {
+                            existing[linkHref] = {
+                                imageUrl: imageUrl,
+                                date: Date.now(),
+                            };
+                        }
+                        localStorage.setItem('CSFD-Compare-films', JSON.stringify(existing));
+                        this.showPopup(imageUrl);
+                    } else {
+                        existing[oldLinkHref] = {
+                            imageUrl: '',
+                            date: Date.now(),
+                        };
+                        localStorage.setItem('CSFD-Compare-films', JSON.stringify(existing));
+                        this.hidePopup();
+                    }
+
+                });
+            }
+        }
+    }
 
     class Csfd {
 
@@ -498,70 +599,21 @@ async function mergeDict(list) {
             }
         }
         async moviePreview() {
-            console.log("moviePreview() START");
-
-            const $links = $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]');
-            this.initializeImageFloatingPreview($links);
+            let imageFloatingPreview = new ImageFloatingPreview(this.csfdPage);
+            // const $links = $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]');
+            // // this.popup = $('<img>');
+            // var $popup = $('<img>');
+            // // $('body').append(this.popup);
+            // $('body').append($popup);
             // for (const $link of $links) {
-            //     this.addMoviePreviewHandler($($link));
+            //     $($link).bind('mouseenter', async (e) => {
+            //         console.log("$link.attr('src'):", $($link).attr('src'));
+            //         await this.addMoviePreviewHandler($popup, $link);
+            //         // this.refreshPopupPosition(e.pageX, e.pageY);
+            //     })
+            //         .bind('mousemove', (e) => this.refreshPopupPosition($popup, e.pageX, e.pageY))
+            //         .bind('mouseleave', () => this.abort());
             // }
-
-            console.log("moviePreview() END");
-        }
-
-        async initializeImageFloatingPreview($links) {
-            this.popup = $('<img>');
-            let $this = this;
-            $('body').append(this.popup);
-            for (const $link of $links) {
-                $($link).bind('mouseenter', async (e) => {
-                    console.log("$link.attr('src'):", $($link).attr('src'));
-                    await this.addMoviePreviewHandler($link);
-                    // this.refreshPopupPosition(e.pageX, e.pageY);
-                })
-                    .bind('mousemove', (e) => this.refreshPopupPosition(e.pageX, e.pageY))
-                    .bind('mouseleave', () => this.abort());
-            }
-        }
-        showPopup(imageUrl) {
-            this.popup.attr('src', imageUrl);
-            this.popup.show();
-        }
-        hidePopup() {
-            this.popup.attr('src', '');
-            this.popup.hide();
-        }
-        refreshPopupPosition(x, y) {
-            this.popup.css({
-                'position': 'absolute',
-                'left': x + 15,
-                'top': y + 15,
-                'z-index': 999,
-            });
-        }
-        abort() {
-            let controller = new AbortController();
-            controller.abort();
-            // this.currentRequest.abort();
-            this.hidePopup();
-        }
-
-        async addMoviePreviewHandler(element) {
-            console.log("$(element):", $(element));
-            const url = $(element).attr('href');
-            console.log("URL:", url);
-
-            this.html = await $.get(url);
-            if (this.html.redirect) {
-                this.html = await $.get(this.html.redirect);
-            }
-
-            let img = $(this.html).find('div.film-posters img[src]').attr('src');
-            console.log("img:", img);
-
-            if (img !== undefined) {
-                this.showPopup(img);
-            }
         }
 
         async addStars() {
