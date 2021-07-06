@@ -1288,8 +1288,13 @@ async function mergeDict(list) {
 
         // Ratings DB - check if number of ratings saved and current are the same
         if (settings.compareUserRatings || settings.addStars) {
-            if (ratingsInLocalStorage === currentUserRatingsCount) {
-                const $span = $("<span>", { html: "✔️", title: "Přenačíst všechna hodnocení" }).css({ cursor: "pointer" });
+
+            let spanContent = { html: "✔️", title: "Přenačíst všechna hodnocení" };
+            if (ratingsInLocalStorage !== currentUserRatingsCount) {
+                spanContent = { html: "⚠️", title: "Nejsou načtena všechna hodnocení! \nPřenačíst VŠECHNA hodnocení" };
+            }
+
+            const $span = $("<span>", spanContent).css({ cursor: "pointer" });
                 $span.on("click", async function () {
                     let csfd = new Csfd($('div.page-content'));
                     csfd.refreshAllRatings(csfd, true);
@@ -1302,15 +1307,6 @@ async function mergeDict(list) {
                 if (settings.addStars) {
                     $('#chkAddStars').parent().append($span.clone(true));
                 }
-            } else {
-                const $span = $("<span>", { html: "⚠️", title: "Nejsou načtena všechna hodnocení" }).css({ cursor: "pointer" });
-                if (settings.compareUserRatings) {
-                    $('#chkCompareUserRatings').parent().append($span.clone());
-                }
-                if (settings.addStars) {
-                    $('#chkAddStars').parent().append($span.clone());
-                }
-            }
         }
 
         // User page
