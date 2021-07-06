@@ -627,6 +627,18 @@ async function mergeDict(list) {
             if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
                 return;
             }
+            let starsCss = { marginLeft: "5px" };
+            if (await this.onOtherUserPage()) {
+                starsCss = {
+                    marginLeft: "5px",
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    borderColor: "#c78888",
+                    borderRadius: "5px",
+                    padding: "0px 5px",
+                };
+            }
+
             let $links = $('a.film-title-name');
             for (const $link of $links) {
                 let href = $($link).attr('href');
@@ -643,11 +655,7 @@ async function mergeDict(list) {
                 let $starSpan = $("<span>", {
                     'class': `star-rating`,
                     html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
-                }).css({
-                    // color: '#00D300',
-                    marginLeft: "5px",
-                    // display: 'inherit',
-                });
+                }).css(starsCss);
                 // $($link).append($starSpan);
                 // $($starSpan).insertAfter($($link));
                 $($link).after($starSpan);
