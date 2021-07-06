@@ -2,6 +2,7 @@
 
 > **v0.5.XX** _(2021-07-XX)_  
 
+**Fix:** Duplikace uživatelského hodnocení na stránkách uživatele  
 **Fix:** Po najetí kurzorem na verzi už nyní zobrazuje správně changelog  
 
 > **v0.5.3** _(2021-07-01)_  

@@ -589,6 +589,13 @@ async function mergeDict(list) {
             return false;
         }
 
+        async notOnUserPage() {
+            if (location.href.includes('/uzivatel/') && location.href.includes(this.userUrl)) {
+                return false;
+            }
+            return true;
+        }
+
         exportRatings() {
             localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
         }
@@ -1243,7 +1250,8 @@ async function mergeDict(list) {
 
         // Global settings without category
         await csfd.initializeClassVariables();
-        if (settings.addStars) { csfd.addStars(); }
+
+        if (settings.addStars && await csfd.notOnUserPage()) { csfd.addStars(); }
 
         let ratingsInLocalStorage = 0;
         let currentUserRatingsCount = 0;
