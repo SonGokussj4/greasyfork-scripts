@@ -75,7 +75,7 @@ let defaultSettings = {
     clickableHeaderBoxes: true,
     clickableMessages: true,
     addStars: true,
-    moviePreview: true,
+    moviePreview: false,
     // USER
     displayMessageButton: true,
     displayFavoriteButton: true,
@@ -134,11 +134,19 @@ async function mergeDict(list) {
 
         constructor(csfd) {
             this.csfd = csfd;
+            this.opts = {
+                'xOffset': 20,
+                'yOffset': -20,
+                'xSize': 120,
+                'fadeIn': 'fast'
+            };
             this.initializeImageFloatingPreview();
         }
 
         initializeImageFloatingPreview() {
-            this.popup = $('<img>')
+            this.popup = $('<img>', {
+                "class": "floating-preview"
+            })
                 .css({
                     // 'box-shadow': '5px 5px 14px 8px rgba(0,0,0,0.75)',
                     'z-index': 999,
@@ -155,9 +163,10 @@ async function mergeDict(list) {
                 .on('mouseleave', () => this.abort());
         }
 
-        showPopup(imageUrl) {
+        showPopup(imageUrl, content) {
             this.popup.attr('src', imageUrl);
-            this.popup.show();
+            // this.popup.wrap(`<div class="my-thingie">${content}</div>`);
+            this.popup.show().fadeIn(this.opts.fadeIn);
         }
 
         hidePopup() {
@@ -168,8 +177,8 @@ async function mergeDict(list) {
         refreshPopupPosition(x, y) {
             this.popup.css({
                 'position': 'absolute',
-                'left': x + 15,
-                'top': y + 15,
+                'left': x + this.opts.xOffset,
+                'top': y + this.opts.yOffset,
             });
         }
 
@@ -184,16 +193,17 @@ async function mergeDict(list) {
             const CACHE_MINUTES = 60;
             var existing = localStorage.getItem('CSFD-Compare-films');
             existing = existing ? JSON.parse(existing) : {};
-            console.log(`hoverCreatorLink(${linkHref}, ${oldLinkHref})`);
+            // console.log(`hoverCreatorLink(${linkHref}, ${oldLinkHref})`);
             // console.log("existing[linkHref]:", existing[linkHref]);
             let difference = CACHE_MINUTES;
             if (existing[linkHref] !== undefined) {
                 difference = (Date.now() - existing[linkHref].date) / 60 / 60 / 60;
             }
-            console.log("difference:", difference);
+            // console.log("difference:", difference);
             if (existing[linkHref] !== undefined && difference < CACHE_MINUTES) {
                 const img = existing[linkHref].imageUrl;
-                this.showPopup(img);
+                const content = existing[linkHref].data;
+                this.showPopup(img, content);
                 return;
             } else {
                 this.currentRequest = $.get(linkHref);
@@ -209,6 +219,7 @@ async function mergeDict(list) {
                     }
 
                     let imageUrl = $(response).find('div.film-posters img').attr('src');
+                    let $content = $(response).find('.film-info-content').html();
                     if (imageUrl !== undefined) {
                         if (oldLinkHref !== undefined) {
                             if (imageUrl.includes(';base64,')) {
@@ -216,19 +227,22 @@ async function mergeDict(list) {
                             }
                             existing[oldLinkHref] = {
                                 imageUrl: imageUrl,
+                                data: $content,
                                 date: Date.now(),
                             };
                         } else {
                             existing[linkHref] = {
                                 imageUrl: imageUrl,
+                                data: $content,
                                 date: Date.now(),
                             };
                         }
                         localStorage.setItem('CSFD-Compare-films', JSON.stringify(existing));
-                        this.showPopup(imageUrl);
+                        this.showPopup(imageUrl, $content);
                     } else {
                         existing[oldLinkHref] = {
                             imageUrl: '',
+                            data: $content,
                             date: Date.now(),
                         };
                         localStorage.setItem('CSFD-Compare-films', JSON.stringify(existing));
@@ -742,9 +756,11 @@ async function mergeDict(list) {
             });
             $('.csfd-compare-settings').after($div);
 
+            let forceUpdate = ratingsInLS > curUserRatings ? true : false;
+
             $($button).on("click", async function () {
                 let csfd = new Csfd($('div.page-content'));
-                csfd.refreshAllRatings(csfd);
+                csfd.refreshAllRatings(csfd, forceUpdate);
             });
         }
 
@@ -1295,18 +1311,18 @@ async function mergeDict(list) {
             }
 
             const $span = $("<span>", spanContent).css({ cursor: "pointer" });
-                $span.on("click", async function () {
-                    let csfd = new Csfd($('div.page-content'));
-                    csfd.refreshAllRatings(csfd, true);
-                });
-                // OK or WARN icon for compareUserRatings
-                if (settings.compareUserRatings) {
-                    $('#chkCompareUserRatings').parent().append($span.clone(true));
-                }
-                // OK or WARN icon for addStars
-                if (settings.addStars) {
-                    $('#chkAddStars').parent().append($span.clone(true));
-                }
+            $span.on("click", async function () {
+                let csfd = new Csfd($('div.page-content'));
+                csfd.refreshAllRatings(csfd, true);
+            });
+            // OK or WARN icon for compareUserRatings
+            if (settings.compareUserRatings) {
+                $('#chkCompareUserRatings').parent().append($span.clone(true));
+            }
+            // OK or WARN icon for addStars
+            if (settings.addStars) {
+                $('#chkAddStars').parent().append($span.clone(true));
+            }
         }
 
         // User page
