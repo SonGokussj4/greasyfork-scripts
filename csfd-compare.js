@@ -17,11 +17,10 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION_NUM = 'v0.5.3.1';
+const VERSION = 'v0.5.3.1';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
-const VERSION = `<a id="script-version" href="${GREASYFORK_URL}">${VERSION_NUM}</a>`;
 
 
 let Glob = {
@@ -917,7 +916,9 @@ async function mergeDict(list) {
 
                     <div class="dropdown-content-head csfd-compare-settings">
                         <h2>CSFD-Compare nastavení</h2>
-                        <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">${VERSION}</span>
+                        <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">
+                            <a id="script-version" href="${GREASYFORK_URL}">${VERSION}</a>
+                        </span>
                     </div>
 
                     <article class="article">
@@ -1346,7 +1347,7 @@ async function mergeDict(list) {
     let $verLink = $('#script-version');
     if (Object.keys(updateCheckJson).length !== 0) {
         const difference = (Date.now() - updateCheckJson.lastCheck) / 60 / 60 / 60;
-        const curVersion = VERSION_NUM.replace('v', '');
+        const curVersion = VERSION.replace('v', '');
         // If more than 5 minutes, check for update
         if (difference >= 5) {
             let version = await csfd.checkForUpdate();
@@ -1362,7 +1363,7 @@ async function mergeDict(list) {
                 updateCheckJson.versionText = versionText;
             } else {
                 updateCheckJson.newVersion = false;
-                updateCheckJson.versionText = VERSION_NUM;
+                updateCheckJson.versionText = VERSION;
             }
             updateCheckJson.lastCheck = Date.now();
             sessionStorage.updateChecked = JSON.stringify(updateCheckJson);
@@ -1385,7 +1386,7 @@ async function mergeDict(list) {
 
     } else {
         let version = await csfd.checkForUpdate();
-        let curVersion = VERSION_NUM.replace('v', '');
+        let curVersion = VERSION.replace('v', '');
         if (version !== curVersion) {
             updateCheckJson.newVersion = true;
             let $verLink = $('#script-version');
@@ -1399,7 +1400,7 @@ async function mergeDict(list) {
         } else {
             updateCheckJson.changelogText = await csfd.getChangelog();
             updateCheckJson.newVersion = false;
-            updateCheckJson.versionText = VERSION_NUM;
+            updateCheckJson.versionText = VERSION;
             $('#script-version').attr("data-tippy-content", updateCheckJson.changelogText);
         }
         updateCheckJson.lastCheck = Date.now();
