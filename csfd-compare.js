@@ -17,7 +17,7 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION = 'v0.5.3.1';
+const VERSION = 'v0.5.3.2';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -143,14 +143,22 @@ async function mergeDict(list) {
         }
 
         initializeImageFloatingPreview() {
-            this.popup = $('<img>', {
+            this.panel = $('<div>', {
                 "class": "floating-preview"
-            })
+            }).css({
+                padding: '5px',
+                border: '2px solid red;',
+            });
+
+            this.popup = $('<img>')
                 .css({
                     // 'box-shadow': '5px 5px 14px 8px rgba(0,0,0,0.75)',
                     'z-index': 999,
                 });
-            $('body').append(this.popup);
+            this.html = $('<h1>', { 'class': 'ratings' });
+            this.panel.append(this.popup);
+            this.panel.append(this.html);
+            $('body').append(this.panel);
 
             $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]')
                 .on('mouseenter', (e) => {
@@ -165,16 +173,16 @@ async function mergeDict(list) {
         showPopup(imageUrl, content) {
             this.popup.attr('src', imageUrl);
             // this.popup.wrap(`<div class="my-thingie">${content}</div>`);
-            this.popup.show().fadeIn(this.opts.fadeIn);
+            this.panel.show().fadeIn(this.opts.fadeIn);
         }
 
         hidePopup() {
             this.popup.attr('src', '');
-            this.popup.hide();
+            this.panel.hide();
         }
 
         refreshPopupPosition(x, y) {
-            this.popup.css({
+            this.panel.css({
                 'position': 'absolute',
                 'left': x + this.opts.xOffset,
                 'top': y + this.opts.yOffset,
