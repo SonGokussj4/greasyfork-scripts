@@ -74,7 +74,6 @@ let defaultSettings = {
     clickableHeaderBoxes: true,
     clickableMessages: true,
     addStars: true,
-    moviePreview: false,
     // USER
     displayMessageButton: true,
     displayFavoriteButton: true,
@@ -129,137 +128,6 @@ async function mergeDict(list) {
     /* jshint -W083 */
     /* jshint -W075 */
 
-    class ImageFloatingPreview {
-
-        constructor(csfd) {
-            this.csfd = csfd;
-            this.opts = {
-                'xOffset': 20,
-                'yOffset': -20,
-                'xSize': 120,
-                'fadeIn': 'fast'
-            };
-            this.initializeImageFloatingPreview();
-        }
-
-        initializeImageFloatingPreview() {
-            this.panel = $('<div>', {
-                "class": "floating-preview"
-            }).css({
-                padding: '5px',
-                border: '2px solid red;',
-            });
-
-            this.popup = $('<img>')
-                .css({
-                    // 'box-shadow': '5px 5px 14px 8px rgba(0,0,0,0.75)',
-                    'z-index': 999,
-                });
-            this.html = $('<h1>', { 'class': 'ratings' });
-            this.panel.append(this.popup);
-            this.panel.append(this.html);
-            $('body').append(this.panel);
-
-            $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]')
-                .on('mouseenter', (e) => {
-                    let creatorUrl = $(e.target).attr('href');
-                    this.hoverCreatorLink(creatorUrl);
-                    this.refreshPopupPosition(e.pageX, e.pageY);
-                })
-                .on('mousemove', (e) => this.refreshPopupPosition(e.pageX, e.pageY))
-                .on('mouseleave', () => this.abort());
-        }
-
-        showPopup(imageUrl, content) {
-            this.popup.attr('src', imageUrl);
-            // this.popup.wrap(`<div class="my-thingie">${content}</div>`);
-            this.panel.show().fadeIn(this.opts.fadeIn);
-        }
-
-        hidePopup() {
-            this.popup.attr('src', '');
-            this.panel.hide();
-        }
-
-        refreshPopupPosition(x, y) {
-            this.panel.css({
-                'position': 'absolute',
-                'left': x + this.opts.xOffset,
-                'top': y + this.opts.yOffset,
-            });
-        }
-
-        abort() {
-            if (this.currentRequest !== undefined) {
-                this.currentRequest.abort();
-            }
-            this.hidePopup();
-        }
-
-        hoverCreatorLink(linkHref, oldLinkHref) {
-            const CACHE_MINUTES = 60;
-            var existing = localStorage.getItem('CSFD-Compare-films');
-            existing = existing ? JSON.parse(existing) : {};
-            // console.log(`hoverCreatorLink(${linkHref}, ${oldLinkHref})`);
-            // console.log("existing[linkHref]:", existing[linkHref]);
-            let difference = CACHE_MINUTES;
-            if (existing[linkHref] !== undefined) {
-                difference = (Date.now() - existing[linkHref].date) / 60 / 60 / 60;
-            }
-            // console.log("difference:", difference);
-            if (existing[linkHref] !== undefined && difference < CACHE_MINUTES) {
-                const img = existing[linkHref].imageUrl;
-                const content = existing[linkHref].data;
-                this.showPopup(img, content);
-                return;
-            } else {
-                this.currentRequest = $.get(linkHref);
-                // console.log("linkHref to get:", linkHref);
-
-                // Show loading animation
-                this.showPopup('https://i.imgur.com/2y770Xz.gif');
-
-                this.currentRequest.done((response) => {
-                    if (typeof response === 'object' && 'redirect' in response) {
-                        this.hoverCreatorLink(response.redirect, linkHref);
-                        return;
-                    }
-
-                    let imageUrl = $(response).find('div.film-posters img').attr('src');
-                    let $content = $(response).find('.film-info-content').html();
-                    if (imageUrl !== undefined) {
-                        if (oldLinkHref !== undefined) {
-                            if (imageUrl.includes(';base64,')) {
-                                imageUrl = '';
-                            }
-                            existing[oldLinkHref] = {
-                                imageUrl: imageUrl,
-                                data: $content,
-                                date: Date.now(),
-                            };
-                        } else {
-                            existing[linkHref] = {
-                                imageUrl: imageUrl,
-                                data: $content,
-                                date: Date.now(),
-                            };
-                        }
-                        localStorage.setItem('CSFD-Compare-films', JSON.stringify(existing));
-                        this.showPopup(imageUrl, $content);
-                    } else {
-                        existing[oldLinkHref] = {
-                            imageUrl: '',
-                            data: $content,
-                            date: Date.now(),
-                        };
-                        localStorage.setItem('CSFD-Compare-films', JSON.stringify(existing));
-                        this.hidePopup();
-                    }
-
-                });
-            }
-        }
-    }
 
     class Csfd {
 
@@ -459,7 +327,6 @@ async function mergeDict(list) {
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
             $('#chkAddStars').attr('checked', settings.addStars);
-            $('#chkMoviePreview').attr('checked', settings.moviePreview);
 
             // USER
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
@@ -529,12 +396,6 @@ async function mergeDict(list) {
 
             $('#chkAddStars').change(function () {
                 settings.addStars = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
-
-            $('#chkMoviePreview').change(function () {
-                settings.moviePreview = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -625,23 +486,6 @@ async function mergeDict(list) {
             if (localStorage[this.storageKey]) {
                 this.stars = JSON.parse(localStorage[this.storageKey]);
             }
-        }
-        async moviePreview() {
-            let imageFloatingPreview = new ImageFloatingPreview(this.csfdPage);
-            // const $links = $('a.film-title-name,a[href*="csfd.cz/film/"],a[href*="csfd.sk/film/"]');
-            // // this.popup = $('<img>');
-            // var $popup = $('<img>');
-            // // $('body').append(this.popup);
-            // $('body').append($popup);
-            // for (const $link of $links) {
-            //     $($link).bind('mouseenter', async (e) => {
-            //         console.log("$link.attr('src'):", $($link).attr('src'));
-            //         await this.addMoviePreviewHandler($popup, $link);
-            //         // this.refreshPopupPosition(e.pageX, e.pageY);
-            //     })
-            //         .bind('mousemove', (e) => this.refreshPopupPosition($popup, e.pageX, e.pageY))
-            //         .bind('mouseleave', () => this.abort());
-            // }
         }
 
         async addStars() {
@@ -973,10 +817,6 @@ async function mergeDict(list) {
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
                                 <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů</label>
                             </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkMoviePreview" name="add-stars">
-                                <label for="chkMoviePreview" style="${resetLabelStyle}">Náhledy filmů/seriálů</label>
-                            </div>
                         </section>
                     </article>
 
@@ -1261,8 +1101,6 @@ async function mergeDict(list) {
     if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
     if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
     if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
-
-    if (settings.moviePreview) { csfd.moviePreview(); }
 
 
     // =================================
