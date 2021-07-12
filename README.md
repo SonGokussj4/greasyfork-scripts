@@ -1,11 +1,12 @@
 # CSFD-Compare
 
-> **v0.5.XX** _(2021-07-XX)_  
+> **v0.5.4** _(2021-07-12)_  
 
 **New:** Možnost přenačíst všechna hodnocení i po kliknutí na varovnou ikonu v nastavení  
 **Fix:** Pokud má uživatel uloženo více hodnocení než existuje, tlačítko obnovení resetuje a obnoví vše  
 **Fix:** Duplikace uživatelského hodnocení na stránkách uživatele  
 **Fix:** Po najetí kurzorem na verzi už nyní zobrazuje správně changelog  
+**Fix:** Pár úprav, které by měly řešit načítání viděných filmů
 
 > **v0.5.3** _(2021-07-01)_  
 
