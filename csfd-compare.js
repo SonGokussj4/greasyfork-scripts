@@ -678,6 +678,22 @@ async function mergeDict(list) {
             panel.hide();
         }
 
+        restoreClickableGalleryImages() {
+            // Get all posters <picture>
+            let $posters = this.csfdPage.find('.gallery-item picture');
+
+            // Iterate through them and their img src attribute
+            for (const $poster of $posters) {
+                let src = $($poster).find('img').attr('src');
+
+                // Regex replace the src with the correct img src
+                let newSrc = src.replace(/cache[/]resized[/]w\d+[/]/g, '');
+
+                // Wrap the <picture> in <a href="new src"></a>
+                $($poster).wrap(`<a href="${newSrc}"></a>`);
+            }
+        }
+
         async doSomething(idx, url) {
             // console.log(`doSomething(${idx}) START`);
             let data = await $.get(url);
@@ -1094,6 +1110,11 @@ async function mergeDict(list) {
     // Film/Series page
     if (location.href.includes('/film/')) {
         if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
+    }
+
+    // Any Gallery page
+    if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
+        csfd.restoreClickableGalleryImages();
     }
 
     if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
