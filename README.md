@@ -1,5 +1,10 @@
 # CSFD-Compare
 
+> **v0.5.x** _(2021-07-xx)_  
+
+**New:** Odebráno zobrazování "Datum hodnocení", protože to čsfd konečně přidala  
+**New:** Přidáno nastavení na zobrazování odkazů na jednotlivé velikosti obrázků v galerii  
+
 > **v0.5.5** _(2021-07-13)_  
 
 **New:** Navrácení klikatelných obrázků/plakátů (v plné kvalitě) v galerii filmů či tvůrce  

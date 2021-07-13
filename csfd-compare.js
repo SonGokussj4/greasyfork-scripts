@@ -678,19 +678,107 @@ async function mergeDict(list) {
             panel.hide();
         }
 
-        restoreClickableGalleryImages() {
+        showLinkToImageOnSmallMoviePoster() {
+            let $film = this.csfdPage.find('.film-posters');
+            let $img = $film.find('img');
+            let src = $img.attr('src');
+            let width = $img.attr('width');
+
+            let $div = $(`<div>`, { "class": 'link-to-image' })
+                .css({
+                    position: 'absolute',
+                    right: '0px',
+                    bottom: '0px',
+                    display: 'none',
+                    'z-index': '999',
+                    'padding-left': '0.5em',
+                    'padding-right': '0.5em',
+                    'margin-bottom': '0.5em',
+                    'margin-right': '0.5em',
+                    'background-color': 'rgba(255, 245, 245, 0.85)',
+                    'border-radius': '5px 0px',
+                    'font-weight': 'bold'
+                })
+                .html(`<a href="${src}">w${width}</a>`);
+
+            $film.find('a').after($div);
+
+            $film.on('mouseover', () => {
+                $div.show("fast");
+            });
+            $film.on('mouseleave', () => {
+                $div.hide("fast");
+            });
+        }
+
+        showLinkToImageOnOtherGalleryImages() {
             // Get all posters <picture>
-            let $posters = this.csfdPage.find('.gallery-item picture');
+            let $pictures = this.csfdPage.find('.gallery-item picture');
 
             // Iterate through them and their img src attribute
-            for (const $poster of $posters) {
-                let src = $($poster).find('img').attr('src');
+            let pictureIdx = 0;
+            for (const $picture of $pictures) {
+                let obj = {};
 
-                // Regex replace the src with the correct img src
-                let newSrc = src.replace(/cache[/]resized[/]w\d+[/]/g, '');
+                let src = $($picture).find('img').attr('src').replace(/cache[/]resized[/]w\d+[/]/g, '');
 
-                // Wrap the <picture> in <a href="new src"></a>
-                $($poster).wrap(`<a href="${newSrc}"></a>`);
+                obj['100 %'] = src;
+
+                let $sources = $($picture).find('source');
+                for (const $source of $sources) {
+
+                    let attributeText = $($source).attr('srcset').replace(/\dx/g, '').replace(/\s/g, '');
+                    let links = attributeText.split(',');
+
+                    for (const link of links) {
+
+                        const match = link.match(/[/]w(\d+)/);
+
+                        if (match !== null) {
+                            if (match.length === 2) {
+                                const width = match[1];
+                                obj[width] = link;
+                            }
+                        }
+                    }
+                }
+
+                let idx = 0;
+                for (const item in obj) {
+
+                    let $div = $(`<div>`, { "class": `link-to-image-gallery picture-idx-${pictureIdx}` })
+                        .css({
+                            position: 'absolute',
+                            right: '0px',
+                            bottom: '0px',
+                            display: 'none',
+                            'z-index': '999',
+                            'padding-left': '0.5em',
+                            'padding-right': '0.5em',
+                            'margin-bottom': `${0.5 + (idx * 2)}em`,
+                            'margin-right': '0.5em',
+                            'background-color': 'rgba(255, 245, 245, 0.75)',
+                            'border-radius': '5px 0px',
+                            'font-weight': 'bold'
+                        })
+                        .html(`<a href="${obj[item]}">${item}</a>`);
+
+                    $($picture).find('img').after($div);
+                    $($picture).attr('data-idx', pictureIdx);
+
+                    idx += 1;
+                }
+
+                pictureIdx += 1;
+
+                $($picture).on('mouseover', () => {
+                    const pictureIdx = $($picture).attr('data-idx');
+                    $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).show("fast");
+                });
+                $($picture).on('mouseleave', () => {
+                    const pictureIdx = $($picture).attr('data-idx');
+                    $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide("fast");
+                });
             }
         }
 
@@ -1059,7 +1147,7 @@ async function mergeDict(list) {
         async getChangelog() {
             let pageHtml = await $.get(`${GREASYFORK_URL}/versions`);
             let versionDateTime = $(pageHtml).find('.version-date').first().attr('datetime');
-            let versionNumber = $(pageHtml).find('.version-number a').first().text()
+            let versionNumber = $(pageHtml).find('.version-number a').first().text();
             let versionDate = versionDateTime.substring(0, 10);
             let versionTime = versionDateTime.substring(11, 16);
             let changelogText = `
@@ -1110,11 +1198,12 @@ async function mergeDict(list) {
     // Film/Series page
     if (location.href.includes('/film/')) {
         if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
+        csfd.showLinkToImageOnSmallMoviePoster();
     }
 
     // Any Gallery page
     if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
-        csfd.restoreClickableGalleryImages();
+        csfd.showLinkToImageOnOtherGalleryImages();
     }
 
     if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
