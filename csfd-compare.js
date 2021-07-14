@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.5.4
+// @version      0.5.5
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -17,7 +17,7 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION = 'v0.5.4';
+const VERSION = 'v0.5.5';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -80,7 +80,8 @@ let defaultSettings = {
     hideUserControlPanel: true,
     compareUserRatings: true,
     // FILM/SERIES
-    addRatingsDate: true,
+    // addRatingsDate: true,
+    showLinkToImage: true,
     addRatingsComputedCount: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
@@ -335,7 +336,8 @@ async function mergeDict(list) {
             $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
 
             // FILM/SERIES
-            $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
+            // $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
+            $('#chkShowLinkToImage').attr('checked', settings.showLinkToImage);
             $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
@@ -426,11 +428,16 @@ async function mergeDict(list) {
             });
 
             // FILM/SERIES
-            $('#chkAddRatingsDate').change(function () {
-                settings.addRatingsDate = this.checked;
+            $('#chkShowLinkToImage').change(function () {
+                settings.showLinkToImage = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
+            // $('#chkAddRatingsDate').change(function () {
+            //     settings.addRatingsDate = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
             $('#chkAddRatingsComputedCount').change(function () {
                 settings.addRatingsComputedCount = this.checked;
@@ -678,7 +685,7 @@ async function mergeDict(list) {
             panel.hide();
         }
 
-        showLinkToImageOnSmallMoviePoster() {
+        async showLinkToImageOnSmallMoviePoster() {
             let $film = this.csfdPage.find('.film-posters');
             let $img = $film.find('img');
             let src = $img.attr('src');
@@ -711,11 +718,10 @@ async function mergeDict(list) {
             });
         }
 
-        showLinkToImageOnOtherGalleryImages() {
-            // Get all posters <picture>
+        async showLinkToImageOnOtherGalleryImages() {
+
             let $pictures = this.csfdPage.find('.gallery-item picture');
 
-            // Iterate through them and their img src attribute
             let pictureIdx = 0;
             for (const $picture of $pictures) {
                 let obj = {};
@@ -765,6 +771,7 @@ async function mergeDict(list) {
 
                     $($picture).find('img').after($div);
                     $($picture).attr('data-idx', pictureIdx);
+                    $($picture).parent().css({position: 'relative'});  // need to have this for absolute position to work
 
                     idx += 1;
                 }
@@ -780,6 +787,11 @@ async function mergeDict(list) {
                     $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide("fast");
                 });
             }
+        }
+
+        async showLinkToImage() {
+            this.showLinkToImageOnSmallMoviePoster();
+            this.showLinkToImageOnOtherGalleryImages();
         }
 
         async doSomething(idx, url) {
@@ -915,7 +927,7 @@ async function mergeDict(list) {
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
-                                <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítko "více...")</label>
+                                <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítka "více...")</label>
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
@@ -950,8 +962,8 @@ async function mergeDict(list) {
                         <h2 class="article-header">Film/Seriál</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkAddRatingsDate" name="compare-user-ratings" ${disabled}>
-                                <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
+                                <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image" ${disabled}>
+                                <label for="chkShowLinkToImage" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit odkazy na obrázcích</label>
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
@@ -1107,23 +1119,23 @@ async function mergeDict(list) {
             return undefined;
         }
 
-        async addRatingsDate() {
-            // Grab the rating date from stars-rating
-            let ratingText = $('span.stars-rating.initialized').attr('title');
-            if (ratingText === undefined) {
-                // Grab the rating date from mobile-rating
-                ratingText = $('.mobile-film-rating-detail a span').attr('title');
-                if (ratingText === undefined) {
-                    return;
-                }
-            }
-            let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
-            if (match !== null) {
-                let ratingDate = match[0];
-                let $myRatingCaption = $('.my-rating h3');
-                $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
-            }
-        }
+        // async addRatingsDate() {
+        //     // Grab the rating date from stars-rating
+        //     let ratingText = $('span.stars-rating.initialized').attr('title');
+        //     if (ratingText === undefined) {
+        //         // Grab the rating date from mobile-rating
+        //         ratingText = $('.mobile-film-rating-detail a span').attr('title');
+        //         if (ratingText === undefined) {
+        //             return;
+        //         }
+        //     }
+        //     let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+        //     if (match !== null) {
+        //         let ratingDate = match[0];
+        //         let $myRatingCaption = $('.my-rating h3');
+        //         $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
+        //     }
+        // }
 
         async addRatingsComputedCount() {
             let $computedStars = $('.star.active.computed');
@@ -1198,13 +1210,14 @@ async function mergeDict(list) {
     // Film/Series page
     if (location.href.includes('/film/')) {
         if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
-        csfd.showLinkToImageOnSmallMoviePoster();
+        // csfd.showLinkToImageOnSmallMoviePoster();
+        if (settings.showLinkToImage) { csfd.showLinkToImage(); }
     }
 
-    // Any Gallery page
-    if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
-        csfd.showLinkToImageOnOtherGalleryImages();
-    }
+    // // Any Gallery page
+    // if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
+    //     csfd.showLinkToImageOnOtherGalleryImages();
+    // }
 
     if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
     if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
@@ -1252,7 +1265,7 @@ async function mergeDict(list) {
 
         // Film page
         if (location.href.includes('/film/')) {
-            if (settings.addRatingsDate) { csfd.addRatingsDate(); }
+            // if (settings.addRatingsDate) { csfd.addRatingsDate(); }
             if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
 
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
