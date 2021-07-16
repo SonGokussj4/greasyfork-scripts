@@ -82,6 +82,7 @@ let defaultSettings = {
     // FILM/SERIES
     // addRatingsDate: true,
     showLinkToImage: true,
+    ratingsEstimate: true,
     addRatingsComputedCount: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
@@ -338,6 +339,7 @@ async function mergeDict(list) {
             // FILM/SERIES
             // $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
             $('#chkShowLinkToImage').attr('checked', settings.showLinkToImage);
+            $('#chkRatingsEstimate').attr('checked', settings.ratingsEstimate);
             $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
@@ -430,6 +432,11 @@ async function mergeDict(list) {
             // FILM/SERIES
             $('#chkShowLinkToImage').change(function () {
                 settings.showLinkToImage = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+            $('#chkRatingsEstimate').change(function () {
+                settings.ratingsEstimate = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -771,7 +778,7 @@ async function mergeDict(list) {
 
                     $($picture).find('img').after($div);
                     $($picture).attr('data-idx', pictureIdx);
-                    $($picture).parent().css({position: 'relative'});  // need to have this for absolute position to work
+                    $($picture).parent().css({ position: 'relative' });  // need to have this for absolute position to work
 
                     idx += 1;
                 }
@@ -787,6 +794,63 @@ async function mergeDict(list) {
                     $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide("fast");
                 });
             }
+        }
+
+        async ratingsEstimate() {
+            // Find rating-average element
+            let $ratingAverage = this.csfdPage.find('.box-rating-container .rating-average');
+            // Not found, exit fn()
+            if ($ratingAverage.length !== 1) { return; }
+            // Get the text
+            let curRating = $ratingAverage.text().replace(/\s/g, '');
+            // If the text if anything than '?%', exit fn()
+            if (!curRating.includes('?%')) { return; }
+            // Get all other users ratings
+            let $userRatings = this.csfdPage.find('section.others-rating .star-rating');
+            // If no ratings in other ratings, exit fn()
+            if ($userRatings.length === 0) { return; }
+            // Fill the list with ratings as numbers
+            let ratingNumbers = [];
+            for (const $userRating of $userRatings) {
+                let $ratingSpan = $($userRating).find('.stars');
+                let num = this.getNumberFromRatingSpan($ratingSpan);
+                // Transform number to percentage (0 -> 0 %, 1 -> 20 %, 2 -> 40 %...)
+                num = num * 20;
+                ratingNumbers.push(num);
+            }
+            // Compute the average
+            let average = (array) => array.reduce((a, b) => a + b) / array.length;
+            const ratingAverage = Math.round(average(ratingNumbers));
+            // Rewrite the displayed rating
+            const bgcolor = this.getRatingColor(ratingAverage);
+            console.log({ bgcolor });
+            $ratingAverage
+                .text(`${ratingAverage} %`)
+                .css({ color: '#fff', backgroundColor: bgcolor })
+                .attr('title', `spočteno z hodnocení: ${$userRatings.length}`);
+        }
+
+        getRatingColor(ratingPercent) {
+            switch (true) {
+                case (ratingPercent < 29):
+                    return "#535353";
+                case (ratingPercent >= 30 && ratingPercent < 69):
+                    return "#658db4";
+                case (ratingPercent >= 70):
+                    return "#ba0305";
+                default:
+                    return "#d2d2d2";
+            }
+        }
+        getNumberFromRatingSpan($span) {
+            // TODO: využít tuto funkci i při načítání hodnocení do LS
+            let rating = 0;
+            for (let stars = 0; stars <= 5; stars++) {
+                if ($span.hasClass('stars-' + stars)) {
+                    rating = stars;
+                }
+            }
+            return rating;
         }
 
         async showLinkToImage() {
@@ -963,7 +1027,11 @@ async function mergeDict(list) {
                         <section>
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image" ${disabled}>
-                                <label for="chkShowLinkToImage" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit odkazy na obrázcích</label>
+                                <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate" ${disabled}>
+                                <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
@@ -1212,6 +1280,7 @@ async function mergeDict(list) {
         if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
         // csfd.showLinkToImageOnSmallMoviePoster();
         if (settings.showLinkToImage) { csfd.showLinkToImage(); }
+        if (settings.ratingsEstimate) { csfd.ratingsEstimate(); }
     }
 
     // // Any Gallery page

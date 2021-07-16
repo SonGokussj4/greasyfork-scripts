@@ -1,5 +1,9 @@
 # CSFD-Compare
 
+> **v0.5.7** _(2021-07-16)_  
+
+**New:** Přidáno nastavení pro zobrazování vypočtených % hodnocení, pokud to nehodnotilo ještě 10 uživatelů  
+
 > **v0.5.6** _(2021-07-14)_  
 
 **New:** Přidáno nastavení pro zobrazování odkazů na jednotlivé velikosti obrázků v galerii  
