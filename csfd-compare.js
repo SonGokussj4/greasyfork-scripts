@@ -799,16 +799,22 @@ async function mergeDict(list) {
         async ratingsEstimate() {
             // Find rating-average element
             let $ratingAverage = this.csfdPage.find('.box-rating-container .rating-average');
+
             // Not found, exit fn()
             if ($ratingAverage.length !== 1) { return; }
+
             // Get the text
             let curRating = $ratingAverage.text().replace(/\s/g, '');
+
             // If the text if anything than '?%', exit fn()
             if (!curRating.includes('?%')) { return; }
+
             // Get all other users ratings
             let $userRatings = this.csfdPage.find('section.others-rating .star-rating');
+
             // If no ratings in other ratings, exit fn()
             if ($userRatings.length === 0) { return; }
+
             // Fill the list with ratings as numbers
             let ratingNumbers = [];
             for (const $userRating of $userRatings) {
@@ -818,12 +824,13 @@ async function mergeDict(list) {
                 num = num * 20;
                 ratingNumbers.push(num);
             }
+
             // Compute the average
             let average = (array) => array.reduce((a, b) => a + b) / array.length;
             const ratingAverage = Math.round(average(ratingNumbers));
+
             // Rewrite the displayed rating
             const bgcolor = this.getRatingColor(ratingAverage);
-            console.log({ bgcolor });
             $ratingAverage
                 .text(`${ratingAverage} %`)
                 .css({ color: '#fff', backgroundColor: bgcolor })
