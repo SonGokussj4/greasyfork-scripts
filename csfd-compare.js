@@ -1212,12 +1212,15 @@ async function mergeDict(list) {
         //     }
         // }
 
+        /**
+         * From the title of .current-user-rating span get 'spocteno ze serii: x'
+         * and add it bellow the 'Moje hodnoceni' text
+         */
         async addRatingsComputedCount() {
             let $computedStars = $('.star.active.computed');
             let isComputed = $computedStars.length != 0;
             if (!isComputed) { return; }
-            let $starsRating = $($computedStars[0]).closest('.stars-rating.initialized');
-            let fromRatingsText = $starsRating.attr('title');
+            let fromRatingsText = this.csfdPage.find('.current-user-rating > span').attr('title');
             if (fromRatingsText === undefined) {
                 return;
             }

@@ -1,5 +1,9 @@
 # CSFD-Compare
 
+> **v0.5.x** _(2021-07-xx)_  
+
+**Fix:** Opravena funkce 'Zobrazit spočteno ze sérií', už opět ukazuje pod 'Moje hodnocení'
+
 > **v0.5.7** _(2021-07-16)_  
 
 **New:** Přidáno nastavení pro zobrazování vypočtených % hodnocení, pokud to nehodnotilo ještě 10 uživatelů  
