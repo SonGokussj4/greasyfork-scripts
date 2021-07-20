@@ -1,5 +1,10 @@
 # CSFD-Compare
 
+> **v0.5.9** _(2021-07-20)_  
+
+**New:** Přidáno zobrazování průměru hodnocení oblíbených uživatelů, pokud nějací hodnotili  
+**Fix:** "Datum hodnocení" změněno defaultně jako vypnuté, protože jej zohledňuje CSFD-Extended  
+
 > **v0.5.8** _(2021-07-20)_  
 
 **New:** Přidáno zobrazování "Datum hodnocení", protože to čsfd po 2 dnech odebrala.... the fuck  

@@ -1,23 +1,24 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.5.8
+// @version      0.5.9
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
 // @include      *csfd.cz/*
 // @include      *csfd.sk/*
-// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @icon         https://static.pmgstatic.com/assets/images/60b418342fe799ef59c3c6fa1c73c2ff/apple-touch-icon.png
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
 // ==/UserScript==
 
 
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @updateURL    https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @downloadURL  https://XXraw.githubusercontent.com/SonGokussj4/GitHub-userscripts/master/gist.js
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION = 'v0.5.8';
+const VERSION = 'v0.5.9';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -80,9 +81,10 @@ let defaultSettings = {
     hideUserControlPanel: true,
     compareUserRatings: true,
     // FILM/SERIES
-    addRatingsDate: true,
+    addRatingsDate: false,
     showLinkToImage: true,
     ratingsEstimate: true,
+    ratingsFromFavorites: true,
     addRatingsComputedCount: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
@@ -255,7 +257,6 @@ async function mergeDict(list) {
         }
 
         removeFromLocalStorage() {
-
             // Check if film is in LocalStorage
             let filmUrl = this.getCurrentFilmUrl();
             let item = this.stars[filmUrl];
@@ -340,6 +341,7 @@ async function mergeDict(list) {
             $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
             $('#chkShowLinkToImage').attr('checked', settings.showLinkToImage);
             $('#chkRatingsEstimate').attr('checked', settings.ratingsEstimate);
+            $('#chkRatingsFromFavorites').attr('checked', settings.ratingsFromFavorites);
             $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
@@ -437,6 +439,11 @@ async function mergeDict(list) {
             });
             $('#chkRatingsEstimate').change(function () {
                 settings.ratingsEstimate = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
+            $('#chkRatingsFromFavorites').change(function () {
+                settings.ratingsFromFavorites = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
@@ -796,6 +803,40 @@ async function mergeDict(list) {
             }
         }
 
+        /**
+         * If film has been rated by user favorite people, make an averate and display it
+         * under the normal rating as: oblíbení: X %
+         *
+         * @returns null
+         */
+        async ratingsFromFavorites() {
+            let $ratingSpans = this.csfdPage.find('li.favored:not(.current-user-rating) .star-rating .stars');
+
+            // No favorite people ratings found
+            if ($ratingSpans.length === 0) { return; }
+
+            let ratingNumbers = [];
+            for (let $span of $ratingSpans) {
+                let num = this.getNumberFromRatingSpan($($span));
+                num = num * 20;
+                ratingNumbers.push(num);
+            }
+            let average = (array) => array.reduce((a, b) => a + b) / array.length;
+            const ratingAverage = Math.round(average(ratingNumbers));
+
+            let $ratingAverage = this.csfdPage.find('.box-rating-container div.rating-average');
+            $ratingAverage.html(`
+                <span style="position: absolute;">${$ratingAverage.text()}</span>
+                <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
+            `);
+
+        }
+        /**
+         * When there is less than 10 ratings on a movie, csfd waits with the rating.
+         * This computes the rating from those less than 10 and shows it.
+         *
+         * @returns null
+         */
         async ratingsEstimate() {
             // Find rating-average element
             let $ratingAverage = this.csfdPage.find('.box-rating-container .rating-average');
@@ -836,7 +877,13 @@ async function mergeDict(list) {
                 .css({ color: '#fff', backgroundColor: bgcolor })
                 .attr('title', `spočteno z hodnocení: ${$userRatings.length}`);
         }
-
+        /**
+         * Depending on the percent number, return a color as a string representation
+         * 0-29 black; 30-69 blue; 70-100 red
+         *
+         * @param {int} ratingPercent
+         * @returns {string} representation of colour
+         */
         getRatingColor(ratingPercent) {
             switch (true) {
                 case (ratingPercent < 29):
@@ -849,7 +896,17 @@ async function mergeDict(list) {
                     return "#d2d2d2";
             }
         }
+        /**
+         * From jquery! $span csfd element class (.stars stars-4) return the ratings number (4)
+         *
+         * @param {jquery} $span
+         * @returns int in range 0-5
+         */
         getNumberFromRatingSpan($span) {
+            // if ($span instanceof jQuery === false) {
+            //     $span = $($span)
+            // }
+
             // TODO: využít tuto funkci i při načítání hodnocení do LS
             let rating = 0;
             for (let stars = 0; stars <= 5; stars++) {
@@ -1039,6 +1096,10 @@ async function mergeDict(list) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate" ${disabled}>
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRatingsFromFavorites" name="ratings-from-favorites" ${disabled}>
+                                <label for="chkRatingsFromFavorites" style="${resetLabelStyle}">Zobrazit hodnocení z průměru oblíbených</label>
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
@@ -1295,6 +1356,7 @@ async function mergeDict(list) {
         // csfd.showLinkToImageOnSmallMoviePoster();
         if (settings.showLinkToImage) { csfd.showLinkToImage(); }
         if (settings.ratingsEstimate) { csfd.ratingsEstimate(); }
+        if (settings.ratingsFromFavorites) { csfd.ratingsFromFavorites(); }
     }
 
     // // Any Gallery page
