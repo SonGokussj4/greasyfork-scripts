@@ -1,8 +1,9 @@
 # CSFD-Compare
 
-> **v0.5.x** _(2021-07-xx)_  
+> **v0.5.8** _(2021-07-20)_  
 
-**Fix:** Opravena funkce 'Zobrazit spočteno ze sérií', už opět ukazuje pod 'Moje hodnocení'
+**New:** Přidáno zobrazování "Datum hodnocení", protože to čsfd po 2 dnech odebrala.... the fuck  
+**Fix:** Opravena funkce 'Zobrazit spočteno ze sérií', už se opět ukazuje pod 'Moje hodnocení'  
 
 > **v0.5.7** _(2021-07-16)_  
 
