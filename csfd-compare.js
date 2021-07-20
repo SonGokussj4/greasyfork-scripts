@@ -80,7 +80,7 @@ let defaultSettings = {
     hideUserControlPanel: true,
     compareUserRatings: true,
     // FILM/SERIES
-    // addRatingsDate: true,
+    addRatingsDate: true,
     showLinkToImage: true,
     ratingsEstimate: true,
     addRatingsComputedCount: true,
@@ -337,7 +337,7 @@ async function mergeDict(list) {
             $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
 
             // FILM/SERIES
-            // $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
+            $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
             $('#chkShowLinkToImage').attr('checked', settings.showLinkToImage);
             $('#chkRatingsEstimate').attr('checked', settings.ratingsEstimate);
             $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
@@ -440,11 +440,11 @@ async function mergeDict(list) {
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
-            // $('#chkAddRatingsDate').change(function () {
-            //     settings.addRatingsDate = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
+            $('#chkAddRatingsDate').change(function () {
+                settings.addRatingsDate = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
 
             $('#chkAddRatingsComputedCount').change(function () {
                 settings.addRatingsComputedCount = this.checked;
@@ -1045,6 +1045,10 @@ async function mergeDict(list) {
                                 <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
                             </div>
                             <div class="article-content">
+                                <input type="checkbox" id="chkAddRatingsDate" name="add-ratings" ${disabled}>
+                                <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
+                            </div>
+                            <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
                                 <div>
@@ -1194,23 +1198,23 @@ async function mergeDict(list) {
             return undefined;
         }
 
-        // async addRatingsDate() {
-        //     // Grab the rating date from stars-rating
-        //     let ratingText = $('span.stars-rating.initialized').attr('title');
-        //     if (ratingText === undefined) {
-        //         // Grab the rating date from mobile-rating
-        //         ratingText = $('.mobile-film-rating-detail a span').attr('title');
-        //         if (ratingText === undefined) {
-        //             return;
-        //         }
-        //     }
-        //     let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
-        //     if (match !== null) {
-        //         let ratingDate = match[0];
-        //         let $myRatingCaption = $('.my-rating h3');
-        //         $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
-        //     }
-        // }
+        async addRatingsDate() {
+            // Grab the rating date from stars-rating
+            let ratingText = $('span.stars-rating.initialized').attr('title');
+            if (ratingText === undefined) {
+                // Grab the rating date from mobile-rating
+                ratingText = $('.mobile-film-rating-detail a span').attr('title');
+                if (ratingText === undefined) {
+                    return;
+                }
+            }
+            let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+            if (match !== null) {
+                let ratingDate = match[0];
+                let $myRatingCaption = $('.my-rating h3');
+                $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
+            }
+        }
 
         /**
          * From the title of .current-user-rating span get 'spocteno ze serii: x'
@@ -1344,7 +1348,7 @@ async function mergeDict(list) {
 
         // Film page
         if (location.href.includes('/film/')) {
-            // if (settings.addRatingsDate) { csfd.addRatingsDate(); }
+            if (settings.addRatingsDate) { csfd.addRatingsDate(); }
             if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
 
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
