@@ -972,6 +972,42 @@ async function mergeDict(list) {
             Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
         }
 
+        async removableHomeBoxes() {
+            const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
+            let settings = [];
+            if (!localStorage[boxSettingsName]) {
+                localStorage.setItem(boxSettingsName, JSON.stringify([]));
+            } else {
+                settings = JSON.parse(localStorage[boxSettingsName]);
+            }
+
+            console.log({ settings });
+
+            $('.box-header').each(async function (index, value) {
+                let $section = $(this).closest('section');
+                $section.attr('data-box-id', index);
+
+                let $hide = $('<a>', {
+                    'class': 'hide-me',
+                    href: 'javascript:void(0)',
+                    html: `Skrýt`
+                }).css({
+                    fontSize: '0.8em',
+                    marginLeft: '10px'
+                });
+
+                // $h2.html(`${$h2.text()} <a href="javascript:void(0);" class="hide-me" style="font-size: 0.8em; margin-left: 10px;">Skrýt ${index}</a>`);
+                let $h2 = $(this).find('h2');
+                $h2.html(`${$h2.text()} ${$hide[0].outerHTML}`);
+
+            });
+
+            $('.hide-me').on('click', async function (event) {
+                let $section = $(event.target).closest('section');
+                console.log($section.data('box-id'));
+                $section.hide();
+            });
+        }
         removeBox_MotivationPanel() {
             $('.box--homepage-motivation-middle,.box--homepage-motivation').remove();
         }
@@ -1363,6 +1399,8 @@ async function mergeDict(list) {
     // if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
     //     csfd.showLinkToImageOnOtherGalleryImages();
     // }
+
+    csfd.removableHomeBoxes();
 
     if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
     if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
