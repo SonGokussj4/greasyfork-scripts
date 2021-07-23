@@ -125,6 +125,14 @@ async function mergeDict(list) {
     return merged;
 }
 
+async function onHomepage() {
+    let check = false;
+    if (document.location.pathname === '/') {
+        check = true;
+    }
+    return check;
+}
+
 (async () => {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
@@ -1400,7 +1408,7 @@ async function mergeDict(list) {
     //     csfd.showLinkToImageOnOtherGalleryImages();
     // }
 
-    csfd.removableHomeBoxes();
+    if (await onHomepage()) { csfd.removableHomeBoxes(); }
 
     if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
     if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
@@ -1561,5 +1569,6 @@ async function mergeDict(list) {
 
     // Call TippyJs constructor
     await refreshTooltips();
+
 
 })();
