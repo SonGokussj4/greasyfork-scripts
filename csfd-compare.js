@@ -1043,7 +1043,7 @@ async function mergeDict(list) {
             let button = document.createElement('li');
             let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
             button.innerHTML = `
-                <a href="#" class="user-link initialized csfd-compare-menu">CC</a>
+                <a href="javascript:void()" class="user-link initialized csfd-compare-menu">CC</a>
                 <div class="dropdown-content notifications" style="${dropdownStyle}">
 
                     <div class="dropdown-content-head csfd-compare-settings">
