@@ -1,5 +1,9 @@
 # CSFD-Compare
 
+> **v0.5.10** _(2021-07-xx)_  
+
+**Fix:** Pokud máte zaplé rozšíření csfd-movie-preview, nyní se již nebude zobrazovat náhled cachovaného filmu nad CC  
+
 > **v0.5.9** _(2021-07-20)_  
 
 **New:** Přidáno zobrazování průměru hodnocení oblíbených uživatelů, pokud nějací hodnotili  
