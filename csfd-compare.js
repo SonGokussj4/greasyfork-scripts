@@ -995,24 +995,42 @@ async function onHomepage() {
                 let $section = $(this).closest('section');
                 $section.attr('data-box-id', index);
 
+                if (settings.includes(index)) {
+                    $section.hide();
+                }
+
                 let $hide = $('<a>', {
-                    'class': 'hide-me',
+                    'class': 'hide-me button',
                     href: 'javascript:void(0)',
                     html: `Skrýt`
                 }).css({
-                    fontSize: '0.8em',
-                    marginLeft: '10px'
+                    margin: 'auto',
+                    marginLeft: '10px',
+                    backgroundColor: '#7b0203',
+                    display: 'none',
                 });
-
-                // $h2.html(`${$h2.text()} <a href="javascript:void(0);" class="hide-me" style="font-size: 0.8em; margin-left: 10px;">Skrýt ${index}</a>`);
+                $hide.wrap(`<div class="box-header-action"></div>`);
                 let $h2 = $(this).find('h2');
-                $h2.html(`${$h2.text()} ${$hide[0].outerHTML}`);
+                $h2.after($hide[0]);
+            });
 
+            $('.box-header').on('mouseover', async function () {
+                $(this).find('.hide-me').show();
+            });
+
+            $('.box-header').on('mouseout', async function () {
+                $(this).find('.hide-me').hide();
             });
 
             $('.hide-me').on('click', async function (event) {
                 let $section = $(event.target).closest('section');
-                console.log($section.data('box-id'));
+                const boxId = $section.data('box-id');
+                console.log({ boxId });
+                if (!settings.includes(boxId)) {
+                    settings.push(boxId);
+                    localStorage.setItem(boxSettingsName, JSON.stringify(settings));
+                }
+
                 $section.hide();
             });
         }
