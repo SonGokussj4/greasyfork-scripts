@@ -18,6 +18,9 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
+// Ukázka nové verze, za chvíli smažu řádek
+
+
 const VERSION = 'v0.5.9';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
