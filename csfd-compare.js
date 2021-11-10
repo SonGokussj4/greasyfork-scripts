@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.5.9
+// @version      0.5.10
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @match        http://csfd.cz,https://csfd.cz
@@ -18,7 +18,7 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION = 'v0.5.9';
+const VERSION = 'v0.5.10';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -590,7 +590,15 @@ async function onHomepage() {
             let btn = $('.button-control-panel');
             let panel = $('#dropdown-control-panel');
             $(btn).on('mouseover', () => {
-                if (!panel.hasClass('active')) panel.addClass('active');
+                if (!panel.hasClass('active')) {
+                    panel.addClass('active');
+                    let windowWidth = $(window).width();
+                    if (windowWidth <= 635) {
+                        panel.appendTo(document.body);
+                        panel.css("top", "133px");
+                        panel.css("right", "15px");
+                    }
+                }
             });
             $(btn).on('mouseleave', () => {
                 if (panel.hasClass('active')) panel.removeClass('active');
