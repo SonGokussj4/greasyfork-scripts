@@ -1,8 +1,9 @@
 # CSFD-Compare
 
-> **v0.5.10** _(2021-07-xx)_  
+> **v0.5.10** _(2021-11-10)_  
 
 **Fix:** Pokud máte zaplé rozšíření csfd-movie-preview, nyní se již nebude zobrazovat náhled cachovaného filmu nad CC  
+**Fix:** Opraveno zobrazení ovládacího panelu po přejetí myší, pokud je okno prohlížeče menší jak 635px  
 
 > **v0.5.9** _(2021-07-20)_  
 

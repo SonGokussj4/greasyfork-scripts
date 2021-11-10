@@ -1596,5 +1596,4 @@ async function onHomepage() {
     // Call TippyJs constructor
     await refreshTooltips();
 
-
 })();
