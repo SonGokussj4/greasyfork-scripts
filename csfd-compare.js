@@ -98,6 +98,10 @@ async function delay(t) {
 
 async function getSettings(settingsName=SETTINGSNAME) {
     if (!localStorage[settingsName]) {
+        if (settingsName === "CSFD-Compare-hiddenBoxes") {
+            defaultSettings = [];
+        }
+        console.log(`ADDDING DEFAULTS: ${defaultSettings}`);
         localStorage.setItem(settingsName, JSON.stringify(defaultSettings));
         return defaultSettings;
     } else {
@@ -327,11 +331,11 @@ async function onHomepage() {
 
         async loadInitialSettings() {
             // HOME PAGE
-            $('#chkRemoveMotivationPanel').attr('checked', settings.removeMotivationPanel);
-            $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
-            $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
-            $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
-            $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
+            // $('#chkRemoveMotivationPanel').attr('checked', settings.removeMotivationPanel);
+            // $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
+            // $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
+            // $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
+            // $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
 
             // GLOBAL
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
@@ -359,35 +363,35 @@ async function onHomepage() {
 
         async addSettingsEvents() {
             // HOME PAGE
-            $('#chkRemoveMotivationPanel').change(function () {
-                settings.removeMotivationPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
+            // $('#chkRemoveMotivationPanel').change(function () {
+            //     settings.removeMotivationPanel = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
-            $('#chkRemoveContestPanel').change(function () {
-                settings.removeContestPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
+            // $('#chkRemoveContestPanel').change(function () {
+            //     settings.removeContestPanel = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
-            $('#chkRemoveCsfdCinemaPanel').change(function () {
-                settings.removeCsfdCinemaPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
+            // $('#chkRemoveCsfdCinemaPanel').change(function () {
+            //     settings.removeCsfdCinemaPanel = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
-            $('#chkRemoveVideoPanel').change(function () {
-                settings.removeVideoPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
+            // $('#chkRemoveVideoPanel').change(function () {
+            //     settings.removeVideoPanel = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
-            $('#chkRemoveMoviesOfferPanel').change(function () {
-                settings.removeMoviesOfferPanel = this.checked;
-                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            });
+            // $('#chkRemoveMoviesOfferPanel').change(function () {
+            //     settings.removeMoviesOfferPanel = this.checked;
+            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            // });
 
             // GLOBAL
             $('#chkControlPanelOnHover').change(function () {
@@ -997,7 +1001,11 @@ async function onHomepage() {
                 let $section = $(this).closest('section');
                 $section.attr('data-box-id', index);
 
-                if (settings.includes(index)) {
+                // if (settings.includes(index)) {
+                //     $section.hide();
+                // }
+
+                if (settings.some(x => x.boxId == index)) {
                     $section.hide();
                 }
 
@@ -1026,10 +1034,11 @@ async function onHomepage() {
 
             $('.hide-me').on('click', async function (event) {
                 let $section = $(event.target).closest('section');
-                const boxId = $section.data('box-id');
-                console.log({ boxId });
-                if (!settings.includes(boxId)) {
-                    settings.push(boxId);
+                let boxId = $section.data('box-id');
+                let boxName = $section.find('h2').first().text().replace('/\n|\t/g', '');  // clean from '\t', '\n'
+                let dict = { boxId: boxId, boxName: boxName };
+                if (!settings.includes(dict)) {
+                    settings.push(dict);
                     localStorage.setItem(boxSettingsName, JSON.stringify(settings));
                 }
 
@@ -1082,18 +1091,19 @@ async function onHomepage() {
             let hiddenBoxesArray = await getSettings("CSFD-Compare-hiddenBoxes");
             hiddenBoxesArray.sort((a, b) => a - b);  // Sort by numbers
             hiddenBoxesArray.forEach(element => {
-                let $header = $(`section[data-box-id=${element}]`).find('h2').first();
-                console.log({ $header });
-                let sectionName = $header.text();
-                if (sectionName.toLowerCase().includes("sledujte dříve")) {
-                    sectionName = "sledujte dříve...";
-                }
-                // else if (sectionName.toLowerCase().includes("nové trailery")) {
-                //     sectionName = "nové trailery...";
-                // }
-                console.log({ sectionName });
+                let boxId = element.boxId;
+                let boxName = element.boxName.replace(/\n|\t/g, "");  // clean text of '\n' and '\t';
                 resultDisplayArray.push(`
-                    <button class="restore-hidden-section" data-box-id="${element}">${sectionName}</button></br>
+                    <button class="restore-hidden-section" data-box-id="${boxId}" title="${boxName}"
+                            style="border-radius: 4px;
+                                   margin: 1px;
+                                   max-width: 60px;
+                                   text-transform: capitalize;
+                                   overflow: hidden;
+                                   text-overflow: ellipsis;"
+                    >
+                        ${boxName}
+                    </button>
                 `);
             });
 
@@ -1109,32 +1119,30 @@ async function onHomepage() {
                     </div>
 
                     <article class="article">
-                        <h2 class="article-header">Domácí stránka</h2>
+                        <h2 class="article-header">Domácí stránka - skryté panely</h2>
                         <section>
+                            <!--<div class="article-content">-->
+                            <!--    <input type="checkbox" id="chkRemoveMotivationPanel" name="remove-motivation-panel">-->
+                            <!--    <label for="chkRemoveMotivationPanel" style="${resetLabelStyle}">Skrýt panel: "Vítej na ČSFD"</label>-->
+                            <!--</div>-->
+                            <!--<div class="article-content">-->
+                            <!--    <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel">-->
+                            <!--    <label for="chkRemoveContestPanel" style="${resetLabelStyle}">Skrýt panel: "Soutěž"</label>-->
+                            <!--</div>-->
+                            <!--<div class="article-content">-->
+                            <!--    <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-csfd-cinema-panel">-->
+                            <!--    <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle}">Skrýt panel: "ČSFD sál"</label>-->
+                            <!--</div>-->
+                            <!--<div class="article-content">-->
+                            <!--    <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel">-->
+                            <!--    <label for="chkRemoveVideoPanel" style="${resetLabelStyle}">Skrýt panel: "Nové trailery"</label>-->
+                            <!--</div>-->
+                            <!--<div class="article-content">-->
+                            <!--    <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel">-->
+                            <!--    <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle}">Skrýt panel: "Sledujte online / DVD tipy"</label>-->
+                            <!--</div>-->
                             <div class="article-content">
-                                <input type="checkbox" id="chkRemoveMotivationPanel" name="remove-motivation-panel">
-                                <label for="chkRemoveMotivationPanel" style="${resetLabelStyle}">Skrýt panel: "Vítej na ČSFD"</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel">
-                                <label for="chkRemoveContestPanel" style="${resetLabelStyle}">Skrýt panel: "Soutěž"</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-csfd-cinema-panel">
-                                <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle}">Skrýt panel: "ČSFD sál"</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel">
-                                <label for="chkRemoveVideoPanel" style="${resetLabelStyle}">Skrýt panel: "Nové trailery"</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel">
-                                <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle}">Skrýt panel: "Sledujte online / DVD tipy"</label>
-                            </div>
-                            <div class="article-content">
-                                <input type="checkbox" id="chkRemovePanels" name="remove-panels">
-                                <label for="chkRemovePanels" style="${resetLabelStyle}">Skrýt panely</label>
-                                <p>${resultDisplayArray.join("")}</p>
+                                <div style="max-width: fit-content;">${resultDisplayArray.join("")}</div>
                             </div>
                         </section>
                     </article>
@@ -1228,7 +1236,7 @@ async function onHomepage() {
                 let sectionId = $element.attr("data-box-id");
 
                 // Remove from localStorage
-                hiddenBoxesArray = hiddenBoxesArray.filter(item => item !== parseInt(sectionId));
+                hiddenBoxesArray = hiddenBoxesArray.filter(item => item.boxId !== parseInt(sectionId));
                 let settingsName = "CSFD-Compare-hiddenBoxes";
                 localStorage.setItem(settingsName, JSON.stringify(hiddenBoxesArray));
 
@@ -1480,11 +1488,11 @@ async function onHomepage() {
 
     if (await onHomepage()) { csfd.removableHomeBoxes(); }
 
-    if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
-    if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
-    if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
-    if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
-    if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
+    // if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
+    // if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
+    // if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
+    // if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
+    // if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
 
 
     // =================================
