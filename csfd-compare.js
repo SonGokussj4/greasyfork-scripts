@@ -96,12 +96,12 @@ async function delay(t) {
     });
 }
 
-async function getSettings() {
-    if (!localStorage[SETTINGSNAME]) {
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(defaultSettings));
+async function getSettings(settingsName=SETTINGSNAME) {
+    if (!localStorage[settingsName]) {
+        localStorage.setItem(settingsName, JSON.stringify(defaultSettings));
         return defaultSettings;
     } else {
-        return JSON.parse(localStorage[SETTINGSNAME]);
+        return JSON.parse(localStorage[settingsName]);
     }
 }
 
@@ -627,7 +627,7 @@ async function onHomepage() {
                 html: `
                     <center>
                         <b> >> Načíst hodnocení << </b> <br>
-                        Uložené: [${ratingsInLS}] != Celkem: [${curUserRatings}]
+                        Uložené: ${ratingsInLS} / ${curUserRatings}
                     </center>
                 `,
             }).css({
@@ -990,13 +990,7 @@ async function onHomepage() {
 
         async removableHomeBoxes() {
             const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
-            let settings = [];
-            if (!localStorage[boxSettingsName]) {
-                localStorage.setItem(boxSettingsName, JSON.stringify([]));
-            } else {
-                settings = JSON.parse(localStorage[boxSettingsName]);
-            }
-
+            let settings = await getSettings(boxSettingsName);
             console.log({ settings });
 
             $('.box-header').each(async function (index, value) {
@@ -1076,6 +1070,33 @@ async function onHomepage() {
 
             let button = document.createElement('li');
             let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
+
+            // Add box-id attribute to .box-header(s)
+            $('.box-header').each(async function (index, value) {
+                let $section = $(this).closest('section');
+                $section.attr('data-box-id', index);
+            });
+
+            // Build array of buttons for un-hiding sections
+            let resultDisplayArray = [];
+            let hiddenBoxesArray = await getSettings("CSFD-Compare-hiddenBoxes");
+            hiddenBoxesArray.sort((a, b) => a - b);  // Sort by numbers
+            hiddenBoxesArray.forEach(element => {
+                let $header = $(`section[data-box-id=${element}]`).find('h2').first();
+                console.log({ $header });
+                let sectionName = $header.text();
+                if (sectionName.toLowerCase().includes("sledujte dříve")) {
+                    sectionName = "sledujte dříve...";
+                }
+                // else if (sectionName.toLowerCase().includes("nové trailery")) {
+                //     sectionName = "nové trailery...";
+                // }
+                console.log({ sectionName });
+                resultDisplayArray.push(`
+                    <button class="restore-hidden-section" data-box-id="${element}">${sectionName}</button></br>
+                `);
+            });
+
             button.innerHTML = `
                 <a href="javascript:void()" class="user-link initialized csfd-compare-menu">CC</a>
                 <div class="dropdown-content notifications" style="${dropdownStyle}">
@@ -1109,6 +1130,11 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel">
                                 <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle}">Skrýt panel: "Sledujte online / DVD tipy"</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkRemovePanels" name="remove-panels">
+                                <label for="chkRemovePanels" style="${resetLabelStyle}">Skrýt panely</label>
+                                <p>${resultDisplayArray.join("")}</p>
                             </div>
                         </section>
                     </article>
@@ -1195,6 +1221,24 @@ async function onHomepage() {
             $('.header-bar').prepend(button);
 
             await refreshTooltips();
+
+            // Upon clicking button, show() the section and remove the number from localStorage
+            $(".restore-hidden-section").on("click", function () {
+                let $element = $(this);
+                let sectionId = $element.attr("data-box-id");
+
+                // Remove from localStorage
+                hiddenBoxesArray = hiddenBoxesArray.filter(item => item !== parseInt(sectionId));
+                let settingsName = "CSFD-Compare-hiddenBoxes";
+                localStorage.setItem(settingsName, JSON.stringify(hiddenBoxesArray));
+
+                // Show section
+                let $section = $(`section[data-box-id="${sectionId}"`);
+                $section.show();
+
+                // Remove button
+                $element.remove();
+            });
 
             // Don't hide settings popup when mouse leaves within interval of 0.2s
             let timer;
