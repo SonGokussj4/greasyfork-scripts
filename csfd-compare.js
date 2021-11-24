@@ -1091,33 +1091,22 @@ async function onHomepage() {
 
         showOnOneLine() {
             const $sections = $(`div.creator-filmography`).find(`section`);
-            const sectionWidth = $sections.first().width();
             let $nooverflowH3 = $sections.find(`h3.film-title-nooverflow`);
             $nooverflowH3.css({
-                "display": "flex",
+                "display": "inline-block",
+                "white-space": "nowrap",
+                "text-overflow": "ellipsis",
+                "overflow": "hidden",
+                "max-width": "230px",
             });
-            const tdYearWidth = $sections.find(`td.year`).first().width();
             const $filmTitleNameA = $nooverflowH3.find(`a.film-title-name`);
             $filmTitleNameA.css({
                 "white-space": "nowrap",
-                "overflow": "hidden",
-                "text-overflow": "ellipsis",
-                // "width": `${titleNameWidth}px`,
             });
             $filmTitleNameA.each(function() {
                 const $this = $(this);
-                let tdRatingWidth = 0;
-                let $tdRating = $this.closest('tr').find('td.rating');
-                let $children = $tdRating.children();
-                if ($children.length !== 0) {
-                    tdRatingWidth = $tdRating.width();
-                }
-                let titleNameWidth = parseInt(sectionWidth - tdYearWidth - tdRatingWidth - 150);
-                $this.attr("title", $this.text())
-                     .css({ "width": `${titleNameWidth}px`});
-                console.log({ titleNameWidth });
+                $this.attr("title", $this.text());
             });
-
         }
 
         addHideSectionButton(boxId, boxName) {

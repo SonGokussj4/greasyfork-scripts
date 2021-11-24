@@ -1,5 +1,8 @@
 # CSFD-Compare
 
+> **v0.5.11.1** _(2021-11-24)_  
+**Fix:** 1-řádkový seznam filmů se nyní zobrazuje stabilněji (jde vidět hodnocení, (skoro ve všech případech))  
+
 > **v0.5.11** _(2021-11-24)_  
 **New:** Boxy na domácí stránce se nyní skrývají tlačítkem "Skrýt" u titulku, zpět zobrazují přes nastavení v CC  
 **New:** U herců jsou seznamy filmů na 1 řádek. Pokud by film přeskočil na řádek druhý, jsou zobrazeny "..." (experimentální)  
