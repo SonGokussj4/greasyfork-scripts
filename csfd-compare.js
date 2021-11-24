@@ -90,6 +90,8 @@ let defaultSettings = {
     addRatingsComputedCount: true,
     hideSelectedUserReviews: false,
     hideSelectedUserReviewsList: [],
+    // ACTORS
+    showOnOneLine: false,
 };
 
 
@@ -389,6 +391,8 @@ async function onHomepage() {
             if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
             if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
 
+            // ACTORS
+            $('#chkShowOnOneLine').attr('checked', settings.showOnOneLine);
         }
 
         async addSettingsEvents() {
@@ -479,16 +483,19 @@ async function onHomepage() {
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
+
             $('#chkRatingsEstimate').change(function () {
                 settings.ratingsEstimate = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
+
             $('#chkRatingsFromFavorites').change(function () {
                 settings.ratingsFromFavorites = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
+
             $('#chkAddRatingsDate').change(function () {
                 settings.addRatingsDate = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -513,6 +520,13 @@ async function onHomepage() {
                 settings.hideSelectedUserReviewsList = ignoredUsers;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
                 Glob.popup(`Ignorovaní uživatelé:\n${ignoredUsers.join(', ')}`, 4);
+            });
+
+            // ACTORS
+            $('#chkShowOnOneLine').change(function () {
+                settings.showOnOneLine = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
         }
 
@@ -1074,6 +1088,37 @@ async function onHomepage() {
             });
         }
 
+        showOnOneLine() {
+            const $sections = $(`div.creator-filmography`).find(`section`);
+            const sectionWidth = $sections.first().width();
+            let $nooverflowH3 = $sections.find(`h3.film-title-nooverflow`);
+            $nooverflowH3.css({
+                "display": "flex",
+            });
+            const tdYearWidth = $sections.find(`td.year`).first().width();
+            const $filmTitleNameA = $nooverflowH3.find(`a.film-title-name`);
+            $filmTitleNameA.css({
+                "white-space": "nowrap",
+                "overflow": "hidden",
+                "text-overflow": "ellipsis",
+                // "width": `${titleNameWidth}px`,
+            });
+            $filmTitleNameA.each(function() {
+                const $this = $(this);
+                let tdRatingWidth = 0;
+                let $tdRating = $this.closest('tr').find('td.rating');
+                let $children = $tdRating.children();
+                if ($children.length !== 0) {
+                    tdRatingWidth = $tdRating.width();
+                }
+                let titleNameWidth = parseInt(sectionWidth - tdYearWidth - tdRatingWidth - 150);
+                $this.attr("title", $this.text())
+                     .css({ "width": `${titleNameWidth}px`});
+                console.log({ titleNameWidth });
+            });
+
+        }
+
         addHideSectionButton(boxId, boxName) {
             let $button = `
                 <button class="restore-hidden-section" data-box-id="${boxId}" title="${boxName}"
@@ -1264,6 +1309,16 @@ async function onHomepage() {
                                     <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
                                 </div>
+                            </div>
+                        </section>
+                    </article>
+
+                    <article class="article">
+                        <h2 class="article-header">Herci</h2>
+                        <section>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line" ${disabled}>
+                                <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku (experimental)</label>
                             </div>
                         </section>
                     </article>
@@ -1526,6 +1581,10 @@ async function onHomepage() {
         if (settings.ratingsFromFavorites) { csfd.ratingsFromFavorites(); }
     }
 
+    // Actor page
+    if (location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
+        if (settings.showOnOneLine) { csfd.showOnOneLine(); }
+    }
     // // Any Gallery page
     // if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
     //     csfd.showLinkToImageOnOtherGalleryImages();
