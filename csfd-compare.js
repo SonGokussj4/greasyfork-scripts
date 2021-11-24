@@ -23,6 +23,7 @@ const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
 
+const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
 let Glob = {
     popupCounter: 0,
@@ -65,11 +66,12 @@ let Glob = {
 
 let defaultSettings = {
     // HOME PAGE
-    removeMotivationPanel: false,
-    removeContestPanel: false,
-    removeCsfdCinemaPanel: false,
-    removeVideoPanel: false,
-    removeMoviesOfferPanel: false,
+    // removeMotivationPanel: false,
+    // removeContestPanel: false,
+    // removeCsfdCinemaPanel: false,
+    // removeVideoPanel: false,
+    // removeMoviesOfferPanel: false,
+    hiddenSections: [],
     // GLOBAL
     showControlPanelOnHover: true,
     clickableHeaderBoxes: true,
@@ -90,6 +92,34 @@ let defaultSettings = {
     hideSelectedUserReviewsList: [],
 };
 
+
+/**
+ * Check if settings are valid. If not, reset them.
+ * Return either unmodified or modified settings
+ * @param {*} settings - LocalStorage settings current value
+ * @param {string} settingsName - Settings Name
+ */
+async function checkSettingsValidity(settings, settingsName) {
+
+    if (settingsName === SETTINGSNAME_HIDDEN_BOXES) {
+        const isArray = Array.isArray(settings);
+        let keysValid = true;
+        settings.forEach(element => {
+            const keys = Object.keys(element);
+            if (keys.length !== 2) {
+                keysValid = false;
+            }
+        });
+
+        if (!isArray || !keysValid) {
+            settings = defaultSettings.hiddenSections;
+            localStorage.setItem(SETTINGSNAME_HIDDEN_BOXES, JSON.stringify(settings));
+            return settings;
+        }
+    }
+    return settings;
+}
+
 async function delay(t) {
     return new Promise(resolve => {
         setTimeout(resolve, t);
@@ -98,7 +128,7 @@ async function delay(t) {
 
 async function getSettings(settingsName=SETTINGSNAME) {
     if (!localStorage[settingsName]) {
-        if (settingsName === "CSFD-Compare-hiddenBoxes") {
+        if (settingsName === SETTINGSNAME_HIDDEN_BOXES) {
             defaultSettings = [];
         }
         console.log(`ADDDING DEFAULTS: ${defaultSettings}`);
@@ -995,7 +1025,6 @@ async function onHomepage() {
         async removableHomeBoxes() {
             const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
             let settings = await getSettings(boxSettingsName);
-            console.log({ settings });
 
             $('.box-header').each(async function (index, value) {
                 let $section = $(this).closest('section');
@@ -1026,24 +1055,38 @@ async function onHomepage() {
 
             $('.box-header').on('mouseover', async function () {
                 $(this).find('.hide-me').show();
-            });
-
-            $('.box-header').on('mouseout', async function () {
+            }).on('mouseout', async function () {
                 $(this).find('.hide-me').hide();
             });
 
             $('.hide-me').on('click', async function (event) {
                 let $section = $(event.target).closest('section');
                 let boxId = $section.data('box-id');
-                let boxName = $section.find('h2').first().text().replace('/\n|\t/g', '');  // clean from '\t', '\n'
+                let boxName = $section.find('h2').first().text().replace(/\n|\t/g, "");  // clean from '\t', '\n'
                 let dict = { boxId: boxId, boxName: boxName };
+                let settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
                 if (!settings.includes(dict)) {
                     settings.push(dict);
                     localStorage.setItem(boxSettingsName, JSON.stringify(settings));
+                    csfd.addHideSectionButton(boxId, boxName);
                 }
-
                 $section.hide();
             });
+        }
+
+        addHideSectionButton(boxId, boxName) {
+            let $button = `
+                <button class="restore-hidden-section" data-box-id="${boxId}" title="${boxName}"
+                    style="border-radius: 4px;
+                           margin: 1px;
+                           max-width: 60px;
+                           text-transform: capitalize;
+                           overflow: hidden;
+                           text-overflow: ellipsis;"
+                >${boxName}</button>
+            `;
+            let $div = $(`div.hidden-sections`);
+            $div.append($button);
         }
         removeBox_MotivationPanel() {
             $('.box--homepage-motivation-middle,.box--homepage-motivation').remove();
@@ -1088,8 +1131,9 @@ async function onHomepage() {
 
             // Build array of buttons for un-hiding sections
             let resultDisplayArray = [];
-            let hiddenBoxesArray = await getSettings("CSFD-Compare-hiddenBoxes");
-            hiddenBoxesArray.sort((a, b) => a - b);  // Sort by numbers
+            let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
+            hiddenBoxesArray = await checkSettingsValidity(hiddenBoxesArray, SETTINGSNAME_HIDDEN_BOXES);
+            hiddenBoxesArray.sort((a, b) => a - b);  // sort by numbers
             hiddenBoxesArray.forEach(element => {
                 let boxId = element.boxId;
                 let boxName = element.boxName.replace(/\n|\t/g, "");  // clean text of '\n' and '\t';
@@ -1142,7 +1186,7 @@ async function onHomepage() {
                             <!--    <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle}">Skrýt panel: "Sledujte online / DVD tipy"</label>-->
                             <!--</div>-->
                             <div class="article-content">
-                                <div style="max-width: fit-content;">${resultDisplayArray.join("")}</div>
+                                <div class="hidden-sections" style="max-width: fit-content;">${resultDisplayArray.join("")}</div>
                             </div>
                         </section>
                     </article>
@@ -1230,12 +1274,13 @@ async function onHomepage() {
 
             await refreshTooltips();
 
-            // Upon clicking button, show() the section and remove the number from localStorage
-            $(".restore-hidden-section").on("click", function () {
+            // Show() the section and remove the number from localStorage
+            $(".hidden-sections").on("click", ".restore-hidden-section", async function () {
                 let $element = $(this);
                 let sectionId = $element.attr("data-box-id");
 
                 // Remove from localStorage
+                let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
                 hiddenBoxesArray = hiddenBoxesArray.filter(item => item.boxId !== parseInt(sectionId));
                 let settingsName = "CSFD-Compare-hiddenBoxes";
                 localStorage.setItem(settingsName, JSON.stringify(hiddenBoxesArray));
