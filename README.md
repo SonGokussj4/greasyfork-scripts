@@ -1,5 +1,9 @@
 # CSFD-Compare
 
+> **v0.5.11** _(2021-11-24)_  
+**New:** Boxy na domácí stránce se nyní skrývají tlačítkem "Skrýt" u titulku, zpět zobrazují přes nastavení v CC  
+**New:** U herců jsou seznamy filmů na 1 řádek. Pokud by film přeskočil na řádek druhý, jsou zobrazeny "..." (experimentální)  
+
 > **v0.5.10** _(2021-11-10)_  
 
 **Fix:** Pokud máte zaplé rozšíření csfd-movie-preview, nyní se již nebude zobrazovat náhled cachovaného filmu nad CC  
