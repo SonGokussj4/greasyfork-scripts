@@ -596,6 +596,7 @@ async function onHomepage() {
                 if ($sibl.length !== 0) {
                     continue;
                 }
+                // TODO: Tady dat parentovi starClass COMPUTED classu, pokud to je res.computed === true
                 let starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
                 let starText = res.rating !== 0 ? "" : "odpad!";
                 let $starSpan = $("<span>", {
