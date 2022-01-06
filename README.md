@@ -4,7 +4,7 @@
 
 **Fix:** Neco opraveno  
 **New:** Neco pridano  
-
+**Testing:** Will issue (#11) appear?  
 
 > **v0.5.11.1** _(2021-11-24)_  
 
