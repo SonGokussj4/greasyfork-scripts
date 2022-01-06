@@ -585,7 +585,10 @@ async function onHomepage() {
             let $links = $('a.film-title-name');
             for (const $link of $links) {
                 let href = $($link).attr('href');
+                console.log({ href });
                 let res = this.stars[href];
+                console.log({ res });
+                console.log("===================");
                 if (res === undefined) {
                     continue;
                 }
@@ -994,6 +997,18 @@ async function onHomepage() {
             let dc = {};
             for (const $row of $rows) {
                 let name = $($row).find('td.name a').attr('href');
+                let filmInfo = $($row).find('td.name > h3 > span > span').text();
+                console.log({ filmInfo });
+                if ((filmInfo.includes("epizoda") || filmInfo.includes("epizóda")) === true) {
+                    let splitted = name.slice(0, -1).split("/");
+                    splitted.pop();
+                    let parentName = splitted.join("/") + "/";
+                    if (dc[parentName] === undefined) {
+                        console.log(`${parentName} ... neni v Dict, pridavam`);
+                        // TODO: Vzit z URL i datum hodnoceni
+                        dc[parentName] = { 'rating': 1, 'date': "01.01.2022", 'counted': true };
+                    }
+                }
                 let $ratings = $($row).find('span.stars');
                 let rating = 0;
                 for (let stars = 0; stars <= 5; stars++) {
@@ -1002,7 +1017,7 @@ async function onHomepage() {
                     }
                 }
                 let date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-                dc[name] = { 'rating': rating, 'date': date };
+                dc[name] = { 'rating': rating, 'date': date, 'counted': false };
             }
             // console.log(`doSomething(${idx}) END`);
             return dc;
@@ -1017,7 +1032,8 @@ async function onHomepage() {
             this.userRatingsCount = await this.getCurrentUserRatingsCount2();
             let dict = this.stars;
             let ls = force ? [] : [dict];
-            for (let idx = 1; idx <= maxPageNum; idx++) {
+            for (let idx = 1; idx <= 1; idx++) {
+            // for (let idx = 1; idx <= maxPageNum; idx++) {1
                 if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
