@@ -841,6 +841,9 @@ async function onHomepage() {
             });
         }
 
+        /**
+         * Show link for all possible picture sizes
+         */
         async showLinkToImageOnOtherGalleryImages() {
 
             let $pictures = this.csfdPage.find('.gallery-item picture');
@@ -1029,6 +1032,9 @@ async function onHomepage() {
         async showLinkToImage() {
             this.showLinkToImageOnSmallMoviePoster();
             this.showLinkToImageOnOtherGalleryImages();
+        async getShowYear(filmInfo) {
+            let showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
+            return showYear;
         }
 
         async getShowType(filmInfo) {
