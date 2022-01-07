@@ -585,10 +585,7 @@ async function onHomepage() {
             let $links = $('a.film-title-name');
             for (const $link of $links) {
                 let href = $($link).attr('href');
-                console.log({ href });
                 let res = this.stars[href];
-                console.log({ res });
-                console.log("===================");
                 if (res === undefined) {
                     continue;
                 }
@@ -596,15 +593,16 @@ async function onHomepage() {
                 if ($sibl.length !== 0) {
                     continue;
                 }
-                // TODO: Tady dat parentovi starClass COMPUTED classu, pokud to je res.computed === true
                 let starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
                 let starText = res.rating !== 0 ? "" : "odpad!";
                 let $starSpan = $("<span>", {
                     'class': `star-rating`,
                     html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
                 }).css(starsCss);
-                // $($link).append($starSpan);
-                // $($starSpan).insertAfter($($link));
+                // If the record has counted === true, add 'computed' class that will color the starts to black
+                if (res.counted === true) {
+                    $starSpan.addClass("computed");
+                }
                 $($link).after($starSpan);
             }
         }
