@@ -1007,6 +1007,8 @@ async function onHomepage() {
                     if (dc[parentName] === undefined) {
                         console.log(`${parentName} ... neni v Dict, pridavam`);
                         // TODO: Vzit z URL i datum hodnoceni
+                        let urlContent = await csfd.getUrlContent(parentName);
+                        console.log({ urlContent });
                         dc[parentName] = { 'rating': 1, 'date': "01.01.2022", 'counted': true };
                     }
                 }
@@ -1023,6 +1025,15 @@ async function onHomepage() {
             // console.log(`doSomething(${idx}) END`);
             return dc;
             // web workers - vyšší dívčí - více vláken z browseru
+        }
+
+        async getUrlContent(url) {
+            console.log(`Getting 'https://www.csfd.cz/${url}' content`);
+            const $content = await $.get("https://www.csfd.cz/" + url + "prehled/");
+            console.log({ $content });
+            let txt = $($content).find('.current-user-rating').text();
+            console.log({ txt });
+            return $content;
         }
 
         async getAllPages(force = false) {
