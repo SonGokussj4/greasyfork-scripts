@@ -459,8 +459,37 @@ async function onHomepage() {
                 settings.addComputedStars = this.checked;
                 localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
 
+                // TODO: WORK IN PROGRESS
+                // if (this.checked === true) {
+                //     // TODO: Zkontrolovat v LocalStorage, jestli tam nejsou serie, ktere nemaji parenta
+                //     let allEpisodes = await csfd.checkForParentSeries();
+                //     console.log({ allEpisodes });
+
+                //     let childrenEpisodes = await csfd.getChildrenEpisodes(allEpisodes);
+                //     console.log({ childrenEpisodes });
+
+                //     let childrenWithoutParents = await csfd.getChildrenWithoutParents(childrenOnly);
+                //     console.log({ childrenWithoutParents });
+
+                //     let missingParents = await csfd.getMissingParents(childrenWithoutParents);
+                //     console.log(missingParents);
+
+                //     // TODO: Ukazat popup, ktery se uzivatele zepta "schazi nacist 12 dalsich serii. Provest?"
+                //     let answer = confirm(`Schazi [${missingParents.length}] serii. Nacist ted?`);
+                //     console.log({ answer });
+
+                //     // TODO: Pokud uzivatel zada, ze ne, ukaze to cislo u textu vpravo v CC
+                //     if (!answer) {
+                //         console.log("pouze  ukazuji, nenacitam");
+                //     } else {
+                //     // TODO: Pokud uzivatel zada, ze ano, iteruje pres parenty a nacte do LS informace o serii
+                //         console.log("Iteruji a nacitam do LS");
+                //     }
+                // }
+
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
+
             // USER
             $('#chkDisplayMessageButton').change(function () {
                 settings.displayMessageButton = this.checked;
