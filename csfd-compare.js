@@ -1028,15 +1028,47 @@ async function onHomepage() {
             }
             return rating;
         }
-
+        /**
+         * Show clickable link to the absolute url of the image mouse is hovering above.
+         *
+         * Works with:
+         * - Small Movie Poster
+         * - Movie Gallery Images
+         */
         async showLinkToImage() {
             this.showLinkToImageOnSmallMoviePoster();
             this.showLinkToImageOnOtherGalleryImages();
+            // TODO: Show links on images in gallery of: "tvurce"
+            // TODO: https://github.com/SonGokussj4/greasyfork-scripts/issues/10
+        }
+
+        /**
+         * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
+         * @returns {int} `YYYY` (year) if it exists in filmInfo[0], `????` otherwise
+         *
+         * Example:
+         * - (2007)(série)(S02) --> 2007
+         * - (2021) --> 2021
+         * - --> ????
+         */
         async getShowYear(filmInfo) {
             let showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
             return showYear;
         }
 
+        /**
+         * Return show type in 'english' language. Works for SK an CZ.
+         *
+         * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
+         * @returns {str} `showType` if it exists in filmInfo[1], `movie` otherwise
+         *
+         * Posible values: `movie`, `tv movie`, `serial`, `series`, `episode`
+         *
+         * Example:
+         * - (2007)(série)(S02) --> series
+         * - (2021)(epizoda)(S02E01) --> episode
+         * - (2019) --> movie
+         */
         async getShowType(filmInfo) {
             let showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
 
@@ -1116,12 +1148,28 @@ async function onHomepage() {
             // web workers - vyšší dívčí - více vláken z browseru
         }
 
+        /**
+         * Return **relative** parent name from episode name
+         *
+         * @param {string} episodeName relative URL of episode name
+         * @returns relative URL of parent name
+         *
+         * Example: \
+         * `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `/film/697624-love-death-robots/`
+         */
         async getParentNameFromEpisodeName(episodeName) {
             let splitted = episodeName.slice(0, -1).split("/");
             splitted.pop();
             let parentName = splitted.join("/") + "/";
             return parentName;
         }
+
+        /**
+         * Return URL html content
+         *
+         * @param {string} url **Relative** movie/series address: `/film/957504-the-book-of-boba-fett/`
+         * @returns Whole HTML content of the url
+         */
         async getRelativeUrlContent(url) {
             // TODO: 'prehled' by mel byt OK i pro SK verzi. Ale chce to prozkouset. Jinak doplnit 'prehlad'.
             // Construct full URL: /film/957504-the-book-of-boba-fett/ --> http[s]://csfd.(cs|sk)/film/957504-the-book-of-boba-fett/prehled/
@@ -1130,6 +1178,13 @@ async function onHomepage() {
             return $content;
         }
 
+        /**
+         * $content should be URL with counted star ratings. Not manualy rated. \
+         * Then, it will return dict with `counted stars` and text `"counted from episodes: X"`
+         *
+         * @param {string} $content HTML content of a page
+         * @returns `{ 'ratingCount': 4, {countedFromText: 'spocteno z episod': 2 }}`
+         */
         async getCountedRatings($content) {
             // Get current user rating
             const $curUserRating = $($content).find('li.current-user-rating');
@@ -1145,6 +1200,17 @@ async function onHomepage() {
             };
             return result;
         }
+
+        /**
+         * Get star count from span with stars class
+         *
+         * @param {"<span>"} $starsSpan $span with class of 'stars-X' or 'trash' type.
+         * @returns {int} `0` if trash; `1-5` if stars-X
+         *
+         * Example: \
+         *    `<span class="stars stars-4">` --> `4`\
+         *    `<span class='stars trash'>` --> `0`
+         */
         async getStarCountFromSpanClass($starsSpan) {
             let rating = 0;
             for (let stars = 0; stars <= 5; stars++) {
