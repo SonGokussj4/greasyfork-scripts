@@ -78,6 +78,7 @@ let defaultSettings = {
     clickableHeaderBoxes: true,
     clickableMessages: true,
     addStars: true,
+    addComputedStars: true,
     // USER
     displayMessageButton: true,
     displayFavoriteButton: true,
@@ -375,6 +376,7 @@ async function onHomepage() {
             $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
             $('#chkClickableMessages').attr('checked', settings.clickableMessages);
             $('#chkAddStars').attr('checked', settings.addStars);
+            $('#chkAddComputedStars').attr('checked', settings.addComputedStars);
 
             // USER
             $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
@@ -453,6 +455,12 @@ async function onHomepage() {
                 Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
             });
 
+            $('#chkAddComputedStars').change(async function () {
+                settings.addComputedStars = this.checked;
+                localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+
+                Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+            });
             // USER
             $('#chkDisplayMessageButton').change(function () {
                 settings.displayMessageButton = this.checked;
@@ -531,6 +539,19 @@ async function onHomepage() {
             });
         }
 
+        async checkForParentSeries() {
+            let allEntries = JSON.parse(localStorage[this.storageKey]);
+
+            let filterArray = Array();
+            for (const [key, value] of Object.entries(allEntries)) {
+                if (value.type === 'episode') {
+                    filterArray.push([key, value]);
+                }
+            }
+
+            return filterArray;
+        }
+
         async onOtherUserHodnoceniPage() {
             if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
                 if (!location.href.includes(this.userUrl)) {
@@ -593,16 +614,37 @@ async function onHomepage() {
                 if ($sibl.length !== 0) {
                     continue;
                 }
+                // Don't show computed ratings when settings are off and res.counted == true
+                if (!settings.addComputedStars && res.counted === true) {
+                    continue;
+                }
+
                 let starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
                 let starText = res.rating !== 0 ? "" : "odpad!";
                 let $starSpan = $("<span>", {
                     'class': `star-rating`,
                     html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
                 }).css(starsCss);
-                // If the record has counted === true, add 'computed' class that will color the starts to black
-                if (res.counted === true) {
-                    $starSpan.addClass("computed");
+
+                if (settings.addComputedStars) {
+                    // If the record has counted === true,
+                    //  add 'computed' class that will color the starts to black
+                    //  and "counted from X episodes" text to the title attr
+                    if (res.counted === true) {
+                        $starSpan.addClass("computed");
+                        $starSpan.find('span').attr("title", res.countedFromText);
+
+                        // "spočteno z epizod: 1" --> "['spočteno', 'z', 'epizod:', '1']"
+                        let splitted = res.countedFromText.split(' ');
+                        if (splitted.length === 4) {
+                            let num = splitted.pop();
+                            // Add <sup> of the episodes the count was computed from
+                            let $numSpan = $("<span>", { 'html': `<sup> (${num})</sup>` }).css({ 'font-size': '13px', 'color': '#7b7b7b' });
+                            $starSpan.find('span').after($numSpan);
+                        }
+                    }
                 }
+
                 $($link).after($starSpan);
             }
         }
@@ -622,7 +664,7 @@ async function onHomepage() {
 
                 let $span = "";
                 if (myRating.rating === 0) {
-                    $span = `<span class="stars trash">odpad!</span>`;
+                    $span = `<span class="stars trash" title="${myRating.date}>odpad!</span>`;
                 } else {
                     $span = `<span class="stars stars-${myRating.rating}" title="${myRating.date}"></span>`;
                 }
@@ -989,49 +1031,122 @@ async function onHomepage() {
             this.showLinkToImageOnOtherGalleryImages();
         }
 
+        async getShowType(filmInfo) {
+            let showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
+
+            switch (showType) {
+                case "epizoda": case "epizóda":
+                    return 'episode';
+
+                case "série": case "séria":
+                    return 'series';
+
+                case "seriál":
+                    return 'serial';
+
+                case "TV film":
+                    return 'tv movie';
+
+                case 'film':
+                    return 'movie';
+
+                default:
+                    return showType;
+            }
+        }
+
+        /**
+         *
+         * @param {?} idx Don't know
+         * @param {string} url Page url for scraping ratings
+         * @returns {dict} {url: {rating:, date:, counted:, countedFromText: }}
+         */
         async doSomething(idx, url) {
-            // console.log(`doSomething(${idx}) START`);
             let data = await $.get(url);
             let $rows = $(data).find('#snippet--ratings tr');
             let dc = {};
             for (const $row of $rows) {
-                let name = $($row).find('td.name a').attr('href');
-                let filmInfo = $($row).find('td.name > h3 > span > span').text();
-                console.log({ filmInfo });
-                if ((filmInfo.includes("epizoda") || filmInfo.includes("epizóda")) === true) {
-                    let splitted = name.slice(0, -1).split("/");
-                    splitted.pop();
-                    let parentName = splitted.join("/") + "/";
+                let name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
+
+                let filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+                // console.log(`FilmInfo text: ${filmInfo.text()}`);
+                let showType = await csfd.getShowType(filmInfo);
+                let showYear = await csfd.getShowYear(filmInfo);
+
+                // If it's an episode, check for parent series and if it's not in the dict yet, add it as 'rated' or 'counted rated'
+                if (settings.addComputedStars && showType === 'episode') {
+                    let parentName = await csfd.getParentNameFromEpisodeName(name);  // /film/697624-love-death-robots/
+                    // console.log({ parentName });
+                    // Not in dict yet, adding as 'counted': true
                     if (dc[parentName] === undefined) {
-                        console.log(`${parentName} ... neni v Dict, pridavam`);
-                        // TODO: Vzit z URL i datum hodnoceni
-                        let urlContent = await csfd.getUrlContent(parentName);
-                        console.log({ urlContent });
-                        dc[parentName] = { 'rating': 1, 'date': "01.01.2022", 'counted': true };
+                        const $content = await csfd.getRelativeUrlContent(parentName);
+                        const result = await csfd.getCountedRatings($content);
+
+                        dc[parentName] = {
+                            'rating': result.ratingCount,
+                            'date': '',
+                            'counted': true,
+                            'countedFromText': result.countedFromText,
+                            'type': showType,
+                            'year': showYear
+                        };
                     }
                 }
+
                 let $ratings = $($row).find('span.stars');
-                let rating = 0;
-                for (let stars = 0; stars <= 5; stars++) {
-                    if ($ratings.hasClass('stars-' + stars)) {
-                        rating = stars;
-                    }
-                }
+                let rating = await csfd.getStarCountFromSpanClass($ratings);
                 let date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-                dc[name] = { 'rating': rating, 'date': date, 'counted': false };
+
+                dc[name] = {
+                    'rating': rating,
+                    'date': date,
+                    'counted': false,
+                    'countedFromText': '',
+                    'type': showType,
+                    'year': showYear
+                };
             }
-            // console.log(`doSomething(${idx}) END`);
             return dc;
             // web workers - vyšší dívčí - více vláken z browseru
         }
 
-        async getUrlContent(url) {
-            console.log(`Getting 'https://www.csfd.cz/${url}' content`);
-            const $content = await $.get("https://www.csfd.cz/" + url + "prehled/");
-            console.log({ $content });
-            let txt = $($content).find('.current-user-rating').text();
-            console.log({ txt });
+        async getParentNameFromEpisodeName(episodeName) {
+            let splitted = episodeName.slice(0, -1).split("/");
+            splitted.pop();
+            let parentName = splitted.join("/") + "/";
+            return parentName;
+        }
+        async getRelativeUrlContent(url) {
+            // TODO: 'prehled' by mel byt OK i pro SK verzi. Ale chce to prozkouset. Jinak doplnit 'prehlad'.
+            // Construct full URL: /film/957504-the-book-of-boba-fett/ --> http[s]://csfd.(cs|sk)/film/957504-the-book-of-boba-fett/prehled/
+            const newUrl = window.location.protocol + "//" + window.location.host + url + 'prehled/';
+            const $content = await $.get(newUrl);
             return $content;
+        }
+
+        async getCountedRatings($content) {
+            // Get current user rating
+            const $curUserRating = $($content).find('li.current-user-rating');
+            const $starsSpan = $($curUserRating).find('span.stars');
+            const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
+            console.log({ starCount });
+            // Get 'Spocteno z episod' text
+            const $countedText = $($curUserRating).find('span[title]').attr('title');
+            // Resulting dictionary
+            const result = {
+                'ratingCount': starCount,
+                'countedFromText': $countedText
+            };
+            return result;
+        }
+        async getStarCountFromSpanClass($starsSpan) {
+            let rating = 0;
+            for (let stars = 0; stars <= 5; stars++) {
+                if ($starsSpan.hasClass('stars-' + stars)) {
+                    rating = stars;
+                }
+            }
+            return rating;
         }
 
         async getAllPages(force = false) {
@@ -1042,8 +1157,8 @@ async function onHomepage() {
             this.userRatingsCount = await this.getCurrentUserRatingsCount2();
             let dict = this.stars;
             let ls = force ? [] : [dict];
-            for (let idx = 1; idx <= 1; idx++) {
-            // for (let idx = 1; idx <= maxPageNum; idx++) {1
+            for (let idx = 1; idx <= 2; idx++) {
+            // for (let idx = 1; idx <= maxPageNum; idx++) { // TODO: RELEASE CHANGE
                 if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
@@ -1268,7 +1383,11 @@ async function onHomepage() {
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
-                                <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů</label>
+                                <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů/seriálů</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkAddComputedStars" name="add-computed-stars" ${disabled}>
+                                <label for="chkAddComputedStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky dopočítaného hodnocení u seriálů</label>
                             </div>
                         </section>
                     </article>
@@ -1681,6 +1800,10 @@ async function onHomepage() {
             // OK or WARN icon for addStars
             if (settings.addStars) {
                 $('#chkAddStars').parent().append($span.clone(true));
+            }
+            // OK or WARN icon for addComputedStars
+            if (settings.addComputedStars) {
+                $('#chkAddComputedStars').parent().append($span.clone(true));
             }
         }
 
