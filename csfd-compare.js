@@ -1917,6 +1917,20 @@ async function onHomepage() {
                 if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
             }
         }
+
+        let res = await $.ajax({
+            url: 'http://localhost:5000/api/ratings/songokussj',
+            dataType: 'json',
+            type: 'post',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                'url': '123456-matrix',
+                'computed': true,
+                'ratings': 4,
+                'movies': [123, 234, 456]
+            }),
+        });
+        console.log({ res });
     }
 
     // let t0 = performance.now();
