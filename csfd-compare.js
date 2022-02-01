@@ -633,6 +633,23 @@ async function onHomepage() {
             }
 
             let $links = $('a.film-title-name');
+            let list_of_hrefs = [];
+            for (var i = 0; i < $links.length; i++) {
+                list_of_hrefs.push($links[i].href);
+            }
+
+            console.log({ list_of_hrefs });
+            let csfddb = await $.ajax({
+                url: 'http://localhost:5000/api/ratings/songokussj',
+                dataType: 'json',
+                type: 'post',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    'movies': list_of_hrefs
+                }),
+            });
+            console.log({ csfddb });
+
             for (const $link of $links) {
                 let href = $($link).attr('href');
                 let res = this.stars[href];
@@ -1918,19 +1935,19 @@ async function onHomepage() {
             }
         }
 
-        let res = await $.ajax({
-            url: 'http://localhost:5000/api/ratings/songokussj',
-            dataType: 'json',
-            type: 'post',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                'url': '123456-matrix',
-                'computed': true,
-                'ratings': 4,
-                'movies': [123, 234, 456]
-            }),
-        });
-        console.log({ res });
+        // let res = await $.ajax({
+        //     url: 'http://localhost:5000/api/ratings/songokussj',
+        //     dataType: 'json',
+        //     type: 'post',
+        //     contentType: 'application/json',
+        //     data: JSON.stringify({
+        //         'url': '123456-matrix',
+        //         'computed': true,
+        //         'ratings': 4,
+        //         'movies': [123, 234, 456]
+        //     }),
+        // });
+        // console.log({ res });
     }
 
     // let t0 = performance.now();
