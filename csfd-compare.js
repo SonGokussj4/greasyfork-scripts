@@ -26,6 +26,9 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 
 const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
+const API_SERVER = 'http://localhost:5000';
+
+
 let Glob = {
     popupCounter: 0,
 
@@ -640,7 +643,7 @@ async function onHomepage() {
 
             console.log({ list_of_hrefs });
             let csfddb = await $.ajax({
-                url: 'http://localhost:5000/api/ratings/songokussj',
+                url: `${API_SERVER}/api/user-ratings/load/songokussj`,
                 dataType: 'json',
                 type: 'post',
                 contentType: 'application/json',
@@ -671,6 +674,9 @@ async function onHomepage() {
                     'class': `star-rating`,
                     html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
                 }).css(starsCss);
+
+                console.log({ href });
+                console.log({ res });
 
                 if (settings.addComputedStars) {
                     // If the record has counted === true,
@@ -1154,18 +1160,23 @@ async function onHomepage() {
 
                 let filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
                 // console.log(`FilmInfo text: ${filmInfo.text()}`);
-                let showType = await csfd.getShowType(filmInfo);
-                let showYear = await csfd.getShowYear(filmInfo);
+                let [ showType, showYear, parentName ] = await Promise.all([
+                    csfd.getShowType(filmInfo),
+                    csfd.getShowYear(filmInfo),
+                    csfd.getParentNameFromEpisodeName(name)
+                ]);
+                // let showYear = csfd.getShowYear(filmInfo);
 
                 // If it's an episode, check for parent series and if it's not in the dict yet, add it as 'rated' or 'counted rated'
                 if (settings.addComputedStars && showType === 'episode') {
-                    let parentName = await csfd.getParentNameFromEpisodeName(name);  // /film/697624-love-death-robots/
+                    // let parentName = await csfd.getParentNameFromEpisodeName(name);  // /film/697624-love-death-robots/
                     // console.log({ parentName });
                     // Not in dict yet, adding as 'counted': true
+                    // let year = await showYear;
                     if (dc[parentName] === undefined) {
                         const $content = await csfd.getRelativeUrlContent(parentName);
                         const result = await csfd.getCountedRatings($content);
-
+                        console.log(`Adding computed: ${parentName}: showType[${showType}], rating[${result.ratingCount}], title[${result.countedFromText}]`);
                         dc[parentName] = {
                             'rating': result.ratingCount,
                             'date': '',
@@ -1933,21 +1944,39 @@ async function onHomepage() {
             if (await csfd.onOtherUserHodnoceniPage()) {
                 if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
             }
+
+            console.log(`Calling url: '${API_SERVER}/api/users'`);
+            let res = await $.ajax({
+                url: `${API_SERVER}/api/users`,
+                dataType: 'json',
+                type: 'get',
+                contentType: 'application/json',
+                // data: JSON.stringify({
+                //     'url': '123456-matrix',
+                //     'computed': true,
+                //     'ratings': 4,
+                //     'movies': [123, 234, 456]
+                // }),
+            });
+            // res = JSON.stringify(res);
+            // console.log(`${API_SERVER} response: ${res}`);
+            console.log( res );
+
+            // fetch(`${API_SERVER}/api/users`, {
+            //     // method: 'post',
+            //     method: 'get',
+            //     headers: new Headers({
+            //         // 'Content-Type': 'application/x-www-form-urlencoded'
+            //         'Content-Type': 'application/json'
+            //     }),
+            //     // body: new FormData(document.getElementById('myform'))
+            // }).then(response => {
+            //     return response.json(); // server returned valid JSON
+            // }).then(parsed_result => {
+            //     console.log({ parsed_result });
+            // });
         }
 
-        // let res = await $.ajax({
-        //     url: 'http://localhost:5000/api/ratings/songokussj',
-        //     dataType: 'json',
-        //     type: 'post',
-        //     contentType: 'application/json',
-        //     data: JSON.stringify({
-        //         'url': '123456-matrix',
-        //         'computed': true,
-        //         'ratings': 4,
-        //         'movies': [123, 234, 456]
-        //     }),
-        // });
-        // console.log({ res });
     }
 
     // let t0 = performance.now();
