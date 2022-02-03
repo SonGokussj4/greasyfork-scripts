@@ -642,16 +642,16 @@ async function onHomepage() {
             }
 
             console.log({ list_of_hrefs });
-            let csfddb = await $.ajax({
-                url: `${API_SERVER}/api/user-ratings/load/songokussj`,
-                dataType: 'json',
-                type: 'post',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    'movies': list_of_hrefs
-                }),
-            });
-            console.log({ csfddb });
+            // let csfddb = await $.ajax({
+            //     url: `${API_SERVER}/api/user-ratings/load/songokussj`,
+            //     dataType: 'json',
+            //     type: 'post',
+            //     contentType: 'application/json',
+            //     data: JSON.stringify({
+            //         'movies': list_of_hrefs
+            //     }),
+            // });
+            // console.log({ csfddb });
 
             for (const $link of $links) {
                 let href = $($link).attr('href');
@@ -1806,6 +1806,51 @@ async function onHomepage() {
             this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
             this.stars = this.getStars();
         }
+
+        // ========================================
+        // ----------   API CALLS TO DB -----------
+        // ========================================
+        /**
+         * Call API to add a user
+         * @returns OK
+         */
+        async apiAddCurrentUser() {
+            let userId = location.href.match(/\d+/)[0];
+            // console.log({ userId });
+            const userExists = await fetch(`${API_SERVER}/api/users/${userId}`);
+            // User exists in DB already, do nothing
+            if (userExists.ok) {
+                return;
+            }
+            let url = location.href.match(/(\d+(-\w+)+)/)[0];
+            // console.log({ url });
+            let username = $(".user-profile-content h1").text().trim().split("\n")[0];
+            // console.log({ username });
+            let realname = $(".user-profile-content > p > strong").text().trim();
+            // console.log({ realname });
+            let avatarUrl = $(".user-profile-content > figure > img").attr("src");
+            avatarUrl = avatarUrl.replace("//image", "https://image");
+            // console.log({ avatarUrl });
+            // Add user to the DB
+            let response = await fetch(`${API_SERVER}/api/users/add-user`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "Id": userId,
+                    "Url": url,
+                    "Username": username,
+                    "Realname": realname,
+                    "AvatarUrl": avatarUrl
+                }),
+            });
+            if (response.ok) {
+                console.log(`User '${userId}' added successfully`);
+            }
+            return await response.json();
+        }
     }
 
     // $(document).on('click', '#refr-ratings-button', function () {
@@ -1945,36 +1990,8 @@ async function onHomepage() {
                 if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
             }
 
-            console.log(`Calling url: '${API_SERVER}/api/users'`);
-            let res = await $.ajax({
-                url: `${API_SERVER}/api/users`,
-                dataType: 'json',
-                type: 'get',
-                contentType: 'application/json',
-                // data: JSON.stringify({
-                //     'url': '123456-matrix',
-                //     'computed': true,
-                //     'ratings': 4,
-                //     'movies': [123, 234, 456]
-                // }),
-            });
-            // res = JSON.stringify(res);
-            // console.log(`${API_SERVER} response: ${res}`);
-            console.log( res );
-
-            // fetch(`${API_SERVER}/api/users`, {
-            //     // method: 'post',
-            //     method: 'get',
-            //     headers: new Headers({
-            //         // 'Content-Type': 'application/x-www-form-urlencoded'
-            //         'Content-Type': 'application/json'
-            //     }),
-            //     // body: new FormData(document.getElementById('myform'))
-            // }).then(response => {
-            //     return response.json(); // server returned valid JSON
-            // }).then(parsed_result => {
-            //     console.log({ parsed_result });
-            // });
+            // Add current page profile to api db if it's not there already
+            csfd.apiAddCurrentUser();
         }
 
     }
