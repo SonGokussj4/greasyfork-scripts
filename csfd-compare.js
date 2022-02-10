@@ -1820,6 +1820,7 @@ async function onHomepage() {
             const userExists = await fetch(`${API_SERVER}/api/users/${userId}`);
             // User exists in DB already, do nothing
             if (userExists.ok) {
+                console.debug(`User '${userId}' already in DB`);
                 return;
             }
             let url = location.href.match(/(\d+(-\w+)+)/)[0];
