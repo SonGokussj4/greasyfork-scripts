@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         CSFD porovnání hodnocení
 // @namespace    csfd.cz
-// @version      0.5.11.1
+// @version      0.5.12
 // @description  Show your own ratings on other users ratings list
 // @author       SonGokussj4
 // @license      GNU GPLv3
@@ -19,7 +19,7 @@
 // @supportURL   https://XXgithub.com/SonGokussj4/GitHub-userscripts/issues
 
 
-const VERSION = 'v0.5.11.1';
+const VERSION = 'v0.5.12';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -602,6 +602,15 @@ async function onHomepage() {
             return false;
         }
 
+        async onPersonalFavorite() {
+            if (location.href.includes('/soukromne/oblubene/') || location.href.includes('/soukrome/oblibene/')) {
+                if (!location.href.includes(this.userUrl)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         async notOnUserPage() {
             if (location.href.includes('/uzivatel/') && location.href.includes(this.userUrl)) {
                 return false;
@@ -619,12 +628,22 @@ async function onHomepage() {
             }
         }
 
+        async getMovieIdFromHref(href) {
+            // let ids = href.match(new RegExp("(?:(\d+)-[\w-]+)"));
+            let re = "/\d+/g"
+            // let REGEX_RESULT = [...href.matchAll("/\d+/g")];
+            // let REGEX_RESULT = href.match(re);
+            var REGEX_RESULT = href.match(/\/(\d)+-/ig);
+            REGEX_RESULT = REGEX_RESULT.slice(-1)[0].replace(/[\/-]/g, '');
+            return REGEX_RESULT;
+        }
+
         async addStars() {
             if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
                 return;
             }
             let starsCss = { marginLeft: "5px" };
-            if (await this.onOtherUserPage()) {
+            if (await this.onOtherUserPage() || await this.onPersonalFavorite()) {
                 starsCss = {
                     marginLeft: "5px",
                     borderWidth: "1px",
@@ -655,6 +674,17 @@ async function onHomepage() {
 
             for (const $link of $links) {
                 let href = $($link).attr('href');
+
+                // Clean href with 'recenze' or 'diskuze'
+                href = href.split("recenze")[0]
+                href = href.split("recenzie")[0]
+                href = href.split("diskuze")[0]
+                href = href.split("diskusie")[0]
+
+                console.log({ href });
+                let movieId = await csfd.getMovieIdFromHref(href);
+                console.log({ movieId });
+
                 let res = this.stars[href];
                 if (res === undefined) {
                     continue;
@@ -675,7 +705,7 @@ async function onHomepage() {
                     html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
                 }).css(starsCss);
 
-                console.log({ href });
+                // console.log({ href });
                 console.log({ res });
 
                 if (settings.addComputedStars) {
