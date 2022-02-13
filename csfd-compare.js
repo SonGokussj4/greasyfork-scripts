@@ -79,11 +79,6 @@ const movieType = Object.freeze({
 
 let defaultSettings = {
     // HOME PAGE
-    // removeMotivationPanel: false,
-    // removeContestPanel: false,
-    // removeCsfdCinemaPanel: false,
-    // removeVideoPanel: false,
-    // removeMoviesOfferPanel: false,
     hiddenSections: [],
     // GLOBAL
     showControlPanelOnHover: true,
@@ -166,8 +161,12 @@ async function refreshTooltips() {
     }
 }
 
+/**
+ * Take a list of dictionaries and return merged dictionary
+ * @param {*} list
+ * @returns
+ */
 async function mergeDict(list) {
-    // Take a list of dictionaries and return merged dictionary
     const merged = list.reduce(function (r, o) {
         Object.keys(o).forEach(function (k) { r[k] = o[k]; });
         return r;
@@ -334,7 +333,8 @@ async function onHomepage() {
         }
 
         async getCurrentFilmRating() {
-            let $activeStars = this.csfdPage.find(".star.active:not('.computed')");
+            // let $activeStars = this.csfdPage.find(".star.active:not('.computed')");
+            let $activeStars = this.csfdPage.find(".star.active");
 
             // No rating
             if ($activeStars.length === 0) { return null; }
@@ -412,35 +412,6 @@ async function onHomepage() {
 
         async addSettingsEvents() {
             // HOME PAGE
-            // $('#chkRemoveMotivationPanel').change(function () {
-            //     settings.removeMotivationPanel = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
-
-            // $('#chkRemoveContestPanel').change(function () {
-            //     settings.removeContestPanel = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
-
-            // $('#chkRemoveCsfdCinemaPanel').change(function () {
-            //     settings.removeCsfdCinemaPanel = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
-
-            // $('#chkRemoveVideoPanel').change(function () {
-            //     settings.removeVideoPanel = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
-
-            // $('#chkRemoveMoviesOfferPanel').change(function () {
-            //     settings.removeMoviesOfferPanel = this.checked;
-            //     localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-            //     Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-            // });
 
             // GLOBAL
             $('#chkControlPanelOnHover').change(function () {
@@ -637,11 +608,18 @@ async function onHomepage() {
             }
         }
 
+        /**
+         *
+         * @param {str} href csfd link for movie/series/episode
+         * @returns {str} Movie ID number
+         *
+         * Example:
+         * - href = '/film/774319-zhoubne-zlo/' --> '774319'
+         * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> '1121972'
+         */
         async getMovieIdFromHref(href) {
             // let ids = href.match(new RegExp("(?:(\d+)-[\w-]+)"));
-            let re = "/\d+/g"
-            // let REGEX_RESULT = [...href.matchAll("/\d+/g")];
-            // let REGEX_RESULT = href.match(re);
+            // let REGEX_RESULTS = [...href.matchAll(/\/(\d)+-/ig)];
             var REGEX_RESULT = href.match(/\/(\d)+-/ig);
             REGEX_RESULT = REGEX_RESULT.slice(-1)[0].replace(/[\/-]/g, '');
             return REGEX_RESULT;
@@ -685,19 +663,24 @@ async function onHomepage() {
                 let href = $($link).attr('href');
 
                 // Clean href with 'recenze' or 'diskuze'
-                href = href.split("recenze")[0]
-                href = href.split("recenzie")[0]
-                href = href.split("diskuze")[0]
-                href = href.split("diskusie")[0]
+                // /film/774319-zhoubne-zlo/recenze/etcetc --> /film/774319-zhoubne-zlo
+                href = href.split("recenze")[0];
+                href = href.split("recenzie")[0];
+                href = href.split("diskuze")[0];
+                href = href.split("diskusie")[0];
 
-                console.log({ href });
+                // console.log({ href });
                 let movieId = await csfd.getMovieIdFromHref(href);
-                console.log({ movieId });
+                // console.log({ movieId });
 
-                let res = this.stars[href];
+                // let res = this.stars[href];
+                let res = this.stars[movieId];
                 if (res === undefined) {
                     continue;
                 }
+
+                console.log(res);
+
                 let $sibl = $($link).closest('td').siblings('.rating,.star-rating-only');
                 if ($sibl.length !== 0) {
                     continue;
@@ -715,7 +698,7 @@ async function onHomepage() {
                 }).css(starsCss);
 
                 // console.log({ href });
-                console.log({ res });
+                // console.log({ res });
 
                 if (settings.addComputedStars) {
                     // If the record has counted === true,
@@ -1168,10 +1151,10 @@ async function onHomepage() {
                     return 'episode';
 
                 case "série": case "séria":
-                    return 'series';
+                    return 'season';
 
                 case "seriál":
-                    return 'serial';
+                    return 'series';
 
                 case "TV film":
                     return 'tv movie';
@@ -1279,14 +1262,17 @@ async function onHomepage() {
          * Then, it will return dict with `counted stars` and text `"counted from episodes: X"`
          *
          * @param {string} $content HTML content of a page
-         * @returns `{ 'ratingCount': 4, {countedFromText: 'spocteno z episod': 2 }}`
+         * @returns {{'ratingCount': int, 'countedFromText': str, 'movieId': 'str', 'parentId': 'str'}}
+         *
+         * Example: \
+         * `{ ratingCount: 4, countedFromText: 'spocteno z episod': 2, movieId: '465535', parentId = '' }`
          */
         async getCountedRatings($content) {
             // Get current user rating
             const $curUserRating = $($content).find('li.current-user-rating');
             const $starsSpan = $($curUserRating).find('span.stars');
             const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
-            console.log({ starCount });
+
             // Get 'Spocteno z episod' text
             const $countedText = $($curUserRating).find('span[title]').attr('title');
             // Resulting dictionary
@@ -1325,7 +1311,7 @@ async function onHomepage() {
             this.userRatingsCount = await this.getCurrentUserRatingsCount2();
             let dict = this.stars;
             let ls = force ? [] : [dict];
-            for (let idx = 1; idx <= 2; idx++) {
+            for (let idx = 1; idx <= 1; idx++) {
             // for (let idx = 1; idx <= maxPageNum; idx++) { // TODO: RELEASE CHANGE
                 if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
