@@ -290,24 +290,87 @@ async function onHomepage() {
             return filmUrl;
         }
 
-        updateInLocalStorage(ratingsObject) {
+        async getFilmUrlFromHtml(html) {
+            // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
+            let foundMatch = $(html).find('a[href$="/diskuze/"]:first').attr('href');
+            foundMatch = foundMatch.match(new RegExp("film/" + "(.*)" + "/diskuze"));
+            if (foundMatch == null) {
+                console.error("TODO: nenaslo to... vyhledat jinym zpusobem!");
+                throw (`${SCRIPTNAME} Exiting...`);
+            }
+
+            let filmUrl = `/film/${foundMatch[1]}/`;
+            return filmUrl;
+        }
+
+        async updateInLocalStorage(ratingsObject) {
+            console.log({ ratingsObject });
+
             // Check if film is in LocalStorage
             let filmUrl = this.getCurrentFilmUrl();
-            let myRating = this.stars[filmUrl] || undefined;
+            let movieId = await csfd.getMovieIdFromHref(filmUrl);
+
+            const ratings = await this.getLocalStorageRatings();
+            let myRating = ratings[movieId] || undefined;
+
+            console.log({ movieId });
+            console.log({ myRating });
 
             // Item not in LocalStorage, add it then!
             if (myRating === undefined) {
                 // Item not in LocalStorage, add
-                this.stars[filmUrl] = ratingsObject;
+                this.stars[movieId] = ratingsObject;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
                 return true;
             }
+            let movie = this.stars[movieId];
+            movie.rating = ratingsObject.rating;
 
             if (myRating.rating !== ratingsObject.rating) {
-                // LocalStorage rating != current rating, update
-                this.stars[filmUrl] = ratingsObject;
+                console.log(`Ratings different: LocalStorage[${myRating.rating}] --> Page[${ratingsObject.rating}]`);
+                movie.date = ratingsObject.date;
+                this.stars[movieId] = movie;
+                localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
+
+                if (myRating.type === "episode" || myRating.type === "season") {
+                    console.log(`This is ${myRating.type}... ParentId: ${myRating.parentId}`);
+                    let newUrl = `/film/${myRating.parentId}/`;  // /film/957504/ //TODO: nehezke...
+                    console.log({ newUrl });
+                    let $content = await csfd.getRelativeUrlContent(newUrl);
+                    let result = await csfd.getCountedRatings($content);
+                    console.log(result);
+                    if (result.movieId !== '') {
+                        let episodeParent = ratings[result.movieId];  // LocalStorage
+                        console.log({ episodeParent });
+                        let episodeParentUrl = `/film/${result.movieId}/`;
+                        console.log({ episodeParentUrl });
+                        let $episodeParentContent = await csfd.getRelativeUrlContent(episodeParentUrl);
+                        let episodeParentResult = await csfd.getCountedRatings($episodeParentContent);  // Web actual
+                        console.log({ episodeParentResult });
+                        if (episodeParent.rating !== episodeParentResult.ratingCount) {
+                            console.log(`Ratings Parent different: LC[${episodeParent.rating}] != Page[${episodeParentResult.ratingCount}]`);
+                            episodeParent.rating = episodeParentResult.ratingCount;
+                            episodeParent.countedFromText = episodeParentResult.countedFromText;
+                            console.log(`Updating movie: [${result.movieId}]`);
+                            console.log(`  Rating: [${episodeParent.rating}] --> [${episodeParentResult.ratingCount}]`);
+                            console.log(`  CountedFromText: [${episodeParent.countedFromText}] --> [${episodeParentResult.countedFromText}]`);
+                            this.stars[result.movieId] = episodeParent;
+                            localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
+                        }
+                    }
+                }
+
+                return true;
+
+            } else if ((myRating.counted !== ratingsObject.counted) || (myRating.countedFromText !== ratingsObject.countedFromText)) {
+                console.log(`Ratings Counted different: LC[${myRating.counted}] != Page[${ratingsObject.counted}]`);
+                movie.date = ratingsObject.date;  // TODO: prazdny string nebo objekt
+                movie.counted = ratingsObject.counted;
+                movie.countedFromText = ratingsObject.countedFromText;
+                this.stars[movieId] = movie;
                 localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
                 return true;
+
             }
 
             return true;
@@ -348,6 +411,20 @@ async function onHomepage() {
 
             // Rating "1" to "5"
             return $activeStars.length;
+        }
+
+        async isCurrentFilmRatingComputed() {
+            const $computedStars = this.csfdPage.find(".star.active.computed");
+
+            if ($computedStars.length !== 0) { return true; }
+
+            return false;
+        }
+
+        async getComputedFromText() {
+            const $curUserRating = this.csfdPage.find('li.current-user-rating');
+            const countedText = $($curUserRating).find('span[title]').attr('title');
+            return countedText;
         }
 
         async getCurrentUserRatingsCount2() {
@@ -1179,15 +1256,18 @@ async function onHomepage() {
             let dc = {};
             for (const $row of $rows) {
                 let name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
+                console.log(`$row name = ${name}`);
 
                 let filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
                 // console.log(`FilmInfo text: ${filmInfo.text()}`);
-                let [ showType, showYear, parentName ] = await Promise.all([
+                let [ showType, showYear, parentName, [movieId, parentId] ] = await Promise.all([
                     csfd.getShowType(filmInfo),
                     csfd.getShowYear(filmInfo),
-                    csfd.getParentNameFromEpisodeName(name)
+                    csfd.getParentNameFromEpisodeName(name),
+                    csfd.getMovieIdParentIdFromUrl(name),
                 ]);
-                // let showYear = csfd.getShowYear(filmInfo);
+
+                console.log(`movieId[${movieId}], parentId[${parentId}], parentName[${parentName}]`);
 
                 // If it's an episode, check for parent series and if it's not in the dict yet, add it as 'rated' or 'counted rated'
                 if (settings.addComputedStars && showType === 'episode') {
@@ -1195,17 +1275,22 @@ async function onHomepage() {
                     // console.log({ parentName });
                     // Not in dict yet, adding as 'counted': true
                     // let year = await showYear;
-                    if (dc[parentName] === undefined) {
+                    // let parentMovieId = await csfd.getMovieIdFromHref(parentName);
+                    console.log({ parentId });
+
+                    if (dc[parentId] === undefined) {
                         const $content = await csfd.getRelativeUrlContent(parentName);
                         const result = await csfd.getCountedRatings($content);
-                        console.log(`Adding computed: ${parentName}: showType[${showType}], rating[${result.ratingCount}], title[${result.countedFromText}]`);
-                        dc[parentName] = {
+                        console.log(`Adding computed: ${parentId}, url[${parentName}]: showType[${showType}], rating[${result.ratingCount}], title[${result.countedFromText}]`);
+                        dc[parentId] = {
+                            'url': parentName,
                             'rating': result.ratingCount,
                             'date': '',
                             'counted': true,
                             'countedFromText': result.countedFromText,
                             'type': showType,
-                            'year': showYear
+                            'year': showYear,
+                            'parentId': 0
                         };
                     }
                 }
@@ -1214,13 +1299,19 @@ async function onHomepage() {
                 let rating = await csfd.getStarCountFromSpanClass($ratings);
                 let date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
 
-                dc[name] = {
+                // let movieId = await csfd.getMovieIdFromHref(name);
+                // let parentId = await csfd.getMovieIdFromHref(parentName);
+                console.log(`DEBUG: name[${name}] ... movieId[${movieId}] ... parentId[${parentId}]`);
+
+                dc[movieId] = {
+                    'url': name,
                     'rating': rating,
                     'date': date,
                     'counted': false,
                     'countedFromText': '',
                     'type': showType,
-                    'year': showYear
+                    'year': showYear,
+                    'parentId': parentId
                 };
             }
             return dc;
@@ -1241,6 +1332,35 @@ async function onHomepage() {
             splitted.pop();
             let parentName = splitted.join("/") + "/";
             return parentName;
+        }
+
+        /**
+         * Extract MovieId, possibly ParentId from csfd URL address
+         *
+         * @param {str} url csfd movie URL
+         * @returns {{MovieId: str, ParentId: str}}
+         *
+         * Example: \
+         * - `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `{'MovieId': '800484', 'ParentId': '697624'}`
+         * - `/film/697624-love-death-robots` --> `{'MovieId': '697624', 'ParentId': ''}`
+         * - `/film/` --> `{'MovieId': '', 'ParentId': ''}`
+         * - `/uzivatel/78145-songokussj/prehled/` --> `{'MovieId': '', 'ParentId': ''}`
+         */
+        async getMovieIdParentIdFromUrl(url) {
+            if (!url.includes('/film/')) {
+                // return { 'movieId': '', 'parentId': '' };
+                return ['', ''];
+            }
+            let [firstResult, secondResult] = url.matchAll(/\/(\d+)-/g);
+            if (firstResult === undefined && secondResult === undefined) {
+                // return { 'movieId': '', 'parentId': '' };
+                return ['', ''];
+            }
+            if (secondResult === undefined) {
+                // return { 'movieId': firstResult[1], 'parentId': '' };
+                return [firstResult[1], ''];
+            }
+            return [secondResult[1], firstResult[1]];
         }
 
         /**
@@ -1275,10 +1395,17 @@ async function onHomepage() {
 
             // Get 'Spocteno z episod' text
             const $countedText = $($curUserRating).find('span[title]').attr('title');
+
+            // Get this movieId and possible parentId
+            const filmUrl = await csfd.getFilmUrlFromHtml($content);
+            let [movieId, parentId] = await csfd.getMovieIdParentIdFromUrl(filmUrl);
+
             // Resulting dictionary
             const result = {
                 'ratingCount': starCount,
-                'countedFromText': $countedText
+                'countedFromText': $countedText,
+                'movieId': movieId,
+                'parentId': parentId
             };
             return result;
         }
@@ -1660,6 +1787,12 @@ async function onHomepage() {
 
         async checkAndUpdateRatings() {
             let currentFilmRating = await this.getCurrentFilmRating();
+            let isRatingComputed = await this.isCurrentFilmRatingComputed();
+            let computedText = "";
+            if (isRatingComputed === true) {
+                computedText = await this.getComputedFromText();
+            }
+
             let currentFilmDateAdded = await this.getCurrentFilmDateAdded();
 
             if (currentFilmRating === null) {
@@ -1667,11 +1800,13 @@ async function onHomepage() {
                 this.removeFromLocalStorage();
             } else {
                 // Check if current page rating corresponds with that in LocalStorage, if not, update it
-                const obj = {
+                const ratingsObject = {
                     rating: currentFilmRating,
-                    date: currentFilmDateAdded
+                    date: currentFilmDateAdded,
+                    counted: isRatingComputed,
+                    countedFromText: computedText,
                 };
-                this.updateInLocalStorage(obj);
+                await this.updateInLocalStorage(ratingsObject);
             }
         }
 
