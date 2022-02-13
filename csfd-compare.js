@@ -68,6 +68,15 @@ let Glob = {
     }
 };
 
+const movieType = Object.freeze({
+    movie: 0,
+    series: 1,
+    season: 2,
+    episode: 3,
+    tvshow: 4,
+});
+
+
 let defaultSettings = {
     // HOME PAGE
     // removeMotivationPanel: false,
