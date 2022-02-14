@@ -800,8 +800,29 @@ async function onHomepage() {
             }
         }
 
+        /**
+         * On other then logged-in user add column to 'hodnoceni' page for comparing both users ratings
+         */
         async addRatingsColumn() {
-            // if (this.userRatingsCount === 0) { return; }
+            const [ratingsInLocalStorage, currentUserRatingsCount] = await Promise.all([
+                csfd.getLocalStorageRatingsCount(),
+                csfd.getCurrentUserRatingsCount2()
+            ]);
+
+            if (ratingsInLocalStorage === 0) { return; }
+
+            // Add warning "span" if localstorage ratings count is not the same as real count
+            if (ratingsInLocalStorage !== currentUserRatingsCount) {
+                $('.box-header h2').append($('<span>').css({
+                    'font-size': '12px',
+                    'font-weight': 'normal',
+                    'color': '#7b7b7b',
+                    'margin-left': '10px',
+                    'vertical-align': 'bottom'
+                }).text(
+                    `⚠️ Načteno pouze ${ratingsInLocalStorage}/${currentUserRatingsCount}`
+                ));
+            }
 
             let $page = this.csfdPage;
             let $tbl = $page.find('#snippet--ratings table tbody');
@@ -837,7 +858,7 @@ async function onHomepage() {
                 }
 
                 $row.find('td:nth-child(2)').after(`
-                    <td class="star-rating-only">
+                    <td class="star-rating-only" style="width: 80px;">
                         ${$span}
                     </td>
                 `);
