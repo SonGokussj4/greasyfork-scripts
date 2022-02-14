@@ -800,31 +800,45 @@ async function onHomepage() {
             }
         }
 
-        addRatingsColumn() {
-            if (this.userRatingsCount === 0) { return; }
+        async addRatingsColumn() {
+            // if (this.userRatingsCount === 0) { return; }
 
             let $page = this.csfdPage;
-
             let $tbl = $page.find('#snippet--ratings table tbody');
             let starsDict = this.getStars();
 
-            $tbl.find('tr').each(function () {
+            $tbl.find('tr').each(async function () {
                 let $row = $(this);
                 let url = $($row).find('.name').find('a').attr('href');
-                const myRating = starsDict[url] || {};
+                const movieId = await csfd.getMovieIdFromHref(url);
+                console.log(`Url[${url}]  movieId[${movieId}]`);
+                const myRating = starsDict[movieId] || {};
 
                 let $span = "";
                 if (myRating.rating === 0) {
                     $span = `<span class="stars trash" title="${myRating.date}>odpad!</span>`;
                 } else {
-                    $span = `<span class="stars stars-${myRating.rating}" title="${myRating.date}"></span>`;
+                    if (myRating.counted === true) {
+                        const splitted = myRating.countedFromText.split(' ');
+                        let num = splitted.length === 4 ? splitted.pop() : 0;
+                        $span = (`
+                            <span class="star-rating computed">
+                                <span class="stars stars-${myRating.rating}" title="${myRating.countedFromText}"></span>
+                                <span style="font-size: 13px; color: #7b7b7b; position: absolute; margin-left: 2px;"><sup> (${num})</sup></span>
+                            </span>
+                        `);
+                    } else {
+                        $span = (`
+                            <span class="star-rating">
+                                <span class="stars stars-${myRating.rating}" title="${myRating.date}"></span>
+                            </span>
+                        `);
+                    }
                 }
 
                 $row.find('td:nth-child(2)').after(`
                     <td class="star-rating-only">
-                        <span class="star-rating">
-                            ${$span}
-                        </span>
+                        ${$span}
                     </td>
                 `);
             });
