@@ -1502,15 +1502,11 @@ async function onHomepage() {
                 let $section = $(this).closest('section');
                 $section.attr('data-box-id', index);
 
-                // if (settings.includes(index)) {
-                //     $section.hide();
-                // }
-
                 if (settings.some(x => x.boxId == index)) {
                     $section.hide();
                 }
 
-                let $hide = $('<a>', {
+                let $btnHideBox = $('<a>', {
                     'class': 'hide-me button',
                     href: 'javascript:void(0)',
                     html: `Skrýt`
@@ -1520,9 +1516,20 @@ async function onHomepage() {
                     backgroundColor: '#7b0203',
                     display: 'none',
                 });
-                $hide.wrap(`<div class="box-header-action"></div>`);
+
+                // $btnHideBox.wrap(`<div class="box-header-action"></div>`);  // TODO: important?
+
                 let $h2 = $(this).find('h2');
-                $h2.after($hide[0]);
+                if ($h2.length === 0) {
+                    $h2 = $(this).find('p');
+                    // if ($h2.text().includes('Partnerem')) {
+                    $(this).css({ 'padding-right': '0px' });
+                    $h2.after($btnHideBox[0]);
+                    return;
+                    // }
+                }
+
+                $h2.append($btnHideBox[0]);
             });
 
             $('.box-header').on('mouseover', async function () {
@@ -1534,7 +1541,10 @@ async function onHomepage() {
             $('.hide-me').on('click', async function (event) {
                 let $section = $(event.target).closest('section');
                 let boxId = $section.data('box-id');
-                let boxName = $section.find('h2').first().text().replace(/\n|\t/g, "");  // clean from '\t', '\n'
+                let boxName = $section.find('h2').first().text().replace(/\n|\t|Skrýt/g, "");  // clean from '\t', '\n'
+                if (boxName === '') {
+                    boxName = $section.find('p').first().text().replace(/\n|\t|Skrýt/g, "");
+                }
                 let dict = { boxId: boxId, boxName: boxName };
                 let settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
                 if (!settings.includes(dict)) {
