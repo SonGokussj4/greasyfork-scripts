@@ -2,7 +2,7 @@
 
 > **v0.5.12** _(2022-04-xx)_  
 
-**Fix:** Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  [#12](/../../issues/12), [#1](/../../issues/1)  
+**Fix:** Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
 **New:** Snad obr. s nápovědou  
 
 > **v0.5.11.1** _(2021-11-24)_  
