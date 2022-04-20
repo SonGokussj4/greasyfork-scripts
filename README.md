@@ -2,7 +2,7 @@
 
 > **v0.5.12** _(2022-01-xx)_  
 
-**Fix:** Domácí stránka: tlačítko "Skrýt" má opravené CSS, už nepřeskakuje u videa + přídáno u "Partnerem čsfd..."  [#12](/../../issues/12)
+**Fix:** Domácí stránka: tlačítko "Skrýt" má opravené CSS, už nepřeskakuje u videa + přídáno u "Partnerem čsfd..."  [#12](/../../issues/12), [#1](/../../issues/1)
 **New:** Neco pridano  
 **Testing:** Will issue [#11](/../../issues/11) appear?  
 
