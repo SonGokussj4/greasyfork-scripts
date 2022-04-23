@@ -1121,7 +1121,7 @@ async function onHomepage() {
             let average = (array) => array.reduce((a, b) => a + b) / array.length;
             const ratingAverage = Math.round(average(ratingNumbers));
 
-            let $ratingAverage = this.csfdPage.find('.box-rating-container div.rating-average');
+            let $ratingAverage = this.csfdPage.find('.box-rating-container div.film-rating-average');
             $ratingAverage.html(`
                 <span style="position: absolute;">${$ratingAverage.text()}</span>
                 <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
