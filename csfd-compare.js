@@ -1136,8 +1136,9 @@ async function onHomepage() {
          * @returns null
          */
         async ratingsEstimate() {
+
             // Find rating-average element
-            let $ratingAverage = this.csfdPage.find('.box-rating-container .rating-average');
+            let $ratingAverage = this.csfdPage.find('.box-rating-container .film-rating-average');
 
             // Not found, exit fn()
             if ($ratingAverage.length !== 1) { return; }
