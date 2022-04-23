@@ -1224,8 +1224,6 @@ async function onHomepage() {
         async showLinkToImage() {
             this.showLinkToImageOnSmallMoviePoster();
             this.showLinkToImageOnOtherGalleryImages();
-            // TODO: Show links on images in gallery of: "tvurce"
-            // TODO: https://github.com/SonGokussj4/greasyfork-scripts/issues/10
         }
 
         /**
@@ -2088,7 +2086,7 @@ async function onHomepage() {
     if (settings.showControlPanelOnHover) { csfd.openControlPanelOnHover(); }
 
     // Film/Series page
-    if (location.href.includes('/film/')) {
+    if (location.href.includes('/film/') || location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
         if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
         // csfd.showLinkToImageOnSmallMoviePoster();
         if (settings.showLinkToImage) { csfd.showLinkToImage(); }
