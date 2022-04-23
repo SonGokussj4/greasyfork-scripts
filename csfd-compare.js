@@ -724,7 +724,6 @@ async function onHomepage() {
                 list_of_hrefs.push($links[i].href);
             }
 
-            console.log({ list_of_hrefs });
             // let csfddb = await $.ajax({
             //     url: `${API_SERVER}/api/user-ratings/load/songokussj`,
             //     dataType: 'json',
@@ -1666,26 +1665,6 @@ async function onHomepage() {
                     <article class="article">
                         <h2 class="article-header">Domácí stránka - skryté panely</h2>
                         <section>
-                            <!--<div class="article-content">-->
-                            <!--    <input type="checkbox" id="chkRemoveMotivationPanel" name="remove-motivation-panel">-->
-                            <!--    <label for="chkRemoveMotivationPanel" style="${resetLabelStyle}">Skrýt panel: "Vítej na ČSFD"</label>-->
-                            <!--</div>-->
-                            <!--<div class="article-content">-->
-                            <!--    <input type="checkbox" id="chkRemoveContestPanel" name="remove-contest-panel">-->
-                            <!--    <label for="chkRemoveContestPanel" style="${resetLabelStyle}">Skrýt panel: "Soutěž"</label>-->
-                            <!--</div>-->
-                            <!--<div class="article-content">-->
-                            <!--    <input type="checkbox" id="chkRemoveCsfdCinemaPanel" name="remove-csfd-cinema-panel">-->
-                            <!--    <label for="chkRemoveCsfdCinemaPanel" style="${resetLabelStyle}">Skrýt panel: "ČSFD sál"</label>-->
-                            <!--</div>-->
-                            <!--<div class="article-content">-->
-                            <!--    <input type="checkbox" id="chkRemoveVideoPanel" name="remove-video-panel">-->
-                            <!--    <label for="chkRemoveVideoPanel" style="${resetLabelStyle}">Skrýt panel: "Nové trailery"</label>-->
-                            <!--</div>-->
-                            <!--<div class="article-content">-->
-                            <!--    <input type="checkbox" id="chkRemoveMoviesOfferPanel" name="remove-movies-offer-panel">-->
-                            <!--    <label for="chkRemoveMoviesOfferPanel" style="${resetLabelStyle}">Skrýt panel: "Sledujte online / DVD tipy"</label>-->
-                            <!--</div>-->
                             <div class="article-content">
                                 <div class="hidden-sections" style="max-width: fit-content;">${resultDisplayArray.join("")}</div>
                             </div>
