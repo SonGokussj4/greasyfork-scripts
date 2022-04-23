@@ -6,7 +6,9 @@
   - Snad obr. s nápovědou  
 - FIX
   - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
-  - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))
+  - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  
+  - Hodnocení: znovu ukazuje % hodnocení i když hodnotilo méně jak 10 lidí  
+  - Hodnocení: znovu ukazuje dodatečné hodnocení jako průměr od oblíbených uživatelů  
 
 > **v0.5.11.1** _(2021-11-24)_  
 
