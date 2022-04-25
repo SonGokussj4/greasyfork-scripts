@@ -1588,23 +1588,18 @@ async function onHomepage() {
             let $div = $(`div.hidden-sections`);
             $div.append($button);
         }
-        removeBox_MotivationPanel() {
-            $('.box--homepage-motivation-middle,.box--homepage-motivation').remove();
-        }
-        removeBox_ContestPanel() {
-            $('.box--homepage-contest').remove();
-        }
 
-        removeBox_CsfdCinemaPanel() {
-            $('.box--homepage-csfd-cinema').remove();
-        }
-
-        removeBox_VideoPanel() {
-            $('.box--homepage-video').remove();
-        }
-
-        removeBox_MoviesOfferPanel() {
-            $('.box--movies-offer').remove();
+        helpImageComponent(url, description) {
+            // create span
+            let $span = $(`
+                <span class="help-hover-image"
+                      data-description="${description}"
+                      data-img-url="${url}">❔</span>
+            `).css({
+                "cursor": "help",
+                "color": "rgba(255, 255, 255, 0.3)",
+            })
+            return $span.get(0).outerHTML;
         }
 
         async addSettingsPanel() {
@@ -1684,6 +1679,7 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítka "více...")</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/DOgHeZj.png", "Odstraní tlačítko 'více' a umožní kliknout na celou zprávu.")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
@@ -1702,14 +1698,17 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel">
                                 <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/mLznpn6.png", "Skryje ovládací panel, doporučeno pouze pokud aktivujete položky níže")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
                                 <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/Di8EofG.png", "Přidá tlačítko pro odeslání soukromé zprávy na profil uživatele")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/zBINBmc.png", "Přidá tlačítko pro přidání/odebrání uživatele z oblíbených")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
@@ -1724,26 +1723,31 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image" ${disabled}>
                                 <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/a2Av3AK.png", "Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate" ${disabled}>
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/qGAhXog.png", "Ukáže % hodnocení i u filmů s méně než 10 hodnoceními")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkRatingsFromFavorites" name="ratings-from-favorites" ${disabled}>
                                 <label for="chkRatingsFromFavorites" style="${resetLabelStyle}">Zobrazit hodnocení z průměru oblíbených</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/ol88F6z.png", "Zobrazí % hodnocení od přidaných oblíbených uživatelů")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
                                 <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkAddRatingsDate" name="add-ratings" ${disabled}>
-                                <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
+                            <input type="checkbox" id="chkAddRatingsDate" name="add-ratings" ${disabled}>
+                            <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
+                            ${csfd.helpImageComponent("https://i.imgur.com/CHpBDxK.png", "Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR")}
                                 <div>
                                     <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
@@ -1767,6 +1771,31 @@ async function onHomepage() {
             $('.header-bar').prepend(button);
 
             await refreshTooltips();
+
+            // Show help image on hover
+            $(".help-hover-image").hover(function (e) {
+                const url = $(this).attr("data-img-url");
+                const description = $(this).attr("data-description");
+                $("body").append(`<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`);
+                $("#image-when-hovering-text")
+                    .css("position", "absolute")
+                    .css("top", (e.pageY + 5) + "px")
+                    .css("left", (e.pageX + 25) + "px")
+                    .css("z-index", "9999")
+                    .css("background-color", "white")
+                    .css("padding", "5px")
+                    .css("border", "1px solid #6a6a6a")
+                    .css("border-radius", "5px")
+                    .fadeIn("fast");
+            }, function () {
+                $("#image-when-hovering-text").remove();
+            });
+
+            $(".help-hover-image").mousemove(function (e) {
+                $("#image-when-hovering-text")
+                    .css("top", (e.pageY + 5) + "px")
+                    .css("left", (e.pageX + 25) + "px");
+            });
 
             // Show() the section and remove the number from localStorage
             $(".hidden-sections").on("click", ".restore-hidden-section", async function () {
