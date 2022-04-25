@@ -2028,13 +2028,13 @@ async function onHomepage() {
          */
         async apiAddCurrentUser() {
             let userId = location.href.match(/\d+/)[0];
-            // console.log({ userId });
-            const userExists = await fetch(`${API_SERVER}/api/users/${userId}`);
+            const userExists = await fetch(`${API_SERVER}/api/v1/users/${userId}`);
             // User exists in DB already, do nothing
             if (userExists.ok) {
-                console.debug(`User '${userId}' already in DB`);
+                // console.debug(`User '${userId}' already in DB`);
                 return;
             }
+            console.debug(`User '${userId}' not in DB, adding...`);
             let url = location.href.match(/(\d+(-\w+)+)/)[0];
             // console.log({ url });
             let username = $(".user-profile-content h1").text().trim().split("\n")[0];
@@ -2044,8 +2044,9 @@ async function onHomepage() {
             let avatarUrl = $(".user-profile-content > figure > img").attr("src");
             avatarUrl = avatarUrl.replace("//image", "https://image");
             // console.log({ avatarUrl });
+
             // Add user to the DB
-            let response = await fetch(`${API_SERVER}/api/users/add-user`, {
+            let response = await fetch(`${API_SERVER}/api/v1/users/`, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -2059,8 +2060,11 @@ async function onHomepage() {
                     "AvatarUrl": avatarUrl
                 }),
             });
+            console.log(response);
             if (response.ok) {
                 console.log(`User '${userId}' added successfully`);
+            } else {
+                console.error(`User '${userId}' not added`);
             }
             return await response.json();
         }
