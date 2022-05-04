@@ -26,7 +26,11 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 
 const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
-const API_SERVER = 'http://localhost:5000';
+// const API_SERVER = 'http://localhost:5000';
+const API_SERVER_HEADERS = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+}
 
 
 let Glob = {
@@ -137,7 +141,7 @@ async function delay(t) {
     });
 }
 
-async function getSettings(settingsName=SETTINGSNAME) {
+async function getSettings(settingsName = SETTINGSNAME) {
     if (!localStorage[settingsName]) {
         if (settingsName === SETTINGSNAME_HIDDEN_BOXES) {
             defaultSettings = [];
@@ -337,7 +341,7 @@ async function onHomepage() {
                     let newUrl = `/film/${myRating.parentId}/`;  // /film/957504/ //TODO: nehezke...
                     console.log({ newUrl });
                     let $content = await csfd.getRelativeUrlContent(newUrl);
-                    let result = await csfd.getCountedRatings($content);
+                    let result = await csfd.getComputedRatings($content);
                     console.log(result);
                     if (result.movieId !== '') {
                         let episodeParent = ratings[result.movieId];  // LocalStorage
@@ -345,7 +349,7 @@ async function onHomepage() {
                         let episodeParentUrl = `/film/${result.movieId}/`;
                         console.log({ episodeParentUrl });
                         let $episodeParentContent = await csfd.getRelativeUrlContent(episodeParentUrl);
-                        let episodeParentResult = await csfd.getCountedRatings($episodeParentContent);  // Web actual
+                        let episodeParentResult = await csfd.getComputedRatings($episodeParentContent);  // Web actual
                         console.log({ episodeParentResult });
                         if (episodeParent.rating !== episodeParentResult.ratingCount) {
                             console.log(`Ratings Parent different: LC[${episodeParent.rating}] != Page[${episodeParentResult.ratingCount}]`);
@@ -414,11 +418,20 @@ async function onHomepage() {
         }
 
         async isCurrentFilmRatingComputed() {
-            const $computedStars = this.csfdPage.find(".star.active.computed");
+            const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
 
             if ($computedStars.length !== 0) { return true; }
 
             return false;
+        }
+
+        async getCurrentFilmComputedRating() {
+            const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
+            const $starsSpan = $($computedStars).find('span.stars');
+            console.log("$starsSpan: ", $starsSpan);
+            const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
+            console.log("starCount: ", starCount);
+            return starCount;
         }
 
         async getComputedFromText() {
@@ -453,12 +466,6 @@ async function onHomepage() {
         }
 
         async loadInitialSettings() {
-            // HOME PAGE
-            // $('#chkRemoveMotivationPanel').attr('checked', settings.removeMotivationPanel);
-            // $('#chkRemoveContestPanel').attr('checked', settings.removeContestPanel);
-            // $('#chkRemoveCsfdCinemaPanel').attr('checked', settings.removeCsfdCinemaPanel);
-            // $('#chkRemoveVideoPanel').attr('checked', settings.removeVideoPanel);
-            // $('#chkRemoveMoviesOfferPanel').attr('checked', settings.removeMoviesOfferPanel);
 
             // GLOBAL
             $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
@@ -480,7 +487,8 @@ async function onHomepage() {
             $('#chkRatingsFromFavorites').attr('checked', settings.ratingsFromFavorites);
             $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
             $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
-            if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
+            settings.hideSelectedUserReviews || $('#txtHideSelectedUserReviews').parent().hide();
+            // if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
             if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
 
             // ACTORS
@@ -755,7 +763,7 @@ async function onHomepage() {
                     continue;
                 }
 
-                console.log(res);
+                // console.log(res);
 
                 let $sibl = $($link).closest('td').siblings('.rating,.star-rating-only');
                 if ($sibl.length !== 0) {
@@ -1293,7 +1301,7 @@ async function onHomepage() {
 
                 let filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
                 // console.log(`FilmInfo text: ${filmInfo.text()}`);
-                let [ showType, showYear, parentName, [movieId, parentId] ] = await Promise.all([
+                let [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
                     csfd.getShowType(filmInfo),
                     csfd.getShowYear(filmInfo),
                     csfd.getParentNameFromEpisodeName(name),
@@ -1313,7 +1321,7 @@ async function onHomepage() {
 
                     if (dc[parentId] === undefined) {
                         const $content = await csfd.getRelativeUrlContent(parentName);
-                        const result = await csfd.getCountedRatings($content);
+                        const result = await csfd.getComputedRatings($content);
                         console.log(`Adding computed: ${parentId}, url[${parentName}]: showType[${showType}], rating[${result.ratingCount}], title[${result.countedFromText}]`);
                         dc[parentId] = {
                             'url': parentName,
@@ -1420,7 +1428,7 @@ async function onHomepage() {
          * Example: \
          * `{ ratingCount: 4, countedFromText: 'spocteno z episod': 2, movieId: '465535', parentId = '' }`
          */
-        async getCountedRatings($content) {
+        async getComputedRatings($content) {
             // Get current user rating
             const $curUserRating = $($content).find('li.current-user-rating');
             const $starsSpan = $($curUserRating).find('span.stars');
@@ -1472,7 +1480,7 @@ async function onHomepage() {
             let dict = this.stars;
             let ls = force ? [] : [dict];
             for (let idx = 1; idx <= 1; idx++) {
-            // for (let idx = 1; idx <= maxPageNum; idx++) { // TODO: RELEASE CHANGE
+                // for (let idx = 1; idx <= maxPageNum; idx++) { // TODO: RELEASE CHANGE
                 if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
                 console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
                 Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
@@ -1568,7 +1576,7 @@ async function onHomepage() {
             $filmTitleNameA.css({
                 "white-space": "nowrap",
             });
-            $filmTitleNameA.each(function() {
+            $filmTitleNameA.each(function () {
                 const $this = $(this);
                 $this.attr("title", $this.text());
             });
@@ -2031,36 +2039,28 @@ async function onHomepage() {
             const userExists = await fetch(`${API_SERVER}/api/v1/users/${userId}`);
             // User exists in DB already, do nothing
             if (userExists.ok) {
-                // console.debug(`User '${userId}' already in DB`);
                 return;
             }
             console.debug(`User '${userId}' not in DB, adding...`);
             let url = location.href.match(/(\d+(-\w+)+)/)[0];
-            // console.log({ url });
             let username = $(".user-profile-content h1").text().trim().split("\n")[0];
-            // console.log({ username });
             let realname = $(".user-profile-content > p > strong").text().trim();
-            // console.log({ realname });
             let avatarUrl = $(".user-profile-content > figure > img").attr("src");
             avatarUrl = avatarUrl.replace("//image", "https://image");
-            // console.log({ avatarUrl });
+            const body = {
+                "Id": userId,
+                "Url": url,
+                "Username": username,
+                "Realname": realname,
+                "AvatarUrl": avatarUrl
+            }
 
             // Add user to the DB
             let response = await fetch(`${API_SERVER}/api/v1/users/`, {
                 method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    "Id": userId,
-                    "Url": url,
-                    "Username": username,
-                    "Realname": realname,
-                    "AvatarUrl": avatarUrl
-                }),
+                headers: API_SERVER_HEADERS,
+                body: JSON.stringify(body),
             });
-            console.log(response);
             if (response.ok) {
                 console.log(`User '${userId}' added successfully`);
             } else {
@@ -2068,7 +2068,58 @@ async function onHomepage() {
             }
             return await response.json();
         }
+
+        /**
+         * Call API to add a user
+         * @returns OK
+         */
+        async apiAddCurrentMovie() {
+            const movieId = await this.getMovieIdFromHref(location.href);
+            console.log("movieId:", movieId);
+
+            const movieExists = await fetch(`${API_SERVER}/api/v1/movies/${movieId}`);
+            if (movieExists.ok) {
+                console.log(`Movie '${movieId}' already exists in DB`);
+                return;
+            }
+            console.debug(`Movie '${movieId}' not in DB, adding...`);
+
+            // const movieRating = await csfd.getCurrentFilmRating();
+            // const movieRatingIsComputed = await csfd.isCurrentFilmRatingComputed();
+            // const computedText = movieRatingIsComputed ? await this.getComputedFromText() : "";
+            // if (movieRatingIsComputed) {
+            //     console.log("movieRatingIsComputed:", movieRatingIsComputed);
+            //     const movieComputedRating = await csfd.getCurrentFilmComputedRating();
+            //     console.log("movieComputedRating:", movieComputedRating);
+            // }
+            // const dateAdded = await this.getCurrentFilmDateAdded();
+
+            const body = {
+                "Id": movieId,
+                "Url": location.href,
+                // "Rating": movieRating,
+                "LastUpdate": new Date().toISOString()
+            }
+            console.log("body:", body);
+
+            // return;
+
+            // Add movie to the DB
+            let response = await fetch(`${API_SERVER}/api/v1/movies/`, {
+                method: 'POST',
+                headers: API_SERVER_HEADERS,
+                body: JSON.stringify(body),
+            });
+            if (response.ok) {
+                console.log(`Movie '${movieId}' added successfully`);
+            } else {
+                console.error(`Movie '${movieId}' not added`);
+            }
+
+        }
     }
+
+
 
     // $(document).on('click', '#refr-ratings-button', function () {
     //     alert("hihi");
@@ -2169,6 +2220,7 @@ async function onHomepage() {
 
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
             await csfd.checkAndUpdateRatings();
+            csfd.apiAddCurrentMovie();
         }
 
         // Ratings DB - check if number of ratings saved and current are the same
