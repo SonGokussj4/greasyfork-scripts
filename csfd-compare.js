@@ -2070,7 +2070,7 @@ async function onHomepage() {
         }
 
         /**
-         * Call API to add a user
+         * Call API to add a movie
          * @returns OK
          */
         async apiAddCurrentMovie() {
@@ -2096,8 +2096,14 @@ async function onHomepage() {
 
             const body = {
                 "Id": movieId,
-                "Url": location.href,
-                // "Rating": movieRating,
+                // "Url": location.href,
+                "Url": $('meta[property="og:url"]').attr('content').split('/film/')[1].replace('/recenze/', '').replace('/recenzie/', ''),
+                "Type": $('.film-header-name span.type').text().slice(1, -1),
+                "Title": $('meta[property="og:title"]').attr('content'),
+                "Type": $('.film-header-name').find('span').length === 0 ? 'film' : $('.film-header-name').find('span')[0].innerHTML.slice(1, -1),
+                "Year": $('div.origin').text().trim().replaceAll('\t', '').split('\n')[1].split(',')[0],
+                "Rating": $('.mobile-film-rating .box-rating .film-rating-average').text().replaceAll('\t', '').replaceAll('\n', '').replaceAll('%', ''),
+                "RatingCount": $('li.tab-nav-item.ratings-btn.active > a > span').text().slice(1, -1),
                 "LastUpdate": new Date().toISOString()
             }
             console.log("body:", body);
