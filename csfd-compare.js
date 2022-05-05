@@ -2093,17 +2093,24 @@ async function onHomepage() {
             //     console.log("movieComputedRating:", movieComputedRating);
             // }
             // const dateAdded = await this.getCurrentFilmDateAdded();
-
+            const csfdJson = jQuery.parseJSON($('#page-wrapper > div > div.main-movie > script').text());
             const body = {
                 "Id": movieId,
                 // "Url": location.href,
                 "Url": $('meta[property="og:url"]').attr('content').split('/film/')[1].replace('/recenze/', '').replace('/recenzie/', ''),
                 "Type": $('.film-header-name span.type').text().slice(1, -1),
-                "Title": $('meta[property="og:title"]').attr('content'),
-                "Type": $('.film-header-name').find('span').length === 0 ? 'film' : $('.film-header-name').find('span')[0].innerHTML.slice(1, -1),
-                "Year": $('div.origin').text().trim().replaceAll('\t', '').split('\n')[1].split(',')[0],
-                "Rating": $('.mobile-film-rating .box-rating .film-rating-average').text().replaceAll('\t', '').replaceAll('\n', '').replaceAll('%', ''),
-                "RatingCount": $('li.tab-nav-item.ratings-btn.active > a > span').text().slice(1, -1),
+                // "Title": $('meta[property="og:title"]').attr('content'),
+                "Title": csfdJson.name,
+                // "Type": $('.film-header-name').find('span').length === 0 ? 'film' : $('.film-header-name').find('span')[0].innerHTML.slice(1, -1),
+                // get key with @ as key
+                "Type": csfdJson['@type'],
+                // "Year": $('div.origin').text().trim().replaceAll('\t', '').split('\n')[1].split(',')[0],
+                "Year": csfdJson.dateCreated,
+                // "Rating": $('.mobile-film-rating .box-rating .film-rating-average').text().replaceAll('\t', '').replaceAll('\n', '').replaceAll('%', ''),
+                "Rating": Math.round(csfdJson.aggregateRating.ratingValue),
+                // "RatingCount": $('li.tab-nav-item.ratings-btn.active > a > span').text().slice(1, -1).replaceAll(' ', '').replaceAll(' ', ''),
+                "RatingCount": csfdJson.aggregateRating.ratingCount,
+                "PosterUrl": csfdJson.image,
                 "LastUpdate": new Date().toISOString()
             }
             console.log("body:", body);
