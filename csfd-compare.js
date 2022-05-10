@@ -2094,6 +2094,12 @@ async function onHomepage() {
             // }
             // const dateAdded = await this.getCurrentFilmDateAdded();
             const csfdJson = jQuery.parseJSON($('#page-wrapper > div > div.main-movie > script').text());
+            // const duration = $("div.origin").text().trim().replaceAll('\t', '').split('\n')[1].split(',')[1].trim();
+            const duration = $("div.origin").text().trim().replaceAll('\t', '').split(',').slice(-1,)[0].trim().replaceAll('\n', ' ');
+            const country = $("div.origin").text().split(",")[0].trim().replaceAll('\t', '').split('/').map((item) => item.trim()).join("/");
+            const fanclubCount = $(".fans-btn a").text().match(/\((\d)+\)/ig)[0].slice(1, -1);
+            const genres = $('div.genres').text().split('/').map(item => item.trim());
+            console.log("genres:", genres);
             const body = {
                 "Id": movieId,
                 // "Url": location.href,
@@ -2104,14 +2110,19 @@ async function onHomepage() {
                 // "Type": $('.film-header-name').find('span').length === 0 ? 'film' : $('.film-header-name').find('span')[0].innerHTML.slice(1, -1),
                 // get key with @ as key
                 "Type": csfdJson['@type'],
+                // "GenresJson": genres,
+                "Genres": JSON.stringify(genres),
                 // "Year": $('div.origin').text().trim().replaceAll('\t', '').split('\n')[1].split(',')[0],
                 "Year": csfdJson.dateCreated,
                 // "Rating": $('.mobile-film-rating .box-rating .film-rating-average').text().replaceAll('\t', '').replaceAll('\n', '').replaceAll('%', ''),
-                "Rating": Math.round(csfdJson.aggregateRating.ratingValue),
+                "Rating": csfdJson.aggregateRating ? Math.round(csfdJson.aggregateRating.ratingValue) : undefined,
+                "FanclubCount": fanclubCount,
                 // "RatingCount": $('li.tab-nav-item.ratings-btn.active > a > span').text().slice(1, -1).replaceAll(' ', '').replaceAll(' ', ''),
-                "RatingCount": csfdJson.aggregateRating.ratingCount,
+                "RatingCount": csfdJson.aggregateRating ? Math.round(csfdJson.aggregateRating.ratingCount) : undefined,
                 "PosterUrl": csfdJson.image,
-                "LastUpdate": new Date().toISOString()
+                "Country": country,
+                "Duration": duration,
+                "LastUpdate": new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 19).replace('T', ' ')
             }
             console.log("body:", body);
 
