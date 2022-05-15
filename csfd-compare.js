@@ -282,29 +282,25 @@ async function onHomepage() {
         }
 
         getCurrentFilmUrl() {
-            // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
-            let foundMatch = $('a[href$="/diskuze/"]:first').attr('href');
-            foundMatch = foundMatch.match(new RegExp("film/" + "(.*)" + "/diskuze"));
-            if (foundMatch == null) {
-                console.error("TODO: nenaslo to... vyhledat jinym zpusobem!");
-                throw (`${SCRIPTNAME} Exiting...`);
+            const foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+            if (foundMatch.length == 1) {
+                return foundMatch[0];
+            } else if (foundMatch.length == 2) {
+                return foundMatch[1];
             }
-
-            let filmUrl = `/film/${foundMatch[1]}/`;
-            return filmUrl;
+            console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
+            throw (`${SCRIPTNAME} Exiting...`);
         }
 
         async getFilmUrlFromHtml(html) {
-            // Find "Diskuze" button and from it's a href extract /film/${URL}/diskuze
-            let foundMatch = $(html).find('a[href$="/diskuze/"]:first').attr('href');
-            foundMatch = foundMatch.match(new RegExp("film/" + "(.*)" + "/diskuze"));
-            if (foundMatch == null) {
-                console.error("TODO: nenaslo to... vyhledat jinym zpusobem!");
-                throw (`${SCRIPTNAME} Exiting...`);
+            const foundMatch = $(html).find('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+            if (foundMatch.length == 1) {
+                return foundMatch[0];
+            } else if (foundMatch.length == 2) {
+                return foundMatch[1];
             }
-
-            let filmUrl = `/film/${foundMatch[1]}/`;
-            return filmUrl;
+            console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
+            throw (`${SCRIPTNAME} Exiting...`);
         }
 
         async updateInLocalStorage(ratingsObject) {
@@ -701,13 +697,17 @@ async function onHomepage() {
          * Example:
          * - href = '/film/774319-zhoubne-zlo/' --> '774319'
          * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> '1121972'
+         * - href = '1058697-devadesatky' --> '1058697'
+         * - href = 'nothing-here' --> null
          */
         async getMovieIdFromHref(href) {
-            // let ids = href.match(new RegExp("(?:(\d+)-[\w-]+)"));
-            // let REGEX_RESULTS = [...href.matchAll(/\/(\d)+-/ig)];
-            var REGEX_RESULT = href.match(/\/(\d)+-/ig);
-            REGEX_RESULT = REGEX_RESULT.slice(-1)[0].replace(/[\/-]/g, '');
-            return REGEX_RESULT;
+            if (!href) { return null; }
+            const found_groups = href.match(/(\d)+[-\w]+/ig);
+
+            if (!found_groups) { return null; }
+            const movieIds = found_groups.map(x => x.split("-")[0]);
+
+            return movieIds[movieIds.length - 1];
         }
 
         async addStars() {
