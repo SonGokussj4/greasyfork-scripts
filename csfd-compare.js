@@ -2340,14 +2340,23 @@ async function getCurrentDateTime() {
             const currentUsername = currentUser.match(/(\d+)-[-\w]+/ig)[0].split('-')[1];
             console.log(" └── currentUsername:", currentUsername);
 
-            console.log("Checking if user ratings exist in DB...");
+            console.log("Checking if UserRatings exist in DB...");
             const reponse = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/`);
-            const allUserRatings = await reponse.json();
-            console.log(` ├── allUserRatings of user '${currentUserId}':`, allUserRatings);
-            const userRatings = allUserRatings.results.find(item => item.MovieId === parseInt(currentFilmId));
-            console.log(` ├── userRatings of movie '${currentFilmId}':`, userRatings);
+            const allUserRatingsInDB = await reponse.json();
+            console.log(` ├── allUserRatingsInDB of user '${currentUserId}':`, allUserRatingsInDB);
+            const userRatingsInDB = allUserRatingsInDB.results.find(item => item.MovieId === parseInt(currentFilmId));
+            console.log(` ├── userRatingsInDB of movie '${currentFilmId}':`, userRatingsInDB);
 
-            if (!userRatings && currentFilmRating) {
+            // Cases:
+            // 1. User has rated this film but it's not in the DB --> add it
+            // 2. User has rated this film, it's in DB but the rating is different --> patch it
+            // 3. User has not rated this film --> do nothing
+            // 4. User has unrated this film, it's in DB --> remove it
+
+            // 1. User has rated this film but it's not in the DB --> add it
+            // UserRating rated
+            // UserRating in DB missing
+            if (!userRatingsInDB && currentFilmRating) {
                 console.log(" --> Adding rating to DB...");
                 const body = {
                     "UserId": parseInt(currentUserId),
@@ -2371,7 +2380,8 @@ async function getCurrentDateTime() {
                     console.error(`Rating of movie '${currentFilmId}' not added`);
                 }
 
-            } else if (userRatings && userRatings.Rating !== currentFilmRating) {
+            // 2. User has rated this film, it's in DB but the rating is different --> patch it
+            } else if (currentFilmRating && userRatingsInDB && userRatingsInDB.Rating !== currentFilmRating) {
                 console.log(" --> Updating user rating...");
                 const body = {
                     "Rating": currentFilmRating,
@@ -2390,7 +2400,23 @@ async function getCurrentDateTime() {
                 } else {
                     console.error(` --> User rating '${currentFilmId}' not updated`);
                 }
+            // 3. User has rated this film, but the Movie is not in DB --> Add the film to DB, add the rating to DB
             }
+
+            // 4. User has unrated this film (film has no rating but UserRating is in DB), it's in DB --> remove it
+            else if (userRatingsInDB && !currentFilmRating) {
+                console.log(" --> Removing user rating...");
+                // const response = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/${currentFilmId}`, {
+                //     method: 'DELETE',
+                //     headers: API_SERVER_HEADERS,
+                // });
+                // if (response.ok) {
+                //     console.log(` --> User rating '${currentFilmId}' removed successfully`);
+                // } else {
+                //     console.error(` --> User rating '${currentFilmId}' not removed`);
+                // }
+            }
+
 
             // if (currentFilmRating === null) {
             //     // Check if record exists, if yes, remove it
