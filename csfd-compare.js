@@ -72,13 +72,14 @@ let Glob = {
     }
 };
 
-const movieType = Object.freeze({
-    movie: 0,
-    series: 1,
-    season: 2,
-    episode: 3,
-    tvshow: 4,
-});
+
+// const movieType = Object.freeze({
+//     movie: 0,
+//     series: 1,
+//     season: 2,
+//     episode: 3,
+//     tvshow: 4,
+// });
 
 
 let defaultSettings = {
@@ -2314,10 +2315,99 @@ async function getCurrentDateTime() {
 
         }
 
+        // async apiCheckAndUpdateUserRatings(userId, filmId, rating) {
+        async apiCheckAndUpdateCurrentUserRatings() {
+            console.log("Checking and updating user ratings...");
+            const currentFilmRating = await this.getCurrentFilmRating();
+            console.log(" ├── currentFilmRating:", currentFilmRating);
+            const currentFilmId = await csfd.getMovieIdFromHref(location.href);
+            console.log(" ├── currentFilmId:", currentFilmId);
+            const isRatingComputed = await this.isCurrentFilmRatingComputed();
+            console.log(" ├── isRatingComputed:", isRatingComputed);
+            const computedText = isRatingComputed ? await this.getComputedFromText() : "";
+            console.log(" ├── computedText:", computedText);
+            const currentDateTime = await getCurrentDateTime()
+            console.log(" ├── currentDateTime:", currentDateTime);
+            const currentFilmDateAddedAsText = await this.getCurrentFilmDateAdded();  // TODO: zbytecne ve formatu dd.mm.yyyy
+            console.log(" ├── currentFilmDateAddedAsText:", currentFilmDateAddedAsText);
+            let currentFilmDateAdded = currentFilmDateAddedAsText ? new Date(currentFilmDateAddedAsText.split('.').reverse().join('-')) : undefined;
+            currentFilmDateAdded = currentFilmDateAdded ? currentFilmDateAdded.toISOString().slice(0, 19).replace('T', ' ') : undefined;
+            console.log(" ├── currentFilmDateAdded:", currentFilmDateAdded);
+            const currentUser = await this.getCurrentUser();
+            console.log(" ├── currentUser:", currentUser);
+            const currentUserId = currentUser.match(/(\d+)-[-\w]+/ig)[0].split('-')[0];
+            console.log(" ├── currentUserId:", currentUserId);
+            const currentUsername = currentUser.match(/(\d+)-[-\w]+/ig)[0].split('-')[1];
+            console.log(" └── currentUsername:", currentUsername);
+
+            console.log("Checking if user ratings exist in DB...");
+            const reponse = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/`);
+            const allUserRatings = await reponse.json();
+            console.log(` ├── allUserRatings of user '${currentUserId}':`, allUserRatings);
+            const userRatings = allUserRatings.results.find(item => item.MovieId === parseInt(currentFilmId));
+            console.log(` ├── userRatings of movie '${currentFilmId}':`, userRatings);
+
+            if (!userRatings && currentFilmRating) {
+                console.log(" --> Adding rating to DB...");
+                const body = {
+                    "UserId": parseInt(currentUserId),
+                    "MovieId": parseInt(currentFilmId),
+                    "Rating": currentFilmRating,
+                    "Computed": isRatingComputed,
+                    "LastUpdate": currentDateTime,
+                    "Date": currentFilmDateAdded,
+                }
+                console.log(" --> body:", body);
+                // const response = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/`, {
+                const response = await fetch(`${API_SERVER}/api/v1/ratings/`, {
+                    method: 'POST',
+                    headers: API_SERVER_HEADERS,
+                    body: JSON.stringify(body),
+                });
+                if (response.ok) {
+                    console.log(`Rating of movie '${currentFilmId}' added successfully`);
+                }
+                else {
+                    console.error(`Rating of movie '${currentFilmId}' not added`);
+                }
+
+            } else if (userRatings && userRatings.Rating !== currentFilmRating) {
+                console.log(" --> Updating user rating...");
+                const body = {
+                    "Rating": currentFilmRating,
+                    "Computed": isRatingComputed,
+                    "LastUpdate": currentDateTime,
+                    "Date": currentFilmDateAdded,
+                }
+                console.log(" --> body:", body);
+                const response = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/${currentFilmId}`, {
+                    method: 'PATCH',
+                    headers: API_SERVER_HEADERS,
+                    body: JSON.stringify(body),
+                });
+                if (response.ok) {
+                    console.log(` --> User rating '${currentFilmId}' updated successfully`);
+                } else {
+                    console.error(` --> User rating '${currentFilmId}' not updated`);
+                }
+            }
+
+            // if (currentFilmRating === null) {
+            //     // Check if record exists, if yes, remove it
+            //     this.removeFromLocalStorage();
+            // } else {
+            //     // Check if current page rating corresponds with that in LocalStorage, if not, update it
+            //     const ratingsObject = {
+            //         rating: currentFilmRating,
+            //         date: currentFilmDateAdded,
+            //         counted: isRatingComputed,
+            //         countedFromText: computedText,
+            //     };
+            //     await this.updateInLocalStorage(ratingsObject);
+            // }
         }
+
     }
-
-
 
     // $(document).on('click', '#refr-ratings-button', function () {
     //     alert("hihi");
@@ -2418,7 +2508,8 @@ async function getCurrentDateTime() {
 
             // Dynamic LocalStorage update on Film/Series in case user changes ratings
             await csfd.checkAndUpdateRatings();
-            csfd.apiAddCurrentMovie();
+            await csfd.apiAddCurrentMovie();
+            csfd.apiCheckAndUpdateCurrentUserRatings();
         }
 
         // Ratings DB - check if number of ratings saved and current are the same
