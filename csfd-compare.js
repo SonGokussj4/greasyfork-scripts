@@ -2381,7 +2381,10 @@ async function getCurrentDateTime() {
                 }
 
             // 2. User has rated this film, it's in DB but the rating is different --> patch it
-            } else if (currentFilmRating && userRatingsInDB && userRatingsInDB.Rating !== currentFilmRating) {
+            } else if (currentFilmRating
+                       && userRatingsInDB
+                       && (userRatingsInDB.Rating !== currentFilmRating
+                            || (userRatingsInDB.Rating === currentFilmRating && userRatingsInDB.Computed !== isRatingComputed))) {
                 console.log(" --> Updating user rating...");
                 const body = {
                     "Rating": currentFilmRating,
