@@ -2406,15 +2406,15 @@ async function getCurrentDateTime() {
             // 4. User has unrated this film (film has no rating but UserRating is in DB), it's in DB --> remove it
             else if (userRatingsInDB && !currentFilmRating) {
                 console.log(" --> Removing user rating...");
-                // const response = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/${currentFilmId}`, {
-                //     method: 'DELETE',
-                //     headers: API_SERVER_HEADERS,
-                // });
-                // if (response.ok) {
-                //     console.log(` --> User rating '${currentFilmId}' removed successfully`);
-                // } else {
-                //     console.error(` --> User rating '${currentFilmId}' not removed`);
-                // }
+                const response = await fetch(`${API_SERVER}/api/v1/users/${currentUserId}/ratings/${currentFilmId}`, {
+                    method: 'DELETE',
+                    headers: API_SERVER_HEADERS,
+                });
+                if (response.ok) {
+                    console.log(` --> User rating '${currentFilmId}' removed successfully`);
+                } else {
+                    console.error(` --> User rating '${currentFilmId}' not removed`);
+                }
             }
 
 
