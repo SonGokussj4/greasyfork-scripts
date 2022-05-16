@@ -186,6 +186,144 @@ async function onHomepage() {
     return check;
 }
 
+/**
+ * Get movieId from url when on season/episode page
+ * @param {*} html
+ * @returns {int|null} parentId
+ *
+ * Example:
+ * - href = '/film/1058697-dev/1121972-epizoda-6/' --> '1058697'
+ * - href = '/film/774319-zhoubne-zlo/' --> null
+ * - href = '1058697-devadesatky' --> null
+ * - href = 'nothing-here' --> null
+ */
+async function getParentId(html = null) {
+    // POZOR: nemohu pouzit 'html' pro 'meta[property="og:url"]', protoze je v dokumentu nahore, nad mnou predanym 'html'
+    const idArray = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig)
+    return idArray.length === 2 ? idArray[0].split('-')[0] : null;
+}
+
+async function getDuration(html = null) {
+    let result = null;
+    if (!html) {
+        result = $("div.origin").text().trim().replaceAll('\t', '').split(',').slice(-1,)[0].trim().replaceAll('\n', ' ');
+    } else {
+        result = $(html).find("div.origin").text().trim().replaceAll('\t', '').split(',').slice(-1,)[0].trim().replaceAll('\n', ' ');
+    }
+    return result ? result : null;
+}
+
+async function getCountry(html = null) {
+    let result = null;
+    if (!html) {
+        result = $("div.origin").text().split(",")[0].trim().replaceAll('\t', '').split('/').map((item) => item.trim()).join("/");
+    } else {
+        result = $(html).find("div.origin").text().split(",")[0].trim().replaceAll('\t', '').split('/').map((item) => item.trim()).join("/");
+    }
+    return result ? result : null;
+}
+
+async function getGenres(html = null) {
+    let result = null;
+    if (!html) {
+        result = $('div.genres').text().split('/').map(item => item.trim());
+    } else {
+        result = $(html).find('div.genres').text().split('/').map(item => item.trim());
+    }
+    return result ? result : null;
+
+}
+async function getSeasonsCount(html = null) {
+    // const result = $('div.box-header h3').text().match(/(?<=(?:Série|Série)[(])(\d)+/ig);
+    let result = null;
+    if (!html) {
+        result = $('div.box-header h3').text().match(/(?<=(?:Série|Série)[(])(\d)+/ig);
+    } else {
+        result = $(html).find('div.box-header h3').text().match(/(?<=(?:Série|Série)[(])(\d)+/ig);
+    }
+    return result ? parseInt(result[0]) : null;
+}
+async function getEpisodesCount(html = null) {
+    // const result = $('div.box-header h3').text().match(/(?<=(?:Epizody|Epizódy)[(])(\d)+/ig);
+    let result = null;
+    if (!html) {
+        result = $('div.box-header h3').text().match(/(?<=(?:Epizody|Epizódy)[(])(\d)+/ig);
+    } else {
+        result = $(html).find('div.box-header h3').text().match(/(?<=(?:Epizody|Epizódy)[(])(\d)+/ig);
+    }
+    return result ? parseInt(result[0]) : null;
+}
+
+async function getFanclubCount(html = null) {
+    let result = null;
+    if (!html) {
+        result = $(".fans-btn a").text().match(/\([\d  \t\n]+\)/ig);
+    } else {
+        result = $(html).find(".fans-btn a").text().match(/\([\d  \t\n]+\)/ig);
+    }
+    return result ? parseInt(result[0].slice(1, -1).replace(/[  ]/g, '')) : null;
+
+}
+
+async function getType(html = null) {
+    let typeText = null;
+    if (!html) {
+        typeText = $('div.film-header-name span.type').text();
+    } else {
+        typeText = $(html).find('div.film-header-name span.type').text();
+    }
+
+    const showType = (typeText.length > 1 ? typeText.slice(1, -1) : 'film');
+
+    switch (showType) {
+        case "epizoda": case "epizóda":
+            return 'episode';
+
+        case "série": case "séria":
+            return 'season';
+
+        case "seriál":
+            return 'series';
+
+        case "TV film":
+            return 'tv movie';
+
+        case 'film':
+            return 'movie';
+
+        default:
+            return showType;
+    }
+}
+
+async function getSeasonId(html = null) {
+    const type = await getType(html);
+
+    if (type === 'movie' || type === 'tv movie' || type === 'series') {
+        return null;
+    }
+
+    let seasonId = null;
+
+    if (type === 'episode') {
+        const episodeHeaderArray = $('header.film-header h2 a[href]').get().map(x => $(x).attr('href'));
+        if (!episodeHeaderArray) {
+            return null;
+        }
+        const matched = episodeHeaderArray[episodeHeaderArray.length -1].match(/(\d)+-[-\w]+/ig);
+        seasonId = matched[matched.length - 1].split('-')[0];
+        // console.log("seasonId:", seasonId);
+
+    } else if (type === 'season') {
+        const movieUrlTitlesArray = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+        seasonId = movieUrlTitlesArray[movieUrlTitlesArray.length - 1].split('-')[0];
+    }
+    return seasonId;
+}
+async function getCurrentDateTime() {
+    return new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 19).replace('T', ' ')
+}
+
 (async () => {
     "use strict";
     /* globals jQuery, $, waitForKeyElements */
@@ -281,15 +419,23 @@ async function onHomepage() {
             return Object.keys(ratings).length;
         }
 
+        /**
+         *
+         * @returns {str} Current movie: <MovieId>-<MovieUrlTitle>
+         *
+         * Example:
+         * - https://www.csfd.sk/film/739784-star-trek-lower-decks/prehlad/ --> 739784-star-trek-lower-decks
+         * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> 1032819-don-t-believe-everything-you-think
+         */
         getCurrentFilmUrl() {
             const foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
-            if (foundMatch.length == 1) {
-                return foundMatch[0];
-            } else if (foundMatch.length == 2) {
-                return foundMatch[1];
+            if (!foundMatch) {
+                console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
+                throw (`${SCRIPTNAME} Exiting...`);
             }
-            console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
-            throw (`${SCRIPTNAME} Exiting...`);
+            return foundMatch[foundMatch.length - 1];
+
+
         }
 
         async getFilmUrlFromHtml(html) {
@@ -304,7 +450,7 @@ async function onHomepage() {
         }
 
         async updateInLocalStorage(ratingsObject) {
-            console.log({ ratingsObject });
+            // console.log({ ratingsObject });
 
             // Check if film is in LocalStorage
             let filmUrl = this.getCurrentFilmUrl();
@@ -313,8 +459,8 @@ async function onHomepage() {
             const ratings = await this.getLocalStorageRatings();
             let myRating = ratings[movieId] || undefined;
 
-            console.log({ movieId });
-            console.log({ myRating });
+            // console.log({ movieId });
+            // console.log({ myRating });
 
             // Item not in LocalStorage, add it then!
             if (myRating === undefined) {
@@ -421,14 +567,14 @@ async function onHomepage() {
             return false;
         }
 
-        async getCurrentFilmComputedRating() {
-            const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
-            const $starsSpan = $($computedStars).find('span.stars');
-            console.log("$starsSpan: ", $starsSpan);
-            const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
-            console.log("starCount: ", starCount);
-            return starCount;
-        }
+        // async getCurrentFilmComputedRating() {
+        //     const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
+        //     const $starsSpan = $($computedStars).find('span.stars');
+        //     console.log("$starsSpan: ", $starsSpan);
+        //     const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
+        //     console.log("starCount: ", starCount);
+        //     return starCount;
+        // }
 
         async getComputedFromText() {
             const $curUserRating = this.csfdPage.find('li.current-user-rating');
@@ -702,7 +848,7 @@ async function onHomepage() {
          */
         async getMovieIdFromHref(href) {
             if (!href) { return null; }
-            const found_groups = href.match(/(\d)+[-\w]+/ig);
+            const found_groups = href.match(/(\d)+-[-\w]+/ig);
 
             if (!found_groups) { return null; }
             const movieIds = found_groups.map(x => x.split("-")[0]);
@@ -2074,11 +2220,11 @@ async function onHomepage() {
          * @returns OK
          */
         async apiAddCurrentMovie() {
-            const movieId = await this.getMovieIdFromHref(location.href);
-            console.log("movieId:", movieId);
+            const movieId = await csfd.getMovieIdFromHref(location.href);
 
-            const movieExists = await fetch(`${API_SERVER}/api/v1/movies/${movieId}`);
-            if (movieExists.ok) {
+            const movieExists = await fetch(`${API_SERVER}/api/v1/movies/${movieId}`)
+
+            if (movieExists.status === 200) {
                 console.log(`Movie '${movieId}' already exists in DB`);
                 return;
             }
@@ -2094,22 +2240,42 @@ async function onHomepage() {
             // }
             // const dateAdded = await this.getCurrentFilmDateAdded();
             const csfdJson = jQuery.parseJSON($('#page-wrapper > div > div.main-movie > script').text());
-            // const duration = $("div.origin").text().trim().replaceAll('\t', '').split('\n')[1].split(',')[1].trim();
-            const duration = $("div.origin").text().trim().replaceAll('\t', '').split(',').slice(-1,)[0].trim().replaceAll('\n', ' ');
-            const country = $("div.origin").text().split(",")[0].trim().replaceAll('\t', '').split('/').map((item) => item.trim()).join("/");
-            const fanclubCount = $(".fans-btn a").text().match(/\((\d)+\)/ig)[0].slice(1, -1);
-            const genres = $('div.genres').text().split('/').map(item => item.trim());
-            console.log("genres:", genres);
+            const duration = await getDuration(this.csfdPage);
+            const country = await getCountry(this.csfdPage);
+            const fanclubCount = await getFanclubCount(this.csfdPage);
+            const genres = await getGenres(this.csfdPage);
+            const parentId = await getParentId();
+            // const childrenHrefArray = $('div.film-episodes-list').find('a').map(function () { return $(this).attr('href') }).get();
+            // const childrenIdArray = childrenHrefArray.map(item => item.match(/\d+-[\w-]+/ig)[1].split('-')[0]);  // TODO: Mam se timto vubec zabyvat?
+            const type = await getType(this.csfdPage);
+            const seasonsCount = await getSeasonsCount(this.csfdPage);
+            const episodesCount = await getEpisodesCount(this.csfdPage);
+            const seasonId = await getSeasonId(this.csfdPage);
+            const lastUpdate = await getCurrentDateTime();
+
+            // console.log("duration:", duration);
+            // console.log("country:", country);
+            // console.log("fanclubCount:", fanclubCount);
+            // console.log("genres:", genres);
+            // console.log("idArray:", idArray);
+            // console.log("parentId:", parentId);
+            // console.log("childrenHrefArray:", childrenHrefArray);
+            // console.log("childrenIdArray:", childrenIdArray);
+            // console.log("seasonCount:", seasonCount);
+            // console.log("episodeCount:", episodeCount);
+            // console.log("lastUpdate:", lastUpdate);
+            // console.log("type:", type);
+            // console.log("seasonId:", seasonId);
+
             const body = {
                 "Id": movieId,
-                // "Url": location.href,
-                "Url": $('meta[property="og:url"]').attr('content').split('/film/')[1].replace('/recenze/', '').replace('/recenzie/', ''),
-                "Type": $('.film-header-name span.type').text().slice(1, -1),
+                "Url": $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig).join('/'),
                 // "Title": $('meta[property="og:title"]').attr('content'),
                 "Title": csfdJson.name,
                 // "Type": $('.film-header-name').find('span').length === 0 ? 'film' : $('.film-header-name').find('span')[0].innerHTML.slice(1, -1),
-                // get key with @ as key
-                "Type": csfdJson['@type'],
+                // "Type": $('.film-header-name span.type').text().slice(1, -1),
+                // "Type": csfdJson['@type'],  // get key with @ as key
+                "Type": type,
                 // "GenresJson": genres,
                 "Genres": JSON.stringify(genres),
                 // "Year": $('div.origin').text().trim().replaceAll('\t', '').split('\n')[1].split(',')[0],
@@ -2120,9 +2286,15 @@ async function onHomepage() {
                 // "RatingCount": $('li.tab-nav-item.ratings-btn.active > a > span').text().slice(1, -1).replaceAll(' ', '').replaceAll(' ', ''),
                 "RatingCount": csfdJson.aggregateRating ? Math.round(csfdJson.aggregateRating.ratingCount) : undefined,
                 "PosterUrl": csfdJson.image,
+                "parentid": parentId,
+                // "ChildrenIds": JSON.stringify(childrenIdArray),
                 "Country": country,
                 "Duration": duration,
-                "LastUpdate": new Date(new Date().getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 19).replace('T', ' ')
+                "SeasonId": seasonId,
+                "SeasonsCount": seasonsCount,
+                "EpisodesCount": episodesCount,
+                "LastUpdate": lastUpdate,
+                // "GenresJson": genres,  // tohle se mi nedari odeslat na api
             }
             console.log("body:", body);
 
@@ -2139,6 +2311,8 @@ async function onHomepage() {
             } else {
                 console.error(`Movie '${movieId}' not added`);
             }
+
+        }
 
         }
     }
