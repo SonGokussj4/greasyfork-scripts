@@ -1,5 +1,11 @@
 # CSFD-Compare
 
+## Dev
+
+[https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
+
+## Changelog
+
 > **v0.5.12** _(2022-04-xx)_  
 
 - NEW
