@@ -2,7 +2,8 @@
 
 ## Dev
 
-[https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
+- Login into github with VSCode
+- Then: [https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
 
 ## Changelog
 
