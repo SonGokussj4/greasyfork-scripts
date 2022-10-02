@@ -10,11 +10,10 @@
 // @include      *csfd.sk/*
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.4.4/tippy.all.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.4.4/tippy.css
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.4.4/tippy.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.4.4/tippy-theme-light.css
+// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.all.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.css
+// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy-theme-light.css
 // ==/UserScript==
 
 
