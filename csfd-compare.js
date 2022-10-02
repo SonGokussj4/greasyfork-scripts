@@ -25,7 +25,6 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 
 const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
-
 let defaultSettings = {
   // HOME PAGE
   hiddenSections: [],
@@ -642,6 +641,39 @@ async function onHomepage() {
       });
     }
 
+    async newRefreshButton(ratingsInLS, curUserRatings) {
+      let $button = $('<button>', {
+        id: 'refr-ratings-button',
+        "class": 'csfd-compare-reload',
+        html: `
+                    <center>
+                        <b> >> NOVE HODNOCENI << </b> <br>
+                        Uložené: ${ratingsInLS} / ${curUserRatings}
+                    </center>
+                `,
+      }).css({
+        textTransform: "initial",
+        fontSize: "0.9em",
+        padding: "5px",
+        border: "4px solid whitesmoke",
+        width: "-moz-available",
+        width: "-webkit-fill-available",
+        width: "100%",
+      });
+      let $div = $('<div>', {
+        html: $button,
+      });
+      $('.csfd-compare-settings').after($div);
+
+      let forceUpdate = ratingsInLS > curUserRatings ? true : false;
+
+      $($button).on("click", async function () {
+        console.log("refreshing ratings");
+        let csfd = new Csfd($('div.page-content'));
+        csfd.newRefreshAllRatings(csfd, forceUpdate);
+      });
+    }
+
     displayMessageButton() {
       let userHref = $('#dropdown-control-panel li a.ajax').attr('href');
       if (userHref === undefined) {
@@ -988,11 +1020,214 @@ async function onHomepage() {
       return dict;
     }
 
+    async newGetAllPages(force = false) {
+      const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
+      const $content = await $.get(url);
+      const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
+      const maxPageNum = $href.text();
+      this.userRatingsCount = await this.getCurrentUserRatingsCount2();
+
+      const allUrls = [];
+      // for (let idx = 1; idx <= 12; idx++) {
+      for (let idx = 1; idx <= maxPageNum; idx++) {
+        const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
+        allUrls.push(url);
+      }
+
+      // Divide the urls into chunks of 10 (to not overload the browser)
+      const chunks = [];
+      while (allUrls.length) {
+        chunks.push(allUrls.splice(0, 10));
+      }
+
+      Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
+
+      const contents = []
+      // Load the chunks in parallel
+      let chunkDone = 0;
+      for (const chunk of chunks) {
+        console.log("chunk: ", chunk);
+        Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * 50}/${this.userRatingsCount}`, 5, 200, 0);
+        const content = await Promise.all(chunk.map(url => $.get(url)));
+        contents.push(content);
+        chunkDone += chunk.length * 50;
+      }
+
+      let dc = {};
+      for (const content of contents) {
+        for (const data of content) {
+          const $rows = $(data).find('#snippet--ratings tr');
+
+          for (const $row of $rows) {
+
+            const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
+            // const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+
+            // const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
+            //   csfd.getShowType(filmInfo),
+            //   csfd.getShowYear(filmInfo),
+            //   csfd.getParentNameFromEpisodeName(name),
+            //   csfd.getMovieIdParentIdFromUrl(name),
+            // ]);
+
+            const $ratings = $($row).find('span.stars');
+            const rating = await csfd.getStarCountFromSpanClass($ratings);
+            const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
+            dc[name] = { 'rating': rating, 'date': date };
+
+            // dc[movieId] = {
+            //   'url': name,
+            //   'rating': rating,
+            //   'date': date,
+            //   'counted': false,
+            //   'countedFromText': '',
+            //   'type': showType,
+            //   'year': showYear,
+            //   'parentId': parentId
+            // };
+          }
+
+
+        }
+      }
+
+      return dc;
+    }
+
+    /**
+     * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
+     * @returns {int} `YYYY` (year) if it exists in filmInfo[0], `????` otherwise
+     *
+     * Example:
+     * - (2007)(série)(S02) --> 2007
+     * - (2021) --> 2021
+     * - --> ????
+     */
+    async getShowYear(filmInfo) {
+      let showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
+      return showYear;
+    }
+
+    /**
+     * Return show type in 'english' language. Works for SK an CZ.
+     *
+     * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
+     * @returns {str} `showType` if it exists in filmInfo[1], `movie` otherwise
+     *
+     * Posible values: `movie`, `tv movie`, `serial`, `series`, `episode`
+     *
+     * Example:
+     * - (2007)(série)(S02) --> series
+     * - (2021)(epizoda)(S02E01) --> episode
+     * - (2019) --> movie
+     */
+    async getShowType(filmInfo) {
+      let showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
+
+      switch (showType) {
+        case "epizoda": case "epizóda":
+          return 'episode';
+
+        case "série": case "séria":
+          return 'season';
+
+        case "seriál":
+          return 'series';
+
+        case "TV film":
+          return 'tv movie';
+
+        case 'film':
+          return 'movie';
+
+        default:
+          return showType;
+      }
+    }
+
+    /**
+     * Get star count from span with stars class
+     *
+     * @param {"<span>"} $starsSpan $span with class of 'stars-X' or 'trash' type.
+     * @returns {int} `0` if trash; `1-5` if stars-X
+     *
+     * Example: \
+     *    `<span class="stars stars-4">` --> `4`\
+     *    `<span class='stars trash'>` --> `0`
+     */
+    async getStarCountFromSpanClass($starsSpan) {
+      let rating = 0;
+      for (let stars = 0; stars <= 5; stars++) {
+        if ($starsSpan.hasClass('stars-' + stars)) {
+          rating = stars;
+        }
+      }
+      return rating;
+    }
+
+    /**
+     * Return **relative** parent name from episode name
+     *
+     * @param {string} episodeName relative URL of episode name
+     * @returns relative URL of parent name
+     *
+     * Example: \
+     * `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `/film/697624-love-death-robots/`
+     */
+    async getParentNameFromEpisodeName(episodeName) {
+      let splitted = episodeName.slice(0, -1).split("/");
+      splitted.pop();
+      let parentName = splitted.join("/") + "/";
+      return parentName;
+    }
+
+    /**
+     * Extract MovieId, possibly ParentId from csfd URL address
+     *
+     * @param {str} url csfd movie URL
+     * @returns {{MovieId: str, ParentId: str}}
+     *
+     * Example: \
+     * - `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `{'MovieId': '800484', 'ParentId': '697624'}`
+     * - `/film/697624-love-death-robots` --> `{'MovieId': '697624', 'ParentId': ''}`
+     * - `/film/` --> `{'MovieId': '', 'ParentId': ''}`
+     * - `/uzivatel/78145-songokussj/prehled/` --> `{'MovieId': '', 'ParentId': ''}`
+     */
+    async getMovieIdParentIdFromUrl(url) {
+      if (!url.includes('/film/')) {
+        // return { 'movieId': '', 'parentId': '' };
+        return ['', ''];
+      }
+      let [firstResult, secondResult] = url.matchAll(/\/(\d+)-/g);
+      if (firstResult === undefined && secondResult === undefined) {
+        // return { 'movieId': '', 'parentId': '' };
+        return ['', ''];
+      }
+      if (secondResult === undefined) {
+        // return { 'movieId': firstResult[1], 'parentId': '' };
+        return [firstResult[1], ''];
+      }
+      return [secondResult[1], firstResult[1]];
+    }
+
     async refreshAllRatings(csfd, force = false) {
       await csfd.initializeClassVariables();
       csfd.stars = await csfd.getAllPages(force);
       csfd.exportRatings();
-      Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
+      // Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
+      location.reload();
+    }
+
+    async newRefreshAllRatings(csfd, force = false) {
+      await csfd.initializeClassVariables();
+      csfd.stars = await csfd.newGetAllPages(force);
+      console.log("csfd.stars", csfd.stars);
+      csfd.exportRatings();
+
+      // refresh page
+      location.reload();
+
+      // Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
     }
 
     async removableHomeBoxes() {
@@ -1548,6 +1783,7 @@ async function onHomepage() {
       currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
         csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
+        csfd.newRefreshButton(ratingsInLocalStorage, currentUserRatingsCount);
         csfd.addWarningToUserProfile();
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
