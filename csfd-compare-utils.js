@@ -6,6 +6,13 @@ let Glob = {
     if (!htmlContent) {
       return;
     }
+
+    // Destroy the current popup by classname
+    var popup = document.getElementsByClassName("SNPopup");
+    if (popup.length > 0) {
+      popup[0].remove();
+    }
+
     var yOffset = 10;
     let $popup = $(`<div>`, {
       id: `SNPopup${id}`,
