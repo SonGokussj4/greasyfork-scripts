@@ -235,22 +235,23 @@ async function onHomepage() {
       return foundMatch[foundMatch.length - 1];
     }
 
-    updateInLocalStorage(ratingsObject) {
+    async updateInLocalStorage(ratingsObject) {
       // Check if film is in LocalStorage
-      let filmUrl = this.getCurrentFilmUrl();
-      let myRating = this.stars[filmUrl] || undefined;
+      const filmUrl = this.getCurrentFilmUrl();
+      const filmId = await this.getMovieIdFromHref(filmUrl);
+      const myRating = this.stars[filmId] || undefined;
 
       // Item not in LocalStorage, add it then!
       if (myRating === undefined) {
         // Item not in LocalStorage, add
-        this.stars[filmUrl] = ratingsObject;
+        this.stars[filmId] = ratingsObject;
         localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
         return true;
       }
 
       if (myRating.rating !== ratingsObject.rating) {
         // LocalStorage rating != current rating, update
-        this.stars[filmUrl] = ratingsObject;
+        this.stars[filmId] = ratingsObject;
         localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
         return true;
       }
@@ -258,10 +259,11 @@ async function onHomepage() {
       return true;
     }
 
-    removeFromLocalStorage() {
+    async removeFromLocalStorage() {
       // Check if film is in LocalStorage
-      let filmUrl = this.getCurrentFilmUrl();
-      let item = this.stars[filmUrl];
+      const filmUrl = this.getCurrentFilmUrl();
+      const filmId = await this.getMovieIdFromHref(filmUrl);
+      const item = this.stars[filmId];
 
       // Item not in LocalStorage, everything is fine
       if (item === undefined) {
@@ -269,7 +271,7 @@ async function onHomepage() {
       }
 
       // Item in LocalStorage, delete it from local dc
-      delete this.stars[filmUrl];
+      delete this.stars[filmId];
 
       // And resave it to LocalStorage
       localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
@@ -1542,15 +1544,17 @@ async function onHomepage() {
     }
 
     async checkAndUpdateRatings() {
-      let currentFilmRating = await this.getCurrentFilmRating();
-      let currentFilmDateAdded = await this.getCurrentFilmDateAdded();
+      const currentFilmRating = await this.getCurrentFilmRating();
+      const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
 
       if (currentFilmRating === null) {
         // Check if record exists, if yes, remove it
-        this.removeFromLocalStorage();
+        await this.removeFromLocalStorage();
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
+        const filmUrl = this.getCurrentFilmUrl();
         const ratingsObject = {
+          url: filmUrl,
           rating: currentFilmRating,
           date: currentFilmDateAdded
         };
