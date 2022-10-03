@@ -235,6 +235,44 @@ async function onHomepage() {
       return foundMatch[foundMatch.length - 1];
     }
 
+    /**
+     * Return current movie Type (film, serial, episode)
+     *
+     * @returns {str} Current movie type: film, serial, episode, movie, ...
+     */
+    getCurrentFilmType() {
+      const foundTypes = $(".film-header span.type");
+      let foundMatch = "";
+
+      // No "type" found
+      if (foundTypes.length === 0) {
+        console.error("TODO: getCurrentFilmType() Film type wasn't found...");
+        return "movie";
+
+        // One span.type found ... (film), (serial), ...
+      } else if (foundTypes.length === 1) {
+        foundMatch = $(foundTypes).text();
+
+        // Multiple span.type found, get the one containing "(" and ")"
+      } else if (foundTypes.length > 1) {
+        console.log("More than one...");
+        console.log("foundTypes:", foundTypes);
+        foundTypes.each(function (index, element) {
+          if ($(element).text().includes("(")) {
+            foundMatch = $(element).text().toLowerCase();
+            console.log("foundMatch:", foundMatch);
+          }
+        });
+      }
+      // Strip foundMatch from "(" and ")"
+      foundMatch = foundMatch.replace(/[\(\)]/g, '');
+
+      // Convert to english (film, serial, movie, series, ...)
+      foundMatch = this.getShowTypeFromType(foundMatch);
+
+      return foundMatch;
+    }
+
     async updateInLocalStorage(ratingsObject) {
       // Check if film is in LocalStorage
       const filmUrl = this.getCurrentFilmUrl();
@@ -1055,22 +1093,29 @@ async function onHomepage() {
           for (const $row of $rows) {
 
             const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
-            // const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+            const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
 
-            // const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
-            //   csfd.getShowType(filmInfo),
-            //   csfd.getShowYear(filmInfo),
-            //   csfd.getParentNameFromEpisodeName(name),
-            //   csfd.getMovieIdParentIdFromUrl(name),
-            // ]);
+            const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
+              csfd.getShowType(filmInfo),
+              csfd.getShowYear(filmInfo),
+              csfd.getParentNameFromEpisodeName(name),
+              csfd.getMovieIdParentIdFromUrl(name),
+            ]);
 
             const $ratings = $($row).find('span.stars');
             const rating = await csfd.getStarCountFromSpanClass($ratings);
             const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-            // dc[name] = { 'rating': rating, 'date': date };
-            const movieId = await this.getMovieIdFromHref(name);
-            dc[movieId] = { 'rating': rating, 'date': date, 'url': name };
 
+            dc[movieId] = {
+              'url': name,
+              'rating': rating,
+              'date': date,
+              'type': showType,
+              'year': showYear,
+              'parentName': parentName,
+              'parentId': parentId,
+              'computed': false,
+            };
 
             // dc[movieId] = {
             //   'url': name,
@@ -1101,7 +1146,7 @@ async function onHomepage() {
      * - --> ????
      */
     async getShowYear(filmInfo) {
-      let showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
+      const showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
       return showYear;
     }
 
@@ -1119,7 +1164,7 @@ async function onHomepage() {
      * - (2019) --> movie
      */
     async getShowType(filmInfo) {
-      let showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
+      const showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
 
       switch (showType) {
         case "epizoda": case "epizóda":
@@ -1132,6 +1177,44 @@ async function onHomepage() {
           return 'series';
 
         case "TV film":
+          return 'tv movie';
+
+        case 'film':
+          return 'movie';
+
+        default:
+          return showType;
+      }
+    }
+
+    /**
+     * Return show type in 'english' language. Works for SK an CZ.
+     *
+     * @param {<str>} showType seriál, série, epizoda, film, ...
+     * @returns {str} `showType`
+     *
+     * Posible returned values: `movie`, `tv movie`, `serial`, `series`, `episode`
+     *
+     * Example:
+     * - série --> series
+     * - epizoda --> episode
+     * - film --> movie
+     */
+    getShowTypeFromType(showType) {
+
+      showType = showType.toLowerCase();
+
+      switch (showType) {
+        case "epizoda": case "epizóda":
+          return 'episode';
+
+        case "série": case "séria":
+          return 'season';
+
+        case "seriál":
+          return 'series';
+
+        case "tv film":
           return 'tv movie';
 
         case 'film':
@@ -1553,10 +1636,13 @@ async function onHomepage() {
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
         const filmUrl = this.getCurrentFilmUrl();
+        const type = this.getCurrentFilmType();
+
         const ratingsObject = {
           url: filmUrl,
           rating: currentFilmRating,
-          date: currentFilmDateAdded
+          date: currentFilmDateAdded,
+          type: type,
         };
         this.updateInLocalStorage(ratingsObject);
       }
