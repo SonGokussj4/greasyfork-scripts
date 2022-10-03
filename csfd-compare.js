@@ -5,9 +5,8 @@
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
 // @license      GNU GPLv3
-// @match        http://csfd.cz,https://csfd.cz
-// @include      *csfd.cz/*
-// @include      *csfd.sk/*
+// @match        http*://www.csfd.cz/*
+// @match        http*://www.csfd.sk/*
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
 // ==/UserScript==
