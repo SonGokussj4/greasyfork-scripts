@@ -255,12 +255,9 @@ async function onHomepage() {
 
         // Multiple span.type found, get the one containing "(" and ")"
       } else if (foundTypes.length > 1) {
-        console.log("More than one...");
-        console.log("foundTypes:", foundTypes);
         foundTypes.each(function (index, element) {
           if ($(element).text().includes("(")) {
             foundMatch = $(element).text().toLowerCase();
-            console.log("foundMatch:", foundMatch);
           }
         });
       }
@@ -271,6 +268,22 @@ async function onHomepage() {
       foundMatch = this.getShowTypeFromType(foundMatch);
 
       return foundMatch;
+    }
+
+    /**
+     * from property `og:title` extract the movie year `'Movie Title (2019)' --> 2019`
+     *
+     * @returns {str} Current movie year
+     */
+    getCurrentFilmYear() {
+      const match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
+      if (match.length === 2) {
+        const year = match[1];
+        return year;
+      } else {
+        return "";
+      }
+
     }
 
     async updateInLocalStorage(ratingsObject) {
@@ -1637,12 +1650,14 @@ async function onHomepage() {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
         const filmUrl = this.getCurrentFilmUrl();
         const type = this.getCurrentFilmType();
+        const year = this.getCurrentFilmYear();
 
         const ratingsObject = {
           url: filmUrl,
           rating: currentFilmRating,
           date: currentFilmDateAdded,
           type: type,
+          year: year,
         };
         this.updateInLocalStorage(ratingsObject);
       }
