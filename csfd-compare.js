@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ČSFD Compare
-// @version      0.5.12
+// @version      0.5.12.1
 // @namespace    csfd.cz
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
@@ -10,10 +10,6 @@
 // @include      *csfd.sk/*
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.all.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.css
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy.min.js
-// @require      https://cdnjs.cloudflare.com/ajax/libs/tippy.js/2.5.4/tippy-theme-light.css
 // ==/UserScript==
 
 
@@ -526,7 +522,9 @@ async function onHomepage() {
       let $links = $('a.film-title-name');
       for (const $link of $links) {
         let href = $($link).attr('href');
-        let res = this.stars[href];
+        let movieId = await this.getMovieIdFromHref(href);
+
+        let res = this.stars[movieId];
         if (res === undefined) {
           continue;
         }
@@ -1045,7 +1043,6 @@ async function onHomepage() {
       // Load the chunks in parallel
       let chunkDone = 0;
       for (const chunk of chunks) {
-        console.log("chunk: ", chunk);
         Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * 50}/${this.userRatingsCount}`, 5, 200, 0);
         const content = await Promise.all(chunk.map(url => $.get(url)));
         contents.push(content);
@@ -1072,7 +1069,10 @@ async function onHomepage() {
             const $ratings = $($row).find('span.stars');
             const rating = await csfd.getStarCountFromSpanClass($ratings);
             const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-            dc[name] = { 'rating': rating, 'date': date };
+            // dc[name] = { 'rating': rating, 'date': date };
+            const movieId = await this.getMovieIdFromHref(name);
+            dc[movieId] = { 'rating': rating, 'date': date, 'url': name };
+
 
             // dc[movieId] = {
             //   'url': name,
@@ -1178,6 +1178,27 @@ async function onHomepage() {
       splitted.pop();
       let parentName = splitted.join("/") + "/";
       return parentName;
+    }
+
+    /**
+     *
+     * @param {str} href csfd link for movie/series/episode
+     * @returns {str} Movie ID number
+     *
+     * Example:
+     * - href = '/film/774319-zhoubne-zlo/' --> '774319'
+     * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> '1121972'
+     * - href = '1058697-devadesatky' --> '1058697'
+     * - href = 'nothing-here' --> null
+     */
+    async getMovieIdFromHref(href) {
+      if (!href) { return null; }
+      const found_groups = href.match(/(\d)+-[-\w]+/ig);
+
+      if (!found_groups) { return null; }
+      const movieIds = found_groups.map(x => x.split("-")[0]);
+
+      return movieIds[movieIds.length - 1];
     }
 
     /**
