@@ -227,15 +227,12 @@ async function onHomepage() {
      * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> 1032819-don-t-believe-everything-you-think
      */
     getCurrentFilmUrl() {
-      let foundMatch = $('a[href$="/diskuze/"]:first').attr('href');
-      foundMatch = foundMatch.match(new RegExp("film/" + "(.*)" + "/diskuze"));
-      if (foundMatch == null) {
-        console.error("TODO: nenaslo to... vyhledat jinym zpusobem!");
+      const foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+      if (!foundMatch) {
+        console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
         throw (`${SCRIPTNAME} Exiting...`);
       }
-
-      let filmUrl = `/film/${foundMatch[1]}/`;
-      return filmUrl;
+      return foundMatch[foundMatch.length - 1];
     }
 
     updateInLocalStorage(ratingsObject) {
