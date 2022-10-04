@@ -283,7 +283,16 @@ async function onHomepage() {
       } else {
         return "";
       }
+    }
 
+    /**
+     *
+     * @returns {bool} `true` if current movie rating is computed, `false` otherwise
+     */
+    async isCurrentFilmComputed() {
+      const $computedStars = $('.star.active.computed');
+      const isComputed = $computedStars.length != 0;
+      return isComputed;
     }
 
     async updateInLocalStorage(ratingsObject) {
@@ -1651,6 +1660,7 @@ async function onHomepage() {
         const filmUrl = this.getCurrentFilmUrl();
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
+        const computed = await this.isCurrentFilmComputed();
 
         const ratingsObject = {
           url: filmUrl,
@@ -1658,6 +1668,7 @@ async function onHomepage() {
           date: currentFilmDateAdded,
           type: type,
           year: year,
+          computed: computed,
         };
         this.updateInLocalStorage(ratingsObject);
       }
