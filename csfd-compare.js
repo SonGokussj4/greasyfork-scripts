@@ -834,21 +834,17 @@ async function onHomepage() {
 
       let pictureIdx = 0;
       for (const $picture of $pictures) {
-        console.log("$picture", $picture);
         let obj = {};
 
         let src = $($picture).find('img').attr('src').replace(/cache[/]resized[/]w\d+[/]/g, '');
-        console.log("src: ", src);
 
         obj['100 %'] = src;
 
         let $sources = $($picture).find('source');
-        console.log("$sources: ", $sources);
 
         for (const $source of $sources) {
 
           const srcset = $($source).attr('srcset');
-          console.log("srcset: ", srcset);
 
           if (srcset === undefined) { continue; }
 
