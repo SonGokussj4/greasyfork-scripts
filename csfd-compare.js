@@ -1666,6 +1666,7 @@ async function onHomepage() {
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
         const computed = await this.isCurrentFilmComputed();
+        const lastUpdate = this.getCurrentDateTime()
 
         const ratingsObject = {
           url: filmUrl,
@@ -1675,9 +1676,24 @@ async function onHomepage() {
           year: year,
           computed: computed,
           computedCount: computed ? this.getCurrentFilmComputedCount() : "",
+          lastUpdate: lastUpdate,
         };
         this.updateInLocalStorage(ratingsObject);
       }
+    }
+
+    getCurrentDateTime() {
+      const d = new Date
+      const dformat = [
+        d.getDate(),
+        d.getMonth() + 1,
+        d.getFullYear()
+      ].join('.') + ' ' + [
+        d.getHours(),
+        d.getMinutes(),
+        d.getSeconds()
+      ].join(':');
+      return dformat
     }
 
     clickableMessages() {
