@@ -341,7 +341,9 @@ async function onHomepage() {
 
     async getCurrentFilmRating() {
       // let $activeStars = this.csfdPage.find(".star.active:not('.computed')");
-      let $activeStars = this.csfdPage.find(".star.active");
+      const $activeStars = this.csfdPage.find(".star.active");
+      const decision = await this.isCurrentFilmComputed();
+      console.log("[ DEBUG ] decision: ", decision);
 
       // No rating
       if ($activeStars.length === 0) { return null; }
@@ -1339,7 +1341,7 @@ async function onHomepage() {
 
     async newRefreshAllRatings(csfd, force = false) {
       await csfd.initializeClassVariables();
-      csfd.stars = await csfd.newGetAllPages(force);
+      csfd.stars = await this.newGetAllPages(force);
       console.log("csfd.stars", csfd.stars);
       csfd.exportRatings();
 
@@ -1646,10 +1648,14 @@ async function onHomepage() {
 
     async checkAndUpdateRatings() {
       const currentFilmRating = await this.getCurrentFilmRating();
+      console.log("currentFilmRating: ", currentFilmRating);
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
+      console.log("currentFilmDateAdded: ", currentFilmDateAdded);
 
+      // In case user removed rating, we need to remove it from the LC
       if (currentFilmRating === null) {
         // Check if record exists, if yes, remove it
+        console.log("Removing record...");
         await this.removeFromLocalStorage();
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
