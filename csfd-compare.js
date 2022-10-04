@@ -291,8 +291,23 @@ async function onHomepage() {
      */
     async isCurrentFilmComputed() {
       const $computedStars = $('.star.active.computed');
-      const isComputed = $computedStars.length != 0;
-      return isComputed;
+      if ($computedStars.length > 0) {
+        return true;
+      } else {
+        const secondTry = await this.isCurrentFilmRatingComputed();
+        if (secondTry) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    async isCurrentFilmRatingComputed() {
+      const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
+
+      if ($computedStars.length !== 0) { return true; }
+
+      return false;
     }
 
     getCurrentFilmComputedCount() {
@@ -302,6 +317,13 @@ async function onHomepage() {
       const counted = countedText.split(':')[1].trim();
       return counted;
     }
+
+    async getCurrentFilmComputed() {
+      const result = await this.getComputedRatings(this.csfdPage);
+      console.log("[ DEBUG ] result: ", result);
+      return result;
+    }
+
 
     async updateInLocalStorage(ratingsObject) {
       // Check if film is in LocalStorage
@@ -348,23 +370,45 @@ async function onHomepage() {
     }
 
     async getCurrentFilmRating() {
-      // let $activeStars = this.csfdPage.find(".star.active:not('.computed')");
+      const currentRatingIsComputed = await this.isCurrentFilmComputed();
+
+      if (currentRatingIsComputed) {
+        const { ratingCount, computedFromText } = await this.getCurrentFilmComputed();
+        return {
+          rating: ratingCount,
+          computedFrom: computedFromText,
+          computed: true,
+        };
+      }
+
       const $activeStars = this.csfdPage.find(".star.active");
-      const decision = await this.isCurrentFilmComputed();
-      console.log("[ DEBUG ] decision: ", decision);
 
       // No rating
-      if ($activeStars.length === 0) { return null; }
+      if ($activeStars.length === 0) {
+        return {
+          rating: "",
+          computedFrom: "",
+          computed: false,
+        };
+      }
 
       // Rating "odpad" or "1"
       if ($activeStars.length === 1) {
         if ($activeStars.attr('data-rating') === "0") {
-          return 0;
+          return {
+            rating: "0",
+            computedFrom: "",
+            computed: false,
+          };
         }
       }
 
       // Rating "1" to "5"
-      return $activeStars.length;
+      return {
+        rating: $activeStars.length,
+        computedFrom: "",
+        computed: false,
+      };
     }
 
     async getCurrentUserRatingsCount2() {
@@ -390,6 +434,39 @@ async function onHomepage() {
         }
       }
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+    }
+
+    /**
+     * $content should be URL with counted star ratings. Not manualy rated. \
+     * Then, it will return dict with `counted stars` and text `"counted from episodes: X"`
+     *
+     * @param {string} $content HTML content of a page
+     * @returns {{'ratingCount': int, 'computedFromText': str, 'movieId': 'str', 'parentId': 'str'}}
+     *
+     * Example: \
+     * `{ ratingCount: 4, computedFromText: 'spocteno z episod': 2, movieId: '465535', parentId = '' }`
+     */
+    async getComputedRatings($content) {
+      // Get current user rating
+      const $curUserRating = $($content).find('li.current-user-rating');
+      const $starsSpan = $($curUserRating).find('span.stars');
+      const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
+
+      // Get 'Spocteno z episod' text
+      const $countedText = $($curUserRating).find('span[title]').attr('title');
+
+      // // Get this movieId and possible parentId
+      // const filmUrl = await csfd.getFilmUrlFromHtml($content);
+      // let [movieId, parentId] = await csfd.getMovieIdParentIdFromUrl(filmUrl);
+
+      // Resulting dictionary
+      const result = {
+        'ratingCount': starCount,
+        'computedFromText': $countedText,
+        // 'movieId': movieId,
+        // 'parentId': parentId
+      };
+      return result;
     }
 
     async loadInitialSettings() {
@@ -1151,7 +1228,7 @@ async function onHomepage() {
             //   'rating': rating,
             //   'date': date,
             //   'counted': false,
-            //   'countedFromText': '',
+            //   'computedFromText': '',
             //   'type': showType,
             //   'year': showYear,
             //   'parentId': parentId
@@ -1656,13 +1733,13 @@ async function onHomepage() {
     }
 
     async checkAndUpdateRatings() {
-      const currentFilmRating = await this.getCurrentFilmRating();
-      console.log("currentFilmRating: ", currentFilmRating);
+      const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
+
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
       console.log("currentFilmDateAdded: ", currentFilmDateAdded);
 
       // In case user removed rating, we need to remove it from the LC
-      if (currentFilmRating === null) {
+      if (rating === "") {
         // Check if record exists, if yes, remove it
         console.log("Removing record...");
         await this.removeFromLocalStorage();
@@ -1671,17 +1748,21 @@ async function onHomepage() {
         const filmUrl = this.getCurrentFilmUrl();
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
-        const computed = await this.isCurrentFilmComputed();
+        // const computed = await this.isCurrentFilmComputed();
         const lastUpdate = this.getCurrentDateTime()
+
+        console.log("computed: ", computed);
+        console.log("computedFrom: ", computedFrom);
 
         const ratingsObject = {
           url: filmUrl,
-          rating: currentFilmRating,
+          rating: rating,
           date: currentFilmDateAdded,
           type: type,
           year: year,
           computed: computed,
           computedCount: computed ? this.getCurrentFilmComputedCount() : "",
+          computedFromText: computed ? computedFrom : "",
           lastUpdate: lastUpdate,
         };
         this.updateInLocalStorage(ratingsObject);
