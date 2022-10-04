@@ -295,6 +295,14 @@ async function onHomepage() {
       return isComputed;
     }
 
+    getCurrentFilmComputedCount() {
+      const $curUserRating = this.csfdPage.find('li.current-user-rating');
+      const countedText = $($curUserRating).find('span[title]').attr('title');
+      // split by :
+      const counted = countedText.split(':')[1].trim();
+      return counted;
+    }
+
     async updateInLocalStorage(ratingsObject) {
       // Check if film is in LocalStorage
       const filmUrl = this.getCurrentFilmUrl();
@@ -1133,6 +1141,7 @@ async function onHomepage() {
               'parentName': parentName,
               'parentId': parentId,
               'computed': false,
+              'computedCount': "",
             };
 
             // dc[movieId] = {
@@ -1665,6 +1674,7 @@ async function onHomepage() {
           type: type,
           year: year,
           computed: computed,
+          computedCount: computed ? this.getCurrentFilmComputedCount() : "",
         };
         this.updateInLocalStorage(ratingsObject);
       }
