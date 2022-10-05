@@ -7,10 +7,14 @@
 
 ## Changelog
 
-> **v0.5.12** _(2022-04-xx)_  
+> **v0.5.12** _(2022-10-xx)_  
 
 - NEW
-  - Snad obr. s nápovědou  
+  - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
+  - Přidána kapota nových informací do individuálně uložených dat v Local Storage
+
+> **v0.5.12** _(2022-10-01)_  
+
 - FIX
   - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
   - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  

@@ -669,6 +669,7 @@ async function onHomepage() {
         return;
       }
       let starsCss = { marginLeft: "5px" };
+      // On UserPage or PersonalFavorite page, modify the CSS by adding solid red border outline
       if (await this.onOtherUserPage() || await this.onPersonalFavorite()) {
         starsCss = {
           marginLeft: "5px",
@@ -682,24 +683,41 @@ async function onHomepage() {
 
       let $links = $('a.film-title-name');
       for (const $link of $links) {
-        let href = $($link).attr('href');
-        let movieId = await this.getMovieIdFromHref(href);
+        const href = $($link).attr('href');
+        const movieId = await this.getMovieIdFromHref(href);
 
-        let res = this.stars[movieId];
+        const res = this.stars[movieId];
         if (res === undefined) {
           continue;
         }
-        let $sibl = $($link).closest('td').siblings('.rating,.star-rating-only');
+        const $sibl = $($link).closest('td').siblings('.rating,.star-rating-only');
         if ($sibl.length !== 0) {
           continue;
         }
-        let starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
-        let starText = res.rating !== 0 ? "" : "odpad!";
-        let $starSpan = $("<span>", {
-          'class': `star-rating`,
-          html: `<span class="stars ${starClass}" title="${res.date}">${starText}</span>`
+        const starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
+        const starText = res.rating !== 0 ? "" : "odpad!";
+        const className = res.computed ? "star-rating computed" : "star-rating";
+        const title = res.computed ? res.computedFromText : res.date;
+
+        // Construct the HTML
+        const $starSpan = $("<span>", {
+          'class': className,
+          html: `<span class="stars ${starClass}" title="${title}">${starText}</span>`
         }).css(starsCss);
+
+        // Add the HTML
         $($link).after($starSpan);
+
+        // If the rating is computed, add SUP element indicating from how many ratings it was computed
+        if (res.computed) {
+          const $numSpan = $("<span>", {
+            'html': `<sup> (${res.computedCount})</sup>`
+          }).css({
+            'font-size': '13px',
+            'color': '#7b7b7b'
+          });
+          $starSpan.find('span').after($numSpan);
+        }
       }
     }
 
@@ -1765,7 +1783,6 @@ async function onHomepage() {
         const filmFullUrl = this.getCurrentFilmFullUrl();
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
-        // const computed = await this.isCurrentFilmComputed();
         const lastUpdate = this.getCurrentDateTime()
 
         console.log("computed: ", computed);
