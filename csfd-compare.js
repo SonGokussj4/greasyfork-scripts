@@ -236,6 +236,22 @@ async function onHomepage() {
     }
 
     /**
+     *
+     * @returns {str} Current movie: https://www.csfd.sk/film/739784-star-trek-lower-decks/recenze/
+     *
+     */
+    getCurrentFilmFullUrl() {
+      const foundMatch = $('meta[property="og:url"]').attr('content');
+
+      // TODO: getCurrentFilmFullUrl by melo vratit film URL ne jen cast... ne?
+      if (!foundMatch) {
+        console.error("TODO: getCurrentFilmFullUrl() Film URL wasn't found...");
+        return "";
+      }
+      return foundMatch;
+    }
+
+    /**
      * Return current movie Type (film, serial, episode)
      *
      * @returns {str} Current movie type: film, serial, episode, movie, ...
@@ -1746,6 +1762,7 @@ async function onHomepage() {
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
         const filmUrl = this.getCurrentFilmUrl();
+        const filmFullUrl = this.getCurrentFilmFullUrl();
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
         // const computed = await this.isCurrentFilmComputed();
@@ -1756,6 +1773,7 @@ async function onHomepage() {
 
         const ratingsObject = {
           url: filmUrl,
+          fullUrl: filmFullUrl,
           rating: rating,
           date: currentFilmDateAdded,
           type: type,
