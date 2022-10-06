@@ -741,11 +741,10 @@ async function onHomepage() {
      * @returns {None}
      */
     addRatingsColumn() {
-      // If user has not loaded his ratings into LoacalStorage, do nothing
-      // if (this.userRatingsCount === 0) { return; }
       const starsDict = this.getStars();
-
       const lcRatingsCount = Object.keys(starsDict).length;
+
+      // No ratings in LocalStorage, do nothing
       if (lcRatingsCount === 0) { return; }
 
       const $page = this.csfdPage;
