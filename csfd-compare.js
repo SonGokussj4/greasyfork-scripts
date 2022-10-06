@@ -233,14 +233,16 @@ async function onHomepage() {
 
     /**
      *
-     * @returns {str} Current movie: <MovieId>-<MovieUrlTitle>
+     * @returns {str} Current movie: `<MovieId>-<MovieUrlTitle>`
      *
      * Example:
-     * - https://www.csfd.sk/film/739784-star-trek-lower-decks/prehlad/ --> 739784-star-trek-lower-decks
-     * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> 1032819-don-t-believe-everything-you-think
+     * - https://www.csfd.sk/film/739784-star-trek-lower-decks/prehlad/ --> `739784-star-trek-lower-decks`
+     * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> `1032819-don-t-believe-everything-you-think`
      */
     getCurrentFilmUrl() {
       const foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+
+      // TODO: getCurrentFilmUrl by melo vratit film URL ne jen cast... ne?
       if (!foundMatch) {
         console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
         throw (`${SCRIPTNAME} Exiting...`);
@@ -275,7 +277,6 @@ async function onHomepage() {
 
       // No "type" found
       if (foundTypes.length === 0) {
-        console.error("TODO: getCurrentFilmType() Film type wasn't found...");
         return "movie";
 
         // One span.type found ... (film), (serial), ...
@@ -830,14 +831,15 @@ async function onHomepage() {
       });
     }
 
-    async newRefreshButton(ratingsInLS, curUserRatings) {
+    async newRefreshButton(ratingsInLS, curUserRatings, computedRatings) {
       let $button = $('<button>', {
         id: 'refr-ratings-button',
         "class": 'csfd-compare-reload',
         html: `
                     <center>
-                        <b> >> NOVE HODNOCENI << </b> <br>
-                        Uložené: ${ratingsInLS} / ${curUserRatings}
+                        <b> >> NOVE HODNOCENI << </b> <br />
+                        Uložené: ${ratingsInLS} / ${curUserRatings} <br />
+                        <small>( Vypočtené: ${computedRatings} )</small>
                     </center>
                 `,
       }).css({
