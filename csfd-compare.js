@@ -760,16 +760,28 @@ async function onHomepage() {
         if (myRating?.rating === 0) {
           $span = `<span class="stars trash">odpad!</span>`;
         } else {
-          $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.date}"></span>`;
+          if (myRating?.computed) {
+            $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.computedFromText}"></span>`;
+          } else {
+            $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.date}"></span>`;
+          }
+
         }
 
-        $row.find('td:nth-child(2)').after(`
+        // Color the rating to red (star-rating) or black (star-rating computed) if computed
+        const className = myRating?.computed ? "star-rating computed" : "star-rating";
+        const $currentUserSpan = `
+          <span class="${className}">
+            ${$span}
+          </span>
+        `;
+
+        const $currentUserTd = $row.find('td:nth-child(2)')
+        $currentUserTd.after(`
                     <td class="star-rating-only">
-                        <span class="star-rating">
-                            ${$span}
-                        </span>
+                        ${$currentUserSpan}
                     </td>
-                `);
+        `);
       });
     }
 
