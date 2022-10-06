@@ -735,24 +735,33 @@ async function onHomepage() {
       }
     }
 
+    /**
+     * Adds a column to another user's ratings page with the user's rating
+     *
+     * @returns {None}
+     */
     addRatingsColumn() {
-      if (this.userRatingsCount === 0) { return; }
+      // If user has not loaded his ratings into LoacalStorage, do nothing
+      // if (this.userRatingsCount === 0) { return; }
+      const starsDict = this.getStars();
 
-      let $page = this.csfdPage;
+      const lcRatingsCount = Object.keys(starsDict).length;
+      if (lcRatingsCount === 0) { return; }
 
-      let $tbl = $page.find('#snippet--ratings table tbody');
-      let starsDict = this.getStars();
+      const $page = this.csfdPage;
+      const $tbl = $page.find('#snippet--ratings table tbody');
 
-      $tbl.find('tr').each(function () {
-        let $row = $(this);
-        let url = $($row).find('.name').find('a').attr('href');
-        const myRating = starsDict[url] || {};
+      $tbl.find('tr').each( async function () {
+        const $row = $(this);
+        const href = $row.find('a.film-title-name').attr('href');
+        const movieId = await csfd.getMovieIdFromHref(href);
+        const myRating = starsDict[movieId];
 
         let $span = "";
-        if (myRating.rating === 0) {
+        if (myRating?.rating === 0) {
           $span = `<span class="stars trash">odpad!</span>`;
         } else {
-          $span = `<span class="stars stars-${myRating.rating}" title="${myRating.date}"></span>`;
+          $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.date}"></span>`;
         }
 
         $row.find('td:nth-child(2)').after(`
@@ -1783,14 +1792,12 @@ async function onHomepage() {
 
     async checkAndUpdateRatings() {
       const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
-
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
-      console.log("currentFilmDateAdded: ", currentFilmDateAdded);
 
       // In case user removed rating, we need to remove it from the LC
       if (rating === "") {
         // Check if record exists, if yes, remove it
-        console.log("Removing record...");
+        console.info("Removing record...");
         await this.removeFromLocalStorage();
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
@@ -1799,9 +1806,6 @@ async function onHomepage() {
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
         const lastUpdate = this.getCurrentDateTime()
-
-        console.log("computed: ", computed);
-        console.log("computedFrom: ", computedFrom);
 
         const ratingsObject = {
           url: filmUrl,

@@ -15,6 +15,7 @@
   - TODO: Nápověda v control panelu má obrázkové nápovědy
 - FIX
   - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
+  - Opraveno zobrazování srovnání hodnocení u jiného uživatele
 
 > **v0.5.12** _(2022-10-01)_  
 
