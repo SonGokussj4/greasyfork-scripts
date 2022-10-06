@@ -350,7 +350,7 @@ async function onHomepage() {
 
     async getCurrentFilmComputed() {
       const result = await this.getComputedRatings(this.csfdPage);
-      console.log("[ DEBUG ] result: ", result);
+      console.debug("[ DEBUG ] result: ", result);
       return result;
     }
 
