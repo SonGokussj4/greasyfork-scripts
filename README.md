@@ -12,6 +12,9 @@
 - NEW
   - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
   - Přidána kapota nových informací do individuálně uložených dat v Local Storage
+  - TODO: Nápověda v control panelu má obrázkové nápovědy
+- FIX
+  - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
 
 > **v0.5.12** _(2022-10-01)_  
 

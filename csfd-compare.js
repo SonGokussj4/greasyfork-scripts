@@ -213,9 +213,22 @@ async function onHomepage() {
       }
     }
 
+    /**
+     * Get ratings from LocalStorage and return the count of:
+     * - normally rated (user clicked on rating)
+     * - and computed ratings (not shown in user ratings)
+     *
+     * @returns {Object<string, number>} `{ computed: int, rated: int }`
+     */
     async getLocalStorageRatingsCount() {
       const ratings = await this.getLocalStorageRatings();
-      return Object.keys(ratings).length;
+      const computedCount = Object.values(ratings).filter(rating => rating.computed).length;
+      const ratedCount = Object.keys(ratings).length - computedCount;
+
+      return {
+        computed: computedCount,
+        rated: ratedCount,
+      };
     }
 
     /**
@@ -2053,13 +2066,17 @@ async function onHomepage() {
     if (settings.addStars && await csfd.notOnUserPage()) { csfd.addStars(); }
 
     let ratingsInLocalStorage = 0;
+    let computedRatingsInLocalStorage = 0;
     let currentUserRatingsCount = 0;
+
     if (settings.addStars || settings.compareUserRatings) {
-      ratingsInLocalStorage = await csfd.getLocalStorageRatingsCount();
+      const { computed, rated } = await csfd.getLocalStorageRatingsCount();
+      ratingsInLocalStorage = rated;
+      computedRatingsInLocalStorage = computed;
       currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
         csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
-        csfd.newRefreshButton(ratingsInLocalStorage, currentUserRatingsCount);
+        csfd.newRefreshButton(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.addWarningToUserProfile();
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
