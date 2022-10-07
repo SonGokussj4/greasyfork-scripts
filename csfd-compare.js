@@ -765,14 +765,24 @@ async function onHomepage() {
           } else {
             $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.date}"></span>`;
           }
-
         }
 
         // Color the rating to red (star-rating) or black (star-rating computed) if computed
         const className = myRating?.computed ? "star-rating computed" : "star-rating";
+
+        // Build the HTML for computed rating SUP element: e.g. (3)
+        const $computedSup = `
+          <span style="position: relative;">
+            <sup style="position: absolute; top: -1px; left: -2px; color: var(--color-grey-light2)">
+              (${myRating?.computedCount})
+            </sup>
+          </span>
+        `;
+
         const $currentUserSpan = `
           <span class="${className}">
             ${$span}
+            ${myRating?.computed ? $computedSup : ""}
           </span>
         `;
 
