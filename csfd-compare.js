@@ -42,6 +42,8 @@ let defaultSettings = {
   hideSelectedUserReviewsList: [],
   // ACTORS
   showOnOneLine: false,
+  // EXPERIMENTAL
+  loadComputedRatings: false,
 };
 
 
@@ -542,6 +544,9 @@ async function onHomepage() {
 
       // ACTORS
       $('#chkShowOnOneLine').attr('checked', settings.showOnOneLine);
+
+      // EXPERIMENTAL
+      $('#chkLoadComputedRatings').attr('checked', settings.loadComputedRatings);
     }
 
     async addSettingsEvents() {
@@ -648,6 +653,14 @@ async function onHomepage() {
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
+
+      // EXPERIMENTAL
+      $('#chkLoadComputedRatings').change(function () {
+        settings.loadComputedRatings = this.checked;
+        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      });
+
     }
 
     async onOtherUserHodnoceniPage() {
@@ -812,8 +825,8 @@ async function onHomepage() {
     }
 
     async openControlPanelOnHover() {
-      let btn = $('.button-control-panel');
-      let panel = $('#dropdown-control-panel');
+      const btn = $('.button-control-panel');
+      const panel = $('#dropdown-control-panel');
       $(btn).on('mouseover', () => {
         if (!panel.hasClass('active')) {
           panel.addClass('active');
@@ -846,7 +859,7 @@ async function onHomepage() {
     }
 
     async showRefreshRatingsButton(ratingsInLS, curUserRatings) {
-      let $button = $('<button>', {
+      const $button = $('<button>', {
         id: 'refr-ratings-button',
         "class": 'csfd-compare-reload',
         html: `
@@ -864,21 +877,21 @@ async function onHomepage() {
         width: "-webkit-fill-available",
         width: "100%",
       });
-      let $div = $('<div>', {
+      const $div = $('<div>', {
         html: $button,
       });
       $('.csfd-compare-settings').after($div);
 
-      let forceUpdate = ratingsInLS > curUserRatings ? true : false;
+      const forceUpdate = ratingsInLS > curUserRatings ? true : false;
 
       $($button).on("click", async function () {
-        let csfd = new Csfd($('div.page-content'));
+        const csfd = new Csfd($('div.page-content'));
         csfd.refreshAllRatings(csfd, forceUpdate);
       });
     }
 
     async newRefreshButton(ratingsInLS, curUserRatings, computedRatings) {
-      let $button = $('<button>', {
+      const $button = $('<button>', {
         id: 'refr-ratings-button',
         "class": 'csfd-compare-reload',
         html: `
@@ -897,16 +910,16 @@ async function onHomepage() {
         width: "-webkit-fill-available",
         width: "100%",
       });
-      let $div = $('<div>', {
+      const $div = $('<div>', {
         html: $button,
       });
       $('.csfd-compare-settings').after($div);
 
-      let forceUpdate = ratingsInLS > curUserRatings ? true : false;
+      const forceUpdate = ratingsInLS > curUserRatings ? true : false;
 
       $($button).on("click", async function () {
         console.log("refreshing ratings");
-        let csfd = new Csfd($('div.page-content'));
+        const csfd = new Csfd($('div.page-content'));
         csfd.newRefreshAllRatings(csfd, forceUpdate);
       });
     }
@@ -1254,6 +1267,8 @@ async function onHomepage() {
     }
 
     async newGetAllPages(force = false) {
+      const chunkSize = 10;
+
       const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
       const $content = await $.get(url);
       const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
@@ -1261,8 +1276,8 @@ async function onHomepage() {
       this.userRatingsCount = await this.getCurrentUserRatingsCount2();
 
       const allUrls = [];
-      for (let idx = 1; idx <= 1; idx++) {  // TODO: DEBUG
-        // for (let idx = 1; idx <= maxPageNum; idx++) {
+      // for (let idx = 1; idx <= 1; idx++) {  // TODO: DEBUG
+        for (let idx = 1; idx <= maxPageNum; idx++) {
         const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
         allUrls.push(url);
       }
@@ -1270,7 +1285,7 @@ async function onHomepage() {
       // Divide the urls into chunks of 10 (to not overload the browser)
       const chunks = [];
       while (allUrls.length) {
-        chunks.push(allUrls.splice(0, 10));
+        chunks.push(allUrls.splice(0, chunkSize));
       }
 
       Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
@@ -1312,7 +1327,7 @@ async function onHomepage() {
             if (showType === 'season') {
               // If parentId is not in parentIds, add it to the list
               if (!parentIds.includes(parentName)) {
-                console.debug(`[ DEBUG ] Adding parentName: ${parentName} to parentIds`);
+                // console.debug(`[ DEBUG ] Adding parentName to [PARENT Ids]: ${parentName}`);
                 parentIds.push(parentName);
               }
             }
@@ -1321,7 +1336,7 @@ async function onHomepage() {
             else if (showType === 'episode') {
               // If parentId is not in parentIds, add it to the list
               if (!seriesIds.includes(parentName)) {
-                console.debug(`[ DEBUG ] Adding parentName: ${parentName} to seriesIds`);
+                // console.debug(`[ DEBUG ] Adding parentName to [SERIES Ids]: ${parentName}`);
                 parentIds.push(parentName);
                 seriesIds.push(parentName);
               }
@@ -1347,10 +1362,12 @@ async function onHomepage() {
               'lastUpdate': this.getCurrentDateTime(),
             };
 
-            console.log(`ITEM dc[${movieId}]: `, dc[movieId]);
-
           }
         }
+      }
+
+      if (settings.loadComputedRatings === false) {
+        return dc;
       }
 
       // Remove parentId from parentsIds if parentId in dc
@@ -1361,16 +1378,19 @@ async function onHomepage() {
       }
 
       // Process the parentIds to get the SERIES ratings
+      let computedIdx = 1;
       for (const parentName of parentIds) {
+
         const parentId = await csfd.getMovieIdFromHref(parentName);
         const parentUrl = location.origin + parentName;
 
         let parentContent = await $.get(parentUrl);
         if (parentContent.redirect !== undefined) {
-            parentContent = await $.get(parentContent.redirect);
+          parentContent = await $.get(parentContent.redirect);
         }
         const $parentContent = $(parentContent);
 
+        Glob.popup(`Načítám vypočtená hodnocení... ${computedIdx}/${parentIds.length}`, 5, 200, 0);
         const { rating, computedFrom, computed } = await this.getCurrentFilmRating($parentContent);
         // const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
 
@@ -1390,7 +1410,9 @@ async function onHomepage() {
         };
 
         console.log(`SERIES dc[${parentId}]: `, dc[parentId]);
+        computedIdx += 1;
       }
+
 
       // Remove seriesId from seriesIds if seriesId in dc
       console.log(`[ DEBUG ] before seriesIds: [${seriesIds.length}]`, seriesIds);
@@ -1594,10 +1616,16 @@ async function onHomepage() {
     }
 
     async newRefreshAllRatings(csfd, force = false) {
+      // Start timer
+      const start = performance.now();
       await csfd.initializeClassVariables();
       csfd.stars = await this.newGetAllPages(force);
       console.log("csfd.stars", csfd.stars);
       csfd.exportRatings();
+      // Stop timer
+      const end = performance.now();
+      const time = (end - start) / 1000;
+      console.log(`Time: ${time} seconds`);
 
       // refresh page
       // location.reload();
@@ -1607,17 +1635,17 @@ async function onHomepage() {
 
     async removableHomeBoxes() {
       const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
-      let settings = await getSettings(boxSettingsName);
+      const settings = await getSettings(boxSettingsName);
 
       $('.box-header').each(async function (index, value) {
-        let $section = $(this).closest('section');
+        const $section = $(this).closest('section');
         $section.attr('data-box-id', index);
 
         if (settings.some(x => x.boxId == index)) {
           $section.hide();
         }
 
-        let $btnHideBox = $('<a>', {
+        const $btnHideBox = $('<a>', {
           'class': 'hide-me button',
           href: 'javascript:void(0)',
           html: `Skrýt`
@@ -1757,7 +1785,6 @@ async function onHomepage() {
                             <a id="script-version" href="${GREASYFORK_URL}">${VERSION}</a>
                         </span>
                     </div>
-
                     <article class="article">
                         <h2 class="article-header">Domácí stránka - skryté panely</h2>
                         <section>
@@ -1766,6 +1793,7 @@ async function onHomepage() {
                             </div>
                         </section>
                     </article>
+
                     <article class="article">
                         <h2 class="article-header">Globální</h2>
                         <section>
@@ -1851,6 +1879,16 @@ async function onHomepage() {
                                 <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line" ${disabled}>
                                 <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku (experimental)</label>
                             </div>
+                        </section>
+                    </article>
+
+                    <article class="article">
+                        <h2 class="article-header">!! Experimentální !!</h2>
+                        <section>
+                          <div class="article-content">
+                              <input type="checkbox" id="chkLoadComputedRatings" name="control-panel-on-hover">
+                              <label for="chkLoadComputedRatings" style="${resetLabelStyle}">Přinačíst vypočtená (černá) hodnocení</label>
+                          </div>
                         </section>
                     </article>
 
@@ -2110,10 +2148,6 @@ async function onHomepage() {
     }
   }
 
-  // $(document).on('click', '#refr-ratings-button', function () {
-  //     alert("hihi");
-  // });
-
   // ============================================================================================
   // SCRIPT START
   // ============================================================================================
@@ -2157,13 +2191,6 @@ async function onHomepage() {
   // }
 
   if (await onHomepage()) { csfd.removableHomeBoxes(); }
-
-  // if (settings.removeVideoPanel) { csfd.removeBox_VideoPanel(); }
-  // if (settings.removeMotivationPanel) { csfd.removeBox_MotivationPanel(); }
-  // if (settings.removeContestPanel) { csfd.removeBox_ContestPanel(); }
-  // if (settings.removeCsfdCinemaPanel) { csfd.removeBox_CsfdCinemaPanel(); }
-  // if (settings.removeMoviesOfferPanel) { csfd.removeBox_MoviesOfferPanel(); }
-
 
   // =================================
   // NOT LOGGED IN
