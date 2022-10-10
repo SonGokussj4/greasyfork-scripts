@@ -317,10 +317,17 @@ async function onHomepage() {
 
     /**
      *
+     * @param {html} content
      * @returns {bool} `true` if current movie rating is computed, `false` otherwise
      */
-    async isCurrentFilmComputed() {
-      const $computedStars = $('.star.active.computed');
+    async isCurrentFilmComputed(content = null) {
+      let $computedStars = null;
+      if (content === null) {
+        $computedStars = $('.star.active.computed');
+      } else {
+        $computedStars = $(content).find('.star.active.computed');
+      }
+
       if ($computedStars.length > 0) {
         return true;
       } else {
@@ -330,6 +337,7 @@ async function onHomepage() {
         }
       }
       return false;
+
     }
 
     async isCurrentFilmRatingComputed() {
@@ -340,11 +348,12 @@ async function onHomepage() {
       return false;
     }
 
-    getCurrentFilmComputedCount() {
-      const $curUserRating = this.csfdPage.find('li.current-user-rating');
+    getCurrentFilmComputedCount(content = null) {
+
+      const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : content.find('li.current-user-rating');
       const countedText = $($curUserRating).find('span[title]').attr('title');
       // split by :
-      const counted = countedText.split(':')[1].trim();
+      const counted = countedText?.split(':')[1]?.trim();
       return counted;
     }
 
@@ -399,11 +408,17 @@ async function onHomepage() {
       return true;
     }
 
-    async getCurrentFilmRating() {
-      const currentRatingIsComputed = await this.isCurrentFilmComputed();
+    /**
+     * Get movie rating from current or given page
+     * @param {html} content
+     * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
+     */
+    async getCurrentFilmRating(content = null) {
+      const currentRatingIsComputed = await this.isCurrentFilmComputed(content);
 
       if (currentRatingIsComputed) {
-        const { ratingCount, computedFromText } = await this.getCurrentFilmComputed();
+        const { ratingCount, computedFromText } = content === null ? await this.getCurrentFilmComputed() : await this.getComputedRatings(content);
+
         return {
           rating: ratingCount,
           computedFrom: computedFromText,
@@ -439,6 +454,7 @@ async function onHomepage() {
         computedFrom: "",
         computed: false,
       };
+
     }
 
     async getCurrentUserRatingsCount2() {
@@ -467,14 +483,14 @@ async function onHomepage() {
     }
 
     /**
-     * $content should be URL with counted star ratings. Not manualy rated. \
-     * Then, it will return dict with `counted stars` and text `"counted from episodes: X"`
+     * $content should be URL with computed star ratings. Not manualy rated. \
+     * Then, it will return dict with `computed stars` and text `"computed from episodes: X"`
      *
-     * @param {string} $content HTML content of a page
-     * @returns {{'ratingCount': int, 'computedFromText': str, 'movieId': 'str', 'parentId': 'str'}}
+     * @param {str} $content HTML content of a page
+     * @returns {Promise<{'ratingCount': int, 'computedFromText': str}>}
      *
      * Example: \
-     * `{ ratingCount: 4, computedFromText: 'spocteno z episod': 2, movieId: '465535', parentId = '' }`
+     * `{ ratingCount: 4, computedFromText: 'spocteno z episod': 2 }`
      */
     async getComputedRatings($content) {
       // Get current user rating
@@ -750,7 +766,7 @@ async function onHomepage() {
       const $page = this.csfdPage;
       const $tbl = $page.find('#snippet--ratings table tbody');
 
-      $tbl.find('tr').each( async function () {
+      $tbl.find('tr').each(async function () {
         const $row = $(this);
         const href = $row.find('a.film-title-name').attr('href');
         const movieId = await csfd.getMovieIdFromHref(href);
@@ -1245,8 +1261,8 @@ async function onHomepage() {
       this.userRatingsCount = await this.getCurrentUserRatingsCount2();
 
       const allUrls = [];
-      // for (let idx = 1; idx <= 12; idx++) {
-      for (let idx = 1; idx <= maxPageNum; idx++) {
+      for (let idx = 1; idx <= 1; idx++) {  // TODO: DEBUG
+        // for (let idx = 1; idx <= maxPageNum; idx++) {
         const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
         allUrls.push(url);
       }
@@ -1259,8 +1275,8 @@ async function onHomepage() {
 
       Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
 
-      const contents = []
       // Load the chunks in parallel
+      const contents = []
       let chunkDone = 0;
       for (const chunk of chunks) {
         Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * 50}/${this.userRatingsCount}`, 5, 200, 0);
@@ -1269,11 +1285,17 @@ async function onHomepage() {
         chunkDone += chunk.length * 50;
       }
 
+      // Process the content of each rating page
       let dc = {};
+      const parentIds = [];
+      const seriesIds = [];
+
       for (const content of contents) {
         for (const data of content) {
           const $rows = $(data).find('#snippet--ratings tr');
 
+          // Process each row of the rating page
+          // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
           for (const $row of $rows) {
 
             const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
@@ -1282,16 +1304,37 @@ async function onHomepage() {
             const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
               csfd.getShowType(filmInfo),
               csfd.getShowYear(filmInfo),
-              csfd.getParentNameFromEpisodeName(name),
+              csfd.getParentNameFromUrl(name),
               csfd.getMovieIdParentIdFromUrl(name),
             ]);
 
+            // If the show is a SEASON, it's parent is a SERIES and ID is in the URL
+            if (showType === 'season') {
+              // If parentId is not in parentIds, add it to the list
+              if (!parentIds.includes(parentName)) {
+                console.debug(`[ DEBUG ] Adding parentName: ${parentName} to parentIds`);
+                parentIds.push(parentName);
+              }
+            }
+            // If the show is a EPISODE, it's parent is a SEASON but the ID is not in the URL
+            // We need to get the ID from the parentName (SERIES) content and then grab the SEASON IDs there
+            else if (showType === 'episode') {
+              // If parentId is not in parentIds, add it to the list
+              if (!seriesIds.includes(parentName)) {
+                console.debug(`[ DEBUG ] Adding parentName: ${parentName} to seriesIds`);
+                parentIds.push(parentName);
+                seriesIds.push(parentName);
+              }
+            }
+
+            // Get the RATING from the stars and the DATE
             const $ratings = $($row).find('span.stars');
             const rating = await csfd.getStarCountFromSpanClass($ratings);
             const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
 
             dc[movieId] = {
               'url': name,
+              'fullUrl': location.origin + name,
               'rating': rating,
               'date': date,
               'type': showType,
@@ -1300,22 +1343,67 @@ async function onHomepage() {
               'parentId': parentId,
               'computed': false,
               'computedCount': "",
+              'computedFromText': "",
+              'lastUpdate': this.getCurrentDateTime(),
             };
 
-            // dc[movieId] = {
-            //   'url': name,
-            //   'rating': rating,
-            //   'date': date,
-            //   'counted': false,
-            //   'computedFromText': '',
-            //   'type': showType,
-            //   'year': showYear,
-            //   'parentId': parentId
-            // };
+            console.log(`ITEM dc[${movieId}]: `, dc[movieId]);
+
           }
-
-
         }
+      }
+
+      // Remove parentId from parentsIds if parentId in dc
+      for (const parentName of parentIds) {
+        if (parentName in dc) {
+          parentIds.splice(parentIds.indexOf(parentName), 1);
+        }
+      }
+
+      // Process the parentIds to get the SERIES ratings
+      for (const parentName of parentIds) {
+        const parentId = await csfd.getMovieIdFromHref(parentName);
+        const parentUrl = location.origin + parentName;
+
+        let parentContent = await $.get(parentUrl);
+        if (parentContent.redirect !== undefined) {
+            parentContent = await $.get(parentContent.redirect);
+        }
+        const $parentContent = $(parentContent);
+
+        const { rating, computedFrom, computed } = await this.getCurrentFilmRating($parentContent);
+        // const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
+
+        dc[parentId] = {
+          'url': parentName,
+          'fullUrl': location.origin + parentName,
+          'rating': rating,
+          'date': "",
+          'type': "series",
+          'year': null,
+          'parentName': "",
+          'parentId': "",
+          'computed': computed,
+          'computedCount': this.getCurrentFilmComputedCount($parentContent),
+          'computedFromText': computedFrom,
+          'lastUpdate': this.getCurrentDateTime(),
+        };
+
+        console.log(`SERIES dc[${parentId}]: `, dc[parentId]);
+      }
+
+      // Remove seriesId from seriesIds if seriesId in dc
+      console.log(`[ DEBUG ] before seriesIds: [${seriesIds.length}]`, seriesIds);
+      for (const seriesName of seriesIds) {
+        if (seriesName in dc) {
+          seriesIds.splice(seriesIds.indexOf(seriesName), 1);
+        }
+      }
+      console.log(`[ DEBUG ] after seriesIds: [${seriesIds.length}]`, seriesIds);
+
+      // Process the seriesIds to get the SEASON ratings
+      for (const seriesName of seriesIds) {
+        console.log("[ DEBUG ] Getting CONTENT from seriesName: ", seriesName);
       }
 
       return dc;
@@ -1332,7 +1420,7 @@ async function onHomepage() {
      */
     async getShowYear(filmInfo) {
       const showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
-      return showYear;
+      return parseInt(showYear);
     }
 
     /**
@@ -1433,23 +1521,24 @@ async function onHomepage() {
     /**
      * Return **relative** parent name from episode name
      *
-     * @param {string} episodeName relative URL of episode name
+     * @param {string} name relative URL of episode name
      * @returns relative URL of parent name
      *
      * Example: \
      * `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `/film/697624-love-death-robots/`
+     * `/film/697624-love-death-robots/` --> `""`
      */
-    async getParentNameFromEpisodeName(episodeName) {
-      let splitted = episodeName.slice(0, -1).split("/");
+    async getParentNameFromUrl(name) {
+      const splitted = name.slice(0, -1).split("/");
       splitted.pop();
-      let parentName = splitted.join("/") + "/";
+      const parentName = splitted.length > 2 ? splitted.join("/") + "/" : "";
       return parentName;
     }
 
     /**
      *
      * @param {str} href csfd link for movie/series/episode
-     * @returns {str} Movie ID number
+     * @returns {Promise<str>} Movie ID number
      *
      * Example:
      * - href = '/film/774319-zhoubne-zlo/' --> '774319'
@@ -1511,7 +1600,7 @@ async function onHomepage() {
       csfd.exportRatings();
 
       // refresh page
-      location.reload();
+      // location.reload();
 
       // Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
     }
@@ -1934,6 +2023,11 @@ async function onHomepage() {
         $(element).closest('article').hide();
       }
     }
+
+    /**
+     *
+     * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
+     */
     async getCurrentFilmDateAdded() {
       let ratingText = this.csfdPage.find('span.stars-rating.initialized').attr('title');
       if (ratingText === undefined) {
