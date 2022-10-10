@@ -553,94 +553,94 @@ async function onHomepage() {
       // HOME PAGE
 
       // GLOBAL
-      $('#chkControlPanelOnHover').change(function () {
+      $('#chkControlPanelOnHover').on('change', function () {
         settings.showControlPanelOnHover = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkClickableHeaderBoxes').change(function () {
+      $('#chkClickableHeaderBoxes').on('change', function () {
         settings.clickableHeaderBoxes = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkClickableMessages').change(function () {
+      $('#chkClickableMessages').on('change', function () {
         settings.clickableMessages = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkAddStars').change(function () {
+      $('#chkAddStars').on('change', function () {
         settings.addStars = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
       // USER
-      $('#chkDisplayMessageButton').change(function () {
+      $('#chkDisplayMessageButton').on('change', function () {
         settings.displayMessageButton = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkDisplayFavoriteButton').change(function () {
+      $('#chkDisplayFavoriteButton').on('change', function () {
         settings.displayFavoriteButton = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkHideUserControlPanel').change(function () {
+      $('#chkHideUserControlPanel').on('change', function () {
         settings.hideUserControlPanel = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkCompareUserRatings').change(function () {
+      $('#chkCompareUserRatings').on('change', function () {
         settings.compareUserRatings = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
       // FILM/SERIES
-      $('#chkShowLinkToImage').change(function () {
+      $('#chkShowLinkToImage').on('change', function () {
         settings.showLinkToImage = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkRatingsEstimate').change(function () {
+      $('#chkRatingsEstimate').on('change', function () {
         settings.ratingsEstimate = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkRatingsFromFavorites').change(function () {
+      $('#chkRatingsFromFavorites').on('change', function () {
         settings.ratingsFromFavorites = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkAddRatingsDate').change(function () {
+      $('#chkAddRatingsDate').on('change', function () {
         settings.addRatingsDate = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkAddRatingsComputedCount').change(function () {
+      $('#chkAddRatingsComputedCount').on('change', function () {
         settings.addRatingsComputedCount = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
-      $('#chkHideSelectedUserReviews').change(function () {
+      $('#chkHideSelectedUserReviews').on('change', function () {
         settings.hideSelectedUserReviews = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
         $('#txtHideSelectedUserReviews').parent().toggle();
       });
 
-      $('#txtHideSelectedUserReviews').change(function () {
+      $('#txtHideSelectedUserReviews').on('change', function () {
         let ignoredUsers = this.value.replace(/\s/g, '').split(",");
         settings.hideSelectedUserReviewsList = ignoredUsers;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
@@ -648,14 +648,14 @@ async function onHomepage() {
       });
 
       // ACTORS
-      $('#chkShowOnOneLine').change(function () {
+      $('#chkShowOnOneLine').on('change', function () {
         settings.showOnOneLine = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
 
       // EXPERIMENTAL
-      $('#chkLoadComputedRatings').change(function () {
+      $('#chkLoadComputedRatings').on('change', function () {
         settings.loadComputedRatings = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
@@ -1678,14 +1678,14 @@ async function onHomepage() {
       });
 
       $('.hide-me').on('click', async function (event) {
-        let $section = $(event.target).closest('section');
-        let boxId = $section.data('box-id');
+        const $section = $(event.target).closest('section');
+        const boxId = $section.data('box-id');
         let boxName = $section.find('h2').first().text().replace(/\n|\t|Skrýt/g, "");  // clean from '\t', '\n'
         if (boxName === '') {
           boxName = $section.find('p').first().text().replace(/\n|\t|Skrýt/g, "");
         }
-        let dict = { boxId: boxId, boxName: boxName };
-        let settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
+        const dict = { boxId: boxId, boxName: boxName };
+        const settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
         if (!settings.includes(dict)) {
           settings.push(dict);
           localStorage.setItem(boxSettingsName, JSON.stringify(settings));
@@ -1945,7 +1945,7 @@ async function onHomepage() {
       // In case user removed rating, we need to remove it from the LC
       if (rating === "") {
         // Check if record exists, if yes, remove it
-        console.info("Removing record...");
+        console.info("No rating on current page but record in LC => Removing record...");
         await this.removeFromLocalStorage();
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
@@ -1971,6 +1971,10 @@ async function onHomepage() {
       }
     }
 
+    /**
+     * Returns current DateTime, e.g. 11.10.2022 1:49:42
+     * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
+     */
     getCurrentDateTime() {
       const d = new Date
       const dformat = [
@@ -1985,30 +1989,35 @@ async function onHomepage() {
       return dformat
     }
 
+    /**
+     * When user wants to open message, he needs to click on 'více' link.
+     * This removes the 'více' link and enables to click on the message.
+     *
+     * @returns {None}
+     */
     clickableMessages() {
-      let $messagesBox = $('.dropdown-content.messages');
-      let $more = $messagesBox.find('.span-more-small');
-      if ($more.length < 1) { return; }
+      const $messagesBox = $('.dropdown-content.messages');
+      const $moreSpan = $messagesBox.find('.span-more-small');
+      if ($moreSpan.length < 1) { return; }
 
-      for (const $span of $more) {
+      for (const $span of $moreSpan) {
 
         // Hide "... více" button
         $($span).hide();
 
-        let $content = $($span).closest('.article-content');
-        let $article = $content.closest('article');
-        $content.hover(function () {
-          // $(this).css('background-color', '#e1e0e0');
+        const $content = $($span).closest('.article-content');
+        const $article = $content.closest('article');
+        $content.on('hover', function () {
           $article.css('background-color', '#e1e0e0');
         }, function () {
-          // $(this).css('background-color', 'initial');
           $article.css('background-color', 'initial');
         });
 
-        let href = $($span).find('a').attr('href');
+        const href = $($span).find('a').attr('href');
         $content.wrap(`<a href="${href}"></a>`);
       }
     }
+
     async clickableHeaderBoxes() {
       // CLICKABLE HEADER BUTTONS
       $(".user-link.wantsee").on("click", function () {
