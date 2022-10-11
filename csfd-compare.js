@@ -1730,6 +1730,24 @@ async function onHomepage() {
       $div.append($button);
     }
 
+    /**
+     * Creates a <span> element with a tooltip.
+     *
+     * @param {str} url imgur/github url of the image (screenshot)
+     * @param {str} description description of the image
+     * @returns {str} html code of the image
+     */
+    helpImageComponent(url, description) {
+      const $span = $(`
+                <span class="help-hover-image"
+                      data-description="${description}"
+                      data-img-url="${url}">💬</span>
+            `).css({
+        "cursor": "help",
+        "color": "rgba(255, 255, 255, 0.8)",
+      })
+      return $span.get(0).outerHTML;
+    }
 
     async addSettingsPanel() {
       let dropdownStyle = 'right: 150px; width: max-content;';
@@ -1844,26 +1862,32 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image" ${disabled}>
                                 <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/a2Av3AK.png", "Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate" ${disabled}>
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/qGAhXog.png", "Ukáže % hodnocení i u filmů s méně než 10 hodnoceními")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsFromFavorites" name="ratings-from-favorites" ${disabled}>
                                 <label for="chkRatingsFromFavorites" style="${resetLabelStyle}">Zobrazit hodnocení z průměru oblíbených</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/ol88F6z.png", "Zobrazí % hodnocení od přidaných oblíbených uživatelů")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
                                 <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/KtpT81X.png", "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsDate" name="add-ratings" ${disabled}>
                                 <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/CHpBDxK.png", "Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR")}
                                 <div>
                                     <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
@@ -1897,6 +1921,33 @@ async function onHomepage() {
       $('.header-bar').prepend(button);
 
       await refreshTooltips();
+
+      // Show help image on hover
+      $(".help-hover-image").on('mouseenter', function (e) {
+        const url = $(this).attr("data-img-url");
+        const description = $(this).attr("data-description");
+        $("body").append(
+          `<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`
+        );
+        $("#image-when-hovering-text")
+          .css("position", "absolute")
+          .css("top", (e.pageY + 5) + "px")
+          .css("left", (e.pageX + 25) + "px")
+          .css("z-index", "9999")
+          .css("background-color", "white")
+          .css("padding", "5px")
+          .css("border", "1px solid #6a6a6a")
+          .css("border-radius", "5px")
+          .fadeIn("fast");
+      }).on('mouseleave', function () {
+        $("#image-when-hovering-text").remove();
+      });
+
+      $(".help-hover-image").on('mousemove', function (e) {
+        $("#image-when-hovering-text")
+          .css("top", (e.pageY + 5) + "px")
+          .css("left", (e.pageX + 25) + "px");
+      });
 
       // Show() the section and remove the number from localStorage
       $(".hidden-sections").on("click", ".restore-hidden-section", async function () {
