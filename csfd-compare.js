@@ -1877,7 +1877,7 @@ async function onHomepage() {
                         <section>
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line" ${disabled}>
-                                <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku (experimental)</label>
+                                <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku</label>
                             </div>
                         </section>
                     </article>
@@ -2031,24 +2031,24 @@ async function onHomepage() {
       });
 
       // CLICKABLE HEADER DIVS
-      let headers = $('.dropdown-content-head,.box-header');
+      const headers = $('.dropdown-content-head,.box-header');
       for (const div of headers) {
-        let btn = $(div).find('a.button');
+        const btn = $(div).find('a.button');
 
         if (btn.length === 0) { continue; }
         if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
 
         $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
-        let h2 = $(div).find('h2');
-        let spanCount = h2.find('span.count');
+        const h2 = $(div).find('h2');
+        const spanCount = h2.find('span.count');
         $(div)
-          .mouseover(() => {
+          .on('mouseover', () => {
             $(div).css({ backgroundColor: '#ba0305' });
             $(h2[0]).css({ backgroundColor: '#ba0305', color: '#fff' });
             if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
           })
-          .mouseout(() => {
+          .on('mouseout', () => {
             if ($(div).hasClass('dropdown-content-head')) {
               $(div).css({ backgroundColor: '#ececec' });
             } else {
