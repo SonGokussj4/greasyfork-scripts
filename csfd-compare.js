@@ -1610,18 +1610,18 @@ async function onHomepage() {
     async refreshAllRatings(csfd, force = false) {
       await csfd.initializeClassVariables();
       csfd.stars = await csfd.getAllPages(force);
-      csfd.exportRatings();
-      // Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
+      this.exportRatings();
       location.reload();
     }
 
     async newRefreshAllRatings(csfd, force = false) {
       // Start timer
       const start = performance.now();
+
       await csfd.initializeClassVariables();
       csfd.stars = await this.newGetAllPages(force);
-      console.log("csfd.stars", csfd.stars);
-      csfd.exportRatings();
+      this.exportRatings();
+
       // Stop timer
       const end = performance.now();
       const time = (end - start) / 1000;
