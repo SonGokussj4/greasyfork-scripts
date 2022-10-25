@@ -44,6 +44,7 @@ let defaultSettings = {
   showOnOneLine: false,
   // EXPERIMENTAL
   loadComputedRatings: false,
+  addChatReplyButton: false,
 };
 
 
@@ -547,6 +548,7 @@ async function onHomepage() {
 
       // EXPERIMENTAL
       $('#chkLoadComputedRatings').attr('checked', settings.loadComputedRatings);
+      $('#chkAddChatReplyButton').attr('checked', settings.addChatReplyButton);
     }
 
     async addSettingsEvents() {
@@ -660,6 +662,11 @@ async function onHomepage() {
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
       });
+      $('#chkAddChatReplyButton').on('change', function () {
+        settings.addChatReplyButton = this.checked;
+        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      });
 
     }
 
@@ -677,6 +684,13 @@ async function onHomepage() {
         if (!location.href.includes(this.userUrl)) {
           return true;
         }
+      }
+      return false;
+    }
+
+    async onDiskuzePage() {
+      if (location.href.includes('/diskuze/') || location.href.includes('/diskusie')) {
+        return true;
       }
       return false;
     }
@@ -1913,6 +1927,10 @@ async function onHomepage() {
                               <input type="checkbox" id="chkLoadComputedRatings" name="control-panel-on-hover">
                               <label for="chkLoadComputedRatings" style="${resetLabelStyle}">Přinačíst vypočtená (černá) hodnocení</label>
                           </div>
+                          <div class="article-content">
+                              <input type="checkbox" id="chkAddChatReplyButton" name="control-panel-on-hover">
+                              <label for="chkAddChatReplyButton" style="${resetLabelStyle}">Přidat v diskuzích možnost odpovědět na sebe</label>
+                          </div>
                         </section>
                     </article>
 
@@ -2206,6 +2224,34 @@ async function onHomepage() {
       this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
       this.stars = this.getStars();
     }
+
+    async addChatReplyButton() {
+      // const iconElement = document.querySelector('div.article-content.article-content-icons > .icon-control').firstElementChild;
+      const iconElement = document.querySelector('div.article-content.article-content-icons > .icon-control');
+      if (iconElement === null) { return; }
+
+      const allIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
+      console.log("allIconElements", allIconElements);
+      // const emptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '');
+      const firstIconElement = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '')[0];
+
+      const parentElement = firstIconElement.parentElement;
+      parentElement.removeChild(firstIconElement);
+      $(iconElement).appendTo($(parentElement));
+      const href = iconElement.querySelector('a');
+      href.setAttribute('data-id', '78145');
+      href.setAttribute('data-nick', 'songokussj4');
+      const article = iconElement.closest('article');
+      const articleId = article.getAttribute('id');
+      const articleIdNumber = articleId.split('-')[2];
+      href.setAttribute('data-post', articleIdNumber);
+
+      // for (const element of emptyIconElements) {
+      //   const parentElement = element.parentElement;
+      //   parentElement.removeChild(element);
+      //   $(iconElement).appendTo($(parentElement));
+      // }
+    }
   }
 
   // ============================================================================================
@@ -2289,6 +2335,14 @@ async function onHomepage() {
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
       }
+    }
+
+
+    // =================================
+    // Page - Diskuze
+    // =================================
+    if (await csfd.onDiskuzePage()) {
+      csfd.addChatReplyButton()
     }
 
     // Header modifications
