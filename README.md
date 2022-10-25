@@ -11,6 +11,7 @@
 
 - NEW
   - V CC menu jsou nyní obrázkové nápovědy v sekci Film/Seriál
+  - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele
 
 > **v0.5.12** _(2022-10-xx)_  
 

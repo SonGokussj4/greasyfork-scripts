@@ -2231,26 +2231,60 @@ async function onHomepage() {
       if (iconElement === null) { return; }
 
       const allIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
-      console.log("allIconElements", allIconElements);
-      // const emptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '');
-      const firstIconElement = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '')[0];
 
-      const parentElement = firstIconElement.parentElement;
-      parentElement.removeChild(firstIconElement);
-      $(iconElement).appendTo($(parentElement));
-      const href = iconElement.querySelector('a');
-      href.setAttribute('data-id', '78145');
-      href.setAttribute('data-nick', 'songokussj4');
-      const article = iconElement.closest('article');
-      const articleId = article.getAttribute('id');
-      const articleIdNumber = articleId.split('-')[2];
-      href.setAttribute('data-post', articleIdNumber);
+      // Get all icon elements that are empty (no reply button) but can have trash button
+      const emptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '' || $(element).find('i.icon-trash').length !== 0);
+      // console.log("emptyIconElements", emptyIconElements);
 
-      // for (const element of emptyIconElements) {
-      //   const parentElement = element.parentElement;
-      //   parentElement.removeChild(element);
-      //   $(iconElement).appendTo($(parentElement));
-      // }
+      const nonEmptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") !== '' && $(element).find('i.icon-trash').length === 0);
+      // console.log("nonEmptyIconElements", nonEmptyIconElements);
+      const firstNonEmptyIconElement = nonEmptyIconElements[0].firstElementChild;
+
+      // Add non-functional reply button to all empty icon elements
+      for (const element of emptyIconElements) {
+
+        // Copy iconElement and append after the trash bin
+        const customReplyElement = firstNonEmptyIconElement.cloneNode(true);
+        const customReplyElementClone = firstNonEmptyIconElement.cloneNode(true);
+        element.appendChild(customReplyElement);
+
+        // On click of the reply button, copy the element from the first non-empty icon element
+        customReplyElement.addEventListener('click', (event) => {
+          // Delete current element (non-functional reply button)
+          customReplyElement.remove();
+
+          // Get firstNonEmptyIconElement parent
+          const firstNonEmptyIconElementParentElement = firstNonEmptyIconElement.parentElement;
+
+          // Move first element from nonEmptyIconElements to the current element
+          element.appendChild(firstNonEmptyIconElement);
+
+          // Move customReplyElement to the firstNonEmptyIconElementParentElement
+          firstNonEmptyIconElementParentElement.appendChild(customReplyElementClone);
+
+          const href = element.querySelector('a.reply-add');
+          if (href !== null) {
+
+            // Get h3.user-title
+            const userTitleLink = element.parentElement.parentElement.querySelector('h3.user-title a');
+            const userTitleHref = userTitleLink.href;
+
+            // Get 78145 from https://www.csfd.cz/uzivatel/78145-songokussj/
+            const userId = userTitleHref.split("/")[4].split("-")[0];  // TODO - use regex
+            href.setAttribute('data-id', userId)
+
+            const userTitleUsername = userTitleLink.innerHTML.toLowerCase();
+            href.setAttribute('data-nick', userTitleUsername)
+
+            const article = element.closest('article');
+            const articleId = article.getAttribute('id');
+            const articleIdNumber = articleId.split('-')[2];
+            href.setAttribute('data-post', articleIdNumber);
+          }
+          // Fire click event on the firstNonEmptyIconElement
+          firstNonEmptyIconElement.click();
+        });
+      }
     }
   }
 
