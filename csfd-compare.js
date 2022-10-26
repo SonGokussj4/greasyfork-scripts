@@ -2273,7 +2273,7 @@ async function onHomepage() {
             const userId = userTitleHref.split("/")[4].split("-")[0];  // TODO - use regex
             href.setAttribute('data-id', userId)
 
-            const userTitleUsername = userTitleLink.innerHTML.toLowerCase();
+            const userTitleUsername = userTitleLink.innerHTML;
             href.setAttribute('data-nick', userTitleUsername)
 
             const article = element.closest('article');
@@ -2375,7 +2375,7 @@ async function onHomepage() {
     // =================================
     // Page - Diskuze
     // =================================
-    if (await csfd.onDiskuzePage()) {
+    if (await csfd.onDiskuzePage() && settings.addChatReplyButton) {
       csfd.addChatReplyButton()
     }
 
