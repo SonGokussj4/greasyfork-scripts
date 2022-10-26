@@ -471,6 +471,9 @@ async function onHomepage() {
         });
     }
 
+    /**
+     * TODO: Documentation
+     */
     async fillMissingSettingsKeys() {
       let settings = await getSettings();
 
@@ -2225,31 +2228,82 @@ async function onHomepage() {
       this.stars = this.getStars();
     }
 
+    /**
+     * Iterate through .icon-control icons and if empty, clone the existing one.
+     * When clicking on the cloned icon, it will trigger the click on the original icon.
+     * This is done to prevent the page from reloading when clicking on the icon.
+     */
     async addChatReplyButton() {
-      // const iconElement = document.querySelector('div.article-content.article-content-icons > .icon-control').firstElementChild;
-      const iconElement = document.querySelector('div.article-content.article-content-icons > .icon-control');
-      if (iconElement === null) { return; }
-
       const allIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
 
       // Get all icon elements that are empty (no reply button) but can have trash button
       const emptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '' || $(element).find('i.icon-trash').length !== 0);
       // console.log("emptyIconElements", emptyIconElements);
-
       const nonEmptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") !== '' && $(element).find('i.icon-trash').length === 0);
       // console.log("nonEmptyIconElements", nonEmptyIconElements);
       const firstNonEmptyIconElement = nonEmptyIconElements[0].firstElementChild;
+      const lastNonEmptyIconElement = nonEmptyIconElements[nonEmptyIconElements.length - 1].firstElementChild;
+
+      async function replaceWithWorkingReplyIcon(iconElementClone, element) {
+        // // Delete current element (non-functional reply button)
+        // iconElementClone.remove();
+        // // Get last working icon
+        // const allIcons = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
+        // const allWorkingIcons = Array.from(allIcons).filter((element) => element.innerHTML.replace(/\n|\t/g, "") !== '' && $(element).find('i.icon-trash').length === 0);
+        // const lastWorkingIcon = allWorkingIcons[allWorkingIcons.length - 1].firstElementChild;
+        // const LastWorkingIconParent = lastWorkingIcon.parentElement;
+        // // Move last element from allWorkingIcons to the current element
+        // element.appendChild(lastWorkingIcon);
+        // // Move iconElementClone to the LastWorkingIconParent
+        // LastWorkingIconParent.appendChild(lastWorkingIcon);
+
+        const userTitleLink = element.parentElement.parentElement.querySelector('h3.user-title a');
+        const userTitleHref = userTitleLink.href;
+        // Get 78145 from https://www.csfd.cz/uzivatel/78145-songokussj/
+        const userId = userTitleHref.split("/")[4].split("-")[0];  // TODO - use regex
+        console.log("userId", userId);
+      }
+
+      async function copyCloneIcon(element) {
+        const iconElementClone = lastNonEmptyIconElement.cloneNode(true);
+        iconElementClone.addEventListener('click', (event) => {
+          replaceWithWorkingReplyIcon(iconElementClone, element);
+        });
+        element.appendChild(iconElementClone);
+        const href = element.querySelector('a.reply-add');
+        href.setAttribute('data-id', '0')
+        href.setAttribute('data-nick', '-')
+        href.setAttribute('data-post', '0');
+      }
 
       // Add non-functional reply button to all empty icon elements
       for (const element of emptyIconElements) {
 
+        // If the element is empty, add the reply button
+        if (element.innerHTML.replace(/\n|\t/g, "") === '') {
+          await copyCloneIcon(element);
+        }
+        continue;
+
         // Copy iconElement and append after the trash bin
         const customReplyElement = firstNonEmptyIconElement.cloneNode(true);
         const customReplyElementClone = firstNonEmptyIconElement.cloneNode(true);
+        // customReplyElementClone.addEventListener('click', () => {
+        //   console.log("customReplyElementClone clicked");
+        // });
+
         element.appendChild(customReplyElement);
 
         // On click of the reply button, copy the element from the first non-empty icon element
         customReplyElement.addEventListener('click', (event) => {
+          // Check if element has event listener
+          if (customReplyElementClone.hasEventListener) {
+            console.log("Has event listener");
+            return;
+          }
+          console.log("Does not have event listener");
+          // return;
+
           // Delete current element (non-functional reply button)
           customReplyElement.remove();
 
@@ -2262,6 +2316,7 @@ async function onHomepage() {
           // Move customReplyElement to the firstNonEmptyIconElementParentElement
           firstNonEmptyIconElementParentElement.appendChild(customReplyElementClone);
 
+          // Update attributes: data-id, data-nick, data-post
           const href = element.querySelector('a.reply-add');
           if (href !== null) {
 
@@ -2321,7 +2376,9 @@ async function onHomepage() {
     if (settings.ratingsFromFavorites) { csfd.ratingsFromFavorites(); }
   }
 
-  // Actor page
+  // =================================
+  // Page - Tvurce
+  // =================================
   if (location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
     if (settings.showOnOneLine) { csfd.showOnOneLine(); }
   }
@@ -2330,6 +2387,10 @@ async function onHomepage() {
   //     csfd.showLinkToImageOnOtherGalleryImages();
   // }
 
+
+  // =================================
+  // Page - Homepage
+  // =================================
   if (await onHomepage()) { csfd.removableHomeBoxes(); }
 
   // =================================
@@ -2351,6 +2412,13 @@ async function onHomepage() {
     // Global settings without category
     await csfd.initializeClassVariables();
 
+    // =================================
+    // Page - Diskuze
+    // =================================
+    if (await csfd.onDiskuzePage() && settings.addChatReplyButton) {
+      csfd.addChatReplyButton()
+    }
+
     if (settings.addStars && await csfd.notOnUserPage()) { csfd.addStars(); }
 
     let ratingsInLocalStorage = 0;
@@ -2371,18 +2439,14 @@ async function onHomepage() {
       }
     }
 
-
     // =================================
-    // Page - Diskuze
-    // =================================
-    if (await csfd.onDiskuzePage() && settings.addChatReplyButton) {
-      csfd.addChatReplyButton()
-    }
-
     // Header modifications
+    // =================================
     if (settings.clickableMessages) { csfd.clickableMessages(); }
 
-    // Film page
+    // =================================
+    // Page - Film
+    // =================================
     if (location.href.includes('/film/')) {
       if (settings.addRatingsDate) { csfd.addRatingsDate(); }
       if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
@@ -2414,7 +2478,9 @@ async function onHomepage() {
       }
     }
 
-    // User page
+    // =================================
+    // Page - Other User
+    // =================================
     if (await csfd.onOtherUserPage()) {
       if (settings.displayMessageButton) { csfd.displayMessageButton(); }
       if (settings.displayFavoriteButton) { csfd.displayFavoriteButton(); }
@@ -2430,6 +2496,9 @@ async function onHomepage() {
   // let t1 = performance.now();
   // console.log("Call to 'await $.get(GREASYFORK_URL)' took " + (t1 - t0) + " ms.");
 
+  // =================================
+  // Check for update
+  // =================================
   // If not already in session storage, get new version from greasyfork and display changelog over version link
   let updateCheckJson = sessionStorage.updateChecked !== undefined ? JSON.parse(sessionStorage.updateChecked) : {};
   let $verLink = $('#script-version');
