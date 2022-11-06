@@ -172,6 +172,10 @@ async function onHomepage() {
       return $profile.length > 0;
     }
 
+    /**
+     *
+     * @returns {string} - User URL (e.g. /uzivatel/123456-adam-strong/)
+     */
     async getCurrentUser() {
       let loggedInUser = $('.profile.initialized').attr('href');
       if (loggedInUser !== undefined) {
@@ -196,6 +200,24 @@ async function onHomepage() {
         }
       }
       return loggedInUser;
+    }
+
+    /**
+     *
+     * @returns {string} - Username (e.g. adam-strong)
+     */
+    async getUsername() {
+      const userHref = await this.getCurrentUser();
+      if (userHref === undefined) {
+        return undefined;
+      }
+      // get 'songokussj'   from '/uzivatel/78145-songokussj/'    with regex
+      // get 'sans-sourire' from '/uzivatel/714142-sans-sourire/' with regex
+      const foundMatch = userHref.match(new RegExp(/\/(\d+-(.*)+)\//));
+      if (foundMatch.length == 3) {
+        return foundMatch[2];
+      }
+      return undefined;
     }
 
     getStars() {
@@ -245,7 +267,7 @@ async function onHomepage() {
     getCurrentFilmUrl() {
       const foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
 
-      // TODO: getCurrentFilmUrl by melo vratit film URL ne jen cast... ne?
+      // TODO: getCurrentFilmUrl by melo vrátit film URL ne jen cast... ne?
       if (!foundMatch) {
         console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
         throw (`${SCRIPTNAME} Exiting...`);
@@ -261,7 +283,7 @@ async function onHomepage() {
     getCurrentFilmFullUrl() {
       const foundMatch = $('meta[property="og:url"]').attr('content');
 
-      // TODO: getCurrentFilmFullUrl by melo vratit film URL ne jen cast... ne?
+      // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
       if (!foundMatch) {
         console.error("TODO: getCurrentFilmFullUrl() Film URL wasn't found...");
         return "";
@@ -1294,7 +1316,7 @@ async function onHomepage() {
 
       const allUrls = [];
       // for (let idx = 1; idx <= 1; idx++) {  // TODO: DEBUG
-        for (let idx = 1; idx <= maxPageNum; idx++) {
+      for (let idx = 1; idx <= maxPageNum; idx++) {
         const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
         allUrls.push(url);
       }
@@ -1384,6 +1406,9 @@ async function onHomepage() {
       }
 
       if (settings.loadComputedRatings === false) {
+        return dc;
+      } else {
+        // TODO: Load computed ratings
         return dc;
       }
 
@@ -1766,6 +1791,21 @@ async function onHomepage() {
       return $span.get(0).outerHTML;
     }
 
+    settingsPanelComponent() {
+      const $div = $(`
+        <article class="article">
+          <section>
+            <div class="article-section">
+              <button id="btnResetSettings" class="settings-button" title="Resetuje uložená nastavení (NE hodnocení)">Reset nastavení</button>
+              <button id="btnRemoveSavedRatings" class="settings-button" title="Smaže všechna uložená hodnocení!">Smazat uložená hodnocení</button>
+            </div>
+          </section>
+        </article>
+      `)
+
+      return $div.get(0).outerHTML;
+    }
+
     async addSettingsPanel() {
       let dropdownStyle = 'right: 150px; width: max-content;';
       let disabled = '';
@@ -1820,6 +1860,9 @@ async function onHomepage() {
                             <a id="script-version" href="${GREASYFORK_URL}">${VERSION}</a>
                         </span>
                     </div>
+
+                    ${csfd.settingsPanelComponent()}
+
                     <article class="article">
                         <h2 class="article-header">Domácí stránka - skryté panely</h2>
                         <section>
@@ -1927,8 +1970,8 @@ async function onHomepage() {
                         <h2 class="article-header">!! Experimentální !!</h2>
                         <section>
                           <div class="article-content">
-                              <input type="checkbox" id="chkLoadComputedRatings" name="control-panel-on-hover">
-                              <label for="chkLoadComputedRatings" style="${resetLabelStyle}">Přinačíst vypočtená (černá) hodnocení</label>
+                              <input type="checkbox" id="chkLoadComputedRatings" name="control-panel-on-hover" disabled>
+                              <label for="chkLoadComputedRatings" style="${resetLabelStyle}"><del>Přinačíst vypočtená (černá) hodnocení</del></label>
                           </div>
                           <div class="article-content">
                               <input type="checkbox" id="chkAddChatReplyButton" name="control-panel-on-hover">
@@ -2007,6 +2050,29 @@ async function onHomepage() {
             $(button).removeClass("active");
           }, 200);
         }
+      });
+
+      $(button).find("#btnResetSettings").on("click", async function () {
+        console.debug("Resetting 'CSFD-Compare-settings' settings...");
+        localStorage.removeItem("CSFD-Compare-settings");
+        location.reload();
+      });
+
+      $(button).find("#btnRemoveSavedRatings").on("click", async function () {
+        const username = await csfd.getUsername();
+
+        if (!username) {
+          alert("Nejprve se přihlašte.");
+          return;
+        }
+
+        if (!confirm(`Opravdu chcete smazat uložená hodnocení uživatele ${username}?`)) {
+          return;
+        }
+
+        console.debug(`Removing saved ratings for user '${username}'...`);
+        localStorage.removeItem(`CSFD-Compare_${username}`);
+        location.reload();
       });
     }
 
