@@ -10,7 +10,7 @@
 > **v0.6.0** _(2022-12-xx)_  
 
 - NEW
-  - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů 9[[#18](../../issues/18)]
+  - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů [[#18](../../issues/18)]
   - V CC menu jsou nyní obrázkové nápovědy v sekci Film/Seriál
   - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele
 
