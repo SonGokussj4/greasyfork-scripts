@@ -2295,6 +2295,25 @@ async function onHomepage() {
     }
 
     /**
+     * For some reason, IMDb button to link current film does not have icon. This function adds it.
+     *
+     * @returns {Promise<void>}
+     */
+    async addImdbIcon() {
+      const $image = $('<img>', {
+        // src: 'https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/171_Imdb_logo_logos-512.png',
+        src: 'https://images.squarespace-cdn.com/content/v1/57c984f1cd0f68cf4beeb2cf/1472911999963-KH5AM2AU675ZGJUJEGQV/imdb+logo.png',
+        alt: 'IMDB',
+        title: 'IMDB',
+        style: 'width: 26px; height: 26px; mix-blend-mode: darken;',
+        class: 'imdb-icon',
+      });
+      const $imdbI = $('a.button-big.button-imdb i');
+      $imdbI.css({ 'opacity': '1', 'background-color': '#f5c518' });
+      $imdbI.append($image);
+    }
+
+    /**
      * Iterate through .icon-control icons and if empty, clone the existing one.
      * When clicking on the cloned icon, it will trigger the click on the original icon.
      * This is done to prevent the page from reloading when clicking on the icon.
@@ -2430,6 +2449,8 @@ async function onHomepage() {
   // =================================
   // GLOBAL
   // =================================
+  csfd.addImdbIcon();
+
   if (settings.clickableHeaderBoxes) { csfd.clickableHeaderBoxes(); }
   if (settings.showControlPanelOnHover) { csfd.openControlPanelOnHover(); }
 
