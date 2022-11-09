@@ -2314,133 +2314,72 @@ async function onHomepage() {
     }
 
     /**
-     * Iterate through .icon-control icons and if empty, clone the existing one.
-     * When clicking on the cloned icon, it will trigger the click on the original icon.
-     * This is done to prevent the page from reloading when clicking on the icon.
+     * On discussion pages, add a button to reply to user's own comments.
+     *
+     * Limitations:
+     *  - If user replies to his own comment, he can't reply to the first someone else's comment.
+     *  - Can't reply to multiple user's own comments at once.
+     *
+     * @returns {Promise<void>}
      */
     async addChatReplyButton() {
-      console.debug(` [ DEBUG ] addChatReplyButton()`);
 
       // Get all divs with class 'icon-control' containing <i> with class 'icon-reply' in them (working reply buttons)
-      const replyIconElements = $('.icon-control:has(i.icon-reply)');
-      // const replyIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control > a > i.icon-reply');
-      // const replyIconElements = document.querySelectorAll('.icon-control:has(i.icon-reply)');
-      console.log(` [ DEBUG ] replyIconElements:`, replyIconElements);
-
-      // const missingIconElements = document.querySelectorAll('.icon-control:not(i.icon-reply)');
+      const replyIconControlElements = $('.icon-control:has(i.icon-reply)');
+      const $firstWorkingReplyIconControl = replyIconControlElements.first();
       const missingIconElements = $('.icon-control').not($(':has(i.icon-reply'));
-      console.log(` [ DEBUG ] missingIconElements:`, missingIconElements);
 
+      // Copy the working reply button and add it to the missingIconElements
+      missingIconElements.each(async (index, element) => {
 
-      return;
-      const allIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
+        // Clone working IconControl and remove potential '<a>' element whose child element has 'i.icon-trash'
+        const $replyIconControlClone = $firstWorkingReplyIconControl.clone();
+        $replyIconControlClone.find('a:has(i.icon-trash)').remove();
 
+        const $replyIconCloneHref = $replyIconControlClone.find('a');  // TODO: not trash
+        const $userTitle = element.closest('.article-content').querySelector('a.user-title-name');
 
+        const username = $userTitle.text;
+        const userId = $userTitle.href.split("/")[4].split("-")[0]
+        const postId = element.closest('article').getAttribute('id').split('-')[2];
 
-      // Get all icon elements that are empty (no reply button) but can have trash button
-      const emptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '' || $(element).find('i.icon-trash').length !== 0);
-      // console.log("emptyIconElements", emptyIconElements);
-      const nonEmptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") !== '' && $(element).find('i.icon-trash').length === 0);
-      // console.log("nonEmptyIconElements", nonEmptyIconElements);
-      const firstNonEmptyIconElement = nonEmptyIconElements[0].firstElementChild;
-      const lastNonEmptyIconElement = nonEmptyIconElements[nonEmptyIconElements.length - 1].firstElementChild;
-
-      async function replaceWithWorkingReplyIcon(iconElementClone, element) {
-        // // Delete current element (non-functional reply button)
-        // iconElementClone.remove();
-        // // Get last working icon
-        // const allIcons = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
-        // const allWorkingIcons = Array.from(allIcons).filter((element) => element.innerHTML.replace(/\n|\t/g, "") !== '' && $(element).find('i.icon-trash').length === 0);
-        // const lastWorkingIcon = allWorkingIcons[allWorkingIcons.length - 1].firstElementChild;
-        // const LastWorkingIconParent = lastWorkingIcon.parentElement;
-        // // Move last element from allWorkingIcons to the current element
-        // element.appendChild(lastWorkingIcon);
-        // // Move iconElementClone to the LastWorkingIconParent
-        // LastWorkingIconParent.appendChild(lastWorkingIcon);
-
-        const userTitleLink = element.parentElement.parentElement.querySelector('h3.user-title a');
-        const userTitleHref = userTitleLink.href;
-        // Get 78145 from https://www.csfd.cz/uzivatel/78145-songokussj/
-        const userId = userTitleHref.split("/")[4].split("-")[0];  // TODO - use regex
-        console.log("userId", userId);
-      }
-
-      async function copyCloneIcon(element) {
-        const iconElementClone = lastNonEmptyIconElement.cloneNode(true);
-        iconElementClone.addEventListener('click', (event) => {
-          replaceWithWorkingReplyIcon(iconElementClone, element);
+        $replyIconCloneHref.attr({
+          'data-nick': username,
+          'data-id': userId,
+          'data-post': postId,
         });
-        element.appendChild(iconElementClone);
-        const href = element.querySelector('a.reply-add');
-        href.setAttribute('data-id', '0')
-        href.setAttribute('data-nick', '-')
-        href.setAttribute('data-post', '0');
-      }
 
-      // Add non-functional reply button to all empty icon elements
-      for (const element of emptyIconElements) {
+        const $replyIconClone = $replyIconControlClone.find('i.icon-reply');
+        $replyIconClone.on('click', () => {
+          const $originalHref = $firstWorkingReplyIconControl.find('a');
 
-        // If the element is empty, add the reply button
-        if (element.innerHTML.replace(/\n|\t/g, "") === '') {
-          await copyCloneIcon(element);
-        }
-        continue;
+          // Save original state
+          const originalState = {
+            'data-nick': $originalHref.attr('data-nick'),
+            'data-id': $originalHref.attr('data-id'),
+            'data-post': $originalHref.attr('data-post'),
+          };
 
-        // Copy iconElement and append after the trash bin
-        const customReplyElement = firstNonEmptyIconElement.cloneNode(true);
-        const customReplyElementClone = firstNonEmptyIconElement.cloneNode(true);
-        // customReplyElementClone.addEventListener('click', () => {
-        //   console.log("customReplyElementClone clicked");
-        // });
+          // Edit the working reply button to contain the correct data
+          $originalHref.attr({
+            'data-nick': username,
+            'data-id': userId,
+            'data-post': postId,
+          });
 
-        element.appendChild(customReplyElement);
+          // Trigger the click on the working reply button
+          $originalHref.find('i.icon-reply').trigger('click');
 
-        // On click of the reply button, copy the element from the first non-empty icon element
-        customReplyElement.addEventListener('click', (event) => {
-          // Check if element has event listener
-          if (customReplyElementClone.hasEventListener) {
-            console.log("Has event listener");
-            return;
-          }
-          console.log("Does not have event listener");
-          // return;
-
-          // Delete current element (non-functional reply button)
-          customReplyElement.remove();
-
-          // Get firstNonEmptyIconElement parent
-          const firstNonEmptyIconElementParentElement = firstNonEmptyIconElement.parentElement;
-
-          // Move first element from nonEmptyIconElements to the current element
-          element.appendChild(firstNonEmptyIconElement);
-
-          // Move customReplyElement to the firstNonEmptyIconElementParentElement
-          firstNonEmptyIconElementParentElement.appendChild(customReplyElementClone);
-
-          // Update attributes: data-id, data-nick, data-post
-          const href = element.querySelector('a.reply-add');
-          if (href !== null) {
-
-            // Get h3.user-title
-            const userTitleLink = element.parentElement.parentElement.querySelector('h3.user-title a');
-            const userTitleHref = userTitleLink.href;
-
-            // Get 78145 from https://www.csfd.cz/uzivatel/78145-songokussj/
-            const userId = userTitleHref.split("/")[4].split("-")[0];  // TODO - use regex
-            href.setAttribute('data-id', userId)
-
-            const userTitleUsername = userTitleLink.innerHTML;
-            href.setAttribute('data-nick', userTitleUsername)
-
-            const article = element.closest('article');
-            const articleId = article.getAttribute('id');
-            const articleIdNumber = articleId.split('-')[2];
-            href.setAttribute('data-post', articleIdNumber);
-          }
-          // Fire click event on the firstNonEmptyIconElement
-          firstNonEmptyIconElement.click();
+          // Return the working reply button to its original state
+          $originalHref.attr({
+            'data-nick': originalState['data-nick'],
+            'data-id': originalState['data-id'],
+            'data-post': originalState['data-post'],
+          });
         });
-      }
+
+        $(element).append($replyIconCloneHref);
+      });
     }
   }
 
