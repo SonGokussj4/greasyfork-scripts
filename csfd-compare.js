@@ -173,8 +173,8 @@ async function onHomepage() {
     }
 
     /**
-     *
-     * @returns {string} - User URL (e.g. /uzivatel/123456-adam-strong/)
+     * @async
+     * @returns {Promise<string>} - User URL (e.g. /uzivatel/123456-adam-strong/)
      */
     async getCurrentUser() {
       let loggedInUser = $('.profile.initialized').attr('href');
@@ -2319,7 +2319,23 @@ async function onHomepage() {
      * This is done to prevent the page from reloading when clicking on the icon.
      */
     async addChatReplyButton() {
+      console.debug(` [ DEBUG ] addChatReplyButton()`);
+
+      // Get all divs with class 'icon-control' containing <i> with class 'icon-reply' in them (working reply buttons)
+      const replyIconElements = $('.icon-control:has(i.icon-reply)');
+      // const replyIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control > a > i.icon-reply');
+      // const replyIconElements = document.querySelectorAll('.icon-control:has(i.icon-reply)');
+      console.log(` [ DEBUG ] replyIconElements:`, replyIconElements);
+
+      // const missingIconElements = document.querySelectorAll('.icon-control:not(i.icon-reply)');
+      const missingIconElements = $('.icon-control').not($(':has(i.icon-reply'));
+      console.log(` [ DEBUG ] missingIconElements:`, missingIconElements);
+
+
+      return;
       const allIconElements = document.querySelectorAll('div.article-content.article-content-icons > .icon-control');
+
+
 
       // Get all icon elements that are empty (no reply button) but can have trash button
       const emptyIconElements = Array.from(allIconElements).filter((element) => element.innerHTML.replace(/\n|\t/g, "") === '' || $(element).find('i.icon-trash').length !== 0);
