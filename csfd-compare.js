@@ -243,7 +243,7 @@ async function onHomepage() {
      * - normally rated (user clicked on rating)
      * - and computed ratings (not shown in user ratings)
      *
-     * @returns {Object<string, number>} `{ computed: int, rated: int }`
+     * @returns {Promise<Object<string, number>>} `{ computed: int, rated: int }`
      */
     async getLocalStorageRatingsCount() {
       const ratings = await this.getLocalStorageRatings();
@@ -935,9 +935,8 @@ async function onHomepage() {
         "class": 'csfd-compare-reload',
         html: `
                     <center>
-                        <b> >> NOVE HODNOCENI << </b> <br />
-                        Uložené: ${ratingsInLS} / ${curUserRatings} <br />
-                        <small>( Vypočtené: ${computedRatings} )</small>
+                        <b> >> Načíst hodnocení (new) << </b> <br />
+                        Uložené: ${ratingsInLS} / ${curUserRatings} <small>( Vypočtené: ${computedRatings} )</small>
                     </center>
                 `,
       }).css({
@@ -957,7 +956,7 @@ async function onHomepage() {
       const forceUpdate = ratingsInLS > curUserRatings ? true : false;
 
       $($button).on("click", async function () {
-        console.log("refreshing ratings");
+        console.debug("refreshing ratings");
         const csfd = new Csfd($('div.page-content'));
         csfd.newRefreshAllRatings(csfd, forceUpdate);
       });
@@ -1667,7 +1666,7 @@ async function onHomepage() {
       // Stop timer
       const end = performance.now();
       const time = (end - start) / 1000;
-      console.log(`Time: ${time} seconds`);
+      console.debug(`Time: ${time} seconds`);
 
       // refresh page
       // location.reload();
@@ -2473,7 +2472,7 @@ async function onHomepage() {
       computedRatingsInLocalStorage = computed;
       currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
-        csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
+        // csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
         csfd.newRefreshButton(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.addWarningToUserProfile();
       } else {
