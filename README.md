@@ -14,6 +14,7 @@
   - Přidána tlačítla pro reset nastavení a reset přidaných filmů ([#16](../../issues/16))
   - V CC menu jsou nyní obrázkové nápovědy v sekci Film/Seriál ([#4](../../issues/4))
   - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
+    - ! OMEZENÍ: 1) nelze pak reagovat na první příspěvek, 2) nelze reagovat na více "svých" příspěvků najednou
 
 > **v0.5.12** _(2022-10-xx)_  
 
