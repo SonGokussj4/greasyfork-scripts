@@ -12,8 +12,8 @@
 - NEW
   - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
   - Přidána tlačítla pro reset nastavení a reset přidaných filmů ([#16](../../issues/16))
-  - V CC menu jsou nyní obrázkové nápovědy v sekci Film/Seriál
-  - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele
+  - V CC menu jsou nyní obrázkové nápovědy v sekci Film/Seriál ([#4](../../issues/4))
+  - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
 
 > **v0.5.12** _(2022-10-xx)_  
 
