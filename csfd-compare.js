@@ -203,8 +203,8 @@ async function onHomepage() {
     }
 
     /**
-     *
-     * @returns {string} - Username (e.g. adam-strong)
+     * @async
+     * @returns {Promise<string>} - Username (e.g. adam-strong)
      */
     async getUsername() {
       const userHref = await this.getCurrentUser();
