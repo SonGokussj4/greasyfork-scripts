@@ -1899,18 +1899,22 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel">
                                 <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
                                 <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/N1JuzYk.png", "Zobrazení tlačítka pro odeslání zprávy")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
-                            </div>
-                            <div class="article-content">
+                                ${csfd.helpImageComponent("https://i.imgur.com/vbnFpEU.png", "Zobrazení tlačítka pro přidání/odebrání z oblíbených")}
+                                </div>
+                                <div class="article-content">
                                 <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
                                 <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/cDX0JaX.png", "Přidá sloupec pro porovnání hodnocení s mými hodnoceními")}
                             </div>
                         </section>
                     </article>
