@@ -1961,6 +1961,7 @@ async function onHomepage() {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line" ${disabled}>
                                 <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/IPXzclo.png", "Donutí zobrazit název filmu na jeden řádek")}
                             </div>
                         </section>
                     </article>
