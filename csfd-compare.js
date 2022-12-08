@@ -247,9 +247,10 @@ async function onHomepage() {
      */
     async getLocalStorageRatingsCount() {
       const ratings = await this.getLocalStorageRatings();
+      console.log("[ DEBUG ] getLocalStorageRatingsCount(): ratings: ", ratings);
       const computedCount = Object.values(ratings).filter(rating => rating.computed).length;
       const ratedCount = Object.keys(ratings).length - computedCount;
-
+      console.log("[ DEBUG ] Returning computedCount: " + computedCount + ", ratedCount: " + ratedCount + "");
       return {
         computed: computedCount,
         rated: ratedCount,
@@ -960,6 +961,10 @@ async function onHomepage() {
         const csfd = new Csfd($('div.page-content'));
         csfd.newRefreshAllRatings(csfd, forceUpdate);
       });
+    }
+
+    async badgesComponent(ratingsInLS, curUserRatings, computedRatings) {
+      return "<b>ahoj</b>";
     }
 
     displayMessageButton() {
@@ -1819,6 +1824,7 @@ async function onHomepage() {
       }
 
       let button = document.createElement('li');
+      button.classList.add('active');  // TODO: Debug
       let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
 
       // Add box-id attribute to .box-header(s)
@@ -1849,12 +1855,25 @@ async function onHomepage() {
                 `);
       });
 
+      const { computed_ratings, rated_ratings } = await this.getLocalStorageRatingsCount();
+      const current_ratings = await this.getCurrentUserRatingsCount2();
+
       button.innerHTML = `
                 <a href="javascript:void()" class="user-link initialized csfd-compare-menu">CC</a>
                 <div class="dropdown-content notifications" style="${dropdownStyle}">
 
                     <div class="dropdown-content-head csfd-compare-settings">
-                        <h2>CSFD-Compare nastavení</h2>
+
+                        <h2>CSFD-Compare</h2>
+
+                        <span class="badge" style="margin-left: 10px; font-size: 0.7rem; background-color: #aa2c16; color: white; padding: 2px 4px; border-radius: 6px;">
+                            ${rated_ratings} / ${current_ratings}
+                        </span>
+
+                        <span class="badge" style="margin-left: 10px; font-size: 0.7rem; background-color: #393939; color: white; padding: 2px 4px; border-radius: 6px;">
+                            ${computed_ratings}
+                        </span>
+
                         <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">
                             <a id="script-version" href="${GREASYFORK_URL}">${VERSION}</a>
                         </span>
@@ -2037,24 +2056,24 @@ async function onHomepage() {
       });
 
       // Don't hide settings popup when mouse leaves within interval of 0.2s
-      let timer;
-      $(button).on("mouseover", function () {
-        if (timer) {
-          clearTimeout(timer);
-          timer = null;
-        }
-        if (!$(button).hasClass("active")) {
-          $(button).addClass("active");
-        }
-      });
+      // let timer;
+      // $(button).on("mouseover", function () {
+      //   if (timer) {
+      //     clearTimeout(timer);
+      //     timer = null;
+      //   }
+      //   if (!$(button).hasClass("active")) {
+      //     $(button).addClass("active");
+      //   }
+      // });
 
-      $(button).on("mouseleave", function () {
-        if ($(button).hasClass("active")) {
-          timer = setTimeout(() => {
-            $(button).removeClass("active");
-          }, 200);
-        }
-      });
+      // $(button).on("mouseleave", function () {
+      //   if ($(button).hasClass("active")) {
+      //     timer = setTimeout(() => {
+      //       $(button).removeClass("active");
+      //     }, 200);
+      //   }
+      // });
 
       $(button).find("#btnResetSettings").on("click", async function () {
         console.debug("Resetting 'CSFD-Compare-settings' settings...");
@@ -2479,6 +2498,7 @@ async function onHomepage() {
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
         // csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
         csfd.newRefreshButton(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
+        csfd.badgesComponent(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.addWarningToUserProfile();
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
