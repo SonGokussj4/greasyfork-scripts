@@ -50,6 +50,27 @@ let defaultSettings = {
 };
 
 
+class Api {
+
+  async getCurrentPageRatings(url) {
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json, text/plain, */*',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        Ids: [9499, 563036, 123],
+      }),
+    });
+    console.log("response", response);
+    const data = await response.json();
+    console.log("data", data);
+    return data;
+  }
+}
+
 /**
  * Check if settings are valid. If not, reset them.
  * Return either unmodified or modified settings
@@ -2631,28 +2652,28 @@ async function onHomepage() {
       await csfd.checkAndUpdateRatings();
     }
 
-    // Ratings DB - check if number of ratings saved and current are the same
-    if (settings.compareUserRatings || settings.addStars) {
+    // // Ratings DB - check if number of ratings saved and current are the same
+    // if (settings.compareUserRatings || settings.addStars) {
 
-      // let spanContent = { html: "✔️", title: "Přenačíst všechna hodnocení" };
-      // if (ratingsInLocalStorage !== currentUserRatingsCount) {
-      //   spanContent = { html: "⚠️", title: "Nejsou načtena všechna hodnocení! \nPřenačíst VŠECHNA hodnocení" };
-      // }
+    //   let spanContent = { html: "✔️", title: "Přenačíst všechna hodnocení" };
+    //   if (ratingsInLocalStorage !== currentUserRatingsCount) {
+    //     spanContent = { html: "⚠️", title: "Nejsou načtena všechna hodnocení! \nPřenačíst VŠECHNA hodnocení" };
+    //   }
 
-      const $span = $("<span>", spanContent).css({ cursor: "pointer" });
-      $span.on("click", async function () {
-        let csfd = new Csfd($('div.page-content'));
-        csfd.refreshAllRatings(csfd, true);
-      });
-      // OK or WARN icon for compareUserRatings
-      if (settings.compareUserRatings) {
-        $('#chkCompareUserRatings').parent().append($span.clone(true));
-      }
-      // OK or WARN icon for addStars
-      if (settings.addStars) {
-        $('#chkAddStars').parent().append($span.clone(true));
-      }
-    }
+    //   const $span = $("<span>", spanContent).css({ cursor: "pointer" });
+    //   $span.on("click", async function () {
+    //     let csfd = new Csfd($('div.page-content'));
+    //     csfd.refreshAllRatings(csfd, true);
+    //   });
+    //   // OK or WARN icon for compareUserRatings
+    //   if (settings.compareUserRatings) {
+    //     $('#chkCompareUserRatings').parent().append($span.clone(true));
+    //   }
+    //   // OK or WARN icon for addStars
+    //   if (settings.addStars) {
+    //     $('#chkAddStars').parent().append($span.clone(true));
+    //   }
+    // }
 
     // =================================
     // Page - Other User
@@ -2742,5 +2763,15 @@ async function onHomepage() {
 
   // Call TippyJs constructor
   await refreshTooltips();
+
+  // =================================
+  // TEST
+  // =================================
+  const api = new Api();
+  const url = 'https://csfdb.noirgoku.eu/api/v1/movies/byids/';
+  const res = await api.getCurrentPageRatings(url);
+  console.log("CURRENT PAGE RATINGS");
+  console.log(res);
+
 
 })();
