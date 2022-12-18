@@ -31,6 +31,7 @@ Vánoce se blíží, tak jsem připravil větší update.
   - Opraveno pár hraničních případů, kdy script celý spadl
   - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
   - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
+  - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
 
 > **v0.5.12** _(2022-10-xx)_  
 
