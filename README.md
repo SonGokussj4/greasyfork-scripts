@@ -9,12 +9,28 @@
 
 > **v0.6.0** _(2022-12-xx)_  
 
+Vánoce se blíží, tak jsem připravil větší update.
+
 - NEW
   - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
-  - Přidána tlačítla pro reset nastavení a reset přidaných filmů ([#16](../../issues/16))
-  - V CC menu jsou nyní obrázkové nápovědy v sekci Film/Seriál ([#4](../../issues/4))
+  - Přidána tlačítka pro `reset nastavení` a `reset přidaných filmů` ([#16](../../issues/16))
+  - V CC menu jsou nyní obrázkové nápovědy v sekci `Film/Seriál`, `Uživatelé` a `Herci` ([#4](../../issues/4))
   - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
-    - ! OMEZENÍ: 1) nelze pak reagovat na první příspěvek, 2) nelze reagovat na více "svých" příspěvků najednou
+    - ! OMEZENÍ:
+      1) nelze pak reagovat na první příspěvek
+      2) nelze reagovat na více "svých" příspěvků najednou
+  - CC menu je trochu přepracováno, aby šetřilo místo:
+    - Snížen padding, je to více na sobě
+    - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
+    - Počet načtených filmů je nyní zobrazeno v titulku
+  - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
+  - Přidáno nové načítání filmů, je to experimentální, dělá to víc stránek naráz
+    - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+- FIX
+  - Ukládání filmů by mělo být stabilnější
+  - Opraveno pár hraničních případů, kdy script celý spadl
+  - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
+  - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
 
 > **v0.5.12** _(2022-10-xx)_  
 

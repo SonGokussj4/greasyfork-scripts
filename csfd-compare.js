@@ -19,6 +19,8 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 
 const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
+const NUM_RATINGS_PER_PAGE = 50;  // Was 100, now it's 50...
+
 let defaultSettings = {
   // HOME PAGE
   hiddenSections: [],
@@ -221,21 +223,18 @@ async function onHomepage() {
     }
 
     getStars() {
-      if (localStorage[this.storageKey]) {
-        let stars = JSON.parse(localStorage[this.storageKey]);
-        return stars;
-      } else {
+      // TODO: remove this function and use getLocalStorageRatings() instead
+      if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
         return {};
       }
+      return JSON.parse(localStorage[this.storageKey]);
     }
 
     async getLocalStorageRatings() {
-      if (localStorage[this.storageKey]) {
-        let stars = JSON.parse(localStorage[this.storageKey]);
-        return stars;
-      } else {
+      if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
         return {};
       }
+      return JSON.parse(localStorage[this.storageKey]);
     }
 
     /**
@@ -930,21 +929,19 @@ async function onHomepage() {
       });
     }
 
-    async newRefreshButton(ratingsInLS, curUserRatings, computedRatings) {
+    async refreshButtonNew(ratingsInLS, curUserRatings) {
       const $button = $('<button>', {
         id: 'refr-ratings-button',
         "class": 'csfd-compare-reload',
-        html: `
-                    <center>
-                        <b> >> Načíst hodnocení (new) << </b> <br />
-                        Uložené: ${ratingsInLS} / ${curUserRatings} <small>( Vypočtené: ${computedRatings} )</small>
-                    </center>
-                `,
+        html: `<center>
+                 <b> >> Načíst hodnocení (new) << </b> <br />
+               </center>`,
       }).css({
         textTransform: "initial",
         fontSize: "0.9em",
         padding: "5px",
         border: "4px solid whitesmoke",
+        borderRadius: "8px",
         width: "-moz-available",
         width: "-webkit-fill-available",
         width: "100%",
@@ -954,16 +951,22 @@ async function onHomepage() {
       });
       $('.csfd-compare-settings').after($div);
 
-      const forceUpdate = ratingsInLS > curUserRatings ? true : false;
+      let forceUpdate = ratingsInLS > curUserRatings ? true : false;
 
       $($button).on("click", async function () {
         console.debug("refreshing ratings");
         const csfd = new Csfd($('div.page-content'));
-        csfd.newRefreshAllRatings(csfd, forceUpdate);
+        if (forceUpdate === true) {
+          if (!confirm(`Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`)) {
+            forceUpdate = false;
+          }
+        }
+        csfd.refreshAllRatingsNew(csfd, forceUpdate);
       });
     }
 
     async badgesComponent(ratingsInLS, curUserRatings, computedRatings) {
+      // TODO" Tohle už teď bude fungovat, jen to zakomponovat...
       return "<b>ahoj</b>";
     }
 
@@ -1309,9 +1312,73 @@ async function onHomepage() {
       return dict;
     }
 
-    async newGetAllPages(force = false) {
-      const chunkSize = 10;
+    async doSomethingNew(url) {
+      let data = await $.get(url);
+      const $rows = $(data).find('#snippet--ratings tr');
 
+      let dc = {};
+      const parentIds = [];
+      const seriesIds = [];
+
+      // Process each row of the rating page
+      // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
+      for (const $row of $rows) {
+
+        const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
+        const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+
+        const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
+          csfd.getShowType(filmInfo),
+          csfd.getShowYear(filmInfo),
+          csfd.getParentNameFromUrl(name),
+          csfd.getMovieIdParentIdFromUrl(name),
+        ]);
+
+        // If the show is a SEASON, it's parent is a SERIES and ID is in the URL
+        if (showType === 'season') {
+          // If parentId is not in parentIds, add it to the list
+          if (!parentIds.includes(parentName)) {
+            // console.debug(`[ DEBUG ] Adding parentName to [PARENT Ids]: ${parentName}`);
+            parentIds.push(parentName);
+          }
+        }
+        // If the show is a EPISODE, it's parent is a SEASON but the ID is not in the URL
+        // We need to get the ID from the parentName (SERIES) content and then grab the SEASON IDs there
+        else if (showType === 'episode') {
+          // If parentId is not in parentIds, add it to the list
+          if (!seriesIds.includes(parentName)) {
+            // console.debug(`[ DEBUG ] Adding parentName to [SERIES Ids]: ${parentName}`);
+            parentIds.push(parentName);
+            seriesIds.push(parentName);
+          }
+        }
+
+        // Get the RATING from the stars and the DATE
+        const $ratings = $($row).find('span.stars');
+        const rating = await csfd.getStarCountFromSpanClass($ratings);
+        const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
+
+        dc[movieId] = {
+          'url': name,
+          'fullUrl': location.origin + name,
+          'rating': rating,
+          'date': date,
+          'type': showType,
+          'year': showYear,
+          'parentName': parentName,
+          'parentId': parentId,
+          'computed': false,
+          'computedCount': "",
+          'computedFromText': "",
+          'lastUpdate': this.getCurrentDateTime(),
+        };
+
+      }
+
+      return dc;
+    }
+
+    async newGetAllPages(force = false) {
       const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
       const $content = await $.get(url);
       const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
@@ -1325,7 +1392,33 @@ async function onHomepage() {
         allUrls.push(url);
       }
 
-      // Divide the urls into chunks of 10 (to not overload the browser)
+      const savedRatingsCount = Object.keys(this.stars).length;
+
+      // If we don't have any ratings saved, load them all in chunks
+      if (savedRatingsCount !== 0) {
+        console.log(`Načíst jen chybějící hodnocení...`);
+
+        let dict = this.stars;
+        let ls = force ? [] : [dict];
+        for (let idx = 1; idx <= maxPageNum; idx++) {
+          console.log(`[ DEBUG ] iterating over idx <= ${maxPageNum}`);
+
+          // if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
+          if (!force) if (Object.keys(dict).length === 250) break;
+          console.log(`Načítám hodnocení ${idx}/${maxPageNum} stránek`);
+          Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum} stránek`, 1, 200, 0);
+          const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
+          const res = await this.doSomethingNew(url);
+          ls.push(res);
+          if (!force) dict = await mergeDict(ls);
+        }
+        if (force) dict = await mergeDict(ls);
+        return dict;
+      }
+
+      const chunkSize = 5;
+
+      // Divide the urls into chunks of X (to not overload the browser)
       const chunks = [];
       while (allUrls.length) {
         chunks.push(allUrls.splice(0, chunkSize));
@@ -1333,14 +1426,17 @@ async function onHomepage() {
 
       Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
 
+      // TODO: Debug
+      // const limitedChunks = chunks.slice(0, 1);
+
       // Load the chunks in parallel
-      const contents = []
+      let contents = [];
       let chunkDone = 0;
       for (const chunk of chunks) {
-        Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * 50}/${this.userRatingsCount}`, 5, 200, 0);
+        Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * NUM_RATINGS_PER_PAGE}/${this.userRatingsCount}`, 5, 200, 0);
         const content = await Promise.all(chunk.map(url => $.get(url)));
         contents.push(content);
-        chunkDone += chunk.length * 50;
+        chunkDone += chunk.length * NUM_RATINGS_PER_PAGE;
       }
 
       // Process the content of each rating page
@@ -1660,12 +1756,13 @@ async function onHomepage() {
       location.reload();
     }
 
-    async newRefreshAllRatings(csfd, force = false) {
+    async refreshAllRatingsNew(csfd, force = false) {
       // Start timer
       const start = performance.now();
 
       await csfd.initializeClassVariables();
       csfd.stars = await this.newGetAllPages(force);
+
       this.exportRatings();
 
       // Stop timer
@@ -1676,7 +1773,7 @@ async function onHomepage() {
       // refresh page
       // location.reload();
 
-      // Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
+      Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
     }
 
     async removableHomeBoxes() {
@@ -1797,11 +1894,11 @@ async function onHomepage() {
 
     settingsPanelComponent() {
       const $div = $(`
-        <article class="article">
+        <article class="article" style="padding: 5px 10px;">
           <section>
             <div class="article-section">
-              <button id="btnResetSettings" class="settings-button" title="Resetuje uložená nastavení (NE hodnocení)">Reset nastavení</button>
-              <button id="btnRemoveSavedRatings" class="settings-button" title="Smaže všechna uložená hodnocení!">Smazat uložená hodnocení</button>
+              <button id="btnResetSettings" class="settings-button" style="border-radius: 4px;" title="Resetuje uložená nastavení (NE hodnocení)">Reset nastavení</button>
+              <button id="btnRemoveSavedRatings" class="settings-button" style="border-radius: 4px;" title="Smaže všechna uložená hodnocení!">Smazat uložená hodnocení</button>
             </div>
           </section>
         </article>
@@ -1811,7 +1908,7 @@ async function onHomepage() {
     }
 
     async addSettingsPanel() {
-      let dropdownStyle = 'right: 150px; width: max-content;';
+      let dropdownStyle = 'right: 150px; width: max-content; max-width: 370px;';
       let disabled = '';
       let needToLoginTooltip = '';
       let needToLoginStyle = '';
@@ -1855,7 +1952,7 @@ async function onHomepage() {
                 `);
       });
 
-      const { computed_ratings, rated_ratings } = await this.getLocalStorageRatingsCount();
+      const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
       const current_ratings = await this.getCurrentUserRatingsCount2();
 
       button.innerHTML = `
@@ -1866,11 +1963,11 @@ async function onHomepage() {
 
                         <h2>CSFD-Compare</h2>
 
-                        <span class="badge" style="margin-left: 10px; font-size: 0.7rem; background-color: #aa2c16; color: white; padding: 2px 4px; border-radius: 6px;">
+                        <span class="badge" id="cc-control-panel-rating-count" title="Počet načtených/celkových červených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #aa2c16; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
                             ${rated_ratings} / ${current_ratings}
                         </span>
 
-                        <span class="badge" style="margin-left: 10px; font-size: 0.7rem; background-color: #393939; color: white; padding: 2px 4px; border-radius: 6px;">
+                        <span class="badge" id="cc-control-panel-computed-count" title="Počet načtených vypočtených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #393939; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
                             ${computed_ratings}
                         </span>
 
@@ -1881,7 +1978,7 @@ async function onHomepage() {
 
                     ${csfd.settingsPanelComponent()}
 
-                    <article class="article">
+                    <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">Domácí stránka - skryté panely</h2>
                         <section>
                             <div class="article-content">
@@ -1890,7 +1987,7 @@ async function onHomepage() {
                         </section>
                     </article>
 
-                    <article class="article">
+                    <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">Globální</h2>
                         <section>
                             <div class="article-content">
@@ -1912,7 +2009,7 @@ async function onHomepage() {
                         </section>
                     </article>
 
-                    <article class="article">
+                    <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">Uživatelé</h2>
                         <section>
                             <div class="article-content">
@@ -1938,7 +2035,7 @@ async function onHomepage() {
                         </section>
                     </article>
 
-                    <article class="article">
+                    <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">Film/Seriál</h2>
                         <section>
                             <div class="article-content">
@@ -1978,7 +2075,7 @@ async function onHomepage() {
                         </section>
                     </article>
 
-                    <article class="article">
+                    <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">Herci</h2>
                         <section>
                             <div class="article-content">
@@ -1989,7 +2086,7 @@ async function onHomepage() {
                         </section>
                     </article>
 
-                    <article class="article">
+                    <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">!! Experimentální !!</h2>
                         <section>
                           <div class="article-content">
@@ -2317,6 +2414,17 @@ async function onHomepage() {
       this.stars = this.getStars();
     }
 
+    async updateControlPanelRatingCount() {
+      const { computed, rated } = await csfd.getLocalStorageRatingsCount();
+      const current_ratings = await this.getCurrentUserRatingsCount2();
+
+      const $ratingsSpan = $('#cc-control-panel-rating-count');
+      const $computedSpan = $('#cc-control-panel-computed-count');
+
+      $ratingsSpan.text(`${rated} / ${current_ratings}`);
+      $computedSpan.text(`${computed}`);
+    }
+
     /**
      * For some reason, IMDb button to link current film does not have icon. This function adds it.
      *
@@ -2474,8 +2582,11 @@ async function onHomepage() {
   // =================================
   if (await csfd.isLoggedIn()) {
 
+
     // Global settings without category
     await csfd.initializeClassVariables();
+    // Update user ratings count
+    await csfd.updateControlPanelRatingCount();
 
     // =================================
     // Page - Diskuze
@@ -2497,7 +2608,7 @@ async function onHomepage() {
       currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
         // csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
-        csfd.newRefreshButton(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
+        csfd.refreshButtonNew(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.badgesComponent(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.addWarningToUserProfile();
       } else {
@@ -2524,10 +2635,10 @@ async function onHomepage() {
     // Ratings DB - check if number of ratings saved and current are the same
     if (settings.compareUserRatings || settings.addStars) {
 
-      let spanContent = { html: "✔️", title: "Přenačíst všechna hodnocení" };
-      if (ratingsInLocalStorage !== currentUserRatingsCount) {
-        spanContent = { html: "⚠️", title: "Nejsou načtena všechna hodnocení! \nPřenačíst VŠECHNA hodnocení" };
-      }
+      // let spanContent = { html: "✔️", title: "Přenačíst všechna hodnocení" };
+      // if (ratingsInLocalStorage !== currentUserRatingsCount) {
+      //   spanContent = { html: "⚠️", title: "Nejsou načtena všechna hodnocení! \nPřenačíst VŠECHNA hodnocení" };
+      // }
 
       const $span = $("<span>", spanContent).css({ cursor: "pointer" });
       $span.on("click", async function () {
