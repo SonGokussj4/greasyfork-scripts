@@ -1421,11 +1421,12 @@ async function onHomepage() {
         let ls = force ? [] : [dict];
         for (let idx = 1; idx <= maxPageNum; idx++) {
           console.log(`[ DEBUG ] iterating over idx <= ${maxPageNum}`);
+          const onlyRated = Object.values(dict).filter((item) => item.computed === false);
+          if (!force) if (onlyRated.length >= this.userRatingsCount) break;
 
-          // if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
-          if (!force) if (Object.keys(dict).length === 250) break;
           console.log(`Načítám hodnocení ${idx}/${maxPageNum} stránek`);
           Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum} stránek`, 1, 200, 0);
+
           const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
           const res = await this.doSomethingNew(url);
           ls.push(res);
