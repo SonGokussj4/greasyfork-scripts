@@ -12,7 +12,7 @@
 // ==/UserScript==
 
 
-const VERSION = 'v0.5.12';
+const VERSION = 'v0.6.0';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
