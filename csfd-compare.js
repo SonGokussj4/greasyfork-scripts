@@ -2031,20 +2031,19 @@ async function onHomepage() {
                         <h2 class="article-header">Globální</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
-                                <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší</label>
-                            </div>
-                            <div class="article-content">
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Boxy s tlačítkem "VÍCE" jsou klikatelné celé</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/8AwhbGK.png", "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítka "více...")</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/ettGHsH.png", "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
                                 <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů/seriálů</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/aTrSU2X.png", "Přidá hvězdy hodnocení u viděných filmů/seriálů")}
                             </div>
                         </section>
                     </article>
@@ -2053,24 +2052,29 @@ async function onHomepage() {
                         <h2 class="article-header">Uživatelé</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel">
-                                <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
-                                </div>
-                                <div class="article-content">
-                                <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
-                                <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/N1JuzYk.png", "Zobrazení tlačítka pro odeslání zprávy")}
-                                </div>
-                                <div class="article-content">
-                                <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
-                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/vbnFpEU.png", "Zobrazení tlačítka pro přidání/odebrání z oblíbených")}
-                                </div>
-                                <div class="article-content">
+                                <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
+                                <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/N2hfkZ6.png", "Otevřít ovládací panel přejetím myší")}
+                            </div>
+                            <div class="article-content">
                                 <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
                                 <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
                                 ${csfd.helpImageComponent("https://i.imgur.com/cDX0JaX.png", "Přidá sloupec pro porovnání hodnocení s mými hodnoceními")}
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel">
+                                <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
+                                <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/N1JuzYk.png", "Zobrazení tlačítka pro odeslání zprávy")}
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
+                                <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
+                                ${csfd.helpImageComponent("https://i.imgur.com/vbnFpEU.png", "Zobrazení tlačítka pro přidání/odebrání z oblíbených")}
                             </div>
                         </section>
                     </article>
@@ -2626,6 +2630,9 @@ async function onHomepage() {
 
     // Global settings without category
     await csfd.initializeClassVariables();
+
+    csfd.checkForOldLocalstorageRatingKeys();
+
     // Update user ratings count
     await csfd.updateControlPanelRatingCount();
 
