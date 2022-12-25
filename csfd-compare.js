@@ -529,6 +529,26 @@ async function onHomepage() {
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
     }
 
+    async checkForOldLocalstorageRatingKeys() {
+      console.log("Checking for old LocalStorage rating keys...")
+      const ratings = this.getStars();
+      const keys = Object.keys(ratings);
+      for (const key of keys) {
+        if (key.includes("/")) {
+          // Old key, inform user
+          alert(`
+            CSFD-Compare
+
+            Byl nalezen starý způsob ukládání hodnocení do LocalStorage!
+            Prosím, smažte staré hodnocení a znovu je nahrajte.
+
+            CC -> Smazat Uložená hodnocení`
+          );
+          return null;
+        }
+      }
+    }
+
     /**
      * $content should be URL with computed star ratings. Not manualy rated. \
      * Then, it will return dict with `computed stars` and text `"computed from episodes: X"`
