@@ -1924,9 +1924,9 @@ async function onHomepage() {
       const $span = $(`
                 <span class="help-hover-image"
                       data-description="${description}"
-                      data-img-url="${url}">💬</span>
+                      data-img-url="${url}"><a href="${url}" target="_blank">💬</a></span>
             `).css({
-        "cursor": "help",
+        "cursor": "pointer",
         "color": "rgba(255, 255, 255, 0.8)",
       })
       return $span.get(0).outerHTML;
@@ -2157,16 +2157,16 @@ async function onHomepage() {
         $("body").append(
           `<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`
         );
-        $("#image-when-hovering-text")
-          .css("position", "absolute")
-          .css("top", (e.pageY + 5) + "px")
-          .css("left", (e.pageX + 25) + "px")
-          .css("z-index", "9999")
-          .css("background-color", "white")
-          .css("padding", "5px")
-          .css("border", "1px solid #6a6a6a")
-          .css("border-radius", "5px")
-          .fadeIn("fast");
+        $("#image-when-hovering-text").css({
+          position: "absolute",
+          top: (e.pageY + 5) + "px",
+          left: (e.pageX + 25) + "px",
+          zIndex: "9999",
+          backgroundColor: "white",
+          padding: "5px",
+          border: "1px solid #6a6a6a",
+          borderRadius: "5px"
+        }).fadeIn("fast");
       }).on('mouseleave', function () {
         $("#image-when-hovering-text").remove();
       });
@@ -2563,6 +2563,7 @@ async function onHomepage() {
   // SCRIPT START
   // ============================================================================================
   await delay(20);  // Greasemonkey workaround, wait a little bit for page to somehow load
+  console.debug("CSFD-Compare - Script started")
   let csfd = new Csfd($('div.page-content'));
 
 
@@ -2795,11 +2796,11 @@ async function onHomepage() {
   // =================================
   // TEST
   // =================================
-  const api = new Api();
-  const url = 'https://csfdb.noirgoku.eu/api/v1/movies/byids/';
-  const res = await api.getCurrentPageRatings(url);
-  console.log("CURRENT PAGE RATINGS");
-  console.log(res);
+  // const api = new Api();
+  // const url = 'https://csfdb.noirgoku.eu/api/v1/movies/byids/';
+  // const res = await api.getCurrentPageRatings(url);
+  // console.log("CURRENT PAGE RATINGS");
+  // console.log(res);
 
 
 })();
