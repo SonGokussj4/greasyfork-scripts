@@ -26,6 +26,7 @@ Vánoce se blíží, tak jsem připravil větší update.
   - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
   - Přidáno nové načítání filmů, je to experimentální, dělá to víc stránek naráz
     - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+  - Dočasná vánoční výzdoba
 - FIX
   - Ukládání filmů by mělo být stabilnější
   - Opraveno pár hraničních případů, kdy script celý spadl

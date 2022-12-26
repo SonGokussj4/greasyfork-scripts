@@ -2003,6 +2003,9 @@ async function onHomepage() {
 
                         <h2>CSFD-Compare</h2>
 
+                        <img src="https://i.imgur.com/1A2fPca.png" style="width: 32px; height: 32px; position: absolute; left: -17px; top: -9px; opacity: 85%;" />
+                        <img src="https://i.imgur.com/1A2fPca.png" style="width: 32px; height: 32px; position: absolute; left: 340px; top: -9px; opacity: 85%;" />
+
                         <span class="badge" id="cc-control-panel-rating-count" title="Počet načtených/celkových červených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #aa2c16; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
                             ${rated_ratings} / ${current_ratings}
                         </span>
