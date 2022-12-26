@@ -7,10 +7,45 @@
 
 ## Changelog
 
-> **v0.5.12** _(2022-04-xx)_  
+> **v0.6.0** _(2022-12-xx)_  
+
+Vánoce se blíží, tak jsem připravil větší update.
 
 - NEW
-  - Snad obr. s nápovědou  
+  - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
+  - Přidána tlačítka pro `reset nastavení` a `reset přidaných filmů` ([#16](../../issues/16))
+  - V CC menu jsou nyní obrázkové nápovědy v sekci `Film/Seriál`, `Uživatelé` a `Herci` ([#4](../../issues/4))
+  - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
+    - ! OMEZENÍ:
+      1) nelze pak reagovat na první příspěvek
+      2) nelze reagovat na více "svých" příspěvků najednou
+  - CC menu je trochu přepracováno, aby šetřilo místo:
+    - Snížen padding, je to více na sobě
+    - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
+    - Počet načtených filmů je nyní zobrazeno v titulku
+  - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
+  - Přidáno nové načítání filmů, je to experimentální, dělá to víc stránek naráz
+    - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+  - Dočasná vánoční výzdoba
+- FIX
+  - Ukládání filmů by mělo být stabilnější
+  - Opraveno pár hraničních případů, kdy script celý spadl
+  - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
+  - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
+  - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
+  - Zobrazování prvků v CC menu pro nepřihlášené uživatele
+
+> **v0.5.12** _(2022-10-xx)_  
+
+- NEW
+  - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
+  - Přidána kapota nových informací do individuálně uložených dat v Local Storage
+- FIX
+  - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
+  - Opraveno zobrazování srovnání hodnocení u jiného uživatele
+
+> **v0.5.12** _(2022-10-01)_  
+
 - FIX
   - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
   - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  
