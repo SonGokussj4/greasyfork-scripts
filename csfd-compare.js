@@ -1956,7 +1956,7 @@ async function onHomepage() {
       if (!await this.isLoggedIn()) {
         dropdownStyle = 'right: 50px; width: max-content;';
         disabled = 'disabled';
-        needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení"`;
+        needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení do CSFD"`;
         needToLoginStyle = 'color: grey;';
       }
 
