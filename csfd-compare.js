@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ČSFD Compare
-// @version      0.5.12.1
+// @version      0.6.0
 // @namespace    csfd.cz
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
@@ -92,13 +92,15 @@ async function checkSettingsValidity(settings, settingsName) {
     if (!isArray || !keysValid) {
       settings = defaultSettings.hiddenSections;
       localStorage.setItem(SETTINGSNAME_HIDDEN_BOXES, JSON.stringify(settings));
-      return settings;
     }
   }
   return settings;
 }
 
-async function delay(t) {
+/**
+ * This function returns a promise that will resolve after "t" milliseconds
+ */
+function delay(t) {
   return new Promise(resolve => {
     setTimeout(resolve, t);
   });
@@ -175,19 +177,6 @@ async function onHomepage() {
       // Ignore the ads... Make 'hodnoceni' table wider.
       // TODO: Toto do hodnoceni!
       $('.column.column-80').attr('class', '.column column-90');
-    }
-
-    getEndPageNum(data) {
-      console.log("fn: getEndPageNum()");
-      let $pagination = $(data).find('.box-content').find('.box-more-bar').find('.pagination')[0];
-      let lastPageHref = $($pagination).find('a:nth-last-child(2)').attr('href');
-      let foundMatch = lastPageHref.match(new RegExp("page=(.*)$"));
-
-      let endPageNum = 0;
-      if (foundMatch.length == 2) {
-        endPageNum = parseInt(foundMatch[1]);
-      }
-      return endPageNum;
     }
 
     async isLoggedIn() {
@@ -393,7 +382,6 @@ async function onHomepage() {
     }
 
     getCurrentFilmComputedCount(content = null) {
-
       const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : content.find('li.current-user-rating');
       const countedText = $($curUserRating).find('span[title]').attr('title');
       // split by :
@@ -512,9 +500,6 @@ async function onHomepage() {
         });
     }
 
-    /**
-     * TODO: Documentation
-     */
     async fillMissingSettingsKeys() {
       let settings = await getSettings();
 
@@ -734,7 +719,7 @@ async function onHomepage() {
 
     }
 
-    async onOtherUserHodnoceniPage() {
+    async onPageOtherUserHodnoceni() {
       if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
         if (!location.href.includes(this.userUrl)) {
           return true;
@@ -743,7 +728,7 @@ async function onHomepage() {
       return false;
     }
 
-    async onOtherUserPage() {
+    async onPageOtherUser() {
       if (location.href.includes('/uzivatel/')) {
         if (!location.href.includes(this.userUrl)) {
           return true;
@@ -752,7 +737,7 @@ async function onHomepage() {
       return false;
     }
 
-    async onDiskuzePage() {
+    async onPageDiskuze() {
       if (location.href.includes('/diskuze/') || location.href.includes('/diskusie')) {
         return true;
       }
@@ -779,19 +764,13 @@ async function onHomepage() {
       localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
     }
 
-    importRatings() {
-      if (localStorage[this.storageKey]) {
-        this.stars = JSON.parse(localStorage[this.storageKey]);
-      }
-    }
-
     async addStars() {
       if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
         return;
       }
       let starsCss = { marginLeft: "5px" };
       // On UserPage or PersonalFavorite page, modify the CSS by adding solid red border outline
-      if (await this.onOtherUserPage() || await this.onPersonalFavorite()) {
+      if (await this.onPageOtherUser() || await this.onPersonalFavorite()) {
         starsCss = {
           marginLeft: "5px",
           borderWidth: "1px",
@@ -936,38 +915,6 @@ async function onHomepage() {
             `);
     }
 
-    async showRefreshRatingsButton(ratingsInLS, curUserRatings) {
-      const $button = $('<button>', {
-        id: 'refr-ratings-button',
-        "class": 'csfd-compare-reload',
-        html: `
-                    <center>
-                        <b> >> Načíst hodnocení << </b> <br>
-                        Uložené: ${ratingsInLS} / ${curUserRatings}
-                    </center>
-                `,
-      }).css({
-        textTransform: "initial",
-        fontSize: "0.9em",
-        padding: "5px",
-        border: "4px solid whitesmoke",
-        width: "-moz-available",
-        width: "-webkit-fill-available",
-        width: "100%",
-      });
-      const $div = $('<div>', {
-        html: $button,
-      });
-      $('.csfd-compare-settings').after($div);
-
-      const forceUpdate = ratingsInLS > curUserRatings ? true : false;
-
-      $($button).on("click", async function () {
-        const csfd = new Csfd($('div.page-content'));
-        csfd.refreshAllRatings(csfd, forceUpdate);
-      });
-    }
-
     async refreshButtonNew(ratingsInLS, curUserRatings) {
       const $button = $('<button>', {
         id: 'refr-ratings-button',
@@ -1080,10 +1027,10 @@ async function onHomepage() {
 
       let $div = $(`<div>`, { "class": 'link-to-image' })
         .css({
-          position: 'absolute',
-          right: '0px',
-          bottom: '0px',
-          display: 'none',
+          'position': 'absolute',
+          'right': '0px',
+          'bottom': '0px',
+          'display': 'none',
           'z-index': '999',
           'padding-left': '0.5em',
           'padding-right': '0.5em',
@@ -1132,9 +1079,7 @@ async function onHomepage() {
           let links = attributeText.split(',');
 
           for (const link of links) {
-
             const match = link.match(/[/]w(\d+)/);
-
             if (match !== null) {
               if (match.length === 2) {
                 const width = match[1];
@@ -1149,10 +1094,10 @@ async function onHomepage() {
 
           let $div = $(`<div>`, { "class": `link-to-image-gallery picture-idx-${pictureIdx}` })
             .css({
-              position: 'absolute',
-              right: '0px',
-              bottom: '0px',
-              display: 'none',
+              'position': 'absolute',
+              'right': '0px',
+              'bottom': '0px',
+              'display': 'none',
               'z-index': '999',
               'padding-left': '0.5em',
               'padding-right': '0.5em',
@@ -1185,7 +1130,7 @@ async function onHomepage() {
     }
 
     /**
-     * If film has been rated by user favorite people, make an averate and display it
+     * If film has been rated by user favorite people, make an average and display it
      * under the normal rating as: oblíbení: X %
      *
      * @returns null
@@ -1285,10 +1230,6 @@ async function onHomepage() {
      * @returns int in range 0-5
      */
     getNumberFromRatingSpan($span) {
-      // if ($span instanceof jQuery === false) {
-      //     $span = $($span)
-      // }
-
       // TODO: využít tuto funkci i při načítání hodnocení do LS
       let rating = 0;
       for (let stars = 0; stars <= 5; stars++) {
@@ -1310,46 +1251,6 @@ async function onHomepage() {
       this.showLinkToImageOnOtherGalleryImages();
     }
 
-    async doSomething(idx, url) {
-      let data = await $.get(url);
-      let $rows = $(data).find('#snippet--ratings tr');
-      let dc = {};
-      for (const $row of $rows) {
-        let name = $($row).find('td.name a').attr('href');
-        let $ratings = $($row).find('span.stars');
-        let rating = 0;
-        for (let stars = 0; stars <= 5; stars++) {
-          if ($ratings.hasClass('stars-' + stars)) {
-            rating = stars;
-          }
-        }
-        let date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-        dc[name] = { 'rating': rating, 'date': date };
-      }
-      return dc;
-      // web workers - vyšší dívčí - více vláken z browseru
-    }
-
-    async getAllPages(force = false) {
-      const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
-      const $content = await $.get(url);
-      const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
-      const maxPageNum = $href.text();
-      this.userRatingsCount = await this.getCurrentUserRatingsCount2();
-      let dict = this.stars;
-      let ls = force ? [] : [dict];
-      for (let idx = 1; idx <= maxPageNum; idx++) {
-        if (!force) if (Object.keys(dict).length === this.userRatingsCount) break;
-        console.log(`Načítám hodnocení ${idx}/${maxPageNum}`);
-        Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum}`, 1, 200, 0);
-        const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
-        const res = await this.doSomething(idx, url);
-        ls.push(res);
-        if (!force) dict = await mergeDict(ls);
-      }
-      if (force) dict = await mergeDict(ls);
-      return dict;
-    }
 
     async doSomethingNew(url) {
       let data = await $.get(url);
@@ -1411,13 +1312,11 @@ async function onHomepage() {
           'computedFromText': "",
           'lastUpdate': this.getCurrentDateTime(),
         };
-
       }
-
       return dc;
     }
 
-    async newGetAllPages(force = false) {
+    async getAllPagesNew(force = false) {
       const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
       const $content = await $.get(url);
       const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
@@ -1551,66 +1450,6 @@ async function onHomepage() {
         // TODO: Load computed ratings
         return dc;
       }
-
-      // Remove parentId from parentsIds if parentId in dc
-      for (const parentName of parentIds) {
-        if (parentName in dc) {
-          parentIds.splice(parentIds.indexOf(parentName), 1);
-        }
-      }
-
-      // Process the parentIds to get the SERIES ratings
-      let computedIdx = 1;
-      for (const parentName of parentIds) {
-
-        const parentId = await csfd.getMovieIdFromHref(parentName);
-        const parentUrl = location.origin + parentName;
-
-        let parentContent = await $.get(parentUrl);
-        if (parentContent.redirect !== undefined) {
-          parentContent = await $.get(parentContent.redirect);
-        }
-        const $parentContent = $(parentContent);
-
-        Glob.popup(`Načítám vypočtená hodnocení... ${computedIdx}/${parentIds.length}`, 5, 200, 0);
-        const { rating, computedFrom, computed } = await this.getCurrentFilmRating($parentContent);
-        // const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
-
-        dc[parentId] = {
-          'url': parentName,
-          'fullUrl': location.origin + parentName,
-          'rating': rating,
-          'date': "",
-          'type': "series",
-          'year': null,
-          'parentName': "",
-          'parentId': "",
-          'computed': computed,
-          'computedCount': this.getCurrentFilmComputedCount($parentContent),
-          'computedFromText': computedFrom,
-          'lastUpdate': this.getCurrentDateTime(),
-        };
-
-        console.log(`SERIES dc[${parentId}]: `, dc[parentId]);
-        computedIdx += 1;
-      }
-
-
-      // Remove seriesId from seriesIds if seriesId in dc
-      console.log(`[ DEBUG ] before seriesIds: [${seriesIds.length}]`, seriesIds);
-      for (const seriesName of seriesIds) {
-        if (seriesName in dc) {
-          seriesIds.splice(seriesIds.indexOf(seriesName), 1);
-        }
-      }
-      console.log(`[ DEBUG ] after seriesIds: [${seriesIds.length}]`, seriesIds);
-
-      // Process the seriesIds to get the SEASON ratings
-      for (const seriesName of seriesIds) {
-        console.log("[ DEBUG ] Getting CONTENT from seriesName: ", seriesName);
-      }
-
-      return dc;
     }
 
     /**
@@ -1667,7 +1506,7 @@ async function onHomepage() {
     /**
      * Return show type in 'english' language. Works for SK an CZ.
      *
-     * @param {<str>} showType seriál, série, epizoda, film, ...
+     * @param {str} showType seriál, série, epizoda, film, ...
      * @returns {str} `showType`
      *
      * Posible returned values: `movie`, `tv movie`, `serial`, `series`, `episode`
@@ -1789,19 +1628,12 @@ async function onHomepage() {
       return [secondResult[1], firstResult[1]];
     }
 
-    async refreshAllRatings(csfd, force = false) {
-      await csfd.initializeClassVariables();
-      csfd.stars = await csfd.getAllPages(force);
-      this.exportRatings();
-      location.reload();
-    }
-
     async refreshAllRatingsNew(csfd, force = false) {
       // Start timer
       const start = performance.now();
 
       await csfd.initializeClassVariables();
-      csfd.stars = await this.newGetAllPages(force);
+      csfd.stars = await this.getAllPagesNew(force);
 
       this.exportRatings();
 
@@ -1810,8 +1642,8 @@ async function onHomepage() {
       const time = (end - start) / 1000;
       console.debug(`Time: ${time} seconds`);
 
-      // refresh page
-      // location.reload();
+      // Refresh page
+      location.reload();
 
       Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
     }
@@ -1839,12 +1671,9 @@ async function onHomepage() {
           display: 'none',
         });
 
-        // $btnHideBox.wrap(`<div class="box-header-action"></div>`);  // TODO: important?
-
         let $h2 = $(this).find('h2');
         if ($h2.length === 0) {
           $h2 = $(this).find('p');
-          // if ($h2.text().includes('Partnerem')) {
           $(this).css({ 'padding-right': '0px' });
           $h2.after($btnHideBox[0]);
           return;
@@ -2244,7 +2073,7 @@ async function onHomepage() {
       });
     }
 
-    async checkAndUpdateRatings() {
+    async checkAndUpdateCurrentRating() {
       const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
 
@@ -2283,7 +2112,7 @@ async function onHomepage() {
      */
     getCurrentDateTime() {
       const d = new Date
-      const dformat = [
+      const dateFormat = [
         d.getDate(),
         d.getMonth() + 1,
         d.getFullYear()
@@ -2292,7 +2121,7 @@ async function onHomepage() {
         d.getMinutes(),
         d.getSeconds()
       ].join(':');
-      return dformat
+      return dateFormat
     }
 
     /**
@@ -2394,8 +2223,6 @@ async function onHomepage() {
       if (match !== null) {
         let ratingDate = match[0];
         return ratingDate;
-        // let $myRatingCaption = $('.my-rating h3');
-        // $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
       }
       return undefined;
     }
@@ -2592,7 +2419,6 @@ async function onHomepage() {
   // Film/Series page
   if (location.href.includes('/film/') || location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
     if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
-    // csfd.showLinkToImageOnSmallMoviePoster();
     if (settings.showLinkToImage) { csfd.showLinkToImage(); }
     if (settings.ratingsEstimate) { csfd.ratingsEstimate(); }
     if (settings.ratingsFromFavorites) { csfd.ratingsFromFavorites(); }
@@ -2604,10 +2430,6 @@ async function onHomepage() {
   if (location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
     if (settings.showOnOneLine) { csfd.showOnOneLine(); }
   }
-  // // Any Gallery page
-  // if (location.href.includes('/galerie/') || location.href.includes('/galeria/')) {
-  //     csfd.showLinkToImageOnOtherGalleryImages();
-  // }
 
 
   // =================================
@@ -2631,7 +2453,6 @@ async function onHomepage() {
   // =================================
   if (await csfd.isLoggedIn()) {
 
-
     // Global settings without category
     await csfd.initializeClassVariables();
 
@@ -2643,7 +2464,7 @@ async function onHomepage() {
     // =================================
     // Page - Diskuze
     // =================================
-    if (await csfd.onDiskuzePage() && settings.addChatReplyButton) {
+    if (await csfd.onPageDiskuze() && settings.addChatReplyButton) {
       csfd.addChatReplyButton()
     }
 
@@ -2681,40 +2502,17 @@ async function onHomepage() {
       if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
 
       // Dynamic LocalStorage update on Film/Series in case user changes ratings
-      await csfd.checkAndUpdateRatings();
+      await csfd.checkAndUpdateCurrentRating();
     }
-
-    // // Ratings DB - check if number of ratings saved and current are the same
-    // if (settings.compareUserRatings || settings.addStars) {
-
-    //   let spanContent = { html: "✔️", title: "Přenačíst všechna hodnocení" };
-    //   if (ratingsInLocalStorage !== currentUserRatingsCount) {
-    //     spanContent = { html: "⚠️", title: "Nejsou načtena všechna hodnocení! \nPřenačíst VŠECHNA hodnocení" };
-    //   }
-
-    //   const $span = $("<span>", spanContent).css({ cursor: "pointer" });
-    //   $span.on("click", async function () {
-    //     let csfd = new Csfd($('div.page-content'));
-    //     csfd.refreshAllRatings(csfd, true);
-    //   });
-    //   // OK or WARN icon for compareUserRatings
-    //   if (settings.compareUserRatings) {
-    //     $('#chkCompareUserRatings').parent().append($span.clone(true));
-    //   }
-    //   // OK or WARN icon for addStars
-    //   if (settings.addStars) {
-    //     $('#chkAddStars').parent().append($span.clone(true));
-    //   }
-    // }
 
     // =================================
     // Page - Other User
     // =================================
-    if (await csfd.onOtherUserPage()) {
+    if (await csfd.onPageOtherUser()) {
       if (settings.displayMessageButton) { csfd.displayMessageButton(); }
       if (settings.displayFavoriteButton) { csfd.displayFavoriteButton(); }
       if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
-      if (await csfd.onOtherUserHodnoceniPage()) {
+      if (await csfd.onPageOtherUserHodnoceni()) {
         if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
       }
     }
@@ -2804,6 +2602,5 @@ async function onHomepage() {
   // const res = await api.getCurrentPageRatings(url);
   // console.log("CURRENT PAGE RATINGS");
   // console.log(res);
-
 
 })();
