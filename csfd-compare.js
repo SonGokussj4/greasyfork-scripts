@@ -2065,8 +2065,8 @@ async function onHomepage() {
                                 ${csfd.helpImageComponent("https://i.imgur.com/cDX0JaX.png", "Přidá sloupec pro porovnání hodnocení s mými hodnoceními")}
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel">
-                                <label for="chkHideUserControlPanel" style="${resetLabelStyle}">Skrýt ovládací panel</label>
+                                <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel" ${disabled}>
+                                <label for="chkHideUserControlPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt ovládací panel</label>
                                 ${csfd.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
                             </div>
                             <div class="article-content">
@@ -2086,18 +2086,18 @@ async function onHomepage() {
                         <h2 class="article-header">Film/Seriál</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image" ${disabled}>
+                                <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image">
                                 <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
                                 ${csfd.helpImageComponent("https://i.imgur.com/a2Av3AK.png", "Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici")}
                             </div>
                             <div class="article-content">
-                                <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate" ${disabled}>
+                                <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate">
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
                                 ${csfd.helpImageComponent("https://i.imgur.com/qGAhXog.png", "Ukáže % hodnocení i u filmů s méně než 10 hodnoceními")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsFromFavorites" name="ratings-from-favorites" ${disabled}>
-                                <label for="chkRatingsFromFavorites" style="${resetLabelStyle}">Zobrazit hodnocení z průměru oblíbených</label>
+                                <label for="chkRatingsFromFavorites" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit hodnocení z průměru oblíbených</label>
                                 ${csfd.helpImageComponent("https://i.imgur.com/ol88F6z.png", "Zobrazí % hodnocení od přidaných oblíbených uživatelů")}
                                 </div>
                                 <div class="article-content">
@@ -2126,7 +2126,7 @@ async function onHomepage() {
                         <h2 class="article-header">Herci</h2>
                         <section>
                             <div class="article-content">
-                                <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line" ${disabled}>
+                                <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line">
                                 <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku</label>
                                 ${csfd.helpImageComponent("https://i.imgur.com/IPXzclo.png", "Donutí zobrazit název filmu na jeden řádek")}
                             </div>
@@ -2141,8 +2141,8 @@ async function onHomepage() {
                               <label for="chkLoadComputedRatings" style="${resetLabelStyle}"><del>Přinačíst vypočtená (černá) hodnocení</del></label>
                           </div>
                           <div class="article-content">
-                              <input type="checkbox" id="chkAddChatReplyButton" name="control-panel-on-hover">
-                              <label for="chkAddChatReplyButton" style="${resetLabelStyle}">Přidat v diskuzích možnost odpovědět na sebe</label>
+                              <input type="checkbox" id="chkAddChatReplyButton" name="control-panel-on-hover" ${disabled}>
+                              <label for="chkAddChatReplyButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat v diskuzích možnost odpovědět na sebe</label>
                           </div>
                         </section>
                     </article>
