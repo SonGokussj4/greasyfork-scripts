@@ -237,13 +237,13 @@ async function onHomepage() {
       return undefined;
     }
 
-    getStars() {
-      // TODO: remove this function and use getLocalStorageRatings() instead
-      if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
-        return {};
-      }
-      return JSON.parse(localStorage[this.storageKey]);
-    }
+    // getStars() {
+    //   // TODO: remove this function and use getLocalStorageRatings() instead
+    //   if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
+    //     return {};
+    //   }
+    //   return JSON.parse(localStorage[this.storageKey]);
+    // }
 
     async getLocalStorageRatings() {
       if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
@@ -260,7 +260,8 @@ async function onHomepage() {
      * @returns {Promise<Object<string, number>>} `{ computed: int, rated: int }`
      */
     async getLocalStorageRatingsCount() {
-      const ratings = await this.getLocalStorageRatings();
+      // const ratings = await this.getLocalStorageRatings();  // TODO: Smazat toto?
+      const ratings = this.stars;
       const computedCount = Object.values(ratings).filter(rating => rating.computed).length;
       const ratedCount = Object.keys(ratings).length - computedCount;
       return {
@@ -515,7 +516,8 @@ async function onHomepage() {
     }
 
     async checkForOldLocalstorageRatingKeys() {
-      const ratings = this.getStars();
+      // const ratings = this.getStars();  // TODO: Mohu smazat?
+      const ratings = this.stars;
       const keys = Object.keys(ratings);
       for (const key of keys) {
         if (key.includes("/")) {
@@ -825,7 +827,8 @@ async function onHomepage() {
      * @returns {None}
      */
     addRatingsColumn() {
-      const starsDict = this.getStars();
+      // const starsDict = this.getStars();  // TODO: Mohu smazat?
+      const starsDict = this.stars;
       const lcRatingsCount = Object.keys(starsDict).length;
 
       // No ratings in LocalStorage, do nothing
@@ -2301,7 +2304,7 @@ async function onHomepage() {
       const username = await this.getUsername();
       this.storageKey = `${SCRIPTNAME}_${username}`;
       this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
-      this.stars = this.getStars();
+      this.stars = await this.getLocalStorageRatings();
     }
 
     async updateControlPanelRatingCount() {
