@@ -407,14 +407,16 @@ async function onHomepage() {
         return true;
       }
 
-      if (myRating.rating !== ratingsObject.rating) {
-        // LocalStorage rating != current rating, update
+      if (myRating.rating !== ratingsObject.rating || myRating.computedCount !== ratingsObject.computedCount) {
+        console.log(`⚙️ ~ Csfd ~ updateInLocalStorage ~ Updating item...`);
         this.stars[filmId] = ratingsObject;
         localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
         return true;
       }
 
-      return true;
+      // Item in LocalStorage, everything is fine
+      // console.log(`✅ ~ Csfd ~ updateInLocalStorage ~ Item in LocalStorage, everything is fine`);
+      return false;
     }
 
     async removeFromLocalStorage() {
@@ -425,7 +427,7 @@ async function onHomepage() {
 
       // Item not in LocalStorage, everything is fine
       if (item === undefined) {
-        return null;
+        return false;
       }
 
       // Item in LocalStorage, delete it from local dc
@@ -902,7 +904,10 @@ async function onHomepage() {
 
     }
 
-    addWarningToUserProfile() {
+    async addWarningToUserProfile() {
+      const ratingCountOk = this.isRatingCountOk();
+      if (ratingCountOk) return;
+
       $(".csfd-compare-menu").append(`
                 <div class='counter'>
                     <span><b>!</b></span>
@@ -911,6 +916,9 @@ async function onHomepage() {
     }
 
     async refreshButtonNew(ratingsInLS, curUserRatings) {
+      const ratingCountOk = this.isRatingCountOk();
+      if (ratingCountOk) return;
+
       const $button = $('<button>', {
         id: 'refr-ratings-button',
         "class": 'csfd-compare-reload',
@@ -2072,14 +2080,19 @@ async function onHomepage() {
       const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
 
+      const filmUrl = await this.getCurrentFilmUrl();
+      const filmId = await this.getMovieIdFromHref(filmUrl);
+
       // In case user removed rating, we need to remove it from the LC
       if (rating === "") {
-        // Check if record exists, if yes, remove it
-        console.info("No rating on current page but record in LC => Removing record...");
-        await this.removeFromLocalStorage();
+        console.info("☠️ No rating on current page but record in LC => Removing record...");
+        const removed = await this.removeFromLocalStorage();
+        if (removed) {
+          console.info("☠️ Removed record from LC.");
+          await this.updateControlPanelRatingCount();
+        }
       } else {
         // Check if current page rating corresponds with that in LocalStorage, if not, update it
-        const filmUrl = this.getCurrentFilmUrl();
         const filmFullUrl = this.getCurrentFilmFullUrl();
         const type = this.getCurrentFilmType();
         const year = this.getCurrentFilmYear();
@@ -2097,8 +2110,13 @@ async function onHomepage() {
           computedFromText: computed ? computedFrom : "",
           lastUpdate: lastUpdate,
         };
-        this.updateInLocalStorage(ratingsObject);
+        const updated = await this.updateInLocalStorage(ratingsObject);
+        if (updated) {
+          console.info("✅ Updated record in LC.");
+          await this.updateControlPanelRatingCount();
+        }
       }
+
     }
 
     /**
@@ -2295,6 +2313,12 @@ async function onHomepage() {
       $computedSpan.text(`${computed}`);
     }
 
+    async isRatingCountOk() {
+      const { rated, computed } = await csfd.getLocalStorageRatingsCount();
+      const current_ratings = await this.getCurrentUserRatingsCount();
+      return rated === current_ratings
+    }
+
     /**
      * For some reason, IMDb button to link current film does not have icon. This function adds it.
      *
@@ -2477,7 +2501,7 @@ async function onHomepage() {
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
         csfd.refreshButtonNew(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.badgesComponent(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
-        csfd.addWarningToUserProfile();
+        await csfd.addWarningToUserProfile();
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
       }
