@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ČSFD Compare
-// @version      0.6.0
+// @version      0.6.0.1
 // @namespace    csfd.cz
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
@@ -16,7 +16,7 @@
 // ==/UserScript==
 
 
-const VERSION = 'v0.6.0';
+const VERSION = 'v0.6.0.1';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
