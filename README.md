@@ -7,9 +7,9 @@
 
 ## Changelog
 
-> **v0.6.0** _(2022-12-xx)_  
+> **v0.6.0** _(2022-12-28)_  
 
-Vánoce se blíží, tak jsem připravil větší update.
+"Menší" vánoční update :-)
 
 - NEW
   - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
@@ -24,16 +24,18 @@ Vánoce se blíží, tak jsem připravil větší update.
     - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
     - Počet načtených filmů je nyní zobrazeno v titulku
   - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
-  - Přidáno nové načítání filmů, je to experimentální, dělá to víc stránek naráz
+  - Přidáno nové načítání filmů, je to "experimentální", dělá to víc stránek naráz
     - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+  - Při ohodnocení nebo odstranění hodnocení se nyní CC menu aktualizuje okamžitě, netřeba refreshovat stránku
   - Dočasná vánoční výzdoba
 - FIX
   - Ukládání filmů by mělo být stabilnější
-  - Opraveno pár hraničních případů, kdy script celý spadl
+  - Opraveno pár okrajových případů, kdy script celý spadl
   - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
   - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
   - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
   - Zobrazování prvků v CC menu pro nepřihlášené uživatele
+  - Opraven update dopočítaných hodnocení ([#3](../../issues/3))
 
 > **v0.5.12** _(2022-10-xx)_  
 
