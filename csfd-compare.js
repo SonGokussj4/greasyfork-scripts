@@ -347,9 +347,8 @@ async function onHomepage() {
       if (match.length === 2) {
         const year = match[1];
         return year;
-      } else {
-        return "";
       }
+      return "";
     }
 
     /**
@@ -358,23 +357,18 @@ async function onHomepage() {
      * @returns {bool} `true` if current movie rating is computed, `false` otherwise
      */
     async isCurrentFilmComputed(content = null) {
-      let $computedStars = null;
-      if (content === null) {
-        $computedStars = $('.star.active.computed');
-      } else {
-        $computedStars = $(content).find('.star.active.computed');
-      }
+      const $computedStars = content === null ? $('.star.active.computed') : $(content).find('.star.active.computed');
 
       if ($computedStars.length > 0) {
         return true;
-      } else {
-        const secondTry = await this.isCurrentFilmRatingComputed();
-        if (secondTry) {
-          return true;
-        }
       }
-      return false;
 
+      const secondTry = await this.isCurrentFilmRatingComputed();
+      if (secondTry) {
+        return true;
+      }
+
+      return false;
     }
 
     async isCurrentFilmRatingComputed() {
@@ -395,7 +389,6 @@ async function onHomepage() {
 
     async getCurrentFilmComputed() {
       const result = await this.getComputedRatings(this.csfdPage);
-      console.debug("[ DEBUG ] result: ", result);
       return result;
     }
 
@@ -493,7 +486,7 @@ async function onHomepage() {
 
     }
 
-    async getCurrentUserRatingsCount2() {
+    async getCurrentUserRatingsCount() {
       return $.get(this.userRatingsUrl)
         .then(function (data) {
           const count = $(data).find('.box-user-rating span.count').text().replace(/[\s()]/g, '');
@@ -519,12 +512,10 @@ async function onHomepage() {
     }
 
     async checkForOldLocalstorageRatingKeys() {
-      console.log("Checking for old LocalStorage rating keys...")
       const ratings = this.getStars();
       const keys = Object.keys(ratings);
       for (const key of keys) {
         if (key.includes("/")) {
-          // Old key, inform user
           alert(`
             CSFD-Compare
 
@@ -1325,7 +1316,7 @@ async function onHomepage() {
       const $content = await $.get(url);
       const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
       const maxPageNum = $href.text();
-      this.userRatingsCount = await this.getCurrentUserRatingsCount2();
+      this.userRatingsCount = await this.getCurrentUserRatingsCount();
 
       const allUrls = [];
       // for (let idx = 1; idx <= 1; idx++) {  // TODO: DEBUG
@@ -1826,7 +1817,7 @@ async function onHomepage() {
       });
 
       const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
-      const current_ratings = await this.getCurrentUserRatingsCount2();
+      const current_ratings = await this.getCurrentUserRatingsCount();
 
       button.innerHTML = `
                 <a href="javascript:void()" class="user-link initialized csfd-compare-menu">CC</a>
@@ -2295,7 +2286,7 @@ async function onHomepage() {
 
     async updateControlPanelRatingCount() {
       const { computed, rated } = await csfd.getLocalStorageRatingsCount();
-      const current_ratings = await this.getCurrentUserRatingsCount2();
+      const current_ratings = await this.getCurrentUserRatingsCount();
 
       const $ratingsSpan = $('#cc-control-panel-rating-count');
       const $computedSpan = $('#cc-control-panel-computed-count');
@@ -2482,9 +2473,8 @@ async function onHomepage() {
       const { computed, rated } = await csfd.getLocalStorageRatingsCount();
       ratingsInLocalStorage = rated;
       computedRatingsInLocalStorage = computed;
-      currentUserRatingsCount = await csfd.getCurrentUserRatingsCount2();
+      currentUserRatingsCount = await csfd.getCurrentUserRatingsCount();
       if (ratingsInLocalStorage !== currentUserRatingsCount) {
-        // csfd.showRefreshRatingsButton(ratingsInLocalStorage, currentUserRatingsCount);
         csfd.refreshButtonNew(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.badgesComponent(ratingsInLocalStorage, currentUserRatingsCount, computedRatingsInLocalStorage);
         csfd.addWarningToUserProfile();
