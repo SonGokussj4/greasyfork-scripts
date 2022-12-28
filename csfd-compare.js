@@ -194,6 +194,7 @@ async function onHomepage() {
      */
     async getCurrentUser() {
       let loggedInUser = $('.profile.initialized').attr('href');
+
       if (loggedInUser !== undefined) {
         if (loggedInUser.length == 1) {
           loggedInUser = loggedInUser[0];
@@ -2297,7 +2298,8 @@ async function onHomepage() {
 
     async initializeClassVariables() {
       this.userUrl = await this.getCurrentUser();
-      this.storageKey = `${SCRIPTNAME}_${this.userUrl.split("/")[2].split("-")[1]}`;
+      const username = await this.getUsername();
+      this.storageKey = `${SCRIPTNAME}_${username}`;
       this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
       this.stars = this.getStars();
     }
