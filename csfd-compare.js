@@ -916,7 +916,7 @@ async function onHomepage() {
     }
 
     async refreshButtonNew(ratingsInLS, curUserRatings) {
-      const ratingCountOk = this.isRatingCountOk();
+      const ratingCountOk = await this.isRatingCountOk();
       if (ratingCountOk) return;
 
       const $button = $('<button>', {
@@ -2471,7 +2471,6 @@ async function onHomepage() {
   // LOGGED IN
   // =================================
   if (await csfd.isLoggedIn()) {
-
     // Global settings without category
     await csfd.initializeClassVariables();
 
@@ -2492,7 +2491,6 @@ async function onHomepage() {
     let ratingsInLocalStorage = 0;
     let computedRatingsInLocalStorage = 0;
     let currentUserRatingsCount = 0;
-
     if (settings.addStars || settings.compareUserRatings) {
       const { computed, rated } = await csfd.getLocalStorageRatingsCount();
       ratingsInLocalStorage = rated;
