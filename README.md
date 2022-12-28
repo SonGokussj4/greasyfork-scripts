@@ -7,6 +7,11 @@
 
 ## Changelog
 
+> **v0.6.0.1** _(2022-12-28)_  
+
+- **FIX**
+  - Neukazovalo se tlačítko pro načtení hodnocení
+
 > **v0.6.0** _(2022-12-28)_  
 
 "Menší" vánoční update :-)
