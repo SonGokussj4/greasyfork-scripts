@@ -1784,13 +1784,13 @@ async function onHomepage() {
     }
 
     async addSettingsPanel() {
-      let dropdownStyle = 'right: 150px; width: max-content; max-width: 370px;';
+      let dropdownStyle = 'right: 150px; width: max-content; max-width: 360px;';
       let disabled = '';
       let needToLoginTooltip = '';
       let needToLoginStyle = '';
 
       if (!await this.isLoggedIn()) {
-        dropdownStyle = 'right: 50px; width: max-content;';
+        dropdownStyle = 'right: 50px; width: max-content; max-width: 360px;';
         disabled = 'disabled';
         needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení do CSFD"`;
         needToLoginStyle = 'color: grey;';
