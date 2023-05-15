@@ -24,6 +24,10 @@ const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compa
 const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
 const NUM_RATINGS_PER_PAGE = 50;  // Was 100, now it's 50...
+const INDEXED_DB_VERSION = 1;
+const INDEXED_DB_NAME = 'CC-Ratings';
+
+const DEBUG_MAX_PAGES_LOAD = 2;  // 0 = no limit
 
 let defaultSettings = {
   // HOME PAGE
@@ -137,7 +141,11 @@ async function refreshTooltips() {
 /**
  * Take a list of dictionaries and return merged dictionary
  * @param {*} list
- * @returns
+ * @returns {Object} merged
+ * @example
+ * const list = [{a: 1}, {b: 2, c: 3}];
+ * const merged = mergeDict(list);
+ * console.log(merged); // {a: 1, b: 2, c: 3}
  */
 async function mergeDict(list) {
   const merged = list.reduce(function (r, o) {
@@ -154,6 +162,305 @@ async function onHomepage() {
   }
   return check;
 }
+
+async function initIndexedDB(dbName, storeName) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName, INDEXED_DB_VERSION);
+
+  openRequest.onupgradeneeded = function (event) {
+    const db = event.target.result;
+
+    // Create the object store if it doesn't exist
+    if (!db.objectStoreNames.contains(storeName)) {
+      db.createObjectStore(storeName, { keyPath: 'id' });
+    }
+
+    // Create an index for the 'year' property
+    const transaction = event.target.transaction;
+    const store = transaction.objectStore(storeName);
+    if (!store.indexNames.contains('year')) {
+      store.createIndex('year', 'year', { unique: false });
+    }
+  };
+
+  openRequest.onsuccess = function () {
+    console.log('Database opened and index created');
+  };
+
+  openRequest.onerror = function () {
+    console.log('Error opening database or creating index');
+  };
+
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ * @param {Array<Object>} data - List of objects to save
+ */
+async function saveToIndexedDB(dbName, storeName, data) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+  openRequest.onupgradeneeded = function () {
+    const db = openRequest.result;
+    if (!db.objectStoreNames.contains(storeName)) {
+      db.createObjectStore(storeName, { keyPath: 'id' });
+    }
+  };
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readwrite');
+  const store = transaction.objectStore(storeName);
+
+  for (const id in data) {
+    // Add item to the store, key should be INT
+    const item = { ...data[id], id };
+    store.put(item);
+  }
+  await new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ * @returns {Array<Object>} items - Data from the store
+ */
+async function getAllFromIndexedDB(dbName, storeName) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readonly');
+  const store = transaction.objectStore(storeName);
+  const data = await new Promise((resolve, reject) => {
+    const request = store.getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+
+  return data.reduce((acc, item) => {
+    acc[item.id] = item;
+    return acc;
+  }, {});
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ * @param {Array<string>} ids - List of IDs to get from the store
+ * @returns {Array<Object>} items - Data from the store
+ */
+async function getItemsFromIndexedDB(dbName, storeName, ids) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readonly');
+  const store = transaction.objectStore(storeName);
+  const items = [];
+
+  for (const id of ids) {
+    const request = store.get(id);
+    const item = await new Promise((resolve, reject) => {
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    if (item) {
+      items.push(item);
+    }
+  }
+
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+
+  return items;
+}
+
+async function getItemsByPropertyFromIndexedDB(dbName, storeName, property, value) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readonly');
+  const store = transaction.objectStore(storeName);
+  const index = store.index(property);
+  const range = IDBKeyRange.only(value);
+  const cursorRequest = index.openCursor(range);
+
+  const items = [];
+  await new Promise((resolve, reject) => {
+    cursorRequest.onsuccess = function () {
+      const cursor = this.result;
+      if (cursor) {
+        items.push(cursor.value);
+        cursor.continue();
+      } else {
+        resolve();
+      }
+    };
+    cursorRequest.onerror = () => reject(cursorRequest.error);
+  });
+
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+
+  return items;
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ * @returns {number} count - Number of items in the store
+ */
+async function getIndexedDBLength(dbName, storeName) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readonly');
+  const store = transaction.objectStore(storeName);
+  const countRequest = store.count();
+
+  const count = await new Promise((resolve, reject) => {
+    countRequest.onsuccess = () => resolve(countRequest.result);
+    countRequest.onerror = () => reject(countRequest.error);
+  });
+
+  db.close();
+
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+  return count;
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ * @param {string} id - ID of the item to be deleted (movie ID)
+ */
+async function deleteItemFromIndexedDB(dbName, storeName, id) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readwrite');
+  const store = transaction.objectStore(storeName);
+
+  const request = store.delete(id);
+  await new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ */
+async function deleteAllDataFromIndexedDB(dbName, storeName) {
+  const start = performance.now();
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  const transaction = db.transaction(storeName, 'readwrite');
+  const store = transaction.objectStore(storeName);
+  const cursorRequest = store.openCursor();
+
+  await new Promise((resolve, reject) => {
+    cursorRequest.onsuccess = function () {
+      const cursor = this.result;
+      if (cursor) {
+        cursor.delete();
+        cursor.continue();
+      } else {
+        resolve();
+      }
+    };
+    cursorRequest.onerror = () => reject(cursorRequest.error);
+  });
+  const end = performance.now();
+  const time = (end - start) / 1000;
+  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+}
+
+/**
+ *
+ * @param {string} dbName - Name of the database (file)
+ * @param {string} storeName - Name of the store (table)
+ */
+async function deleteIndexedDB(dbName, storeName) {
+  const openRequest = indexedDB.open(dbName);
+
+  const db = await new Promise((resolve, reject) => {
+    openRequest.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (db.objectStoreNames.contains(storeName)) {
+        db.deleteObjectStore(storeName);
+      }
+      resolve(db);
+    };
+    openRequest.onsuccess = () => resolve(openRequest.result);
+    openRequest.onerror = () => reject(openRequest.error);
+  });
+
+  db.close();
+}
+
+
 
 (async () => {
   "use strict";
@@ -1327,11 +1634,11 @@ async function onHomepage() {
       const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
       const $content = await $.get(url);
       const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
-      const maxPageNum = $href.text();
+      let maxPageNum = $href.text();
       this.userRatingsCount = await this.getCurrentUserRatingsCount();
 
       const allUrls = [];
-      // for (let idx = 1; idx <= 1; idx++) {  // TODO: DEBUG
+      maxPageNum = DEBUG_MAX_PAGES_LOAD != 0 ? DEBUG_MAX_PAGES_LOAD : maxPageNum;  // DEBUG PURPOSES
       for (let idx = 1; idx <= maxPageNum; idx++) {
         const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
         allUrls.push(url);
@@ -1346,7 +1653,7 @@ async function onHomepage() {
         let dict = this.stars;
         let ls = force ? [] : [dict];
         for (let idx = 1; idx <= maxPageNum; idx++) {
-          console.log(`[ DEBUG ] iterating over idx <= ${maxPageNum}`);
+          console.log(`[ DEBUG ] iterating over ${idx} <= ${maxPageNum}`);
           const onlyRated = Object.values(dict).filter((item) => item.computed === false);
           if (!force) if (onlyRated.length >= this.userRatingsCount) break;
 
@@ -1370,6 +1677,7 @@ async function onHomepage() {
         chunks.push(allUrls.splice(0, chunkSize));
       }
 
+      console.log(`Načítám hodnocení...`);
       Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
 
       // TODO: Debug
@@ -1639,10 +1947,55 @@ async function onHomepage() {
       // Start timer
       const start = performance.now();
 
-      await csfd.initializeClassVariables();
-      csfd.stars = await this.getAllPagesNew(force);
+      console.log("Hey there...");
 
-      this.exportRatings();
+      await csfd.initializeClassVariables();
+      // csfd.stars = await this.getAllPagesNew(force);
+
+      let res = await this.getAllPagesNew(force);
+      console.log(`getAllPagesNew() ... Total ratings: ${Object.keys(res).length}`);
+      console.log({ res });
+
+      // Init IndexedDB
+      await initIndexedDB(INDEXED_DB_NAME, "songokussj");
+
+      // Save all to IndexedDB
+      await saveToIndexedDB(INDEXED_DB_NAME, "songokussj", res);
+
+      // Loading all ratings from IndexedDB
+      let indexRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, "songokussj");
+      console.log({ indexRatings });
+
+      // Get the length of the IndexedDB database
+      let numOfRatings = await getIndexedDBLength(INDEXED_DB_NAME, "songokussj");
+      console.log(`IndexedDB length: ${numOfRatings}`);
+
+      // this.exportRatings();
+
+      // // Delete from IndexedDB
+      // console.log("Deleting from IndexedDB");
+      // await deleteItemFromIndexedDB(INDEXED_DB_NAME, "songokussj", "1324443");
+
+      // // Loading specific rating from IndexedDB
+      // console.log("Loading specific rating from IndexedDB");
+      // let movieIds = ["134187", "1324444"];
+      // let specificRatings = await getItemsFromIndexedDB(INDEXED_DB_NAME, "songokussj", movieIds);
+      // console.log({ specificRatings });
+
+      // // Get all ratings with property year = 2023
+      // console.log("Get all ratings with property year = 2023");
+      // // let ratingsWithYear = await getItemsFromIndexedDB(INDEXED_DB_NAME, "songokussj", null, "year", 2023);
+      // let ratingsWithYear = await getItemsByPropertyFromIndexedDB(INDEXED_DB_NAME, "songokussj", "year_idx", 2023);
+      // console.log({ ratingsWithYear });
+
+
+      // // Delete all data from IndexedDB
+      // console.log("Deleting all data from IndexedDB");
+      // await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, "songokussj");
+
+      // // Delete IndexedDB
+      // console.log("Deleting IndexedDB");
+      // await deleteIndexedDB(INDEXED_DB_NAME, "songokussj");
 
       // Stop timer
       const end = performance.now();
@@ -1650,7 +2003,7 @@ async function onHomepage() {
       console.debug(`Time: ${time} seconds`);
 
       // Refresh page
-      location.reload();
+      // location.reload();
 
       Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
     }
@@ -1829,6 +2182,7 @@ async function onHomepage() {
       });
 
       const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
+      const new_rated_ratings = await getIndexedDBLength(INDEXED_DB_NAME, 'songokussj');
       const current_ratings = await this.getCurrentUserRatingsCount();
 
       button.innerHTML = `
@@ -1843,7 +2197,7 @@ async function onHomepage() {
                         <img src="https://i.imgur.com/1A2fPca.png" style="width: 32px; height: 32px; position: absolute; left: 340px; top: -9px; opacity: 85%;" />
 
                         <span class="badge" id="cc-control-panel-rating-count" title="Počet načtených/celkových červených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #aa2c16; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
-                            ${rated_ratings} / ${current_ratings}
+                            ${new_rated_ratings} / ${current_ratings}
                         </span>
 
                         <span class="badge" id="cc-control-panel-computed-count" title="Počet načtených vypočtených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #393939; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
@@ -2307,15 +2661,15 @@ async function onHomepage() {
       this.stars = await this.getLocalStorageRatings();
     }
 
-    async updateControlPanelRatingCount() {
-      const { computed, rated } = await csfd.getLocalStorageRatingsCount();
+    async updateControlPanelRatingCount() {  // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
+      // const { computed, rated } = await csfd.getLocalStorageRatingsCount();
       const current_ratings = await this.getCurrentUserRatingsCount();
 
       const $ratingsSpan = $('#cc-control-panel-rating-count');
       const $computedSpan = $('#cc-control-panel-computed-count');
 
-      $ratingsSpan.text(`${rated} / ${current_ratings}`);
-      $computedSpan.text(`${computed}`);
+      // $ratingsSpan.text(`${rated} / ${current_ratings}`);
+      // $computedSpan.text(`${computed}`);
     }
 
     async isRatingCountOk() {
@@ -2416,10 +2770,16 @@ async function onHomepage() {
   // ============================================================================================
   // SCRIPT START
   // ============================================================================================
+  if (!('indexedDB' in window)) {
+    console.warn("[CC] !!! ====================================== !!!");
+    console.warn("[CC] !!! This browser doesn't support IndexedDB !!!");
+    console.warn("[CC] !!! Ratings will be saved in Local Storage !!!");
+    console.warn("[CC] !!! ====================================== !!!");
+  }
+
   await delay(20);  // Greasemonkey workaround, wait a little bit for page to somehow load
   console.debug("CSFD-Compare - Script started")
   let csfd = new Csfd($('div.page-content'));
-
 
   // =================================
   // LOAD SETTINGS
