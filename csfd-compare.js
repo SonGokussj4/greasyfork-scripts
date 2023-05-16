@@ -2217,7 +2217,8 @@ async function deleteIndexedDB(dbName, storeName) {
           <section>
             <div class="article-section">
               <button id="btnResetSettings" class="settings-button" style="border-radius: 4px;" title="Resetuje uložená nastavení (NE hodnocení)">Reset nastavení</button>
-              <button id="btnRemoveSavedRatings" class="settings-button" style="border-radius: 4px;" title="Smaže všechna uložená hodnocení!">Smazat uložená hodnocení</button>
+              <button id="btnRemoveSavedRatings" class="settings-button" style="border-radius: 4px;" title="Smaže všechna uložená hodnocení z LocalStorage (staré)!">Smazat z LC</button>
+              <button id="btnRemoveDBRatings" class="settings-button" style="border-radius: 4px;" title="Smaže všechna uložená hodnocení! z IndexedDB (nové)">Smazat z DB (new)</button>
             </div>
           </section>
         </article>
@@ -2518,6 +2519,23 @@ async function deleteIndexedDB(dbName, storeName) {
 
         console.debug(`Removing saved ratings for user '${username}'...`);
         localStorage.removeItem(`CSFD-Compare_${username}`);
+        location.reload();
+      });
+
+      $(button).find("#btnRemoveDBRatings").on("click", async function () {
+        const username = await csfd.getUsername();
+
+        if (!username) {
+          alert("Nejprve se přihlašte.");
+          return;
+        }
+
+        if (!confirm(`Opravdu chcete smazat všechna hodnocení z databáze?`)) {
+          return;
+        }
+
+        console.debug(`Removing all ratings from database...`);
+        await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, username)
         location.reload();
       });
     }
