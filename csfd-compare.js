@@ -271,21 +271,43 @@ async function updateIndexedDB(dbName, storeName, data) {
     };
   }
   await new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
+    transaction.oncomplete = () => resolve(true);
     transaction.onerror = () => reject(transaction.error);
   });
+
+  // try {
+  //   for (const id in data) {
+  //     // Check if the item exists
+  //     const getRequest = store.get(id);
+  //     getRequest.onsuccess = () => {
+  //       // If the item exists, update it
+  //       if (getRequest.result) {
+  //         const item = { ...data[id], id };
+  //         store.put(item);
+  //       }
+  //     };
+  //   }
+  //   await new Promise((resolve, reject) => {
+  //     transaction.oncomplete = () => resolve();
+  //     transaction.onerror = () => reject(transaction.error);
+  //   });
+  //   return true;
+  // } catch (err) {
+  //   console.log('Error: updateIndexedDB():', err);
+  //   return false;
+  // }
 
   const end = performance.now();
   const time = (end - start) / 1000;
   console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
 
-  // return true;
+  return true;
 }
 
 /**
- *
+ * Check if the database exists, returns true if it does and false if it doesn't
  * @param {string} dbName - Name of the database (file)
- * @returns {boolean} exists - True if the database exists
+ * @returns {Promise<boolean>} exists - True if the database exists
  */
 async function doesIndexedDBExist(dbName) {
   const dbs = await indexedDB.databases();
@@ -294,10 +316,10 @@ async function doesIndexedDBExist(dbName) {
 }
 
 /**
- *
+ * Get all items from the store
  * @param {string} dbName - Name of the database (file)
  * @param {string} storeName - Name of the store (table)
- * @returns {Array<Object>} items - Data from the store
+ * @returns {Promise<Array<Object>>} items - Data from the store
  */
 async function getAllFromIndexedDB(dbName, storeName) {
 
@@ -332,11 +354,11 @@ async function getAllFromIndexedDB(dbName, storeName) {
 }
 
 /**
- *
+ * Get items from the store by ID
  * @param {string} dbName - Name of the database (file)
  * @param {string} storeName - Name of the store (table)
  * @param {Array<string>} ids - List of IDs to get from the store
- * @returns {Array<Object>} items - Data from the store
+ * @returns {Promise<Array<Object>>} items - Data from the store
  */
 async function getItemsFromIndexedDB(dbName, storeName, ids) {
   const start = performance.now();
@@ -406,10 +428,10 @@ async function getItemsByPropertyFromIndexedDB(dbName, storeName, property, valu
 }
 
 /**
- *
+ * Get the number of items in the store, or 0 if the store does not exist
  * @param {string} dbName - Name of the database (file)
  * @param {string} storeName - Name of the store (table)
- * @returns {number} count - Number of items in the store
+ * @returns {Promise<number>} count - Number of items in the store
  */
 async function getIndexedDBLength(dbName, storeName) {
 
@@ -475,9 +497,12 @@ async function deleteItemFromIndexedDB(dbName, storeName, id) {
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
+
   const end = performance.now();
   const time = (end - start) / 1000;
   console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+
+  return true;
 }
 
 /**
@@ -555,6 +580,7 @@ async function deleteIndexedDB(dbName, storeName) {
       this.stars = {};
       this.storageKey = undefined;
       this.userUrl = undefined;
+      this.username = undefined;
       this.endPageNum = 0;
       this.userRatingsCount = 0;
       this.userRatingsUrl = undefined;
@@ -780,7 +806,12 @@ async function deleteIndexedDB(dbName, storeName) {
     }
 
 
-    async updateInLocalStorage(ratingsObject) {
+    /**
+     *
+     * @param {Object} ratingsObject - `{ url: str, id: int, rating: int, ... }`
+     * @returns {Promise<bool>} `true` if item was added, `false` otherwise
+     */
+    async updateInDB(ratingsObject) {
       // TODO: Doplnit logiku update jen pouze pokud je hodnocení jiné než v IndexedDB
       console.log(`⚙️ ~ [CC] ~ updateInLocalStorage ~ Updating item...`);
       return await updateIndexedDB(INDEXED_DB_NAME, await this.getUsername(), ratingsObject);
@@ -807,26 +838,6 @@ async function deleteIndexedDB(dbName, storeName) {
       // // Item in LocalStorage, everything is fine
       // // console.log(`✅ ~ Csfd ~ updateInLocalStorage ~ Item in LocalStorage, everything is fine`);
       // return false;
-    }
-
-    async removeFromLocalStorage() {
-      // Check if film is in LocalStorage
-      const filmUrl = this.getCurrentFilmUrl();
-      const filmId = await this.getMovieIdFromHref(filmUrl);
-      const item = this.stars[filmId];
-
-      // Item not in LocalStorage, everything is fine
-      if (item === undefined) {
-        return false;
-      }
-
-      // Item in LocalStorage, delete it from local dc
-      delete this.stars[filmId];
-
-      // And resave it to LocalStorage
-      localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
-
-      return true;
     }
 
     /**
@@ -1983,7 +1994,7 @@ async function deleteIndexedDB(dbName, storeName) {
      * - href = '/film/774319-zhoubne-zlo/' --> '774319'
      * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> '1121972'
      * - href = '1058697-devadesatky' --> '1058697'
-     * - href = '' --> ''
+     * - href = \'' --> \''
      * - href = 'nothing-here' --> null
      */
     async getMovieIdFromHref(href) {
@@ -2513,53 +2524,66 @@ async function deleteIndexedDB(dbName, storeName) {
 
     async checkAndUpdateCurrentRating() {
       const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
+      console.log(`Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
+      console.log(`Current film date added: ${currentFilmDateAdded}`);
 
-      const filmUrl = await this.getCurrentFilmUrl();
+
+      const filmUrl = this.getCurrentFilmUrl();
+      console.log(`Current film url: ${filmUrl}`);
+
+      const filmId = await this.getMovieIdFromHref(filmUrl);
+      console.log(`Current film id: ${filmId}`);
+
+      // Check if current film is in IndexedDb
+      const filmInIndexedDb = await getItemsFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), [filmId]);
+      console.log(`Film in IndexedDb:`, filmInIndexedDb);
 
       // In case user removed rating, we need to remove it from the LC
-      if (rating === "") {
-        console.info("☠️ No rating on current page but record in LC => Removing record...");
-        const removed = await this.removeFromLocalStorage();
+      if (rating === "" && filmInIndexedDb.length > 0) {
+        console.info("☠️ No rating on current page, but exists in DB => Removing in DB...");
+        const removed = await deleteItemFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), filmId);
+
         if (removed) {
-          console.info("☠️ Removed record from LC.");
+          console.info("☠️ Movie removed from DB.");
           await this.updateControlPanelRatingCount();
         }
-      } else {
-        // Check if current page rating corresponds with that in LocalStorage, if not, update it
-        const filmFullUrl = this.getCurrentFilmFullUrl();
-        const type = this.getCurrentFilmType();
-        const year = this.getCurrentFilmYear();
-        const lastUpdate = this.getCurrentDateTime()
-        const movieId = await this.getMovieIdFromHref(filmUrl);
-        const parentName = await this.getParentNameFromUrl(filmUrl);
-        const parentId = await this.getMovieIdFromHref(parentName);
 
-
-        const ratingsObject = {
-          id: movieId,
-          url: filmUrl,
-          fullUrl: filmFullUrl,
-          rating: rating,
-          date: currentFilmDateAdded,
-          type: type,
-          parentName: parentName,
-          parentId: parentId,
-          year: year,
-          computed: computed,
-          computedCount: computed ? this.getCurrentFilmComputedCount() : "",
-          computedFromText: computed ? computedFrom : "",
-          lastUpdate: lastUpdate,
-        };
-        const dataToUpdate = { [movieId]: ratingsObject };
-
-        const updated = await this.updateInLocalStorage(dataToUpdate);
-        if (updated) {
-          console.info("✅ Updated record in LC.");
-          await this.updateControlPanelRatingCount();
-        }
+        return;
       }
 
+      // Check if current page rating corresponds with that in LocalStorage, if not, update it
+      const filmFullUrl = this.getCurrentFilmFullUrl();
+      const type = this.getCurrentFilmType();
+      const year = this.getCurrentFilmYear();
+      const lastUpdate = this.getCurrentDateTime()
+      const movieId = await this.getMovieIdFromHref(filmUrl);
+      const parentName = await this.getParentNameFromUrl(filmUrl);
+      const parentId = await this.getMovieIdFromHref(parentName);
+
+
+      const ratingsObject = {
+        id: movieId,
+        url: filmUrl,
+        fullUrl: filmFullUrl,
+        rating: rating,
+        date: currentFilmDateAdded,
+        type: type,
+        parentName: parentName,
+        parentId: parentId,
+        year: year,
+        computed: computed,
+        computedCount: computed ? this.getCurrentFilmComputedCount() : "",
+        computedFromText: computed ? computedFrom : "",
+        lastUpdate: lastUpdate,
+      };
+      const dataToUpdate = { [movieId]: ratingsObject };
+
+      const updated = await this.updateInDB(dataToUpdate);
+      if (updated) {
+        console.info("✅ Updated record in DB.");
+        await this.updateControlPanelRatingCount();
+      }
     }
 
     /**
@@ -2740,22 +2764,32 @@ async function deleteIndexedDB(dbName, storeName) {
 
     async initializeClassVariables() {
       this.userUrl = await this.getCurrentUser();
-      const username = await this.getUsername();
-      this.storageKey = `${SCRIPTNAME}_${username}`;
+      this.username = await this.getUsername();
+      this.storageKey = `${SCRIPTNAME}_${this.username}`;
       this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
-      // this.stars = await this.getLocalStorageRatings();
-      this.stars = await getAllFromIndexedDB(INDEXED_DB_NAME, username);
+      this.stars = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
     }
 
     async updateControlPanelRatingCount() {  // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
-      // const { computed, rated } = await csfd.getLocalStorageRatingsCount();
-      const current_ratings = await this.getCurrentUserRatingsCount();
+      const start = performance.now();
 
-      const $ratingsSpan = $('#cc-control-panel-rating-count');
-      const $computedSpan = $('#cc-control-panel-computed-count');
+      console.log(`[CC] updateControlPanelRatingCount() this.username: ${this.username}`);
 
-      // $ratingsSpan.text(`${rated} / ${current_ratings}`);
+      const [current_ratings, rated] = await Promise.all([
+        this.getCurrentUserRatingsCount(),
+        getIndexedDBLength(INDEXED_DB_NAME, this.username)
+      ]);
+
+      const ratingsSpan = document.getElementById('cc-control-panel-rating-count');
+      const computedSpan = document.getElementById('cc-control-panel-computed-count');
+
+      ratingsSpan.textContent = `${rated} / ${current_ratings}`;
       // $computedSpan.text(`${computed}`);
+      computedSpan.textContent = '¯\\_(ツ)_/¯';
+
+      const end = performance.now();
+      const time = (end - start) / 1000;
+      console.debug(`[CC] updateControlPanelRatingCount() Time: ${time} seconds`);
     }
 
     async isRatingCountOk() {
