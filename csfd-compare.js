@@ -2544,6 +2544,26 @@ async function deleteIndexedDB(dbName, storeName) {
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
       console.log(`Current film date added: ${currentFilmDateAdded}`);
 
+      // TODO: TESTING
+      // const data = {
+      //   ['1324445']: {
+      //     id: '1324445',
+      //     url: '1324445-stroje',
+      //     fullUrl: 'https://www.csfd.cz/film/1324435-silo/1324445-stroje/recenze/',
+      //     rating: 5,
+      //     date: '16.05.2023',
+      //     computed: false,
+      //     computedCount: "",
+      //     computedFromText: "",
+      //     lastUpdate: "16.5.2023 12:26:00",
+      //     parentId: 1324435,
+      //     parentName: "1324435-silo",
+      //     type: "series",
+      //     year: "2023",
+      //   }
+      // }
+      // // add to IndexedDb
+      // await saveToIndexedDB(INDEXED_DB_NAME, await this.getUsername(), data);
 
       const filmUrl = this.getCurrentFilmUrl();
       console.log(`Current film url: ${filmUrl}`);
@@ -2563,6 +2583,8 @@ async function deleteIndexedDB(dbName, storeName) {
         if (removed) {
           console.info("☠️ Movie removed from DB.");
           await this.updateControlPanelRatingCount();
+          const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
+          console.log(`☠️ IndexedDB length: ${cur_rat}`);
         }
 
         return;
@@ -2596,9 +2618,11 @@ async function deleteIndexedDB(dbName, storeName) {
       const dataToUpdate = { [movieId]: ratingsObject };
       console.log(`Data to update:`, dataToUpdate);
 
-      const updated = await this.updateInDB(dataToUpdate);
+      const updated = await this.saveToIndexedDB(dataToUpdate);
       if (updated) {
         console.info("✅ Updated record in DB.");
+        const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
+        console.log(`☠️ IndexedDB length: ${cur_rat}`);
         await this.updateControlPanelRatingCount();
       }
     }
