@@ -2618,7 +2618,7 @@ async function deleteIndexedDB(dbName, storeName) {
       const dataToUpdate = { [movieId]: ratingsObject };
       console.log(`Data to update:`, dataToUpdate);
 
-      const updated = await this.saveToIndexedDB(dataToUpdate);
+      const updated = await savetoIndexedDB(INDEXED_DB_NAME, this.username, dataToUpdate);
       if (updated) {
         console.info("✅ Updated record in DB.");
         const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
