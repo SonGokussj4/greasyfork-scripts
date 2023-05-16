@@ -220,19 +220,26 @@ async function saveToIndexedDB(dbName, storeName, data) {
   const transaction = db.transaction(storeName, 'readwrite');
   const store = transaction.objectStore(storeName);
 
-  for (const id in data) {
-    // Add item to the store, key should be INT
-    const item = { ...data[id], id };
-    store.put(item);
-  }
-  await new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+  try {
+    for (const id in data) {
+      // Add item to the store, key should be INT
+      const item = { ...data[id], id };
+      store.put(item);
+    }
 
-  const end = performance.now();
-  const time = (end - start) / 1000;
-  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+    const end = performance.now();
+    const time = (end - start) / 1000;
+    console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve(true);
+      transaction.onerror = () => reject(transaction.error);
+    });
+    return true;
+  } catch (err) {
+    console.log('Error: saveToIndexedDB():', err);
+    return false;
+  }
 }
 
 /**
@@ -258,22 +265,6 @@ async function updateIndexedDB(dbName, storeName, data) {
 
   const transaction = db.transaction(storeName, 'readwrite');
   const store = transaction.objectStore(storeName);
-
-  // for (const id in data) {
-  //   // Check if the item exists
-  //   const getRequest = store.get(id);
-  //   getRequest.onsuccess = () => {
-  //     // If the item exists, update it
-  //     if (getRequest.result) {
-  //       const item = { ...data[id], id };
-  //       store.put(item);
-  //     }
-  //   };
-  // }
-  // await new Promise((resolve, reject) => {
-  //   transaction.oncomplete = () => resolve(true);
-  //   transaction.onerror = () => reject(transaction.error);
-  // });
 
   try {
     for (const id in data) {
@@ -715,6 +706,27 @@ async function deleteIndexedDB(dbName, storeName) {
     }
 
     /**
+     * Get film name from the URL (e.g. /film/1032817-naomi/)
+     * @param {string} fullUrl - Full URL of the movie (e.g. https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/)
+     * @returns {string} - Film name (e.g. /film/1032817-naomi/)
+     */
+    getFilmNameFromHref(fullUrl) {
+        // Create a new URL object
+        const url = new URL(fullUrl);
+
+        // Extract the pathname from the URL object
+        const pathname = url.pathname;
+
+        // Remove any trailing '/'
+        const cleanedPathname = pathname.replace(/\/$/, '');
+
+        // Append a '/' at the end of the pathname
+        const result = cleanedPathname + '/';
+
+        return result;
+      }
+
+    /**
      * Return current movie Type (film, serial, episode)
      *
      * @returns {str} Current movie type: film, serial, episode, movie, ...
@@ -756,7 +768,11 @@ async function deleteIndexedDB(dbName, storeName) {
     getCurrentFilmYear() {
       const match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
       if (match.length === 2) {
-        const year = match[1];
+        let year = match[1];
+        // Convert to number
+        if (!isNaN(year)) {
+          year = parseInt(year);
+        }
         return year;
       }
       return "";
@@ -1837,6 +1853,7 @@ async function deleteIndexedDB(dbName, storeName) {
               'date': date,
               'type': showType,
               'year': showYear,
+              'id': movieId,
               'parentName': parentName,
               'parentId': parentId,
               'computed': false,
@@ -1975,13 +1992,25 @@ async function deleteIndexedDB(dbName, storeName) {
      * Example: \
      * `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `/film/697624-love-death-robots/`
      * `/film/697624-love-death-robots/` --> `""`
+     * `/film/
      */
     async getParentNameFromUrl(name) {
-      const splitted = name.slice(0, -1).split("/");
-      splitted.pop();
-      const parentName = splitted.length > 2 ? splitted.join("/") + "/" : "";
-      return parentName;
+      // Remove protocol and domain if present
+      const urlRegex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n]+)/;
+      const path = name.replace(urlRegex, "");
+
+      // Split the path by '/'
+      const splitted = path.split("/");
+
+      // If the length of the split array is less than or equal to 3, return an empty string
+      if (splitted.length <= 3) {
+        return "";
+      }
+
+      // Otherwise, return the second element from the split array
+      return splitted[2];
     }
+
 
     /**
      *
@@ -2592,24 +2621,25 @@ async function deleteIndexedDB(dbName, storeName) {
 
       // Check if current page rating corresponds with that in LocalStorage, if not, update it
       const filmFullUrl = this.getCurrentFilmFullUrl();
+      const filmName = this.getFilmNameFromHref(filmFullUrl);
       const type = this.getCurrentFilmType();
       const year = this.getCurrentFilmYear();
       const lastUpdate = this.getCurrentDateTime()
       const movieId = await this.getMovieIdFromHref(filmUrl);
-      const parentName = await this.getParentNameFromUrl(filmUrl);
+      const parentName = await this.getParentNameFromUrl(filmFullUrl);
       const parentId = await this.getMovieIdFromHref(parentName);
 
 
       const ratingsObject = {
-        id: movieId,
-        url: filmUrl,
+        url: filmName,
         fullUrl: filmFullUrl,
         rating: rating,
         date: currentFilmDateAdded,
         type: type,
+        year: year,
+        id: movieId,
         parentName: parentName,
         parentId: parentId,
-        year: year,
         computed: computed,
         computedCount: computed ? this.getCurrentFilmComputedCount() : "",
         computedFromText: computed ? computedFrom : "",
@@ -2621,9 +2651,8 @@ async function deleteIndexedDB(dbName, storeName) {
       const updated = await saveToIndexedDB(INDEXED_DB_NAME, this.username, dataToUpdate);
       if (updated) {
         console.info("✅ Updated record in DB.");
-        const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
-        console.log(`IndexedDB length: ${cur_rat}`);
-        await this.updateControlPanelRatingCount();
+        // Without async because we don't need to wait for it
+        this.updateControlPanelRatingCount();
       }
     }
 
@@ -2823,6 +2852,7 @@ async function deleteIndexedDB(dbName, storeName) {
       const computedSpan = document.getElementById('cc-control-panel-computed-count');
 
       ratingsSpan.textContent = `${rated} / ${current_ratings}`;
+      console.log(`[CC] updateControlPanelRatingCount() ${rated} / ${current_ratings}`);
       // $computedSpan.text(`${computed}`);
       computedSpan.textContent = '¯\\_(ツ)_/¯';
 
