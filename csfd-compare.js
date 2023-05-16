@@ -259,49 +259,47 @@ async function updateIndexedDB(dbName, storeName, data) {
   const transaction = db.transaction(storeName, 'readwrite');
   const store = transaction.objectStore(storeName);
 
-  for (const id in data) {
-    // Check if the item exists
-    const getRequest = store.get(id);
-    getRequest.onsuccess = () => {
-      // If the item exists, update it
-      if (getRequest.result) {
-        const item = { ...data[id], id };
-        store.put(item);
-      }
-    };
-  }
-  await new Promise((resolve, reject) => {
-    transaction.oncomplete = () => resolve(true);
-    transaction.onerror = () => reject(transaction.error);
-  });
-
-  // try {
-  //   for (const id in data) {
-  //     // Check if the item exists
-  //     const getRequest = store.get(id);
-  //     getRequest.onsuccess = () => {
-  //       // If the item exists, update it
-  //       if (getRequest.result) {
-  //         const item = { ...data[id], id };
-  //         store.put(item);
-  //       }
-  //     };
-  //   }
-  //   await new Promise((resolve, reject) => {
-  //     transaction.oncomplete = () => resolve();
-  //     transaction.onerror = () => reject(transaction.error);
-  //   });
-  //   return true;
-  // } catch (err) {
-  //   console.log('Error: updateIndexedDB():', err);
-  //   return false;
+  // for (const id in data) {
+  //   // Check if the item exists
+  //   const getRequest = store.get(id);
+  //   getRequest.onsuccess = () => {
+  //     // If the item exists, update it
+  //     if (getRequest.result) {
+  //       const item = { ...data[id], id };
+  //       store.put(item);
+  //     }
+  //   };
   // }
+  // await new Promise((resolve, reject) => {
+  //   transaction.oncomplete = () => resolve(true);
+  //   transaction.onerror = () => reject(transaction.error);
+  // });
 
-  const end = performance.now();
-  const time = (end - start) / 1000;
-  console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+  try {
+    for (const id in data) {
+      // Check if the item exists
+      const getRequest = store.get(id);
+      getRequest.onsuccess = () => {
+        // If the item exists, update it
+        if (getRequest.result) {
+          const item = { ...data[id], id };
+          store.put(item);
+        }
+      };
+    }
+    const end = performance.now();
+    const time = (end - start) / 1000;
+    console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
+    await new Promise((resolve, reject) => {
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    return true;
+  } catch (err) {
+    console.log('Error: updateIndexedDB():', err);
+    return false;
+  }
 
-  return true;
 }
 
 /**
@@ -813,8 +811,8 @@ async function deleteIndexedDB(dbName, storeName) {
      */
     async updateInDB(ratingsObject) {
       // TODO: Doplnit logiku update jen pouze pokud je hodnocení jiné než v IndexedDB
-      console.log(`⚙️ ~ [CC] ~ updateInLocalStorage ~ Updating item...`);
-      return await updateIndexedDB(INDEXED_DB_NAME, await this.getUsername(), ratingsObject);
+      console.log(`⚙️ ~ [CC] ~ updateInDb ~ Updating item...`, ratingsObject);
+      return await updateIndexedDB(INDEXED_DB_NAME, this.username, ratingsObject);
       // // Check if film is in LocalStorage
       // const filmUrl = this.getCurrentFilmUrl();
       // const filmId = await this.getMovieIdFromHref(filmUrl);
@@ -2596,6 +2594,7 @@ async function deleteIndexedDB(dbName, storeName) {
         lastUpdate: lastUpdate,
       };
       const dataToUpdate = { [movieId]: ratingsObject };
+      console.log(`Data to update:`, dataToUpdate);
 
       const updated = await this.updateInDB(dataToUpdate);
       if (updated) {
@@ -2790,8 +2789,6 @@ async function deleteIndexedDB(dbName, storeName) {
 
     async updateControlPanelRatingCount() {  // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
       const start = performance.now();
-
-      console.log(`[CC] updateControlPanelRatingCount() this.username: ${this.username}`);
 
       const [current_ratings, rated] = await Promise.all([
         this.getCurrentUserRatingsCount(),
