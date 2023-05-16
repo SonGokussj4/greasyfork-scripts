@@ -279,7 +279,7 @@ async function updateIndexedDB(dbName, storeName, data) {
   const time = (end - start) / 1000;
   console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
 
-  return true;
+  // return true;
 }
 
 /**
