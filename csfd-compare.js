@@ -31,6 +31,10 @@ const INDEXED_DB_NAME = 'CC-Ratings';
 
 const DEBUG_MAX_PAGES_LOAD = 0;  // 0 = no limit
 
+window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
+  IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
+  dbVersion = 1;
+
 let defaultSettings = {
   // HOME PAGE
   hiddenSections: [],
@@ -2597,6 +2601,13 @@ async function deleteIndexedDB(dbName, storeName) {
     async checkAndUpdateCurrentRating() {
       const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
       console.log(`Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
+
+      // TODO: Computed rating is not working properly, so we skip it for now
+      if (computed) {
+        console.log(`Current rating is computed, skipping...`);
+        return;
+      }
+
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
       console.log(`Current film date added: ${currentFilmDateAdded}`);
 
