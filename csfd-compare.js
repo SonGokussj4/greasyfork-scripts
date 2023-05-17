@@ -7,13 +7,15 @@
 // @license      GNU GPLv3
 // @match        http*://www.csfd.cz/*
 // @match        http*://www.csfd.sk/*
+// @grant        GM_addStyle
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
+
+// ==/UserScript==
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_listValues
 // @run-at       document-start
-// ==/UserScript==
 
 
 const VERSION = 'v0.6.0.2';
@@ -55,6 +57,8 @@ let defaultSettings = {
   // EXPERIMENTAL
   loadComputedRatings: false,
   addChatReplyButton: false,
+  hideSelectedVisitors: false,
+  hideSelectedVisitorList: [],
 };
 
 
@@ -1002,7 +1006,6 @@ async function deleteIndexedDB(dbName, storeName) {
       $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
       $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
       settings.hideSelectedUserReviews || $('#txtHideSelectedUserReviews').parent().hide();
-      // if (settings.hideSelectedUserReviews === false) { $('#txtHideSelectedUserReviews').parent().hide(); }
       if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
 
       // ACTORS
@@ -1011,6 +1014,9 @@ async function deleteIndexedDB(dbName, storeName) {
       // EXPERIMENTAL
       $('#chkLoadComputedRatings').attr('checked', settings.loadComputedRatings);
       $('#chkAddChatReplyButton').attr('checked', settings.addChatReplyButton);
+      $('#chkHideSelectedVisitors').attr('checked', settings.hideSelectedVisitors);
+      settings.hideSelectedVisitors || $('#txtHideSelectedVisitors').parent().hide();
+      if (settings.hideSelectedVisitorsList !== undefined) { $('#txtHideSelectedVisitors').val(settings.hideSelectedVisitorsList.join(', ')); }
     }
 
     async addSettingsEvents() {
@@ -1128,6 +1134,18 @@ async function deleteIndexedDB(dbName, storeName) {
         settings.addChatReplyButton = this.checked;
         localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
         Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      });
+      $('#chkHideSelectedVisitors').on('change', function () {
+        settings.hideSelectedVisitors = this.checked;
+        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+        $('#txtHideSelectedVisitors').parent().toggle();
+      });
+      $('#txtHideSelectedVisitors').on('change', function () {
+        let hiddenVisitors = this.value.split(/,\s*/);
+        settings.hideSelectedVisitorsList = hiddenVisitors;
+        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+        Glob.popup(`Ignorovaní uživatelé:\n${hiddenVisitors.join(', ')}`, 4);
       });
 
     }
@@ -2442,14 +2460,23 @@ async function deleteIndexedDB(dbName, storeName) {
                     <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">!! Experimentální !!</h2>
                         <section>
-                          <div class="article-content">
-                              <input type="checkbox" id="chkLoadComputedRatings" name="control-panel-on-hover" disabled>
-                              <label for="chkLoadComputedRatings" style="${resetLabelStyle}"><del>Přinačíst vypočtená (černá) hodnocení</del></label>
-                          </div>
-                          <div class="article-content">
-                              <input type="checkbox" id="chkAddChatReplyButton" name="control-panel-on-hover" ${disabled}>
-                              <label for="chkAddChatReplyButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat v diskuzích možnost odpovědět na sebe</label>
-                          </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkLoadComputedRatings" name="control-panel-on-hover" disabled>
+                                <label for="chkLoadComputedRatings" style="${resetLabelStyle}"><del>Přinačíst vypočtená (černá) hodnocení</del></label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkAddChatReplyButton" name="control-panel-on-hover" ${disabled}>
+                                <label for="chkAddChatReplyButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat v diskuzích možnost odpovědět na sebe</label>
+                            </div>
+                            <div class="article-content">
+                                <input type="checkbox" id="chkHideSelectedVisitors" name="hide-selected-visitors">
+                                <label for="chkHideSelectedVisitors" style="${resetLabelStyle}">Skrýt uživatele v návštěvnících</label>
+                                <!--${csfd.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR")}-->
+                                <div>
+                                    <input type="textbox" id="txtHideSelectedVisitors" name="hide-selected-visitors">
+                                    <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
+                                </div>
+                            </div>
                         </section>
                     </article>
 
@@ -2757,6 +2784,38 @@ async function deleteIndexedDB(dbName, storeName) {
     }
 
     /**
+     * Hide selected visitors from the "Personal-Favorites" page and "Visitors" page.
+     * Hides each row where the username is in the settings.hideSelectedVisitorsList
+     * @returns {Promise<None>}
+     */
+    async hideSelectedVisitors() {
+      // Hide visitors from TABLE
+      const rows = document.getElementsByTagName("tr");
+      // Check if there is a <td> with both <img> and <a>
+      for (const row of rows) {
+        // Ignore headers
+        if (row.getElementsByTagName("td").length < 2) { continue; }
+        const td = row.getElementsByTagName("td")[1];
+        // Ignore if there is no <img> (country flag) AND <a> (username)
+        if (td.getElementsByTagName("img").length !== 1) { continue; }
+        if (td.getElementsByTagName("a").length !== 1) { continue; }
+        const a = td.getElementsByTagName("a")[0];
+        const username = a.text;
+        if (settings.hideSelectedVisitorsList.includes(username)) {
+          row.style.display = "none";
+        }
+      }
+      // Hide visitors from WHO-FAVORS-ME
+      const articles = document.querySelectorAll('.who-favors-me-users article');
+      articles.forEach(article => {
+        const username = article.querySelector('header a').textContent.trim();
+        if (settings.hideSelectedVisitorsList.includes(username)) {
+          article.style.display = 'none';
+        }
+      });
+    }
+
+    /**
      *
      * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
      */
@@ -2976,6 +3035,17 @@ async function deleteIndexedDB(dbName, storeName) {
   await csfd.fillMissingSettingsKeys();
 
   const settings = await getSettings();
+
+  // =================================
+  // Page - Soukrome
+  // =================================
+  if (location.href.includes('/soukrome/') || location.href.includes('/sukromne/')) {
+    if (settings.hideSelectedVisitors) { csfd.hideSelectedVisitors(); }
+  }
+
+  // =================================
+  //
+  // =================================
   await csfd.addSettingsPanel();
   await csfd.loadInitialSettings();
   await csfd.addSettingsEvents();
@@ -2989,7 +3059,10 @@ async function deleteIndexedDB(dbName, storeName) {
   if (settings.clickableHeaderBoxes) { csfd.clickableHeaderBoxes(); }
   if (settings.showControlPanelOnHover) { csfd.openControlPanelOnHover(); }
 
-  // Film/Series page
+
+  // =================================
+  // Page - Film/Series
+  // =================================
   if (location.href.includes('/film/') || location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
     if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
     if (settings.showLinkToImage) { csfd.showLinkToImage(); }
