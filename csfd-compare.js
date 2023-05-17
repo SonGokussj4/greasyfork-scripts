@@ -456,19 +456,40 @@ async function getIndexedDBLength(dbName, storeName) {
 
   const transaction = db.transaction(storeName, 'readonly');
   const store = transaction.objectStore(storeName);
-  const countRequest = store.count();
+  // const countRequest = store.count();
+  // const count = await new Promise((resolve, reject) => {
+  //   countRequest.onsuccess = () => resolve(countRequest.result);
+  //   countRequest.onerror = () => reject(countRequest.error);
+  // });
 
-  const count = await new Promise((resolve, reject) => {
-    countRequest.onsuccess = () => resolve(countRequest.result);
-    countRequest.onerror = () => reject(countRequest.error);
+  let count = 0;
+  let computedCount = 0;
+  const cursorRequest = store.openCursor();
+
+  const cursorFinished = await new Promise((resolve, reject) => {
+    cursorRequest.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        if (cursor.value.computed === false) {
+          count++;
+        } else {
+          computedCount++;
+        }
+        cursor.continue();
+      } else {
+        resolve(true);
+      }
+    };
+    cursorRequest.onerror = () => reject(cursorRequest.error);
   });
 
   db.close();
 
   const end = performance.now();
   const time = (end - start) / 1000;
+  const totalCount = count + computedCount;
   console.debug(`[CC] ${arguments.callee.name}() Time: ${time} seconds`);
-  return count;
+  return { count, computedCount, totalCount };
 }
 
 /**
@@ -2335,11 +2356,11 @@ async function deleteIndexedDB(dbName, storeName) {
                         <h2>CSFD-Compare</h2>
 
                         <span class="badge" id="cc-control-panel-rating-count" title="Počet načtených/celkových červených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #aa2c16; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
-                            ${new_rated_ratings} / ${current_ratings}
+                            ${new_rated_ratings.count} / ${current_ratings}
                         </span>
 
                         <span class="badge" id="cc-control-panel-computed-count" title="Počet načtených vypočtených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #393939; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
-                            ${computed_ratings}
+                            ${computed_ratings.computedCount}
                         </span>
 
                         <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">
@@ -2602,12 +2623,6 @@ async function deleteIndexedDB(dbName, storeName) {
       const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
       console.log(`Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
 
-      // TODO: Computed rating is not working properly, so we skip it for now
-      if (computed) {
-        console.log(`Current rating is computed, skipping...`);
-        return;
-      }
-
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
       console.log(`Current film date added: ${currentFilmDateAdded}`);
 
@@ -2653,7 +2668,12 @@ async function deleteIndexedDB(dbName, storeName) {
           const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
           console.log(`☠️ IndexedDB length: ${cur_rat}`);
         }
+        return;
+      }
 
+      // Ignore if current film is not rated
+      if (rating === "") {
+        console.log("Current film is not rated, skipping...");
         return;
       }
 
@@ -2921,10 +2941,10 @@ async function deleteIndexedDB(dbName, storeName) {
       const ratingsSpan = document.getElementById('cc-control-panel-rating-count');
       const computedSpan = document.getElementById('cc-control-panel-computed-count');
 
-      ratingsSpan.textContent = `${rated} / ${current_ratings}`;
-      console.log(`[CC] updateControlPanelRatingCount() ${rated} / ${current_ratings}`);
-      // $computedSpan.text(`${computed}`);
-      computedSpan.textContent = '¯\\_(ツ)_/¯';
+      ratingsSpan.textContent = `${rated.count} / ${current_ratings}`;
+      console.log(`[CC] updateControlPanelRatingCount() ${rated.count} / ${current_ratings}`);
+      computedSpan.textContent = `${rated.computedCount}`;
+      // computedSpan.textContent = '¯\\_(ツ)_/¯';
 
       const end = performance.now();
       const time = (end - start) / 1000;
