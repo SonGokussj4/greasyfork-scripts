@@ -35,6 +35,56 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
   dbVersion = 1;
 
+const profilingData = {};
+
+function profileFunction(fn, name) {
+  return function (...args) {
+    const start = performance.now();
+    const result = fn.apply(this, args);
+    const end = performance.now();
+
+    if (!profilingData[name]) {
+      profilingData[name] = {
+        calledNumber: 0,
+        completeTime: 0,
+      };
+    }
+
+    profilingData[name].calledNumber += 1;
+    profilingData[name].completeTime += (end - start);
+    profilingData[name].averagePerCall = profilingData[name].completeTime / profilingData[name].calledNumber;
+
+    return result;
+  };
+}
+
+function profileMethod(obj, methodName) {
+  const originalMethod = obj[methodName];
+
+  obj[methodName] = function (...args) {
+    // console.time(methodName);
+    const start = performance.now();
+    const result = originalMethod.apply(this, args);
+    // console.timeEnd(methodName);
+    const end = performance.now();
+
+    if (!profilingData[methodName]) {
+      profilingData[methodName] = {
+        calledNumber: 0,
+        completeTime: 0,
+      };
+    }
+
+    profilingData[methodName].calledNumber += 1;
+    // profilingData[methodName].completeTime += (performance.now() - window.performance.timing.navigationStart);
+    profilingData[methodName].completeTime += (end - start);
+    profilingData[methodName].averagePerCall = profilingData[methodName].completeTime / profilingData[methodName].calledNumber;
+
+    return result;
+  };
+}
+
+
 let defaultSettings = {
   // HOME PAGE
   hiddenSections: [],
@@ -3064,7 +3114,14 @@ async function deleteIndexedDB(dbName, storeName) {
 
   await delay(20);  // Greasemonkey workaround, wait a little bit for page to somehow load
   console.debug("CSFD-Compare - Script started")
-  let csfd = new Csfd($('div.page-content'));
+  const csfd = new Csfd($('div.page-content'));
+
+  // =================================
+  // PROFILING METHODS
+  // =================================
+  profileMethod(csfd, 'getUsername');
+  profileMethod(csfd, 'loadInitialSettings');
+  profileMethod(csfd, 'hideSelectedVisitors');
 
   // =================================
   // LOAD SETTINGS
@@ -3276,6 +3333,8 @@ async function deleteIndexedDB(dbName, storeName) {
 
   // Call TippyJs constructor
   await refreshTooltips();
+
+  console.table(profilingData);
 
   // =================================
   // TEST
