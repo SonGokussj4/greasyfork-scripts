@@ -58,6 +58,28 @@ function profileFunction(fn, name) {
   };
 }
 
+function profileAsyncFunction(fn, name) {
+  return async function (...args) {
+    console.time(name);
+    const result = await fn.apply(this, args);
+    console.timeEnd(name);
+
+    if (!profilingData[name]) {
+      profilingData[name] = {
+        calledNumber: 0,
+        completeTime: 0,
+      };
+    }
+
+    profilingData[name].calledNumber += 1;
+    profilingData[name].completeTime += (performance.now() - window.performance.timing.navigationStart);
+    profilingData[name].averagePerCall = profilingData[name].completeTime / profilingData[name].calledNumber;
+
+    return result;
+  };
+}
+
+
 function profileMethod(obj, methodName) {
   const originalMethod = obj[methodName];
 
@@ -3119,9 +3141,35 @@ async function deleteIndexedDB(dbName, storeName) {
   // =================================
   // PROFILING METHODS
   // =================================
+  profileMethod(csfd, 'addHideSectionButton');
+  profileMethod(csfd, 'addImdbIcon');
+  profileMethod(csfd, 'addRatingsComputedCount');
+  profileMethod(csfd, 'addRatingsDate');
+  profileMethod(csfd, 'addSettingsEvents');
+  profileMethod(csfd, 'addSettingsPanel');
+  profileMethod(csfd, 'addStars');
+  profileMethod(csfd, 'checkAndUpdateCurrentRating');
+  profileMethod(csfd, 'checkForUpdate');
+  profileMethod(csfd, 'clickableHeaderBoxes');
+  profileMethod(csfd, 'getChangelog');
+  profileMethod(csfd, 'getCurrentFilmDateAdded');
   profileMethod(csfd, 'getUsername');
-  profileMethod(csfd, 'loadInitialSettings');
+  profileMethod(csfd, 'helpImageComponent');
   profileMethod(csfd, 'hideSelectedVisitors');
+  profileMethod(csfd, 'initializeClassVariables');
+  profileMethod(csfd, 'isRatingCountOk');
+  profileMethod(csfd, 'loadInitialSettings');
+  profileMethod(csfd, 'onPageDiskuze');
+  profileMethod(csfd, 'onPageOtherUser');
+  profileMethod(csfd, 'onPageOtherUserHodnoceni');
+  profileMethod(csfd, 'onPersonalFavorite');
+  profileMethod(csfd, 'removableHomeBoxes');
+  profileMethod(csfd, 'settingsPanelComponent');
+  profileMethod(csfd, 'showOnOneLine');
+  profileMethod(csfd, 'updateControlPanelRatingCount');
+  profileAsyncFunction(csfd, 'doesIndexDbExist');
+
+
 
   // =================================
   // LOAD SETTINGS
