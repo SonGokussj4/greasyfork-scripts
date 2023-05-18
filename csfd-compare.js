@@ -2820,6 +2820,8 @@ async function deleteIndexedDB(dbName, storeName) {
      * @returns {Promise<None>}
      */
     async hideSelectedVisitors() {
+      const start = performance.now();
+
       // Hide visitors from TABLE
       const rows = document.getElementsByTagName("tr");
       // Check if there is a <td> with both <img> and <a>
@@ -2844,6 +2846,10 @@ async function deleteIndexedDB(dbName, storeName) {
           article.style.display = 'none';
         }
       });
+
+      const end = performance.now();
+      const time = (end - start) / 1000;
+      console.debug(`[CC] hideSelectedVisitors() Time: ${time} seconds`);
     }
 
     /**
