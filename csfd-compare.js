@@ -3205,6 +3205,9 @@ async function deleteIndexedDB(dbName, storeName) {
   profileMethod(csfd, 'settingsPanelComponent');
   profileMethod(csfd, 'showOnOneLine');
   profileMethod(csfd, 'updateControlPanelRatingCount');
+  // =================================
+  // PROFILING ASYNC FUNCTIONS
+  // =================================
   onHomepage = profileAsyncFunction(onHomepage, 'onHomepage');
   getSettings = profileAsyncFunction(getSettings, 'getSettings');
   initIndexedDB = profileAsyncFunction(initIndexedDB, 'initIndexedDB');
