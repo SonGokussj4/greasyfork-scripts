@@ -1522,7 +1522,8 @@ async function deleteIndexedDB(dbName, storeName) {
         id: 'btn-load-computed-ratings',
         "class": 'csfd-compare-reload',
         html: `<center>
-                  <b> >> Načíst vypočtená hodnocení << </b> <br />
+                  <b> >> Přinačíst vypočtená hodnocení << </b> <br />
+                  (Work in progress)
                 </center>`,
       }).css({
         textTransform: "initial",
@@ -1533,6 +1534,7 @@ async function deleteIndexedDB(dbName, storeName) {
         width: "-moz-available",
         width: "-webkit-fill-available",
         width: "100%",
+        backgroundColor: "#212121",
       });
       const $div = $('<div>', {
         html: $button,
