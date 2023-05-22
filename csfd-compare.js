@@ -763,6 +763,7 @@ async function deleteIndexedDB(dbName, storeName) {
       // get 'sans-sourire' from '/uzivatel/714142-sans-sourire/' with regex
       const foundMatch = userHref.match(new RegExp(/\/(\d+-(.*)+)\//));
       if (foundMatch.length == 3) {
+        this.username = foundMatch[2];
         return foundMatch[2];
       }
       return undefined;
@@ -1513,6 +1514,33 @@ async function deleteIndexedDB(dbName, storeName) {
           }
         }
         csfd.refreshAllRatingsNew(csfd, forceUpdate);
+      });
+    }
+
+    async btnLoadComputedRatings() {
+      const $button = $('<button>', {
+        id: 'btn-load-computed-ratings',
+        "class": 'csfd-compare-reload',
+        html: `<center>
+                  <b> >> Načíst vypočtená hodnocení << </b> <br />
+                </center>`,
+      }).css({
+        textTransform: "initial",
+        fontSize: "0.9em",
+        padding: "5px",
+        border: "4px solid whitesmoke",
+        borderRadius: "8px",
+        width: "-moz-available",
+        width: "-webkit-fill-available",
+        width: "100%",
+      });
+      const $div = $('<div>', {
+        html: $button,
+      });
+      $('.csfd-compare-settings').after($div);
+
+      $($button).on("click", async function () {
+        console.debug("Refreshing Computed Ratings...");
       });
     }
 
@@ -2445,7 +2473,8 @@ async function deleteIndexedDB(dbName, storeName) {
       });
 
       const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
-      const new_rated_ratings = await getIndexedDBLength(INDEXED_DB_NAME, await this.getUsername());
+      console.log(`[ DEBUG ] this.username: ${this.username}`);
+      const new_rated_ratings = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
       const current_ratings = await this.getCurrentUserRatingsCount();
       // const current_ratings = 999;
 
@@ -3176,22 +3205,22 @@ async function deleteIndexedDB(dbName, storeName) {
   profileMethod(csfd, 'settingsPanelComponent');
   profileMethod(csfd, 'showOnOneLine');
   profileMethod(csfd, 'updateControlPanelRatingCount');
-  checkSettingsValidity = profileAsyncFunction(checkSettingsValidity, 'checkSettingsValidity')
-  deleteAllDataFromIndexedDB = profileAsyncFunction(deleteAllDataFromIndexedDB, 'deleteAllDataFromIndexedDB')
-  deleteIndexedDB = profileAsyncFunction(deleteIndexedDB, 'deleteIndexedDB')
-  deleteItemFromIndexedDB = profileAsyncFunction(deleteItemFromIndexedDB, 'deleteItemFromIndexedDB')
-  doesIndexedDBExist = profileAsyncFunction(doesIndexedDBExist, 'doesIndexedDBExist')
-  getAllFromIndexedDB = profileAsyncFunction(getAllFromIndexedDB, 'getAllFromIndexedDB')
-  getIndexedDBLength = memoize(profileAsyncFunction(getIndexedDBLength, 'getIndexedDBLength'), "getIndexedDBLength")
-  getItemsByPropertyFromIndexedDB = memoize(profileAsyncFunction(getItemsByPropertyFromIndexedDB, 'getItemsByPropertyFromIndexedDB'), "getItemsByPropertyFromIndexedDB")
-  getItemsFromIndexedDB = memoize(profileAsyncFunction(getItemsFromIndexedDB, 'getItemsFromIndexedDB'), "getItemsFromIndexedDB")
-  getSettings = profileAsyncFunction(getSettings, 'getSettings')
-  initIndexedDB = memoize(profileAsyncFunction(initIndexedDB, 'initIndexedDB'), "initIndexedDB")
-  mergeDict = profileAsyncFunction(mergeDict, 'mergeDict')
-  onHomepage = profileAsyncFunction(onHomepage, 'onHomepage')
-  refreshTooltips = profileAsyncFunction(refreshTooltips, 'refreshTooltips')
-  saveToIndexedDB = profileAsyncFunction(saveToIndexedDB, 'saveToIndexedDB')
-  updateIndexedDB = profileAsyncFunction(updateIndexedDB, 'updateIndexedDB')
+  onHomepage = profileAsyncFunction(onHomepage, 'onHomepage');
+  getSettings = profileAsyncFunction(getSettings, 'getSettings');
+  initIndexedDB = profileAsyncFunction(initIndexedDB, 'initIndexedDB');
+  checkSettingsValidity = profileAsyncFunction(checkSettingsValidity, 'checkSettingsValidity');
+  deleteAllDataFromIndexedDB = profileAsyncFunction(deleteAllDataFromIndexedDB, 'deleteAllDataFromIndexedDB');
+  deleteIndexedDB = profileAsyncFunction(deleteIndexedDB, 'deleteIndexedDB');
+  deleteItemFromIndexedDB = profileAsyncFunction(deleteItemFromIndexedDB, 'deleteItemFromIndexedDB');
+  doesIndexedDBExist = profileAsyncFunction(doesIndexedDBExist, 'doesIndexedDBExist');
+  getAllFromIndexedDB = profileAsyncFunction(getAllFromIndexedDB, 'getAllFromIndexedDB');
+  getIndexedDBLength = profileAsyncFunction(getIndexedDBLength, 'getIndexedDBLength');
+  getItemsByPropertyFromIndexedDB = profileAsyncFunction(getItemsByPropertyFromIndexedDB, 'getItemsByPropertyFromIndexedDB');
+  getItemsFromIndexedDB = profileAsyncFunction(getItemsFromIndexedDB, 'getItemsFromIndexedDB');
+  mergeDict = profileAsyncFunction(mergeDict, 'mergeDict');
+  refreshTooltips = profileAsyncFunction(refreshTooltips, 'refreshTooltips');
+  saveToIndexedDB = profileAsyncFunction(saveToIndexedDB, 'saveToIndexedDB');
+  updateIndexedDB = profileAsyncFunction(updateIndexedDB, 'updateIndexedDB');
 
 
 
@@ -3299,6 +3328,7 @@ async function deleteIndexedDB(dbName, storeName) {
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
       }
+      csfd.btnLoadComputedRatings();  // TODO:
     }
 
     // =================================
