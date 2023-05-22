@@ -35,7 +35,27 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
   dbVersion = 1;
 
+let memoizeData = {};
 const profilingData = {};
+
+function memoize(fn, fnName = '') {
+  const cache = {}
+
+  return async function (key, ...args) {
+    if (cache[key]) {
+      return cache[key]
+    }
+    if (!memoizeData[fnName]) {
+      memoizeData[fnName] = {
+        count: 0,
+      }
+    }
+    memoizeData[fnName] = {
+      count: memoizeData[fnName].count + 1,
+    }
+    return (cache[key] = await fn(...args))
+  }
+}
 
 function profileFunction(fn, name) {
   return function (...args) {
@@ -45,14 +65,15 @@ function profileFunction(fn, name) {
 
     if (!profilingData[name]) {
       profilingData[name] = {
+        type: "function",
         calledNumber: 0,
-        completeTime: 0,
+        completeTime_ms: 0,
       };
     }
 
     profilingData[name].calledNumber += 1;
-    profilingData[name].completeTime += (end - start);
-    profilingData[name].averagePerCall = profilingData[name].completeTime / profilingData[name].calledNumber;
+    profilingData[name].completeTime_ms += Math.floor((end - start) * 10000) / 10000;
+    profilingData[name].averagePerCall_ms = profilingData[name].completeTime_ms / profilingData[name].calledNumber;
 
     return result;
   };
@@ -60,47 +81,45 @@ function profileFunction(fn, name) {
 
 function profileAsyncFunction(fn, name) {
   return async function (...args) {
-    console.time(name);
+    const start = performance.now();
     const result = await fn.apply(this, args);
-    console.timeEnd(name);
+    const end = performance.now();
 
     if (!profilingData[name]) {
       profilingData[name] = {
+        type: "async function",
         calledNumber: 0,
-        completeTime: 0,
+        completeTime_ms: 0,
       };
     }
 
     profilingData[name].calledNumber += 1;
-    profilingData[name].completeTime += (performance.now() - window.performance.timing.navigationStart);
-    profilingData[name].averagePerCall = profilingData[name].completeTime / profilingData[name].calledNumber;
+    profilingData[name].completeTime_ms += Math.floor((end - start) * 10000) / 10000;
+    profilingData[name].averagePerCall_ms = profilingData[name].completeTime_ms / profilingData[name].calledNumber;
 
     return result;
   };
 }
 
-
 function profileMethod(obj, methodName) {
   const originalMethod = obj[methodName];
 
   obj[methodName] = function (...args) {
-    // console.time(methodName);
     const start = performance.now();
     const result = originalMethod.apply(this, args);
-    // console.timeEnd(methodName);
     const end = performance.now();
 
     if (!profilingData[methodName]) {
       profilingData[methodName] = {
+        type: "method",
         calledNumber: 0,
-        completeTime: 0,
+        completeTime_ms: 0,
       };
     }
 
     profilingData[methodName].calledNumber += 1;
-    // profilingData[methodName].completeTime += (performance.now() - window.performance.timing.navigationStart);
-    profilingData[methodName].completeTime += (end - start);
-    profilingData[methodName].averagePerCall = profilingData[methodName].completeTime / profilingData[methodName].calledNumber;
+    profilingData[methodName].completeTime_ms += Math.floor((end - start) * 10000) / 10000;
+    profilingData[methodName].averagePerCall_ms = profilingData[methodName].completeTime_ms / profilingData[methodName].calledNumber;
 
     return result;
   };
@@ -379,8 +398,19 @@ async function updateIndexedDB(dbName, storeName, data) {
  * @returns {Promise<boolean>} exists - True if the database exists
  */
 async function doesIndexedDBExist(dbName) {
+  // const startComplet = performance.now();
+  // const start1 = performance.now();
   const dbs = await indexedDB.databases();
+  // const end1 = performance.now();
+  // const start2 = performance.now();
   const dbExists = dbs.find((db) => db.name === dbName);
+  // const end2 = performance.now();
+  // const endComplet = performance.now();
+
+  // console.log(`[CC] • (doesIndexedDBExist) Time: ${(endComplet - startComplet)} ms`);
+  // console.log(`  -- (await indexDB.databases()) Time: ${(end1 - start1)} ms`);
+  // console.debug(`  -- (dbs.find) Time: ${(end2 - start2) } ms`);
+
   return Boolean(dbExists);
 }
 
@@ -2698,27 +2728,6 @@ async function deleteIndexedDB(dbName, storeName) {
       const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
       console.log(`Current film date added: ${currentFilmDateAdded}`);
 
-      // TODO: TESTING
-      // const data = {
-      //   ['1324445']: {
-      //     id: '1324445',
-      //     url: '1324445-stroje',
-      //     fullUrl: 'https://www.csfd.cz/film/1324435-silo/1324445-stroje/recenze/',
-      //     rating: 5,
-      //     date: '16.05.2023',
-      //     computed: false,
-      //     computedCount: "",
-      //     computedFromText: "",
-      //     lastUpdate: "16.5.2023 12:26:00",
-      //     parentId: 1324435,
-      //     parentName: "1324435-silo",
-      //     type: "series",
-      //     year: "2023",
-      //   }
-      // }
-      // // add to IndexedDb
-      // await saveToIndexedDB(INDEXED_DB_NAME, await this.getUsername(), data);
-
       const filmUrl = this.getCurrentFilmUrl();
       console.log(`Current film url: ${filmUrl}`);
 
@@ -3167,7 +3176,22 @@ async function deleteIndexedDB(dbName, storeName) {
   profileMethod(csfd, 'settingsPanelComponent');
   profileMethod(csfd, 'showOnOneLine');
   profileMethod(csfd, 'updateControlPanelRatingCount');
-  profileAsyncFunction(csfd, 'doesIndexDbExist');
+  checkSettingsValidity = profileAsyncFunction(checkSettingsValidity, 'checkSettingsValidity')
+  deleteAllDataFromIndexedDB = profileAsyncFunction(deleteAllDataFromIndexedDB, 'deleteAllDataFromIndexedDB')
+  deleteIndexedDB = profileAsyncFunction(deleteIndexedDB, 'deleteIndexedDB')
+  deleteItemFromIndexedDB = profileAsyncFunction(deleteItemFromIndexedDB, 'deleteItemFromIndexedDB')
+  doesIndexedDBExist = profileAsyncFunction(doesIndexedDBExist, 'doesIndexedDBExist')
+  getAllFromIndexedDB = profileAsyncFunction(getAllFromIndexedDB, 'getAllFromIndexedDB')
+  getIndexedDBLength = memoize(profileAsyncFunction(getIndexedDBLength, 'getIndexedDBLength'), "getIndexedDBLength")
+  getItemsByPropertyFromIndexedDB = memoize(profileAsyncFunction(getItemsByPropertyFromIndexedDB, 'getItemsByPropertyFromIndexedDB'), "getItemsByPropertyFromIndexedDB")
+  getItemsFromIndexedDB = memoize(profileAsyncFunction(getItemsFromIndexedDB, 'getItemsFromIndexedDB'), "getItemsFromIndexedDB")
+  getSettings = profileAsyncFunction(getSettings, 'getSettings')
+  initIndexedDB = memoize(profileAsyncFunction(initIndexedDB, 'initIndexedDB'), "initIndexedDB")
+  mergeDict = profileAsyncFunction(mergeDict, 'mergeDict')
+  onHomepage = profileAsyncFunction(onHomepage, 'onHomepage')
+  refreshTooltips = profileAsyncFunction(refreshTooltips, 'refreshTooltips')
+  saveToIndexedDB = profileAsyncFunction(saveToIndexedDB, 'saveToIndexedDB')
+  updateIndexedDB = profileAsyncFunction(updateIndexedDB, 'updateIndexedDB')
 
 
 
@@ -3381,8 +3405,8 @@ async function deleteIndexedDB(dbName, storeName) {
 
   // Call TippyJs constructor
   await refreshTooltips();
-
   console.table(profilingData);
+  console.log({ memoizeData });
 
   // =================================
   // TEST
