@@ -35,6 +35,7 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
   dbVersion = 1;
 
+const DEV_PANEL_ALWAYS_VISIBLE = false;
 
 // GM_addStyle(`
 //   .my-custom-style-test {
@@ -1455,6 +1456,7 @@ async function deleteIndexedDB(dbName, storeName) {
     async openControlPanelOnHover() {
       const btn = $('.button-control-panel');
       const panel = $('#dropdown-control-panel');
+
       $(btn).on('mouseover', () => {
         if (!panel.hasClass('active')) {
           panel.addClass('active');
@@ -2733,26 +2735,40 @@ async function deleteIndexedDB(dbName, storeName) {
         $element.remove();
       });
 
-      // TODO: DEBUG - zakomentovat pro nonstop zobrazení CC Menu
-      // Don't hide settings popup when mouse leaves within interval of 0.2s
-      let timer;
-      $(button).on("mouseover", function () {
-        if (timer) {
-          clearTimeout(timer);
-          timer = null;
-        }
-        if (!$(button).hasClass("active")) {
-          $(button).addClass("active");
-        }
-      });
-
-      $(button).on("mouseleave", function () {
-        if ($(button).hasClass("active")) {
-          timer = setTimeout(() => {
+      if (DEV_PANEL_ALWAYS_VISIBLE === true) {  // DEV SETTINGS
+        $(button).addClass("active");
+        $(button).on("click", function (event) {
+          // React only to clicks on the button itself
+          if (!event.target.className.includes("csfd-compare-menu")) {
+            return;
+          }
+          // Toggle active class
+          if ($(button).hasClass("active")) {
             $(button).removeClass("active");
-          }, 200);
-        }
-      });
+          } else {
+            $(button).addClass("active");
+          }
+        });
+      } else {
+        let timer;
+        $(button).on("mouseover", function () {
+          if (timer) {
+            clearTimeout(timer);
+            timer = null;
+          }
+          if (!$(button).hasClass("active")) {
+            $(button).addClass("active");
+          }
+        });
+
+        $(button).on("mouseleave", function () {
+          if ($(button).hasClass("active")) {
+            timer = setTimeout(() => {
+              $(button).removeClass("active");
+            }, 200);
+          }
+        });
+      }
 
       $(button).find("#btnResetSettings").on("click", async function () {
         console.debug("Resetting 'CSFD-Compare-settings' settings...");
@@ -3300,6 +3316,7 @@ async function deleteIndexedDB(dbName, storeName) {
   csfd.addImdbIcon();
 
   if (settings.clickableHeaderBoxes) { csfd.clickableHeaderBoxes(); }
+  // TODO: Toto nic nedela???
   if (settings.showControlPanelOnHover) { csfd.openControlPanelOnHover(); }
 
 
