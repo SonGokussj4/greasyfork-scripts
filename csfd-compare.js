@@ -35,27 +35,38 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
   dbVersion = 1;
 
-let memoizeData = {};
+
+// GM_addStyle(`
+//   .my-custom-style-test {
+//     background-color: red;
+//     width: 100px;
+//     height: 100px;
+//   }
+// `);
+
+
+
+// let memoizeData = {};
 const profilingData = {};
 
-function memoize(fn, fnName = '') {
-  const cache = {}
+// function memoize(fn, fnName = '') {
+//   const cache = {}
 
-  return async function (key, ...args) {
-    if (cache[key]) {
-      return cache[key]
-    }
-    if (!memoizeData[fnName]) {
-      memoizeData[fnName] = {
-        count: 0,
-      }
-    }
-    memoizeData[fnName] = {
-      count: memoizeData[fnName].count + 1,
-    }
-    return (cache[key] = await fn(...args))
-  }
-}
+//   return async function (key, ...args) {
+//     if (cache[key]) {
+//       return cache[key]
+//     }
+//     if (!memoizeData[fnName]) {
+//       memoizeData[fnName] = {
+//         count: 0,
+//       }
+//     }
+//     memoizeData[fnName] = {
+//       count: memoizeData[fnName].count + 1,
+//     }
+//     return (cache[key] = await fn(...args))
+//   }
+// }
 
 function profileFunction(fn, name) {
   return function (...args) {
@@ -1543,6 +1554,38 @@ async function deleteIndexedDB(dbName, storeName) {
 
       $($button).on("click", async function () {
         console.debug("Refreshing Computed Ratings...");
+        console.log({ username: csfd.username });
+        const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, csfd.username)
+        console.log(`len(allRatings) = ${Object.keys(allRatings).length}`);
+        const filteredKeys = Object.keys(allRatings).filter(key => allRatings[key].computed === true);
+
+        const computedRatings = filteredKeys.reduce((obj, key) => {
+          obj[key] = allRatings[key];
+          return obj;
+        }, {});
+
+        console.log({ computedRatings });
+
+        const episodesRatings = Object.keys(allRatings).filter(key => allRatings[key].type === "episode").reduce((obj, key) => {
+          obj[key] = allRatings[key];
+          return obj;
+        }, {});
+        console.log({ episodesRatings });
+        console.log({episodesRatingsLen: Object.keys(episodesRatings).length});
+
+        // Get all parentId and check if it exists in allRatings, if not, add it to empty array
+        const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
+        const allParentIdsUnique = [...new Set(allParentIds)];
+        console.log({ allParentIdsUnique });
+
+        const allParentIdsWithRatings = allParentIdsUnique.filter(id => Object.keys(allRatings).includes(id));
+        console.log({ allParentIdsWithRatings });
+
+
+
+
+
+
       });
     }
 
@@ -3441,7 +3484,7 @@ async function deleteIndexedDB(dbName, storeName) {
   // Call TippyJs constructor
   await refreshTooltips();
   console.table(profilingData);
-  console.log({ memoizeData });
+  // console.log({ memoizeData });
 
   // =================================
   // TEST
