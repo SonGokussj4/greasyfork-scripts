@@ -3629,5 +3629,8 @@ class Csfd {
 
 // Check if module object exists and export Csfd class
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = Csfd;
+  module.exports = {
+    Csfd,
+    onHomepage,
+  };
 }

@@ -8,10 +8,13 @@ if (typeof TextDecoder === "undefined") {
     global.TextDecoder = TextDecoder;
 }
 
-const { JSDOM } = require("jsdom");
+// const { JSDOM } = require("jsdom");
 const chai = require("chai");
 const expect = chai.expect;
-const Csfd = require("../csfd-compare.js");
+// const { Csfd } = require("../csfd-compare.js");
+
+const { Csfd, initIndexedDB } = require("../csfd-compare.js");
+// import { Csfd, initIndexedDB } from "../csfd-compare.js";
 
 beforeAll(() => {
     const fs = require("fs");
