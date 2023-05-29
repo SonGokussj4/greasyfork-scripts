@@ -1143,7 +1143,7 @@ class Csfd {
 
   async loadInitialSettings() {
 
-    const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
+    const boxSettingsName = 'CSFD-Compare-settings';
     const settings = await getSettings(boxSettingsName);
 
     // GLOBAL
@@ -1180,6 +1180,9 @@ class Csfd {
   }
 
   async addSettingsEvents() {
+    const boxSettingsName = 'CSFD-Compare-settings';
+    const settings = await getSettings(boxSettingsName);
+
     // HOME PAGE
 
     // GLOBAL
@@ -2866,8 +2869,8 @@ class Csfd {
       location.reload();
     });
 
-    $(button).find("#btnRemoveSavedRatings").on("click", async function () {
-      const username = await csfd.getUsername();
+    $(button).find("#btnRemoveSavedRatings").on("click", async () => {
+      const username = await this.getUsername();
 
       if (!username) {
         alert("Nejprve se přihlašte.");
@@ -2883,8 +2886,8 @@ class Csfd {
       location.reload();
     });
 
-    $(button).find("#btnRemoveDBRatings").on("click", async function () {
-      const username = await csfd.getUsername();
+    $(button).find("#btnRemoveDBRatings").on("click", async () => {
+      const username = await this.getUsername();
 
       if (!username) {
         alert("Nejprve se přihlašte.");
