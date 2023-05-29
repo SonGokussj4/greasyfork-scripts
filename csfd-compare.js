@@ -266,12 +266,11 @@ async function mergeDict(list) {
   return merged;
 }
 
-async function onHomepage() {
-  let check = false;
-  if (document.location.pathname === '/') {
-    check = true;
+async function onHomepage(windowObj = window) {
+  if (windowObj.location.pathname === '/') {
+    return true;
   }
-  return check;
+  return false;
 }
 
 async function initIndexedDB(dbName, storeName) {
