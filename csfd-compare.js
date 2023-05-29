@@ -2334,15 +2334,16 @@ class Csfd {
    * - href = '/film/774319-zhoubne-zlo/' --> 774319
    * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> 1121972
    * - href = '1058697-devadesatky' --> 1058697
+   * - href = 'sdfsfdsf-devadesatky' --> NaN
    * - href = \'' --> NaN
-   * - href = null --> null
+   * - href = null --> NaN
    */
   async getMovieIdFromHref(href) {
-    if (!href) { return null; }
+    if (!href) { return NaN; }
 
     const found_groups = href.match(/(\d)+-[-\w]+/ig);
 
-    if (!found_groups) { return null; }
+    if (!found_groups) { return NaN; }
     const movieIds = found_groups.map(x => x.split("-")[0]);
     const movieId = movieIds[movieIds.length - 1];
 
