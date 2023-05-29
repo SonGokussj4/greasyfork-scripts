@@ -35,7 +35,7 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
   dbVersion = 1;
 
-const DEV_PANEL_ALWAYS_VISIBLE = false;
+const DEV_PANEL_ALWAYS_VISIBLE = true;
 
 // GM_addStyle(`
 //   .my-custom-style-test {
@@ -292,6 +292,12 @@ async function initIndexedDB(dbName, storeName) {
     if (!store.indexNames.contains('year')) {
       store.createIndex('year', 'year', { unique: false });
     }
+    if (!store.indexNames.contains('type')) {
+      store.createIndex('type', 'type', { unique: false });
+    }
+    if (!store.indexNames.contains('rating')) {
+      store.createIndex('rating', 'rating', { unique: false });
+    }
   };
 
   openRequest.onsuccess = function () {
@@ -334,7 +340,7 @@ async function saveToIndexedDB(dbName, storeName, data) {
   try {
     for (const id in data) {
       // Add item to the store, key should be INT
-      const item = { ...data[id], id };
+      const item = { ...data[id], id: Number(id) };
       store.put(item);
     }
 
@@ -696,740 +702,754 @@ async function deleteIndexedDB(dbName, storeName) {
 }
 
 
+class Csfd {
 
-(async () => {
-  "use strict";
-  /* globals jQuery, $, waitForKeyElements */
-  /* jshint -W069 */
-  /* jshint -W083 */
-  /* jshint -W075 */
+  constructor(csfdPage) {
+    this.csfdPage = csfdPage;
+    this.stars = {};
+    this.storageKey = undefined;
+    this.userUrl = undefined;
+    this.username = undefined;
+    this.endPageNum = 0;
+    this.userRatingsCount = 0;
+    this.userRatingsUrl = undefined;
+    this.localStorageRatingsCount = 0;
+    this.settings = undefined;
+    this.missingComputedRatingsCount = 0;
 
+    this.RESULT = {};
 
-  class Csfd {
-
-    constructor(csfdPage) {
-      this.csfdPage = csfdPage;
-      this.stars = {};
-      this.storageKey = undefined;
-      this.userUrl = undefined;
-      this.username = undefined;
-      this.endPageNum = 0;
-      this.userRatingsCount = 0;
-      this.userRatingsUrl = undefined;
-      this.localStorageRatingsCount = 0;
-      this.settings = undefined;
-
-      this.RESULT = {};
-
-      // Ignore the ads... Make 'hodnoceni' table wider.
-      // TODO: Toto do hodnoceni!
-      $('.column.column-80').attr('class', '.column column-90');
+    // Ignore the ads... Make 'hodnoceni' table wider.
+    // TODO: Toto do hodnoceni!
+    // $('.column.column-80').attr('class', '.column column-90');
+    const ratingsColumn = document.querySelector('.column.column-80');
+    if (ratingsColumn) {
+      ratingsColumn.setAttribute('class', '.column column-90');
     }
+  }
 
-    async isLoggedIn() {
-      const $profile = $('.profile.initialized');
-      return $profile.length > 0;
-    }
+  async isLoggedIn() {
+    const $profile = $('.profile.initialized');
+    return $profile.length > 0;
+  }
 
-    /**
-     * @async
-     * @returns {Promise<string>} - User URL (e.g. /uzivatel/123456-adam-strong/)
-     */
-    async getCurrentUser() {
-      let loggedInUser = $('.profile.initialized').attr('href');
+  /**
+   * @async
+   * @returns {Promise<string>} - User URL (e.g. /uzivatel/123456-adam-strong/)
+   */
+  async getCurrentUser() {
+    let loggedInUser = $('.profile.initialized').attr('href');
 
-      if (loggedInUser !== undefined) {
-        if (loggedInUser.length == 1) {
-          loggedInUser = loggedInUser[0];
-        }
+    if (loggedInUser !== undefined) {
+      if (loggedInUser.length == 1) {
+        loggedInUser = loggedInUser[0];
       }
-
-      if (typeof loggedInUser === 'undefined') {
-        console.log("Trying again...");
-
-        // [OLD Firefox] workaround (the first returns undefined....?)
-        let profile = document.querySelectorAll('.profile');
-        if (profile.length == 0) {
-          return undefined;
-        }
-        loggedInUser = profile[0].getAttribute('href');
-
-        if (typeof loggedInUser === 'undefined') {
-          console.error(`${SCRIPTNAME}: Can't find logged in username...`);
-          throw (`${SCRIPTNAME}: exit`);  // TODO: Popup informing user
-        }
-      }
-      return loggedInUser;
     }
 
-    /**
-     * @async
-     * @returns {Promise<string>} - Username (e.g. adam-strong)
-     */
-    async getUsername() {
-      const userHref = await this.getCurrentUser();
-      if (userHref === undefined) {
+    if (typeof loggedInUser === 'undefined') {
+      console.log("Trying again...");
+
+      // [OLD Firefox] workaround (the first returns undefined....?)
+      let profile = document.querySelectorAll('.profile');
+      if (profile.length == 0) {
         return undefined;
       }
-      // get 'songokussj'   from '/uzivatel/78145-songokussj/'    with regex
-      // get 'sans-sourire' from '/uzivatel/714142-sans-sourire/' with regex
-      const foundMatch = userHref.match(new RegExp(/\/(\d+-(.*)+)\//));
-      if (foundMatch.length == 3) {
-        this.username = foundMatch[2];
-        return foundMatch[2];
+      loggedInUser = profile[0].getAttribute('href');
+
+      if (typeof loggedInUser === 'undefined') {
+        console.error(`${SCRIPTNAME}: Can't find logged in username...`);
+        throw (`${SCRIPTNAME}: exit`);  // TODO: Popup informing user
       }
+    }
+    return loggedInUser;
+  }
+
+  /**
+   * @async
+   * @returns {Promise<string>} - Username (e.g. adam-strong)
+   */
+  async getUsername() {
+    const userHref = await this.getCurrentUser();
+    if (userHref === undefined) {
       return undefined;
     }
-
-    // getStars() {
-    //   // TODO: remove this function and use getLocalStorageRatings() instead
-    //   if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
-    //     return {};
-    //   }
-    //   return JSON.parse(localStorage[this.storageKey]);
-    // }
-
-    async getLocalStorageRatings() {
-      if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
-        return {};
-      }
-      return JSON.parse(localStorage[this.storageKey]);
+    // get 'songokussj'   from '/uzivatel/78145-songokussj/'    with regex
+    // get 'sans-sourire' from '/uzivatel/714142-sans-sourire/' with regex
+    const foundMatch = userHref.match(new RegExp(/\/(\d+-(.*)+)\//));
+    if (foundMatch.length == 3) {
+      this.username = foundMatch[2];
+      return foundMatch[2];
     }
+    return undefined;
+  }
 
-    /**
-     * Get ratings from LocalStorage and return the count of:
-     * - normally rated (user clicked on rating)
-     * - and computed ratings (not shown in user ratings)
-     *
-     * @returns {Promise<Object<string, number>>} `{ computed: int, rated: int }`
-     */
-    async getLocalStorageRatingsCount() {
-      // const ratings = await this.getLocalStorageRatings();  // TODO: Smazat toto?
-      const ratings = this.stars;
-      const computedCount = Object.values(ratings).filter(rating => rating.computed).length;
-      const ratedCount = Object.keys(ratings).length - computedCount;
-      return {
-        computed: computedCount,
-        rated: ratedCount,
-      };
+  // getStars() {
+  //   // TODO: remove this function and use getLocalStorageRatings() instead
+  //   if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
+  //     return {};
+  //   }
+  //   return JSON.parse(localStorage[this.storageKey]);
+  // }
+
+  async getLocalStorageRatings() {
+    if (!localStorage[this.storageKey] || localStorage[this.storageKey] === 'undefined') {
+      return {};
     }
+    return JSON.parse(localStorage[this.storageKey]);
+  }
 
-    /**
-     *
-     * @returns {str} Current movie: `<MovieId>-<MovieUrlTitle>`
-     *
-     * Example:
-     * - https://www.csfd.sk/film/739784-star-trek-lower-decks/prehlad/ --> `739784-star-trek-lower-decks`
-     * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> `1032819-don-t-believe-everything-you-think`
-     */
-    getCurrentFilmUrl() {
-      const foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+  /**
+   * Get ratings from LocalStorage and return the count of:
+   * - normally rated (user clicked on rating)
+   * - and computed ratings (not shown in user ratings)
+   *
+   * @returns {Promise<Object<string, number>>} `{ computed: int, rated: int }`
+   */
+  async getLocalStorageRatingsCount() {
+    // const ratings = await this.getLocalStorageRatings();  // TODO: Smazat toto?
+    const ratings = this.stars;
+    const computedCount = Object.values(ratings).filter(rating => rating.computed).length;
+    const ratedCount = Object.keys(ratings).length - computedCount;
+    return {
+      computed: computedCount,
+      rated: ratedCount,
+    };
+  }
 
-      // TODO: getCurrentFilmUrl by melo vrátit film URL ne jen cast... ne?
-      if (!foundMatch) {
+  /**
+   *
+   * @returns {str} Current movie: `<MovieId>-<MovieUrlTitle>`
+   *
+   * Example:
+   * - https://www.csfd.sk/film/739784-star-trek-lower-decks/prehlad/ --> `739784-star-trek-lower-decks`
+   * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> `1032819-don-t-believe-everything-you-think`
+   */
+  getCurrentFilmUrl(page = undefined) {
+    let foundMatch;
+    if (page === undefined) {
+      foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+    } else {
+      // Get meta URL from page (html)
+      const metaUrl = page.match(/<meta property="og:url" content="(.*)">/);
+      if (metaUrl === null) {
         console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
         throw (`${SCRIPTNAME} Exiting...`);
       }
-      return foundMatch[foundMatch.length - 1];
+      foundMatch = metaUrl[1].match(/\d+-[\w-]+/ig);
     }
 
-    /**
-     *
-     * @returns {str} Current movie: https://www.csfd.sk/film/739784-star-trek-lower-decks/recenze/
-     *
-     */
-    getCurrentFilmFullUrl() {
-      const foundMatch = $('meta[property="og:url"]').attr('content');
-
-      // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
-      if (!foundMatch) {
-        console.error("TODO: getCurrentFilmFullUrl() Film URL wasn't found...");
-        return "";
-      }
-      return foundMatch;
+    // TODO: getCurrentFilmUrl by melo vrátit film URL ne jen cast... ne?
+    if (!foundMatch) {
+      console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
+      throw (`${SCRIPTNAME} Exiting...`);
     }
+    return foundMatch[foundMatch.length - 1];
+  }
 
-    /**
-     * Get film name from the URL (e.g. /film/1032817-naomi/)
-     * @param {string} fullUrl - Full URL of the movie (e.g. https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/)
-     * @returns {string} - Film name (e.g. /film/1032817-naomi/)
-     */
-    getFilmNameFromHref(fullUrl) {
-        // Create a new URL object
-        const url = new URL(fullUrl);
+  /**
+   *
+   * @returns {str} Current movie: https://www.csfd.sk/film/739784-star-trek-lower-decks/recenze/
+   *
+   */
+  getCurrentFilmFullUrl() {
+    const foundMatch = $('meta[property="og:url"]').attr('content');
 
-        // Extract the pathname from the URL object
-        const pathname = url.pathname;
-
-        // Remove any trailing '/'
-        const cleanedPathname = pathname.replace(/\/$/, '');
-
-        // Append a '/' at the end of the pathname
-        const result = cleanedPathname + '/';
-
-        return result;
-      }
-
-    /**
-     * Return current movie Type (film, serial, episode)
-     *
-     * @returns {str} Current movie type: film, serial, episode, movie, ...
-     */
-    getCurrentFilmType() {
-      const foundTypes = $(".film-header span.type");
-      let foundMatch = "";
-
-      // No "type" found
-      if (foundTypes.length === 0) {
-        return "movie";
-
-        // One span.type found ... (film), (serial), ...
-      } else if (foundTypes.length === 1) {
-        foundMatch = $(foundTypes).text();
-
-        // Multiple span.type found, get the one containing "(" and ")"
-      } else if (foundTypes.length > 1) {
-        foundTypes.each(function (index, element) {
-          if ($(element).text().includes("(")) {
-            foundMatch = $(element).text().toLowerCase();
-          }
-        });
-      }
-      // Strip foundMatch from "(" and ")"
-      foundMatch = foundMatch.replace(/[\(\)]/g, '');
-
-      // Convert to english (film, serial, movie, series, ...)
-      foundMatch = this.getShowTypeFromType(foundMatch);
-
-      return foundMatch;
-    }
-
-    /**
-     * from property `og:title` extract the movie year `'Movie Title (2019)' --> 2019`
-     *
-     * @returns {str} Current movie year
-     */
-    getCurrentFilmYear() {
-      const match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
-      if (match.length === 2) {
-        let year = match[1];
-        // Convert to number
-        if (!isNaN(year)) {
-          year = parseInt(year);
-        }
-        return year;
-      }
+    // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
+    if (!foundMatch) {
+      console.error("TODO: getCurrentFilmFullUrl() Film URL wasn't found...");
       return "";
     }
+    return foundMatch;
+  }
 
-    /**
-     *
-     * @param {html} content
-     * @returns {bool} `true` if current movie rating is computed, `false` otherwise
-     */
-    async isCurrentFilmComputed(content = null) {
-      const $computedStars = content === null ? $('.star.active.computed') : $(content).find('.star.active.computed');
+  /**
+   * Get film name from the URL (e.g. /film/1032817-naomi/)
+   * @param {string} fullUrl - Full URL of the movie (e.g. https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/)
+   * @returns {string} - Film name (e.g. /film/1032817-naomi/)
+   */
+  getFilmNameFromHref(fullUrl) {
+    // Create a new URL object
+    const url = new URL(fullUrl);
 
-      if ($computedStars.length > 0) {
-        return true;
+    // Extract the pathname from the URL object
+    const pathname = url.pathname;
+
+    // Split the pathname into segments
+    const segments = pathname.split('/').filter(segment => segment !== '');
+
+    // Get the first two segments
+    const filmPath = segments.slice(0, 2).join('/');
+
+    // Append a '/' at the end of the filmPath
+    const result = '/' + filmPath + '/';
+
+    return result;
+  }
+
+
+  /**
+   * Return current movie Type (film, serial, episode)
+   *
+   * @returns {str} Current movie type: film, serial, episode, movie, ...
+   */
+  getCurrentFilmType() {
+    const foundTypes = $(".film-header span.type");
+    let foundMatch = "";
+
+    // No "type" found
+    if (foundTypes.length === 0) {
+      return "movie";
+
+      // One span.type found ... (film), (serial), ...
+    } else if (foundTypes.length === 1) {
+      foundMatch = $(foundTypes).text();
+
+      // Multiple span.type found, get the one containing "(" and ")"
+    } else if (foundTypes.length > 1) {
+      foundTypes.each(function (index, element) {
+        if ($(element).text().includes("(")) {
+          foundMatch = $(element).text().toLowerCase();
+        }
+      });
+    }
+    // Strip foundMatch from "(" and ")"
+    foundMatch = foundMatch.replace(/[\(\)]/g, '');
+
+    // Convert to english (film, serial, movie, series, ...)
+    foundMatch = this.getShowTypeFromType(foundMatch);
+
+    return foundMatch;
+  }
+
+  /**
+   * from property `og:title` extract the movie year `'Movie Title (2019)' --> 2019`
+   *
+   * @returns {str} Current movie year
+   */
+  getCurrentFilmYear() {
+    const match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
+    if (match.length === 2) {
+      let year = match[1];
+      // Convert to number
+      if (!isNaN(year)) {
+        year = parseInt(year);
       }
+      return year;
+    }
+    return "";
+  }
 
-      const secondTry = await this.isCurrentFilmRatingComputed();
-      if (secondTry) {
-        return true;
-      }
+  /**
+   *
+   * @param {html} content
+   * @returns {bool} `true` if current movie rating is computed, `false` otherwise
+   */
+  async isCurrentFilmComputed(content = null) {
+    const $computedStars = content === null ? $('.star.active.computed') : $(content).find('.star.active.computed');
 
-      return false;
+    if ($computedStars.length > 0) {
+      return true;
     }
 
-    async isCurrentFilmRatingComputed() {
-      const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
-
-      if ($computedStars.length !== 0) { return true; }
-
-      return false;
+    const secondTry = await this.isCurrentFilmRatingComputed();
+    if (secondTry) {
+      return true;
     }
 
-    getCurrentFilmComputedCount(content = null) {
-      const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : content.find('li.current-user-rating');
-      const countedText = $($curUserRating).find('span[title]').attr('title');
-      // split by :
-      const counted = countedText?.split(':')[1]?.trim();
-      return counted;
+    return false;
+  }
+
+  async isCurrentFilmRatingComputed() {
+    const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
+
+    if ($computedStars.length !== 0) { return true; }
+
+    return false;
+  }
+
+  getCurrentFilmComputedCount(content = null) {
+    const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : content.find('li.current-user-rating');
+    const countedText = $($curUserRating).find('span[title]').attr('title');
+    // split by :
+    const counted = countedText?.split(':')[1]?.trim();
+    return counted;
+  }
+
+  async getCurrentFilmComputed() {
+    const result = await this.getComputedRatings(this.csfdPage);
+    return result;
+  }
+
+
+  /**
+   *
+   * @param {Object} ratingsObject - `{ url: str, id: int, rating: int, ... }`
+   * @returns {Promise<bool>} `true` if item was added, `false` otherwise
+   */
+  async updateInDB(ratingsObject) {
+    // TODO: Doplnit logiku update jen pouze pokud je hodnocení jiné než v IndexedDB
+    console.log(`⚙️ ~ [CC] ~ updateInDb ~ Updating item...`, ratingsObject);
+    return await updateIndexedDB(INDEXED_DB_NAME, this.username, ratingsObject);
+    // // Check if film is in LocalStorage
+    // const filmUrl = this.getCurrentFilmUrl();
+    // const filmId = await this.getMovieIdFromHref(filmUrl);
+    // const myRating = this.stars[filmId] || undefined;
+
+    // // Item not in LocalStorage, add it then!
+    // if (myRating === undefined) {
+    //   // Item not in LocalStorage, add
+    //   this.stars[filmId] = ratingsObject;
+    //   localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
+    //   return true;
+    // }
+
+    // if (myRating.rating !== ratingsObject.rating || myRating.computedCount !== ratingsObject.computedCount) {
+    //   console.log(`⚙️ ~ Csfd ~ updateInLocalStorage ~ Updating item...`);
+    //   this.stars[filmId] = ratingsObject;
+    //   localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
+    //   return true;
+    // }
+
+    // // Item in LocalStorage, everything is fine
+    // // console.log(`✅ ~ Csfd ~ updateInLocalStorage ~ Item in LocalStorage, everything is fine`);
+    // return false;
+  }
+
+  /**
+   * Get movie rating from current or given page
+   * @param {html} content
+   * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
+   */
+  async getCurrentFilmRating(content = null) {
+    const currentRatingIsComputed = await this.isCurrentFilmComputed(content);
+
+    if (currentRatingIsComputed) {
+      const { ratingCount, computedFromText } = content === null ? await this.getCurrentFilmComputed() : await this.getComputedRatings(content);
+
+      return {
+        rating: ratingCount,
+        computedFrom: computedFromText,
+        computed: true,
+      };
     }
 
-    async getCurrentFilmComputed() {
-      const result = await this.getComputedRatings(this.csfdPage);
-      return result;
+    const $activeStars = this.csfdPage.find(".star.active");
+
+    // No rating
+    if ($activeStars.length === 0) {
+      return {
+        rating: "",
+        computedFrom: "",
+        computed: false,
+      };
     }
 
-
-    /**
-     *
-     * @param {Object} ratingsObject - `{ url: str, id: int, rating: int, ... }`
-     * @returns {Promise<bool>} `true` if item was added, `false` otherwise
-     */
-    async updateInDB(ratingsObject) {
-      // TODO: Doplnit logiku update jen pouze pokud je hodnocení jiné než v IndexedDB
-      console.log(`⚙️ ~ [CC] ~ updateInDb ~ Updating item...`, ratingsObject);
-      return await updateIndexedDB(INDEXED_DB_NAME, this.username, ratingsObject);
-      // // Check if film is in LocalStorage
-      // const filmUrl = this.getCurrentFilmUrl();
-      // const filmId = await this.getMovieIdFromHref(filmUrl);
-      // const myRating = this.stars[filmId] || undefined;
-
-      // // Item not in LocalStorage, add it then!
-      // if (myRating === undefined) {
-      //   // Item not in LocalStorage, add
-      //   this.stars[filmId] = ratingsObject;
-      //   localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
-      //   return true;
-      // }
-
-      // if (myRating.rating !== ratingsObject.rating || myRating.computedCount !== ratingsObject.computedCount) {
-      //   console.log(`⚙️ ~ Csfd ~ updateInLocalStorage ~ Updating item...`);
-      //   this.stars[filmId] = ratingsObject;
-      //   localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
-      //   return true;
-      // }
-
-      // // Item in LocalStorage, everything is fine
-      // // console.log(`✅ ~ Csfd ~ updateInLocalStorage ~ Item in LocalStorage, everything is fine`);
-      // return false;
-    }
-
-    /**
-     * Get movie rating from current or given page
-     * @param {html} content
-     * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
-     */
-    async getCurrentFilmRating(content = null) {
-      const currentRatingIsComputed = await this.isCurrentFilmComputed(content);
-
-      if (currentRatingIsComputed) {
-        const { ratingCount, computedFromText } = content === null ? await this.getCurrentFilmComputed() : await this.getComputedRatings(content);
-
+    // Rating "odpad" or "1"
+    if ($activeStars.length === 1) {
+      if ($activeStars.attr('data-rating') === "0") {
         return {
-          rating: ratingCount,
-          computedFrom: computedFromText,
-          computed: true,
-        };
-      }
-
-      const $activeStars = this.csfdPage.find(".star.active");
-
-      // No rating
-      if ($activeStars.length === 0) {
-        return {
-          rating: "",
+          rating: "0",
           computedFrom: "",
           computed: false,
         };
       }
+    }
 
-      // Rating "odpad" or "1"
-      if ($activeStars.length === 1) {
-        if ($activeStars.attr('data-rating') === "0") {
-          return {
-            rating: "0",
-            computedFrom: "",
-            computed: false,
-          };
+    // Rating "1" to "5"
+    return {
+      rating: $activeStars.length,
+      computedFrom: "",
+      computed: false,
+    };
+
+  }
+
+  async getCurrentUserRatingsCount() {
+    return $.get(this.userRatingsUrl)
+      .then(function (data) {
+        const count = $(data).find('.box-user-rating span.count').text().replace(/[\s()]/g, '');
+        if (count) {
+          return parseInt(count);
         }
+        return 0;
+      });
+  }
+
+  async fillMissingSettingsKeys() {
+    let settings = await getSettings();
+
+    let currentKeys = Object.keys(settings);
+    let defaultKeys = Object.keys(defaultSettings);
+    for (const defaultKey of defaultKeys) {
+      let exists = currentKeys.includes(defaultKey);
+      if (!exists) {
+        settings[defaultKey] = defaultSettings[defaultKey];
       }
-
-      // Rating "1" to "5"
-      return {
-        rating: $activeStars.length,
-        computedFrom: "",
-        computed: false,
-      };
-
     }
+    localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+  }
 
-    async getCurrentUserRatingsCount() {
-      return $.get(this.userRatingsUrl)
-        .then(function (data) {
-          const count = $(data).find('.box-user-rating span.count').text().replace(/[\s()]/g, '');
-          if (count) {
-            return parseInt(count);
-          }
-          return 0;
-        });
-    }
-
-    async fillMissingSettingsKeys() {
-      let settings = await getSettings();
-
-      let currentKeys = Object.keys(settings);
-      let defaultKeys = Object.keys(defaultSettings);
-      for (const defaultKey of defaultKeys) {
-        let exists = currentKeys.includes(defaultKey);
-        if (!exists) {
-          settings[defaultKey] = defaultSettings[defaultKey];
-        }
-      }
-      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-    }
-
-    async checkForOldLocalstorageRatingKeys() {
-      // const ratings = this.getStars();  // TODO: Mohu smazat?
-      const ratings = this.stars;
-      const keys = Object.keys(ratings);
-      for (const key of keys) {
-        if (key.includes("/")) {
-          alert(`
+  async checkForOldLocalstorageRatingKeys() {
+    // const ratings = this.getStars();  // TODO: Mohu smazat?
+    const ratings = this.stars;
+    const keys = Object.keys(ratings);
+    for (const key of keys) {
+      if (key.includes("/")) {
+        alert(`
             CSFD-Compare
 
             Byl nalezen starý způsob ukládání hodnocení do LocalStorage!
             Prosím, smažte staré hodnocení a znovu je nahrajte.
 
             CC -> Smazat Uložená hodnocení`
-          );
-          return null;
-        }
+        );
+        return null;
       }
     }
+  }
 
-    /**
-     * $content should be URL with computed star ratings. Not manualy rated. \
-     * Then, it will return dict with `computed stars` and text `"computed from episodes: X"`
-     *
-     * @param {str} $content HTML content of a page
-     * @returns {Promise<{'ratingCount': int, 'computedFromText': str}>}
-     *
-     * Example: \
-     * `{ ratingCount: 4, computedFromText: 'spocteno z episod': 2 }`
-     */
-    async getComputedRatings($content) {
-      // Get current user rating
-      const $curUserRating = $($content).find('li.current-user-rating');
-      const $starsSpan = $($curUserRating).find('span.stars');
-      const starCount = await csfd.getStarCountFromSpanClass($starsSpan);
+  /**
+   * $content should be URL with computed star ratings. Not manualy rated. \
+   * Then, it will return dict with `computed stars` and text `"computed from episodes: X"`
+   *
+   * @param {str} $content HTML content of a page
+   * @returns {Promise<{'ratingCount': int, 'computedFromText': str}>}
+   *
+   * Example: \
+   * `{ ratingCount: 4, computedFromText: 'spocteno z episod': 2 }`
+   */
+  async getComputedRatings($content) {
+    // Get current user rating
+    const $curUserRating = $($content).find('li.current-user-rating');
+    const $starsSpan = $($curUserRating).find('span.stars');
+    const starCount = await this.getStarCountFromSpanClass($starsSpan);
 
-      // Get 'Spocteno z episod' text
-      const $countedText = $($curUserRating).find('span[title]').attr('title');
+    // Get 'Spocteno z episod' text
+    const $countedText = $($curUserRating).find('span[title]').attr('title');
 
-      // // Get this movieId and possible parentId
-      // const filmUrl = await csfd.getFilmUrlFromHtml($content);
-      // let [movieId, parentId] = await csfd.getMovieIdParentIdFromUrl(filmUrl);
+    // // Get this movieId and possible parentId
+    // const filmUrl = await this.getFilmUrlFromHtml($content);
+    // let [movieId, parentId] = await this.getMovieIdParentIdFromUrl(filmUrl);
 
-      // Resulting dictionary
-      const result = {
-        'ratingCount': starCount,
-        'computedFromText': $countedText,
-        // 'movieId': movieId,
-        // 'parentId': parentId
-      };
-      return result;
-    }
+    // Resulting dictionary
+    const result = {
+      'ratingCount': starCount,
+      'computedFromText': $countedText,
+      // 'movieId': movieId,
+      // 'parentId': parentId
+    };
+    return result;
+  }
 
-    async loadInitialSettings() {
+  async loadInitialSettings() {
 
-      // GLOBAL
-      $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
-      $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
-      $('#chkClickableMessages').attr('checked', settings.clickableMessages);
-      $('#chkAddStars').attr('checked', settings.addStars);
+    const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
+    const settings = await getSettings(boxSettingsName);
 
-      // USER
-      $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
-      $('#chkDisplayFavoriteButton').attr('checked', settings.displayFavoriteButton);
-      $('#chkHideUserControlPanel').attr('checked', settings.hideUserControlPanel);
-      $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
+    // GLOBAL
+    $('#chkControlPanelOnHover').attr('checked', settings.showControlPanelOnHover);
+    $('#chkClickableHeaderBoxes').attr('checked', settings.clickableHeaderBoxes);
+    $('#chkClickableMessages').attr('checked', settings.clickableMessages);
+    $('#chkAddStars').attr('checked', settings.addStars);
 
-      // FILM/SERIES
-      $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
-      $('#chkShowLinkToImage').attr('checked', settings.showLinkToImage);
-      $('#chkRatingsEstimate').attr('checked', settings.ratingsEstimate);
-      $('#chkRatingsFromFavorites').attr('checked', settings.ratingsFromFavorites);
-      $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
-      $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
-      settings.hideSelectedUserReviews || $('#txtHideSelectedUserReviews').parent().hide();
-      if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
+    // USER
+    $('#chkDisplayMessageButton').attr('checked', settings.displayMessageButton);
+    $('#chkDisplayFavoriteButton').attr('checked', settings.displayFavoriteButton);
+    $('#chkHideUserControlPanel').attr('checked', settings.hideUserControlPanel);
+    $('#chkCompareUserRatings').attr('checked', settings.compareUserRatings);
 
-      // ACTORS
-      $('#chkShowOnOneLine').attr('checked', settings.showOnOneLine);
+    // FILM/SERIES
+    $('#chkAddRatingsDate').attr('checked', settings.addRatingsDate);
+    $('#chkShowLinkToImage').attr('checked', settings.showLinkToImage);
+    $('#chkRatingsEstimate').attr('checked', settings.ratingsEstimate);
+    $('#chkRatingsFromFavorites').attr('checked', settings.ratingsFromFavorites);
+    $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
+    $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
+    settings.hideSelectedUserReviews || $('#txtHideSelectedUserReviews').parent().hide();
+    if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
 
-      // EXPERIMENTAL
-      $('#chkLoadComputedRatings').attr('checked', settings.loadComputedRatings);
-      $('#chkAddChatReplyButton').attr('checked', settings.addChatReplyButton);
-      $('#chkHideSelectedVisitors').attr('checked', settings.hideSelectedVisitors);
-      settings.hideSelectedVisitors || $('#txtHideSelectedVisitors').parent().hide();
-      if (settings.hideSelectedVisitorsList !== undefined) { $('#txtHideSelectedVisitors').val(settings.hideSelectedVisitorsList.join(', ')); }
-    }
+    // ACTORS
+    $('#chkShowOnOneLine').attr('checked', settings.showOnOneLine);
 
-    async addSettingsEvents() {
-      // HOME PAGE
+    // EXPERIMENTAL
+    $('#chkLoadComputedRatings').attr('checked', settings.loadComputedRatings);
+    $('#chkAddChatReplyButton').attr('checked', settings.addChatReplyButton);
+    $('#chkHideSelectedVisitors').attr('checked', settings.hideSelectedVisitors);
+    settings.hideSelectedVisitors || $('#txtHideSelectedVisitors').parent().hide();
+    if (settings.hideSelectedVisitorsList !== undefined) { $('#txtHideSelectedVisitors').val(settings.hideSelectedVisitorsList.join(', ')); }
+  }
 
-      // GLOBAL
-      $('#chkControlPanelOnHover').on('change', function () {
-        settings.showControlPanelOnHover = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+  async addSettingsEvents() {
+    // HOME PAGE
 
-      $('#chkClickableHeaderBoxes').on('change', function () {
-        settings.clickableHeaderBoxes = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    // GLOBAL
+    $('#chkControlPanelOnHover').on('change', function () {
+      settings.showControlPanelOnHover = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkClickableMessages').on('change', function () {
-        settings.clickableMessages = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkClickableHeaderBoxes').on('change', function () {
+      settings.clickableHeaderBoxes = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkAddStars').on('change', function () {
-        settings.addStars = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkClickableMessages').on('change', function () {
+      settings.clickableMessages = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      // USER
-      $('#chkDisplayMessageButton').on('change', function () {
-        settings.displayMessageButton = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkAddStars').on('change', function () {
+      settings.addStars = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkDisplayFavoriteButton').on('change', function () {
-        settings.displayFavoriteButton = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    // USER
+    $('#chkDisplayMessageButton').on('change', function () {
+      settings.displayMessageButton = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkHideUserControlPanel').on('change', function () {
-        settings.hideUserControlPanel = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkDisplayFavoriteButton').on('change', function () {
+      settings.displayFavoriteButton = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkCompareUserRatings').on('change', function () {
-        settings.compareUserRatings = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkHideUserControlPanel').on('change', function () {
+      settings.hideUserControlPanel = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      // FILM/SERIES
-      $('#chkShowLinkToImage').on('change', function () {
-        settings.showLinkToImage = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkCompareUserRatings').on('change', function () {
+      settings.compareUserRatings = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkRatingsEstimate').on('change', function () {
-        settings.ratingsEstimate = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    // FILM/SERIES
+    $('#chkShowLinkToImage').on('change', function () {
+      settings.showLinkToImage = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkRatingsFromFavorites').on('change', function () {
-        settings.ratingsFromFavorites = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkRatingsEstimate').on('change', function () {
+      settings.ratingsEstimate = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkAddRatingsDate').on('change', function () {
-        settings.addRatingsDate = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkRatingsFromFavorites').on('change', function () {
+      settings.ratingsFromFavorites = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkAddRatingsComputedCount').on('change', function () {
-        settings.addRatingsComputedCount = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#chkAddRatingsDate').on('change', function () {
+      settings.addRatingsDate = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#chkHideSelectedUserReviews').on('change', function () {
-        settings.hideSelectedUserReviews = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-        $('#txtHideSelectedUserReviews').parent().toggle();
-      });
+    $('#chkAddRatingsComputedCount').on('change', function () {
+      settings.addRatingsComputedCount = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-      $('#txtHideSelectedUserReviews').on('change', function () {
-        let ignoredUsers = this.value.replace(/\s/g, '').split(",");
-        settings.hideSelectedUserReviewsList = ignoredUsers;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup(`Ignorovaní uživatelé:\n${ignoredUsers.join(', ')}`, 4);
-      });
+    $('#chkHideSelectedUserReviews').on('change', function () {
+      settings.hideSelectedUserReviews = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      $('#txtHideSelectedUserReviews').parent().toggle();
+    });
 
-      // ACTORS
-      $('#chkShowOnOneLine').on('change', function () {
-        settings.showOnOneLine = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
+    $('#txtHideSelectedUserReviews').on('change', function () {
+      let ignoredUsers = this.value.replace(/\s/g, '').split(",");
+      settings.hideSelectedUserReviewsList = ignoredUsers;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup(`Ignorovaní uživatelé:\n${ignoredUsers.join(', ')}`, 4);
+    });
 
-      // EXPERIMENTAL
-      $('#chkLoadComputedRatings').on('change', function () {
-        settings.loadComputedRatings = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
-      $('#chkAddChatReplyButton').on('change', function () {
-        settings.addChatReplyButton = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-      });
-      $('#chkHideSelectedVisitors').on('change', function () {
-        settings.hideSelectedVisitors = this.checked;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
-        $('#txtHideSelectedVisitors').parent().toggle();
-      });
-      $('#txtHideSelectedVisitors').on('change', function () {
-        let hiddenVisitors = this.value.split(/,\s*/);
-        settings.hideSelectedVisitorsList = hiddenVisitors;
-        localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-        Glob.popup(`Ignorovaní uživatelé:\n${hiddenVisitors.join(', ')}`, 4);
-      });
+    // ACTORS
+    $('#chkShowOnOneLine').on('change', function () {
+      settings.showOnOneLine = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
 
-    }
+    // EXPERIMENTAL
+    $('#chkLoadComputedRatings').on('change', function () {
+      settings.loadComputedRatings = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
+    $('#chkAddChatReplyButton').on('change', function () {
+      settings.addChatReplyButton = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+    });
+    $('#chkHideSelectedVisitors').on('change', function () {
+      settings.hideSelectedVisitors = this.checked;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      $('#txtHideSelectedVisitors').parent().toggle();
+    });
+    $('#txtHideSelectedVisitors').on('change', function () {
+      let hiddenVisitors = this.value.split(/,\s*/);
+      settings.hideSelectedVisitorsList = hiddenVisitors;
+      localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
+      Glob.popup(`Ignorovaní uživatelé:\n${hiddenVisitors.join(', ')}`, 4);
+    });
 
-    async onPageOtherUserHodnoceni() {
-      if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
-        if (!location.href.includes(this.userUrl)) {
-          return true;
-        }
-      }
-      return false;
-    }
+  }
 
-    async onPageOtherUser() {
-      if (location.href.includes('/uzivatel/')) {
-        if (!location.href.includes(this.userUrl)) {
-          return true;
-        }
-      }
-      return false;
-    }
-
-    async onPageDiskuze() {
-      if (location.href.includes('/diskuze/') || location.href.includes('/diskusie')) {
+  async onPageOtherUserHodnoceni() {
+    if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
+      if (!location.href.includes(this.userUrl)) {
         return true;
       }
-      return false;
     }
+    return false;
+  }
 
-    async onPersonalFavorite() {
-      if (location.href.includes('/soukromne/oblubene/') || location.href.includes('/soukrome/oblibene/')) {
-        if (!location.href.includes(this.userUrl)) {
-          return true;
-        }
+  async onPageOtherUser() {
+    if (location.href.includes('/uzivatel/')) {
+      if (!location.href.includes(this.userUrl)) {
+        return true;
       }
-      return false;
     }
+    return false;
+  }
 
-    async notOnUserPage() {
-      if (location.href.includes('/uzivatel/') && location.href.includes(this.userUrl)) {
-        return false;
-      }
+  async onPageDiskuze() {
+    if (location.href.includes('/diskuze/') || location.href.includes('/diskusie')) {
       return true;
     }
+    return false;
+  }
 
-    exportRatings() {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
-    }
-
-    async addStars() {
-      if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
-        return;
-      }
-      let starsCss = { marginLeft: "5px" };
-      // On UserPage or PersonalFavorite page, modify the CSS by adding solid red border outline
-      if (await this.onPageOtherUser() || await this.onPersonalFavorite()) {
-        starsCss = {
-          marginLeft: "5px",
-          borderWidth: "1px",
-          borderStyle: "solid",
-          borderColor: "#c78888",
-          borderRadius: "5px",
-          padding: "0px 5px",
-        };
-      }
-
-      let $links = $('a.film-title-name');
-      for (const $link of $links) {
-        const href = $($link).attr('href');
-        const movieId = await this.getMovieIdFromHref(href);
-
-        const res = this.stars[movieId];
-        if (res === undefined) {
-          continue;
-        }
-        const $sibl = $($link).closest('td').siblings('.rating,.star-rating-only');
-        if ($sibl.length !== 0) {
-          continue;
-        }
-        const starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
-        const starText = res.rating !== 0 ? "" : "odpad!";
-        const className = res.computed ? "star-rating computed" : "star-rating";
-        const title = res.computed ? res.computedFromText : res.date;
-
-        // Construct the HTML
-        const $starSpan = $("<span>", {
-          'class': className,
-          html: `<span class="stars ${starClass}" title="${title}">${starText}</span>`
-        }).css(starsCss);
-
-        // Add the HTML
-        $($link).after($starSpan);
-
-        // If the rating is computed, add SUP element indicating from how many ratings it was computed
-        if (res.computed) {
-          const $numSpan = $("<span>", {
-            'html': `<sup> (${res.computedCount})</sup>`
-          }).css({
-            'font-size': '13px',
-            'color': '#7b7b7b'
-          });
-          $starSpan.find('span').after($numSpan);
-        }
+  async onPersonalFavorite() {
+    if (location.href.includes('/soukromne/oblubene/') || location.href.includes('/soukrome/oblibene/')) {
+      if (!location.href.includes(this.userUrl)) {
+        return true;
       }
     }
+    return false;
+  }
 
-    /**
-     * Adds a column to another user's ratings page with the user's rating
-     *
-     * @returns {None}
-     */
-    addRatingsColumn() {
-      // const starsDict = this.getStars();  // TODO: Mohu smazat?
-      const starsDict = this.stars;
-      const lcRatingsCount = Object.keys(starsDict).length;
+  async notOnUserPage() {
+    if (location.href.includes('/uzivatel/') && location.href.includes(this.userUrl)) {
+      return false;
+    }
+    return true;
+  }
 
-      // No ratings in LocalStorage, do nothing
-      if (lcRatingsCount === 0) { return; }
+  exportRatings() {
+    localStorage.setItem(this.storageKey, JSON.stringify(this.stars));
+  }
 
-      const $page = this.csfdPage;
-      const $tbl = $page.find('#snippet--ratings table tbody');
+  async addStars() {
+    if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
+      return;
+    }
+    let starsCss = { marginLeft: "5px" };
+    // On UserPage or PersonalFavorite page, modify the CSS by adding solid red border outline
+    if (await this.onPageOtherUser() || await this.onPersonalFavorite()) {
+      starsCss = {
+        marginLeft: "5px",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "#c78888",
+        borderRadius: "5px",
+        padding: "0px 5px",
+      };
+    }
 
-      $tbl.find('tr').each(async function () {
-        const $row = $(this);
-        const href = $row.find('a.film-title-name').attr('href');
-        const movieId = await csfd.getMovieIdFromHref(href);
-        const myRating = starsDict[movieId];
+    let $links = $('a.film-title-name');
+    for (const $link of $links) {
+      const href = $($link).attr('href');
+      const movieId = await this.getMovieIdFromHref(href);
 
-        let $span = "";
-        if (myRating?.rating === 0) {
-          $span = `<span class="stars trash">odpad!</span>`;
+      const res = this.stars[movieId];
+      if (res === undefined) {
+        continue;
+      }
+      const $sibl = $($link).closest('td').siblings('.rating,.star-rating-only');
+      if ($sibl.length !== 0) {
+        continue;
+      }
+      const starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
+      const starText = res.rating !== 0 ? "" : "odpad!";
+      const className = res.computed ? "star-rating computed" : "star-rating";
+      const title = res.computed ? res.computedFromText : res.date;
+
+      // Construct the HTML
+      const $starSpan = $("<span>", {
+        'class': className,
+        html: `<span class="stars ${starClass}" title="${title}">${starText}</span>`
+      }).css(starsCss);
+
+      // Add the HTML
+      $($link).after($starSpan);
+
+      // If the rating is computed, add SUP element indicating from how many ratings it was computed
+      if (res.computed) {
+        const $numSpan = $("<span>", {
+          'html': `<sup> (${res.computedCount})</sup>`
+        }).css({
+          'font-size': '13px',
+          'color': '#7b7b7b'
+        });
+        $starSpan.find('span').after($numSpan);
+      }
+    }
+  }
+
+  /**
+   * Adds a column to another user's ratings page with the user's rating
+   *
+   * @returns {None}
+   */
+  addRatingsColumn() {
+    // const starsDict = this.getStars();  // TODO: Mohu smazat?
+    const starsDict = this.stars;
+    const lcRatingsCount = Object.keys(starsDict).length;
+
+    // No ratings in LocalStorage, do nothing
+    if (lcRatingsCount === 0) { return; }
+
+    const $page = this.csfdPage;
+    const $tbl = $page.find('#snippet--ratings table tbody');
+
+    $tbl.find('tr').each(async function () {
+      const $row = $(this);
+      const href = $row.find('a.film-title-name').attr('href');
+      const movieId = await csfd.getMovieIdFromHref(href);
+      const myRating = starsDict[movieId];
+
+      let $span = "";
+      if (myRating?.rating === 0) {
+        $span = `<span class="stars trash">odpad!</span>`;
+      } else {
+        if (myRating?.computed) {
+          $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.computedFromText}"></span>`;
         } else {
-          if (myRating?.computed) {
-            $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.computedFromText}"></span>`;
-          } else {
-            $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.date}"></span>`;
-          }
+          $span = `<span class="stars stars-${myRating?.rating}" title="${myRating?.date}"></span>`;
         }
+      }
 
-        // Color the rating to red (star-rating) or black (star-rating computed) if computed
-        const className = myRating?.computed ? "star-rating computed" : "star-rating";
+      // Color the rating to red (star-rating) or black (star-rating computed) if computed
+      const className = myRating?.computed ? "star-rating computed" : "star-rating";
 
-        // Build the HTML for computed rating SUP element: e.g. (3)
-        const $computedSup = `
+      // Build the HTML for computed rating SUP element: e.g. (3)
+      const $computedSup = `
           <span style="position: relative;">
             <sup style="position: absolute; top: -1px; left: -2px; color: var(--color-grey-light2)">
               (${myRating?.computedCount})
@@ -1437,200 +1457,262 @@ async function deleteIndexedDB(dbName, storeName) {
           </span>
         `;
 
-        const $currentUserSpan = `
+      const $currentUserSpan = `
           <span class="${className}">
             ${$span}
             ${myRating?.computed ? $computedSup : ""}
           </span>
         `;
 
-        const $currentUserTd = $row.find('td:nth-child(2)')
-        $currentUserTd.after(`
+      const $currentUserTd = $row.find('td:nth-child(2)')
+      $currentUserTd.after(`
                     <td class="star-rating-only">
                         ${$currentUserSpan}
                     </td>
         `);
-      });
-    }
+    });
+  }
 
-    async openControlPanelOnHover() {
-      const btn = $('.button-control-panel');
-      const panel = $('#dropdown-control-panel');
+  async openControlPanelOnHover() {
+    const btn = $('.button-control-panel');
+    const panel = $('#dropdown-control-panel');
 
-      $(btn).on('mouseover', () => {
-        if (!panel.hasClass('active')) {
-          panel.addClass('active');
-          let windowWidth = $(window).width();
-          if (windowWidth <= 635) {
-            panel.appendTo(document.body);
-            panel.css("top", "133px");
-            panel.css("right", "15px");
-          }
+    $(btn).on('mouseover', () => {
+      if (!panel.hasClass('active')) {
+        panel.addClass('active');
+        let windowWidth = $(window).width();
+        if (windowWidth <= 635) {
+          panel.appendTo(document.body);
+          panel.css("top", "133px");
+          panel.css("right", "15px");
         }
-      });
-      $(btn).on('mouseleave', () => {
-        if (panel.hasClass('active')) panel.removeClass('active');
-      });
-      $(panel).on('mouseover', () => {
-        if (!panel.hasClass('active')) panel.addClass('active');
-      });
-      $(panel).on('mouseleave', () => {
-        if (panel.hasClass('active')) panel.removeClass('active');
-      });
+      }
+    });
+    $(btn).on('mouseleave', () => {
+      if (panel.hasClass('active')) panel.removeClass('active');
+    });
+    $(panel).on('mouseover', () => {
+      if (!panel.hasClass('active')) panel.addClass('active');
+    });
+    $(panel).on('mouseleave', () => {
+      if (panel.hasClass('active')) panel.removeClass('active');
+    });
 
-    }
+  }
 
-    async addWarningToUserProfile() {
-      const ratingCountOk = this.isRatingCountOk();
-      if (ratingCountOk) return;
+  async addWarningToUserProfile() {
+    const ratingCountOk = this.isRatingCountOk();
+    if (ratingCountOk) return;
 
-      $(".csfd-compare-menu").append(`
+    $(".csfd-compare-menu").append(`
                 <div class='counter'>
                     <span><b>!</b></span>
                 </div>
             `);
-    }
+  }
 
-    async refreshButtonNew(ratingsInLS, curUserRatings) {
-      const ratingCountOk = await this.isRatingCountOk();
-      if (ratingCountOk) return;
+  async refreshButtonNew(ratingsInLS, curUserRatings) {
+    const ratingCountOk = await this.isRatingCountOk();
+    if (ratingCountOk) return;
 
-      const $button = $('<button>', {
-        id: 'refr-ratings-button',
-        "class": 'csfd-compare-reload',
-        html: `<center>
+    const $button = $('<button>', {
+      id: 'refr-ratings-button',
+      "class": 'csfd-compare-reload',
+      html: `<center>
                  <b> >> Načíst hodnocení (new) << </b> <br />
                </center>`,
-      }).css({
-        textTransform: "initial",
-        fontSize: "0.9em",
-        padding: "5px",
-        border: "4px solid whitesmoke",
-        borderRadius: "8px",
-        width: "-moz-available",
-        width: "-webkit-fill-available",
-        width: "100%",
-      });
-      const $div = $('<div>', {
-        html: $button,
-      });
-      $('.csfd-compare-settings').after($div);
+    }).css({
+      textTransform: "initial",
+      fontSize: "0.9em",
+      padding: "5px",
+      border: "4px solid whitesmoke",
+      borderRadius: "8px",
+      width: "-moz-available",
+      width: "-webkit-fill-available",
+      width: "100%",
+    });
+    const $div = $('<div>', {
+      html: $button,
+    });
+    $('.csfd-compare-settings').after($div);
 
-      let forceUpdate = ratingsInLS > curUserRatings ? true : false;
+    let forceUpdate = ratingsInLS > curUserRatings ? true : false;
 
-      $($button).on("click", async function () {
-        console.debug("refreshing ratings");
-        const csfd = new Csfd($('div.page-content'));
-        if (forceUpdate === true) {
-          if (!confirm(`Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`)) {
-            forceUpdate = false;
-          }
+    $($button).on("click", async function () {
+      console.debug("refreshing ratings");
+      const csfd = new Csfd($('div.page-content'));
+      if (forceUpdate === true) {
+        if (!confirm(`Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`)) {
+          forceUpdate = false;
         }
-        csfd.refreshAllRatingsNew(csfd, forceUpdate);
-      });
-    }
+      }
+      csfd.refreshAllRatings(csfd, forceUpdate);
+    });
+  }
 
-    async btnLoadComputedRatings() {
-      const $button = $('<button>', {
-        id: 'btn-load-computed-ratings',
-        "class": 'csfd-compare-reload',
-        html: `<center>
+  async btnLoadComputedRatings() {
+    const $button = $('<button>', {
+      id: 'btn-load-computed-ratings',
+      "class": 'csfd-compare-reload',
+      html: `<center>
                   <b> >> Přinačíst vypočtená hodnocení << </b> <br />
                   (Work in progress)
                 </center>`,
-      }).css({
-        textTransform: "initial",
-        fontSize: "0.9em",
-        padding: "5px",
-        border: "4px solid whitesmoke",
-        borderRadius: "8px",
-        width: "-moz-available",
-        width: "-webkit-fill-available",
-        width: "100%",
-        backgroundColor: "#212121",
-      });
-      const $div = $('<div>', {
-        html: $button,
-      });
-      $('.csfd-compare-settings').after($div);
+    }).css({
+      textTransform: "initial",
+      fontSize: "0.9em",
+      padding: "5px",
+      border: "4px solid whitesmoke",
+      borderRadius: "8px",
+      width: "-moz-available",
+      width: "-webkit-fill-available",
+      width: "100%",
+      backgroundColor: "#212121",
+    });
+    const $div = $('<div>', {
+      html: $button,
+    });
+    $('.csfd-compare-settings').after($div);
 
-      $($button).on("click", async function () {
-        console.debug("Refreshing Computed Ratings...");
-        console.log({ username: csfd.username });
-        const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, csfd.username)
-        console.log(`len(allRatings) = ${Object.keys(allRatings).length}`);
-        const filteredKeys = Object.keys(allRatings).filter(key => allRatings[key].computed === true);
+    $($button).on("click", async () => {
+      console.debug("Refreshing Computed Ratings...");
+      const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
+      // console.log(`len(allRatings) = ${Object.keys(allRatings).length}`);
+      // const filteredKeys = Object.keys(allRatings).filter(key => allRatings[key].computed === true);
 
-        const computedRatings = filteredKeys.reduce((obj, key) => {
+      // const computedRatings = filteredKeys.reduce((obj, key) => {
+      //   obj[key] = allRatings[key];
+      //   return obj;
+      // }, {});
+
+      // console.log({ computedRatings });
+
+      const episodesRatings = Object.keys(allRatings)
+        .filter(key => allRatings[key].type === "episode")
+        .reduce((obj, key) => {
           obj[key] = allRatings[key];
           return obj;
         }, {});
 
-        console.log({ computedRatings });
+      // Get all parentId and check if it exists in allRatings, if not, add it to empty array
+      const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
+      const allParentIdsUnique = [...new Set(allParentIds)];
+      console.log({ allParentIdsUnique });
 
-        const episodesRatings = Object.keys(allRatings).filter(key => allRatings[key].type === "episode").reduce((obj, key) => {
-          obj[key] = allRatings[key];
-          return obj;
-        }, {});
-        console.log({ episodesRatings });
-        console.log({episodesRatingsLen: Object.keys(episodesRatings).length});
+      const filteredNotFoundParentRatings = allParentIdsUnique.filter(id => !allRatings.hasOwnProperty(id));
+      console.log({ filteredNotFoundParentRatings });
 
-        // Get all parentId and check if it exists in allRatings, if not, add it to empty array
-        const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
-        const allParentIdsUnique = [...new Set(allParentIds)];
-        console.log({ allParentIdsUnique });
+      this.missingComputedRatingsCount = filteredNotFoundParentRatings.length;
+      console.log({ missingComputedRatingsCount: this.missingComputedRatingsCount });
 
-        const allParentIdsWithRatings = allParentIdsUnique.filter(id => Object.keys(allRatings).includes(id));
-        console.log({ allParentIdsWithRatings });
+      // const foundObjects = filteredNotFoundParentRatings.map(id => {
+      //   console.log({ values: Object.values(allRatings) });
+      //   const obj = Object.values(allRatings).find(item => item.id === Number(id));
+      //   console.log({ obj });
+      //   return obj;
+      // });
 
+      // console.log({ foundObjects });
 
+      // Fetch pages with missing parent ratings and add them to allRatings
+      // Convert IDs inside filteredNotFoundParentRatings to urls like this: 12345 -> '/film/12345/'
+      const urls = filteredNotFoundParentRatings.map(id => `/film/${id}/`);
+      console.log({ urls });
 
+      // for (const url of urls) {
+      //   // Fetch page
+      //   const page = await this.fetchPage(url);
 
+      //   const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
+      //   if (!computed) {
+      //     console.log(`Skipping, because computed is false`);
+      //     continue;
+      //   }
+      //   console.log(`Url: ${url}, Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
 
+      //   const filmUrl = this.getCurrentFilmUrl(page);
+      //   console.log(`Current film url: ${filmUrl}`);
 
-      });
+      //   const filmId = await this.getMovieIdFromHref(filmUrl);
+      //   console.log(`Current film id: ${filmId}`);
+
+      //   // const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page);
+      //   // console.log(`Current film date added: ${currentFilmDateAdded}`);
+
+      //   const filmRatings = await this.getComputedRatings(page);
+      //   console.log(`Current film ratings:`, filmRatings);
+
+      // }
+
+    });
+  }
+
+  async getMissingComputedRatings() {
+    const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
+    const episodesRatings = Object.keys(allRatings)
+      .filter(key => allRatings[key].type === "episode")
+      .reduce((obj, key) => {
+        obj[key] = allRatings[key];
+        return obj;
+      }, {});
+
+    // Get all parentId and check if it exists in allRatings, if not, add it to empty array
+    const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
+    const allParentIdsUnique = [...new Set(allParentIds)];
+
+    const filteredNotFoundParentRatings = allParentIdsUnique.filter(id => !allRatings.hasOwnProperty(id));
+
+    this.missingComputedRatingsCount = filteredNotFoundParentRatings.length;
+    return this.missingComputedRatingsCount;
+  }
+
+  async fetchPage(url) {
+    const response = await fetch(url);
+    const html = await response.text();
+    // const $html = $(html);
+    return html;
+  }
+
+  async badgesComponent(ratingsInLS, curUserRatings, computedRatings) {
+    // TODO" Tohle už teď bude fungovat, jen to zakomponovat...
+    return "<b>ahoj</b>";
+  }
+
+  displayMessageButton() {
+    let userHref = $('#dropdown-control-panel li a.ajax').attr('href');
+    if (userHref === undefined) {
+      console.log("fn displayMessageButton(): can't find user href, exiting function...");
+      return;
     }
 
-    async badgesComponent(ratingsInLS, curUserRatings, computedRatings) {
-      // TODO" Tohle už teď bude fungovat, jen to zakomponovat...
-      return "<b>ahoj</b>";
-    }
-
-    displayMessageButton() {
-      let userHref = $('#dropdown-control-panel li a.ajax').attr('href');
-      if (userHref === undefined) {
-        console.log("fn displayMessageButton(): can't find user href, exiting function...");
-        return;
-      }
-
-      let button = document.createElement("button");
-      button.setAttribute("data-tippy-content", $('#dropdown-control-panel li a.ajax')[0].text);
-      button.setAttribute("style", "float: right; border-radius: 5px;");
-      button.innerHTML = `
+    let button = document.createElement("button");
+    button.setAttribute("data-tippy-content", $('#dropdown-control-panel li a.ajax')[0].text);
+    button.setAttribute("style", "float: right; border-radius: 5px;");
+    button.innerHTML = `
                 <a class="ajax"
                     rel="contentModal"
                     data-mfp-src="#panelModal"
                     href="${userHref}"><i class="icon icon-messages"></i></a>
             `;
-      $(".user-profile-content > h1").append(button);
+    $(".user-profile-content > h1").append(button);
+  }
+
+  async displayFavoriteButton() {
+    let favoriteButton = $('#snippet--menuFavorite > a');
+    if (favoriteButton.length !== 1) {
+      console.log("fn displayFavoriteButton(): can't find user href, exiting function...");
+      return;
+    }
+    let tooltipText = favoriteButton[0].text;
+    let addRemoveIndicator = "+";
+    if (tooltipText.includes("Odebrat") || tooltipText.includes("Odobrať")) {
+      addRemoveIndicator = "-";
     }
 
-    async displayFavoriteButton() {
-      let favoriteButton = $('#snippet--menuFavorite > a');
-      if (favoriteButton.length !== 1) {
-        console.log("fn displayFavoriteButton(): can't find user href, exiting function...");
-        return;
-      }
-      let tooltipText = favoriteButton[0].text;
-      let addRemoveIndicator = "+";
-      if (tooltipText.includes("Odebrat") || tooltipText.includes("Odobrať")) {
-        addRemoveIndicator = "-";
-      }
-
-      let button = document.createElement("button");
-      button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
-      button.setAttribute("data-tippy-content", tooltipText);
-      button.innerHTML = `
+    let button = document.createElement("button");
+    button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
+    button.setAttribute("data-tippy-content", tooltipText);
+    button.innerHTML = `
                 <a class="ajax"
                     rel="contentModal"
                     data-mfp-src="#panelModal"
@@ -1639,793 +1721,801 @@ async function deleteIndexedDB(dbName, storeName) {
                         <i class="icon icon-favorites"></i>
                 </a>
             `;
-      $(".user-profile-content > h1").append(button);
+    $(".user-profile-content > h1").append(button);
 
-      $(button).on('click', async function () {
-        if (addRemoveIndicator == "+") {
-          $('#add-remove-indicator')[0].innerText = '-';
-          button._tippy.setContent("Odebrat z oblíbených");
-        } else {
-          $('#add-remove-indicator')[0].innerText = '+';
-          button._tippy.setContent("Přidat do oblíbených");
-        }
-        await refreshTooltips();
-      });
-    }
+    $(button).on('click', async function () {
+      if (addRemoveIndicator == "+") {
+        $('#add-remove-indicator')[0].innerText = '-';
+        button._tippy.setContent("Odebrat z oblíbených");
+      } else {
+        $('#add-remove-indicator')[0].innerText = '+';
+        button._tippy.setContent("Přidat do oblíbených");
+      }
+      await refreshTooltips();
+    });
+  }
 
-    hideUserControlPanel() {
-      let panel = $('.button-control-panel:not(.small)');
-      if (panel.length !== 1) { return; }
-      panel.hide();
-    }
+  hideUserControlPanel() {
+    let panel = $('.button-control-panel:not(.small)');
+    if (panel.length !== 1) { return; }
+    panel.hide();
+  }
 
-    async showLinkToImageOnSmallMoviePoster() {
-      let $film = this.csfdPage.find('.film-posters');
-      let $img = $film.find('img');
-      let src = $img.attr('src');
-      let width = $img.attr('width');
+  async showLinkToImageOnSmallMoviePoster() {
+    let $film = this.csfdPage.find('.film-posters');
+    let $img = $film.find('img');
+    let src = $img.attr('src');
+    let width = $img.attr('width');
 
-      let $div = $(`<div>`, { "class": 'link-to-image' })
-        .css({
-          'position': 'absolute',
-          'right': '0px',
-          'bottom': '0px',
-          'display': 'none',
-          'z-index': '999',
-          'padding-left': '0.5em',
-          'padding-right': '0.5em',
-          'margin-bottom': '0.5em',
-          'margin-right': '0.5em',
-          'background-color': 'rgba(255, 245, 245, 0.85)',
-          'border-radius': '5px 0px',
-          'font-weight': 'bold'
-        })
-        .html(`<a href="${src}">w${width}</a>`);
+    let $div = $(`<div>`, { "class": 'link-to-image' })
+      .css({
+        'position': 'absolute',
+        'right': '0px',
+        'bottom': '0px',
+        'display': 'none',
+        'z-index': '999',
+        'padding-left': '0.5em',
+        'padding-right': '0.5em',
+        'margin-bottom': '0.5em',
+        'margin-right': '0.5em',
+        'background-color': 'rgba(255, 245, 245, 0.85)',
+        'border-radius': '5px 0px',
+        'font-weight': 'bold'
+      })
+      .html(`<a href="${src}">w${width}</a>`);
 
-      $film.find('a').after($div);
+    $film.find('a').after($div);
 
-      $film.on('mouseover', () => {
-        $div.show("fast");
-      });
-      $film.on('mouseleave', () => {
-        $div.hide("fast");
-      });
-    }
+    $film.on('mouseover', () => {
+      $div.show("fast");
+    });
+    $film.on('mouseleave', () => {
+      $div.hide("fast");
+    });
+  }
 
-    /**
-     * Show link for all possible picture sizes
-     */
-    async showLinkToImageOnOtherGalleryImages() {
+  /**
+   * Show link for all possible picture sizes
+   */
+  async showLinkToImageOnOtherGalleryImages() {
 
-      let $pictures = this.csfdPage.find('.gallery-item picture');
+    let $pictures = this.csfdPage.find('.gallery-item picture');
 
-      let pictureIdx = 0;
-      for (const $picture of $pictures) {
-        let obj = {};
+    let pictureIdx = 0;
+    for (const $picture of $pictures) {
+      let obj = {};
 
-        let src = $($picture).find('img').attr('src').replace(/cache[/]resized[/]w\d+[/]/g, '');
+      let src = $($picture).find('img').attr('src').replace(/cache[/]resized[/]w\d+[/]/g, '');
 
-        obj['100 %'] = src;
+      obj['100 %'] = src;
 
-        let $sources = $($picture).find('source');
+      let $sources = $($picture).find('source');
 
-        for (const $source of $sources) {
+      for (const $source of $sources) {
 
-          const srcset = $($source).attr('srcset');
+        const srcset = $($source).attr('srcset');
 
-          if (srcset === undefined) { continue; }
+        if (srcset === undefined) { continue; }
 
-          let attributeText = srcset.replace(/\dx/g, '').replace(/\s/g, '');
-          let links = attributeText.split(',');
+        let attributeText = srcset.replace(/\dx/g, '').replace(/\s/g, '');
+        let links = attributeText.split(',');
 
-          for (const link of links) {
-            const match = link.match(/[/]w(\d+)/);
-            if (match !== null) {
-              if (match.length === 2) {
-                const width = match[1];
-                obj[width] = link;
-              }
+        for (const link of links) {
+          const match = link.match(/[/]w(\d+)/);
+          if (match !== null) {
+            if (match.length === 2) {
+              const width = match[1];
+              obj[width] = link;
             }
           }
         }
-
-        let idx = 0;
-        for (const item in obj) {
-
-          let $div = $(`<div>`, { "class": `link-to-image-gallery picture-idx-${pictureIdx}` })
-            .css({
-              'position': 'absolute',
-              'right': '0px',
-              'bottom': '0px',
-              'display': 'none',
-              'z-index': '999',
-              'padding-left': '0.5em',
-              'padding-right': '0.5em',
-              'margin-bottom': `${0.5 + (idx * 2)}em`,
-              'margin-right': '0.5em',
-              'background-color': 'rgba(255, 245, 245, 0.75)',
-              'border-radius': '5px 0px',
-              'font-weight': 'bold'
-            })
-            .html(`<a href="${obj[item]}">${item}</a>`);
-
-          $($picture).find('img').after($div);
-          $($picture).attr('data-idx', pictureIdx);
-          $($picture).parent().css({ position: 'relative' });  // need to have this for absolute position to work
-
-          idx += 1;
-        }
-
-        pictureIdx += 1;
-
-        $($picture).on('mouseover', () => {
-          const pictureIdx = $($picture).attr('data-idx');
-          $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).show("fast");
-        });
-        $($picture).on('mouseleave', () => {
-          const pictureIdx = $($picture).attr('data-idx');
-          $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide("fast");
-        });
       }
+
+      let idx = 0;
+      for (const item in obj) {
+
+        let $div = $(`<div>`, { "class": `link-to-image-gallery picture-idx-${pictureIdx}` })
+          .css({
+            'position': 'absolute',
+            'right': '0px',
+            'bottom': '0px',
+            'display': 'none',
+            'z-index': '999',
+            'padding-left': '0.5em',
+            'padding-right': '0.5em',
+            'margin-bottom': `${0.5 + (idx * 2)}em`,
+            'margin-right': '0.5em',
+            'background-color': 'rgba(255, 245, 245, 0.75)',
+            'border-radius': '5px 0px',
+            'font-weight': 'bold'
+          })
+          .html(`<a href="${obj[item]}">${item}</a>`);
+
+        $($picture).find('img').after($div);
+        $($picture).attr('data-idx', pictureIdx);
+        $($picture).parent().css({ position: 'relative' });  // need to have this for absolute position to work
+
+        idx += 1;
+      }
+
+      pictureIdx += 1;
+
+      $($picture).on('mouseover', () => {
+        const pictureIdx = $($picture).attr('data-idx');
+        $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).show("fast");
+      });
+      $($picture).on('mouseleave', () => {
+        const pictureIdx = $($picture).attr('data-idx');
+        $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide("fast");
+      });
     }
+  }
 
-    /**
-     * If film has been rated by user favorite people, make an average and display it
-     * under the normal rating as: oblíbení: X %
-     *
-     * @returns null
-     */
-    async ratingsFromFavorites() {
-      let $ratingSpans = this.csfdPage.find('li.favored:not(.current-user-rating) .star-rating .stars');
+  /**
+   * If film has been rated by user favorite people, make an average and display it
+   * under the normal rating as: oblíbení: X %
+   *
+   * @returns null
+   */
+  async ratingsFromFavorites() {
+    let $ratingSpans = this.csfdPage.find('li.favored:not(.current-user-rating) .star-rating .stars');
 
-      // No favorite people ratings found
-      if ($ratingSpans.length === 0) { return; }
+    // No favorite people ratings found
+    if ($ratingSpans.length === 0) { return; }
 
-      let ratingNumbers = [];
-      for (let $span of $ratingSpans) {
-        let num = this.getNumberFromRatingSpan($($span));
-        num = num * 20;
-        ratingNumbers.push(num);
-      }
-      let average = (array) => array.reduce((a, b) => a + b) / array.length;
-      const ratingAverage = Math.round(average(ratingNumbers));
+    let ratingNumbers = [];
+    for (let $span of $ratingSpans) {
+      let num = this.getNumberFromRatingSpan($($span));
+      num = num * 20;
+      ratingNumbers.push(num);
+    }
+    let average = (array) => array.reduce((a, b) => a + b) / array.length;
+    const ratingAverage = Math.round(average(ratingNumbers));
 
-      let $ratingAverage = this.csfdPage.find('.box-rating-container div.film-rating-average');
-      $ratingAverage.html(`
+    let $ratingAverage = this.csfdPage.find('.box-rating-container div.film-rating-average');
+    $ratingAverage.html(`
                 <span style="position: absolute;">${$ratingAverage.text()}</span>
                 <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
             `);
 
+  }
+  /**
+   * When there is less than 10 ratings on a movie, csfd waits with the rating.
+   * This computes the rating from those less than 10 and shows it.
+   *
+   * @returns null
+   */
+  async ratingsEstimate() {
+
+    // Find rating-average element
+    let $ratingAverage = this.csfdPage.find('.box-rating-container .film-rating-average');
+
+    // Not found, exit fn()
+    if ($ratingAverage.length !== 1) { return; }
+
+    // Get the text
+    let curRating = $ratingAverage.text().replace(/\s/g, '');
+
+    // If the text if anything than '?%', exit fn()
+    if (!curRating.includes('?%')) { return; }
+
+    // Get all other users ratings
+    let $userRatings = this.csfdPage.find('section.others-rating .star-rating');
+
+    // If no ratings in other ratings, exit fn()
+    if ($userRatings.length === 0) { return; }
+
+    // Fill the list with ratings as numbers
+    let ratingNumbers = [];
+    for (const $userRating of $userRatings) {
+      let $ratingSpan = $($userRating).find('.stars');
+      let num = this.getNumberFromRatingSpan($ratingSpan);
+      // Transform number to percentage (0 -> 0 %, 1 -> 20 %, 2 -> 40 %...)
+      num = num * 20;
+      ratingNumbers.push(num);
     }
-    /**
-     * When there is less than 10 ratings on a movie, csfd waits with the rating.
-     * This computes the rating from those less than 10 and shows it.
-     *
-     * @returns null
-     */
-    async ratingsEstimate() {
 
-      // Find rating-average element
-      let $ratingAverage = this.csfdPage.find('.box-rating-container .film-rating-average');
+    // Compute the average
+    let average = (array) => array.reduce((a, b) => a + b) / array.length;
+    const ratingAverage = Math.round(average(ratingNumbers));
 
-      // Not found, exit fn()
-      if ($ratingAverage.length !== 1) { return; }
-
-      // Get the text
-      let curRating = $ratingAverage.text().replace(/\s/g, '');
-
-      // If the text if anything than '?%', exit fn()
-      if (!curRating.includes('?%')) { return; }
-
-      // Get all other users ratings
-      let $userRatings = this.csfdPage.find('section.others-rating .star-rating');
-
-      // If no ratings in other ratings, exit fn()
-      if ($userRatings.length === 0) { return; }
-
-      // Fill the list with ratings as numbers
-      let ratingNumbers = [];
-      for (const $userRating of $userRatings) {
-        let $ratingSpan = $($userRating).find('.stars');
-        let num = this.getNumberFromRatingSpan($ratingSpan);
-        // Transform number to percentage (0 -> 0 %, 1 -> 20 %, 2 -> 40 %...)
-        num = num * 20;
-        ratingNumbers.push(num);
+    // Rewrite the displayed rating
+    const bgcolor = this.getRatingColor(ratingAverage);
+    $ratingAverage
+      .text(`${ratingAverage} %`)
+      .css({ color: '#fff', backgroundColor: bgcolor })
+      .attr('title', `spočteno z hodnocení: ${$userRatings.length}`);
+  }
+  /**
+   * Depending on the percent number, return a color as a string representation
+   * 0-29 black; 30-69 blue; 70-100 red
+   *
+   * @param {int} ratingPercent
+   * @returns {string} representation of colour
+   */
+  getRatingColor(ratingPercent) {
+    switch (true) {
+      case (ratingPercent < 29):
+        return "#535353";
+      case (ratingPercent >= 30 && ratingPercent < 69):
+        return "#658db4";
+      case (ratingPercent >= 70):
+        return "#ba0305";
+      default:
+        return "#d2d2d2";
+    }
+  }
+  /**
+   * From jquery! $span csfd element class (.stars stars-4) return the ratings number (4)
+   *
+   * @param {jquery} $span
+   * @returns int in range 0-5
+   */
+  getNumberFromRatingSpan($span) {
+    // TODO: využít tuto funkci i při načítání hodnocení do LS
+    let rating = 0;
+    for (let stars = 0; stars <= 5; stars++) {
+      if ($span.hasClass('stars-' + stars)) {
+        rating = stars;
       }
-
-      // Compute the average
-      let average = (array) => array.reduce((a, b) => a + b) / array.length;
-      const ratingAverage = Math.round(average(ratingNumbers));
-
-      // Rewrite the displayed rating
-      const bgcolor = this.getRatingColor(ratingAverage);
-      $ratingAverage
-        .text(`${ratingAverage} %`)
-        .css({ color: '#fff', backgroundColor: bgcolor })
-        .attr('title', `spočteno z hodnocení: ${$userRatings.length}`);
     }
-    /**
-     * Depending on the percent number, return a color as a string representation
-     * 0-29 black; 30-69 blue; 70-100 red
-     *
-     * @param {int} ratingPercent
-     * @returns {string} representation of colour
-     */
-    getRatingColor(ratingPercent) {
-      switch (true) {
-        case (ratingPercent < 29):
-          return "#535353";
-        case (ratingPercent >= 30 && ratingPercent < 69):
-          return "#658db4";
-        case (ratingPercent >= 70):
-          return "#ba0305";
-        default:
-          return "#d2d2d2";
-      }
-    }
-    /**
-     * From jquery! $span csfd element class (.stars stars-4) return the ratings number (4)
-     *
-     * @param {jquery} $span
-     * @returns int in range 0-5
-     */
-    getNumberFromRatingSpan($span) {
-      // TODO: využít tuto funkci i při načítání hodnocení do LS
-      let rating = 0;
-      for (let stars = 0; stars <= 5; stars++) {
-        if ($span.hasClass('stars-' + stars)) {
-          rating = stars;
+    return rating;
+  }
+  /**
+   * Show clickable link to the absolute url of the image mouse is hovering above.
+   *
+   * Works with:
+   * - Small Movie Poster
+   * - Movie Gallery Images
+   */
+  async showLinkToImage() {
+    this.showLinkToImageOnSmallMoviePoster();
+    this.showLinkToImageOnOtherGalleryImages();
+  }
+
+
+  async doSomethingNew(url) {
+    let data = await $.get(url);
+    const $rows = $(data).find('#snippet--ratings tr');
+
+    let dc = {};
+    const parentIds = [];
+    const seriesIds = [];
+
+    // Process each row of the rating page
+    // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
+    for (const $row of $rows) {
+
+      const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
+      const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+      console.log({ name });
+      console.log({ filmInfo });
+
+      const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
+        this.getShowType(filmInfo),
+        this.getShowYear(filmInfo),
+        this.getParentNameFromUrl(name),
+        this.getMovieIdParentIdFromUrl(name),
+      ]);
+
+      // If the show is a SEASON, it's parent is a SERIES and ID is in the URL
+      if (showType === 'season') {
+        // If parentId is not in parentIds, add it to the list
+        if (!parentIds.includes(parentName)) {
+          // console.debug(`[ DEBUG ] Adding parentName to [PARENT Ids]: ${parentName}`);
+          parentIds.push(parentName);
         }
       }
-      return rating;
+      // If the show is a EPISODE, it's parent is a SEASON but the ID is not in the URL
+      // We need to get the ID from the parentName (SERIES) content and then grab the SEASON IDs there
+      else if (showType === 'episode') {
+        // If parentId is not in parentIds, add it to the list
+        if (!seriesIds.includes(parentName)) {
+          // console.debug(`[ DEBUG ] Adding parentName to [SERIES Ids]: ${parentName}`);
+          parentIds.push(parentName);
+          seriesIds.push(parentName);
+        }
+      }
+
+      // Get the RATING from the stars and the DATE
+      const $ratings = $($row).find('span.stars');
+      const rating = await this.getStarCountFromSpanClass($ratings);
+      const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
+
+      dc[movieId] = {
+        'url': name,
+        'fullUrl': location.origin + name,
+        'rating': rating,
+        'date': date,
+        'type': showType,
+        'year': showYear,
+        'parentName': parentName,
+        'parentId': parentId,
+        'computed': false,
+        'computedCount': "",
+        'computedFromText': "",
+        'lastUpdate': this.getCurrentDateTime(),
+      };
     }
-    /**
-     * Show clickable link to the absolute url of the image mouse is hovering above.
-     *
-     * Works with:
-     * - Small Movie Poster
-     * - Movie Gallery Images
-     */
-    async showLinkToImage() {
-      this.showLinkToImageOnSmallMoviePoster();
-      this.showLinkToImageOnOtherGalleryImages();
+    return dc;
+  }
+
+  async getAllPages(force = false) {
+
+    const boxSettingsName = 'CSFD-Compare-settings';
+    const settings = await getSettings(boxSettingsName);
+
+    const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
+    const $content = await $.get(url);
+    const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
+    let maxPageNum = $href.text();
+    this.userRatingsCount = await this.getCurrentUserRatingsCount();
+
+    const allUrls = [];
+    maxPageNum = DEBUG_MAX_PAGES_LOAD != 0 ? DEBUG_MAX_PAGES_LOAD : maxPageNum;  // DEBUG PURPOSES
+    for (let idx = 1; idx <= maxPageNum; idx++) {
+      const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
+      allUrls.push(url);
     }
 
+    const savedRatingsCount = Object.keys(this.stars).filter((item) => item.computed === false).length;
+    // const savedRatingsCount = Object.keys(this.stars).length;
+    console.debug(`savedRatingsCount: ${savedRatingsCount}`);
+    // If we don't have any ratings saved, load them all in chunks
+    if (savedRatingsCount !== 0) {
+      console.log(`Načítám pouze chybějící hodnocení...`);
 
-    async doSomethingNew(url) {
-      let data = await $.get(url);
-      const $rows = $(data).find('#snippet--ratings tr');
+      let dict = this.stars;
+      let ls = force ? [] : [dict];
+      for (let idx = 1; idx <= maxPageNum; idx++) {
+        console.debug(`[ DEBUG ] iterating over ${idx} <= ${maxPageNum}`);
+        const onlyRated = Object.values(dict).filter((item) => item.computed === false);
+        if (!force) if (onlyRated.length >= this.userRatingsCount) break;
 
-      let dc = {};
-      const parentIds = [];
-      const seriesIds = [];
+        console.log(`Načítám hodnocení ${idx}/${maxPageNum} stránek`);
+        Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum} stránek`, 1, 200, 0);
 
-      // Process each row of the rating page
-      // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
-      for (const $row of $rows) {
+        const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
+        const res = await this.doSomethingNew(url);
 
-        const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
-        const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+        ls.push(res);
 
-        const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
-          csfd.getShowType(filmInfo),
-          csfd.getShowYear(filmInfo),
-          csfd.getParentNameFromUrl(name),
-          csfd.getMovieIdParentIdFromUrl(name),
-        ]);
+        if (!force) dict = await mergeDict(ls);
+      }
+      if (force) dict = await mergeDict(ls);
+      return dict;
+    }
 
-        // If the show is a SEASON, it's parent is a SERIES and ID is in the URL
-        if (showType === 'season') {
-          // If parentId is not in parentIds, add it to the list
-          if (!parentIds.includes(parentName)) {
-            // console.debug(`[ DEBUG ] Adding parentName to [PARENT Ids]: ${parentName}`);
-            parentIds.push(parentName);
+    const chunkSize = 5;
+
+    // Divide the urls into chunks of X (to not overload the browser)
+    const chunks = [];
+    while (allUrls.length) {
+      chunks.push(allUrls.splice(0, chunkSize));
+    }
+
+    console.log(`Načítám hodnocení...`);
+    Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
+
+    // Load the chunks in parallel
+    let contents = [];
+    let chunkDone = 0;
+    // for (const chunk of limitedChunks) {  // TODO: Debug
+    for (const chunk of chunks) {
+      Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * NUM_RATINGS_PER_PAGE}/${this.userRatingsCount}`, 5, 200, 0);
+      const content = await Promise.all(chunk.map(url => $.get(url)));
+      contents.push(content);
+      chunkDone += chunk.length * NUM_RATINGS_PER_PAGE;
+    }
+
+    // Process the content of each rating page
+    let dc = {};
+    const parentIds = [];
+    const seriesIds = [];
+
+    for (const content of contents) {
+      for (const data of content) {
+        const $rows = $(data).find('#snippet--ratings tr');
+
+        // Process each row of the rating page
+        // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
+        for (const $row of $rows) {
+
+          const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
+          const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+
+          const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
+            this.getShowType(filmInfo),
+            this.getShowYear(filmInfo),
+            this.getParentNameFromUrl(name),
+            this.getMovieIdParentIdFromUrl(name),
+          ]);
+
+          // If the show is a SEASON, it's parent is a SERIES and ID is in the URL
+          if (showType === 'season') {
+            // If parentId is not in parentIds, add it to the list
+            if (!parentIds.includes(parentName)) {
+              // console.debug(`[ DEBUG ] Adding parentName to [PARENT Ids]: ${parentName}`);
+              parentIds.push(parentName);
+            }
           }
-        }
-        // If the show is a EPISODE, it's parent is a SEASON but the ID is not in the URL
-        // We need to get the ID from the parentName (SERIES) content and then grab the SEASON IDs there
-        else if (showType === 'episode') {
-          // If parentId is not in parentIds, add it to the list
-          if (!seriesIds.includes(parentName)) {
-            // console.debug(`[ DEBUG ] Adding parentName to [SERIES Ids]: ${parentName}`);
-            parentIds.push(parentName);
-            seriesIds.push(parentName);
+          // If the show is a EPISODE, it's parent is a SEASON but the ID is not in the URL
+          // We need to get the ID from the parentName (SERIES) content and then grab the SEASON IDs there
+          else if (showType === 'episode') {
+            // If parentId is not in parentIds, add it to the list
+            if (!seriesIds.includes(parentName)) {
+              // console.debug(`[ DEBUG ] Adding parentName to [SERIES Ids]: ${parentName}`);
+              parentIds.push(parentName);
+              seriesIds.push(parentName);
+            }
           }
+
+          // Get the RATING from the stars and the DATE
+          const $ratings = $($row).find('span.stars');
+          const rating = await this.getStarCountFromSpanClass($ratings);
+          const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
+
+          dc[movieId] = {
+            'url': name,
+            'fullUrl': location.origin + name,
+            'rating': rating,
+            'date': date,
+            'type': showType,
+            'year': showYear,
+            'id': movieId,
+            'parentName': parentName,
+            'parentId': parentId,
+            'computed': false,
+            'computedCount': "",
+            'computedFromText': "",
+            'lastUpdate': this.getCurrentDateTime(),
+          };
+
         }
-
-        // Get the RATING from the stars and the DATE
-        const $ratings = $($row).find('span.stars');
-        const rating = await csfd.getStarCountFromSpanClass($ratings);
-        const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-
-        dc[movieId] = {
-          'url': name,
-          'fullUrl': location.origin + name,
-          'rating': rating,
-          'date': date,
-          'type': showType,
-          'year': showYear,
-          'parentName': parentName,
-          'parentId': parentId,
-          'computed': false,
-          'computedCount': "",
-          'computedFromText': "",
-          'lastUpdate': this.getCurrentDateTime(),
-        };
       }
+    }
+
+    if (settings.loadComputedRatings === false) {
+      return dc;
+    } else {
+      // TODO: Load computed ratings
       return dc;
     }
+  }
 
-    async getAllPagesNew(force = false) {
-      const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia` : `${this.userUrl}hodnoceni`;
-      const $content = await $.get(url);
-      const $href = $($content).find(`.pagination a:not(.page-next):not(.page-prev):last`);
-      let maxPageNum = $href.text();
-      this.userRatingsCount = await this.getCurrentUserRatingsCount();
+  /**
+   * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
+   * @returns {int} `YYYY` (year) if it exists in filmInfo[0], `????` otherwise
+   *
+   * Example:
+   * - (2007)(série)(S02) --> 2007
+   * - (2021) --> 2021
+   * - --> ????
+   */
+  async getShowYear(filmInfo) {
+    const showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
+    return parseInt(showYear);
+  }
 
-      const allUrls = [];
-      maxPageNum = DEBUG_MAX_PAGES_LOAD != 0 ? DEBUG_MAX_PAGES_LOAD : maxPageNum;  // DEBUG PURPOSES
-      for (let idx = 1; idx <= maxPageNum; idx++) {
-        const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
-        allUrls.push(url);
-      }
+  /**
+   * Return show type in 'english' language. Works for SK an CZ.
+   *
+   * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
+   * @returns {str} `showType` if it exists in filmInfo[1], `movie` otherwise
+   *
+   * Posible values: `movie`, `tv movie`, `serial`, `series`, `episode`
+   *
+   * Example:
+   * - (2007)(série)(S02) --> series
+   * - (2021)(epizoda)(S02E01) --> episode
+   * - (2019) --> movie
+   */
+  async getShowType(filmInfo) {
+    const showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
 
-      const savedRatingsCount = Object.keys(this.stars).length;
+    switch (showType) {
+      case "epizoda": case "epizóda":
+        return 'episode';
 
-      // If we don't have any ratings saved, load them all in chunks
-      if (savedRatingsCount !== 0) {
-        console.log(`Načíst jen chybějící hodnocení...`);
+      case "série": case "séria":
+        return 'season';
 
-        let dict = this.stars;
-        let ls = force ? [] : [dict];
-        for (let idx = 1; idx <= maxPageNum; idx++) {
-          console.log(`[ DEBUG ] iterating over ${idx} <= ${maxPageNum}`);
-          const onlyRated = Object.values(dict).filter((item) => item.computed === false);
-          if (!force) if (onlyRated.length >= this.userRatingsCount) break;
+      case "seriál":
+        return 'series';
 
-          console.log(`Načítám hodnocení ${idx}/${maxPageNum} stránek`);
-          Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum} stránek`, 1, 200, 0);
+      case "TV film":
+        return 'tv movie';
 
-          const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
-          const res = await this.doSomethingNew(url);
-          ls.push(res);
-          if (!force) dict = await mergeDict(ls);
-        }
-        if (force) dict = await mergeDict(ls);
-        return dict;
-      }
+      case 'film':
+        return 'movie';
 
-      const chunkSize = 5;
+      default:
+        return showType;
+    }
+  }
 
-      // Divide the urls into chunks of X (to not overload the browser)
-      const chunks = [];
-      while (allUrls.length) {
-        chunks.push(allUrls.splice(0, chunkSize));
-      }
+  /**
+   * Return show type in 'english' language. Works for SK an CZ.
+   *
+   * @param {str} showType seriál, série, epizoda, film, ...
+   * @returns {str} `showType`
+   *
+   * Posible returned values: `movie`, `tv movie`, `serial`, `series`, `episode`
+   *
+   * Example:
+   * - série --> series
+   * - epizoda --> episode
+   * - film --> movie
+   */
+  getShowTypeFromType(showType) {
 
-      console.log(`Načítám hodnocení...`);
-      Glob.popup(`Načítám hodnocení...`, 2, 200, 0);
+    showType = showType.toLowerCase();
 
-      // TODO: Debug
-      // const limitedChunks = chunks.slice(0, 1);
+    switch (showType) {
+      case "epizoda": case "epizóda":
+        return 'episode';
 
-      // Load the chunks in parallel
-      let contents = [];
-      let chunkDone = 0;
-      for (const chunk of chunks) {
-        Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * NUM_RATINGS_PER_PAGE}/${this.userRatingsCount}`, 5, 200, 0);
-        const content = await Promise.all(chunk.map(url => $.get(url)));
-        contents.push(content);
-        chunkDone += chunk.length * NUM_RATINGS_PER_PAGE;
-      }
+      case "série": case "séria":
+        return 'season';
 
-      // Process the content of each rating page
-      let dc = {};
-      const parentIds = [];
-      const seriesIds = [];
+      case "seriál":
+        return 'series';
 
-      for (const content of contents) {
-        for (const data of content) {
-          const $rows = $(data).find('#snippet--ratings tr');
+      case "tv film":
+        return 'tv movie';
 
-          // Process each row of the rating page
-          // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
-          for (const $row of $rows) {
+      case 'film':
+        return 'movie';
 
-            const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
-            const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+      default:
+        return showType;
+    }
+  }
 
-            const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
-              csfd.getShowType(filmInfo),
-              csfd.getShowYear(filmInfo),
-              csfd.getParentNameFromUrl(name),
-              csfd.getMovieIdParentIdFromUrl(name),
-            ]);
-
-            // If the show is a SEASON, it's parent is a SERIES and ID is in the URL
-            if (showType === 'season') {
-              // If parentId is not in parentIds, add it to the list
-              if (!parentIds.includes(parentName)) {
-                // console.debug(`[ DEBUG ] Adding parentName to [PARENT Ids]: ${parentName}`);
-                parentIds.push(parentName);
-              }
-            }
-            // If the show is a EPISODE, it's parent is a SEASON but the ID is not in the URL
-            // We need to get the ID from the parentName (SERIES) content and then grab the SEASON IDs there
-            else if (showType === 'episode') {
-              // If parentId is not in parentIds, add it to the list
-              if (!seriesIds.includes(parentName)) {
-                // console.debug(`[ DEBUG ] Adding parentName to [SERIES Ids]: ${parentName}`);
-                parentIds.push(parentName);
-                seriesIds.push(parentName);
-              }
-            }
-
-            // Get the RATING from the stars and the DATE
-            const $ratings = $($row).find('span.stars');
-            const rating = await csfd.getStarCountFromSpanClass($ratings);
-            const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
-
-            dc[movieId] = {
-              'url': name,
-              'fullUrl': location.origin + name,
-              'rating': rating,
-              'date': date,
-              'type': showType,
-              'year': showYear,
-              'id': movieId,
-              'parentName': parentName,
-              'parentId': parentId,
-              'computed': false,
-              'computedCount': "",
-              'computedFromText': "",
-              'lastUpdate': this.getCurrentDateTime(),
-            };
-
-          }
-        }
-      }
-
-      if (settings.loadComputedRatings === false) {
-        return dc;
-      } else {
-        // TODO: Load computed ratings
-        return dc;
+  /**
+   * Get star count from span with stars class
+   *
+   * @param {"<span>"} $starsSpan $span with class of 'stars-X' or 'trash' type.
+   * @returns {int} `0` if trash; `1-5` if stars-X
+   *
+   * Example: \
+   *    `<span class="stars stars-4">` --> `4`\
+   *    `<span class='stars trash'>` --> `0`
+   */
+  async getStarCountFromSpanClass($starsSpan) {
+    let rating = 0;
+    for (let stars = 0; stars <= 5; stars++) {
+      if ($starsSpan.hasClass('stars-' + stars)) {
+        rating = stars;
       }
     }
+    return rating;
+  }
 
-    /**
-     * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
-     * @returns {int} `YYYY` (year) if it exists in filmInfo[0], `????` otherwise
-     *
-     * Example:
-     * - (2007)(série)(S02) --> 2007
-     * - (2021) --> 2021
-     * - --> ????
-     */
-    async getShowYear(filmInfo) {
-      const showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
-      return parseInt(showYear);
+  /**
+   * Return **relative** parent name from episode name
+   *
+   * @param {string} name relative URL of episode name
+   * @returns relative URL of parent name
+   *
+   * Example: \
+   * `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `/film/697624-love-death-robots/`
+   * `/film/697624-love-death-robots/` --> `""`
+   * `/film/
+   */
+  async getParentNameFromUrl(name) {
+    // Remove protocol and domain if present
+    const urlRegex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n]+)/;
+    const path = name.replace(urlRegex, "");
+
+    // Remove trailing and leading slashes
+    const cleanedPath = path.replace(/^\/|\/$/g, '');
+
+    // Split the path by '/'
+    const splitted = cleanedPath.split("/");
+
+    // If the length of the split array is less than or equal to 3, return an empty string
+    if (splitted.length <= 3) {
+      return "";
     }
 
-    /**
-     * Return show type in 'english' language. Works for SK an CZ.
-     *
-     * @param {<span>} filmInfo Combination of 0-3 `<span>` elements
-     * @returns {str} `showType` if it exists in filmInfo[1], `movie` otherwise
-     *
-     * Posible values: `movie`, `tv movie`, `serial`, `series`, `episode`
-     *
-     * Example:
-     * - (2007)(série)(S02) --> series
-     * - (2021)(epizoda)(S02E01) --> episode
-     * - (2019) --> movie
-     */
-    async getShowType(filmInfo) {
-      const showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
+    // Otherwise, return the second element from the split array
+    return splitted[1];
+  }
 
-      switch (showType) {
-        case "epizoda": case "epizóda":
-          return 'episode';
+  /**
+   *
+   * @param {str} href csfd link for movie/series/episode
+   * @returns {Promise<int>} Movie ID number
+   *
+   * Example:
+   * - href = '/film/774319-zhoubne-zlo/' --> 774319
+   * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> 1121972
+   * - href = '1058697-devadesatky' --> 1058697
+   * - href = \'' --> NaN
+   * - href = null --> null
+   */
+  async getMovieIdFromHref(href) {
+    if (!href) { return null; }
 
-        case "série": case "séria":
-          return 'season';
+    const found_groups = href.match(/(\d)+-[-\w]+/ig);
 
-        case "seriál":
-          return 'series';
+    if (!found_groups) { return null; }
+    const movieIds = found_groups.map(x => x.split("-")[0]);
+    const movieId = movieIds[movieIds.length - 1];
 
-        case "TV film":
-          return 'tv movie';
+    return Number(movieId);
+  }
 
-        case 'film':
-          return 'movie';
-
-        default:
-          return showType;
-      }
+  /**
+   * Extract MovieId, possibly ParentId from csfd URL address
+   *
+   * @param {str} url csfd movie URL
+   * @returns {Promise<[int, int]>} [MovieId, ParentId]
+   *
+   * Example: \
+   * - `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `[800484, 697624]`
+   * - `/film/697624-love-death-robots` --> `[697624, NaN]`
+   * - `/film/` --> `[NaN, NaN]`
+   * - `/uzivatel/78145-songokussj/prehled/` --> `[NaN, NaN]`
+   */
+  async getMovieIdParentIdFromUrl(url) {
+    if (!url.includes('/film/')) {
+      return [NaN, NaN];
     }
-
-    /**
-     * Return show type in 'english' language. Works for SK an CZ.
-     *
-     * @param {str} showType seriál, série, epizoda, film, ...
-     * @returns {str} `showType`
-     *
-     * Posible returned values: `movie`, `tv movie`, `serial`, `series`, `episode`
-     *
-     * Example:
-     * - série --> series
-     * - epizoda --> episode
-     * - film --> movie
-     */
-    getShowTypeFromType(showType) {
-
-      showType = showType.toLowerCase();
-
-      switch (showType) {
-        case "epizoda": case "epizóda":
-          return 'episode';
-
-        case "série": case "séria":
-          return 'season';
-
-        case "seriál":
-          return 'series';
-
-        case "tv film":
-          return 'tv movie';
-
-        case 'film':
-          return 'movie';
-
-        default:
-          return showType;
-      }
+    let [firstResult, secondResult] = url.matchAll(/\/(\d+)-/g);
+    if (firstResult === undefined && secondResult === undefined) {
+      return [NaN, NaN];
     }
-
-    /**
-     * Get star count from span with stars class
-     *
-     * @param {"<span>"} $starsSpan $span with class of 'stars-X' or 'trash' type.
-     * @returns {int} `0` if trash; `1-5` if stars-X
-     *
-     * Example: \
-     *    `<span class="stars stars-4">` --> `4`\
-     *    `<span class='stars trash'>` --> `0`
-     */
-    async getStarCountFromSpanClass($starsSpan) {
-      let rating = 0;
-      for (let stars = 0; stars <= 5; stars++) {
-        if ($starsSpan.hasClass('stars-' + stars)) {
-          rating = stars;
-        }
-      }
-      return rating;
+    if (secondResult === undefined) {
+      // Convert to number
+      return [parseInt(firstResult[1], 10), NaN];
     }
+    return [parseInt(secondResult[1], 10), parseInt(firstResult[1], 10)];
+  }
 
-    /**
-     * Return **relative** parent name from episode name
-     *
-     * @param {string} name relative URL of episode name
-     * @returns relative URL of parent name
-     *
-     * Example: \
-     * `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `/film/697624-love-death-robots/`
-     * `/film/697624-love-death-robots/` --> `""`
-     * `/film/
-     */
-    async getParentNameFromUrl(name) {
-      // Remove protocol and domain if present
-      const urlRegex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n]+)/;
-      const path = name.replace(urlRegex, "");
+  async refreshAllRatings(csfd, force = false) {
+    // Start timer
+    const start = performance.now();
+    const username = await csfd.getUsername();
 
-      // Split the path by '/'
-      const splitted = path.split("/");
+    await csfd.initializeClassVariables();
+    // csfd.stars = await this.getAllPagesNew(force);
 
-      // If the length of the split array is less than or equal to 3, return an empty string
-      if (splitted.length <= 3) {
-        return "";
-      }
+    let res = await this.getAllPages(force);
+    console.log(`getAllPagesNew() ... Total ratings: ${Object.keys(res).length}`);
+    console.log({ res });
 
-      // Otherwise, return the second element from the split array
-      return splitted[2];
-    }
+    // Save all to IndexedDB
+    // this.exportRatings();
+    await saveToIndexedDB(INDEXED_DB_NAME, username, res);
+    csfd.stars = res;
 
+    // // Loading all ratings from IndexedDB
+    // let indexRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, "songokussj");
+    // console.log({ indexRatings });
 
-    /**
-     *
-     * @param {str} href csfd link for movie/series/episode
-     * @returns {Promise<str>} Movie ID number
-     *
-     * Example:
-     * - href = '/film/774319-zhoubne-zlo/' --> '774319'
-     * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> '1121972'
-     * - href = '1058697-devadesatky' --> '1058697'
-     * - href = \'' --> \''
-     * - href = 'nothing-here' --> null
-     */
-    async getMovieIdFromHref(href) {
-      if (!href) { return null; }
-      if (href === "") { return ""; }
-      const found_groups = href.match(/(\d)+-[-\w]+/ig);
+    // // Get the length of the IndexedDB database
+    // let numOfRatings = await getIndexedDBLength(INDEXED_DB_NAME, "songokussj");
+    // console.log(`IndexedDB length: ${numOfRatings}`);
 
-      if (!found_groups) { return null; }
-      const movieIds = found_groups.map(x => x.split("-")[0]);
+    // // Delete from IndexedDB
+    // console.log("Deleting from IndexedDB");
+    // await deleteItemFromIndexedDB(INDEXED_DB_NAME, "songokussj", "1324443");
 
-      return movieIds[movieIds.length - 1];
-    }
+    // // Loading specific rating from IndexedDB
+    // console.log("Loading specific rating from IndexedDB");
+    // let movieIds = ["134187", "1324444"];
+    // let specificRatings = await getItemsFromIndexedDB(INDEXED_DB_NAME, "songokussj", movieIds);
+    // console.log({ specificRatings });
 
-    /**
-     * Extract MovieId, possibly ParentId from csfd URL address
-     *
-     * @param {str} url csfd movie URL
-     * @returns {{MovieId: str, ParentId: str}}
-     *
-     * Example: \
-     * - `/film/697624-love-death-robots/800484-zakazane-ovoce/` --> `{'MovieId': '800484', 'ParentId': '697624'}`
-     * - `/film/697624-love-death-robots` --> `{'MovieId': '697624', 'ParentId': ''}`
-     * - `/film/` --> `{'MovieId': '', 'ParentId': ''}`
-     * - `/uzivatel/78145-songokussj/prehled/` --> `{'MovieId': '', 'ParentId': ''}`
-     */
-    async getMovieIdParentIdFromUrl(url) {
-      if (!url.includes('/film/')) {
-        // return { 'movieId': '', 'parentId': '' };
-        return ['', ''];
-      }
-      let [firstResult, secondResult] = url.matchAll(/\/(\d+)-/g);
-      if (firstResult === undefined && secondResult === undefined) {
-        // return { 'movieId': '', 'parentId': '' };
-        return ['', ''];
-      }
-      if (secondResult === undefined) {
-        // return { 'movieId': firstResult[1], 'parentId': '' };
-        return [firstResult[1], ''];
-      }
-      return [secondResult[1], firstResult[1]];
-    }
-
-    async refreshAllRatingsNew(csfd, force = false) {
-      // Start timer
-      const start = performance.now();
-      const username = await csfd.getUsername();
-
-      await csfd.initializeClassVariables();
-      // csfd.stars = await this.getAllPagesNew(force);
-
-      let res = await this.getAllPagesNew(force);
-      console.log(`getAllPagesNew() ... Total ratings: ${Object.keys(res).length}`);
-      console.log({ res });
-
-      // Save all to IndexedDB
-      // this.exportRatings();
-      await saveToIndexedDB(INDEXED_DB_NAME, username, res);
-      csfd.stars = res;
-
-      // // Loading all ratings from IndexedDB
-      // let indexRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, "songokussj");
-      // console.log({ indexRatings });
-
-      // // Get the length of the IndexedDB database
-      // let numOfRatings = await getIndexedDBLength(INDEXED_DB_NAME, "songokussj");
-      // console.log(`IndexedDB length: ${numOfRatings}`);
-
-      // // Delete from IndexedDB
-      // console.log("Deleting from IndexedDB");
-      // await deleteItemFromIndexedDB(INDEXED_DB_NAME, "songokussj", "1324443");
-
-      // // Loading specific rating from IndexedDB
-      // console.log("Loading specific rating from IndexedDB");
-      // let movieIds = ["134187", "1324444"];
-      // let specificRatings = await getItemsFromIndexedDB(INDEXED_DB_NAME, "songokussj", movieIds);
-      // console.log({ specificRatings });
-
-      // // Get all ratings with property year = 2023
-      // console.log("Get all ratings with property year = 2023");
-      // // let ratingsWithYear = await getItemsFromIndexedDB(INDEXED_DB_NAME, "songokussj", null, "year", 2023);
-      // let ratingsWithYear = await getItemsByPropertyFromIndexedDB(INDEXED_DB_NAME, "songokussj", "year_idx", 2023);
-      // console.log({ ratingsWithYear });
+    // // Get all ratings with property year = 2023
+    // console.log("Get all ratings with property year = 2023");
+    // // let ratingsWithYear = await getItemsFromIndexedDB(INDEXED_DB_NAME, "songokussj", null, "year", 2023);
+    // let ratingsWithYear = await getItemsByPropertyFromIndexedDB(INDEXED_DB_NAME, "songokussj", "year_idx", 2023);
+    // console.log({ ratingsWithYear });
 
 
-      // // Delete all data from IndexedDB
-      // console.log("Deleting all data from IndexedDB");
-      // await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, "songokussj");
+    // // Delete all data from IndexedDB
+    // console.log("Deleting all data from IndexedDB");
+    // await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, "songokussj");
 
-      // // Delete IndexedDB
-      // console.log("Deleting IndexedDB");
-      // await deleteIndexedDB(INDEXED_DB_NAME, "songokussj");
+    // // Delete IndexedDB
+    // console.log("Deleting IndexedDB");
+    // await deleteIndexedDB(INDEXED_DB_NAME, "songokussj");
 
-      // Stop timer
-      const end = performance.now();
-      const time = (end - start) / 1000;
-      console.debug(`Time: ${time} seconds`);
+    // Stop timer
+    const end = performance.now();
+    const time = (end - start) / 1000;
+    console.debug(`Time: ${time} seconds`);
 
-      // Refresh page
-      // location.reload();
+    // Refresh page
+    // location.reload();
 
-      Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
-    }
+    Glob.popup(`Vaše hodnocení byla načtena.<br>Obnovte stránku.`, 4, 200);
+  }
 
-    async removableHomeBoxes() {
-      const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
-      const settings = await getSettings(boxSettingsName);
+  async removableHomeBoxes() {
+    const boxSettingsName = 'CSFD-Compare-hiddenBoxes';
+    const settings = await getSettings(boxSettingsName);
 
-      $('.box-header').each(async function (index, value) {
-        const $section = $(this).closest('section');
-        $section.attr('data-box-id', index);
+    $('.box-header').each(async function (index, value) {
+      const $section = $(this).closest('section');
+      $section.attr('data-box-id', index);
 
-        if (settings.some(x => x.boxId == index)) {
-          $section.hide();
-        }
-
-        const $btnHideBox = $('<a>', {
-          'class': 'hide-me button',
-          href: 'javascript:void(0)',
-          html: `Skrýt`
-        }).css({
-          margin: 'auto',
-          marginLeft: '10px',
-          backgroundColor: '#7b0203',
-          display: 'none',
-        });
-
-        let $h2 = $(this).find('h2');
-        if ($h2.length === 0) {
-          $h2 = $(this).find('p');
-          $(this).css({ 'padding-right': '0px' });
-          $h2.after($btnHideBox[0]);
-          return;
-          // }
-        }
-
-        $h2.append($btnHideBox[0]);
-      });
-
-      $('.box-header').on('mouseover', async function () {
-        $(this).find('.hide-me').show();
-      }).on('mouseout', async function () {
-        $(this).find('.hide-me').hide();
-      });
-
-      $('.hide-me').on('click', async function (event) {
-        const $section = $(event.target).closest('section');
-        const boxId = $section.data('box-id');
-        let boxName = $section.find('h2').first().text().replace(/\n|\t|Skrýt/g, "");  // clean from '\t', '\n'
-        if (boxName === '') {
-          boxName = $section.find('p').first().text().replace(/\n|\t|Skrýt/g, "");
-        }
-        const dict = { boxId: boxId, boxName: boxName };
-        const settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
-        if (!settings.includes(dict)) {
-          settings.push(dict);
-          localStorage.setItem(boxSettingsName, JSON.stringify(settings));
-          csfd.addHideSectionButton(boxId, boxName);
-        }
+      if (settings.some(x => x.boxId == index)) {
         $section.hide();
-      });
-    }
+      }
 
-    showOnOneLine() {
-      const $sections = $(`div.creator-filmography`).find(`section`);
-      let $nooverflowH3 = $sections.find(`h3.film-title-nooverflow`);
-      $nooverflowH3.css({
-        "display": "inline-block",
-        "white-space": "nowrap",
-        "text-overflow": "ellipsis",
-        "overflow": "hidden",
-        "max-width": "230px",
+      const $btnHideBox = $('<a>', {
+        'class': 'hide-me button',
+        href: 'javascript:void(0)',
+        html: `Skrýt`
+      }).css({
+        margin: 'auto',
+        marginLeft: '10px',
+        backgroundColor: '#7b0203',
+        display: 'none',
       });
-      const $filmTitleNameA = $nooverflowH3.find(`a.film-title-name`);
-      $filmTitleNameA.css({
-        "white-space": "nowrap",
-      });
-      $filmTitleNameA.each(function () {
-        const $this = $(this);
-        $this.attr("title", $this.text());
-      });
-    }
 
-    addHideSectionButton(boxId, boxName) {
-      let $button = `
+      let $h2 = $(this).find('h2');
+      if ($h2.length === 0) {
+        $h2 = $(this).find('p');
+        $(this).css({ 'padding-right': '0px' });
+        $h2.after($btnHideBox[0]);
+        return;
+        // }
+      }
+
+      $h2.append($btnHideBox[0]);
+    });
+
+    $('.box-header').on('mouseover', async function () {
+      $(this).find('.hide-me').show();
+    }).on('mouseout', async function () {
+      $(this).find('.hide-me').hide();
+    });
+
+    $('.hide-me').on('click', async function (event) {
+      const $section = $(event.target).closest('section');
+      const boxId = $section.data('box-id');
+      let boxName = $section.find('h2').first().text().replace(/\n|\t|Skrýt/g, "");  // clean from '\t', '\n'
+      if (boxName === '') {
+        boxName = $section.find('p').first().text().replace(/\n|\t|Skrýt/g, "");
+      }
+      const dict = { boxId: boxId, boxName: boxName };
+      const settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
+      if (!settings.includes(dict)) {
+        settings.push(dict);
+        localStorage.setItem(boxSettingsName, JSON.stringify(settings));
+        csfd.addHideSectionButton(boxId, boxName);
+      }
+      $section.hide();
+    });
+  }
+
+  showOnOneLine() {
+    const $sections = $(`div.creator-filmography`).find(`section`);
+    let $nooverflowH3 = $sections.find(`h3.film-title-nooverflow`);
+    $nooverflowH3.css({
+      "display": "inline-block",
+      "white-space": "nowrap",
+      "text-overflow": "ellipsis",
+      "overflow": "hidden",
+      "max-width": "230px",
+    });
+    const $filmTitleNameA = $nooverflowH3.find(`a.film-title-name`);
+    $filmTitleNameA.css({
+      "white-space": "nowrap",
+    });
+    $filmTitleNameA.each(function () {
+      const $this = $(this);
+      $this.attr("title", $this.text());
+    });
+  }
+
+  addHideSectionButton(boxId, boxName) {
+    let $button = `
                 <button class="restore-hidden-section" data-box-id="${boxId}" title="${boxName}"
                     style="border-radius: 4px;
                            margin: 1px;
@@ -2435,31 +2525,31 @@ async function deleteIndexedDB(dbName, storeName) {
                            text-overflow: ellipsis;"
                 >${boxName}</button>
             `;
-      let $div = $(`div.hidden-sections`);
-      $div.append($button);
-    }
+    let $div = $(`div.hidden-sections`);
+    $div.append($button);
+  }
 
-    /**
-     * Creates a <span> element with a tooltip.
-     *
-     * @param {str} url imgur/github url of the image (screenshot)
-     * @param {str} description description of the image
-     * @returns {str} html code of the image
-     */
-    helpImageComponent(url, description) {
-      const $span = $(`
+  /**
+   * Creates a <span> element with a tooltip.
+   *
+   * @param {str} url imgur/github url of the image (screenshot)
+   * @param {str} description description of the image
+   * @returns {str} html code of the image
+   */
+  helpImageComponent(url, description) {
+    const $span = $(`
                 <span class="help-hover-image"
                       data-description="${description}"
                       data-img-url="${url}"><a href="${url}" target="_blank">💬</a></span>
             `).css({
-        "cursor": "pointer",
-        "color": "rgba(255, 255, 255, 0.8)",
-      })
-      return $span.get(0).outerHTML;
-    }
+      "cursor": "pointer",
+      "color": "rgba(255, 255, 255, 0.8)",
+    })
+    return $span.get(0).outerHTML;
+  }
 
-    settingsPanelComponent() {
-      const $div = $(`
+  settingsPanelComponent() {
+    const $div = $(`
         <article class="article" style="padding: 5px 10px;">
           <section>
             <div class="article-section">
@@ -2471,41 +2561,41 @@ async function deleteIndexedDB(dbName, storeName) {
         </article>
       `)
 
-      return $div.get(0).outerHTML;
+    return $div.get(0).outerHTML;
+  }
+
+  async addSettingsPanel() {
+    let dropdownStyle = 'right: 150px; width: max-content; max-width: 360px;';
+    let disabled = '';
+    let needToLoginTooltip = '';
+    let needToLoginStyle = '';
+
+    if (!await this.isLoggedIn()) {
+      dropdownStyle = 'right: 50px; width: max-content; max-width: 360px;';
+      disabled = 'disabled';
+      needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení do CSFD"`;
+      needToLoginStyle = 'color: grey;';
     }
 
-    async addSettingsPanel() {
-      let dropdownStyle = 'right: 150px; width: max-content; max-width: 360px;';
-      let disabled = '';
-      let needToLoginTooltip = '';
-      let needToLoginStyle = '';
+    let button = document.createElement('li');
+    // button.classList.add('active');  // TODO: Debug - Nonstop zobrazení CC Menu
+    let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
 
-      if (!await this.isLoggedIn()) {
-        dropdownStyle = 'right: 50px; width: max-content; max-width: 360px;';
-        disabled = 'disabled';
-        needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení do CSFD"`;
-        needToLoginStyle = 'color: grey;';
-      }
+    // Add box-id attribute to .box-header(s)
+    $('.box-header').each(async function (index, value) {
+      let $section = $(this).closest('section');
+      $section.attr('data-box-id', index);
+    });
 
-      let button = document.createElement('li');
-      // button.classList.add('active');  // TODO: Debug - Nonstop zobrazení CC Menu
-      let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
-
-      // Add box-id attribute to .box-header(s)
-      $('.box-header').each(async function (index, value) {
-        let $section = $(this).closest('section');
-        $section.attr('data-box-id', index);
-      });
-
-      // Build array of buttons for un-hiding sections
-      let resultDisplayArray = [];
-      let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
-      hiddenBoxesArray = await checkSettingsValidity(hiddenBoxesArray, SETTINGSNAME_HIDDEN_BOXES);
-      hiddenBoxesArray.sort((a, b) => a - b);  // sort by numbers
-      hiddenBoxesArray.forEach(element => {
-        let boxId = element.boxId;
-        let boxName = element.boxName.replace(/\n|\t/g, "");  // clean text of '\n' and '\t';
-        resultDisplayArray.push(`
+    // Build array of buttons for un-hiding sections
+    let resultDisplayArray = [];
+    let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
+    hiddenBoxesArray = await checkSettingsValidity(hiddenBoxesArray, SETTINGSNAME_HIDDEN_BOXES);
+    hiddenBoxesArray.sort((a, b) => a - b);  // sort by numbers
+    hiddenBoxesArray.forEach(element => {
+      let boxId = element.boxId;
+      let boxName = element.boxName.replace(/\n|\t/g, "");  // clean text of '\n' and '\t';
+      resultDisplayArray.push(`
                     <button class="restore-hidden-section" data-box-id="${boxId}" title="${boxName}"
                             style="border-radius: 4px;
                                    margin: 1px;
@@ -2517,15 +2607,15 @@ async function deleteIndexedDB(dbName, storeName) {
                         ${boxName}
                     </button>
                 `);
-      });
+    });
 
-      const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
-      console.log(`[ DEBUG ] this.username: ${this.username}`);
-      const new_rated_ratings = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
-      const current_ratings = await this.getCurrentUserRatingsCount();
-      // const current_ratings = 999;
+    const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
+    console.log(`[ DEBUG ] this.username: ${this.username}`);
+    const new_rated_ratings = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
+    const current_ratings = await this.getCurrentUserRatingsCount();
+    // const current_ratings = 999;
 
-      button.innerHTML = `
+    button.innerHTML = `
                 <a href="javascript:void()" class="user-link initialized csfd-compare-menu">CC</a>
                 <div class="dropdown-content notifications" style="${dropdownStyle}">
 
@@ -2538,7 +2628,7 @@ async function deleteIndexedDB(dbName, storeName) {
                         </span>
 
                         <span class="badge" id="cc-control-panel-computed-count" title="Počet načtených vypočtených hodnocení" style="margin-left: 10px; font-size: 0.7rem; font-weight: bold; background-color: #393939; color: white; padding: 2px 4px; border-radius: 6px; cursor: help;">
-                            ${computed_ratings.computedCount}
+                            ${computed_ratings.computedCount} / ${this.missingComputedRatingsCount}
                         </span>
 
                         <span style="float: right; font-size: 0.7rem; margin-top: 0.2rem;">
@@ -2546,7 +2636,7 @@ async function deleteIndexedDB(dbName, storeName) {
                         </span>
                     </div>
 
-                    ${csfd.settingsPanelComponent()}
+                    ${this.settingsPanelComponent()}
 
                     <article class="article" style="padding: 5px 10px;">
                         <h2 class="article-header">Domácí stránka - skryté panely</h2>
@@ -2563,17 +2653,17 @@ async function deleteIndexedDB(dbName, storeName) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Boxy s tlačítkem "VÍCE" jsou klikatelné celé</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/8AwhbGK.png", "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'")}
+                                ${this.helpImageComponent("https://i.imgur.com/8AwhbGK.png", "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítka "více...")</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/ettGHsH.png", "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'")}
+                                ${this.helpImageComponent("https://i.imgur.com/ettGHsH.png", "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
                                 <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů/seriálů</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/aTrSU2X.png", "Přidá hvězdy hodnocení u viděných filmů/seriálů")}
+                                ${this.helpImageComponent("https://i.imgur.com/aTrSU2X.png", "Přidá hvězdy hodnocení u viděných filmů/seriálů")}
                             </div>
                         </section>
                     </article>
@@ -2584,27 +2674,27 @@ async function deleteIndexedDB(dbName, storeName) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
                                 <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/N2hfkZ6.png", "Otevřít ovládací panel přejetím myší")}
+                                ${this.helpImageComponent("https://i.imgur.com/N2hfkZ6.png", "Otevřít ovládací panel přejetím myší")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
                                 <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/cDX0JaX.png", "Přidá sloupec pro porovnání hodnocení s mými hodnoceními")}
+                                ${this.helpImageComponent("https://i.imgur.com/cDX0JaX.png", "Přidá sloupec pro porovnání hodnocení s mými hodnoceními")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel" ${disabled}>
                                 <label for="chkHideUserControlPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt ovládací panel</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
+                                ${this.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
                                 <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/N1JuzYk.png", "Zobrazení tlačítka pro odeslání zprávy")}
+                                ${this.helpImageComponent("https://i.imgur.com/N1JuzYk.png", "Zobrazení tlačítka pro odeslání zprávy")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/vbnFpEU.png", "Zobrazení tlačítka pro přidání/odebrání z oblíbených")}
+                                ${this.helpImageComponent("https://i.imgur.com/vbnFpEU.png", "Zobrazení tlačítka pro přidání/odebrání z oblíbených")}
                             </div>
                         </section>
                     </article>
@@ -2615,32 +2705,32 @@ async function deleteIndexedDB(dbName, storeName) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image">
                                 <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/a2Av3AK.png", "Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici")}
+                                ${this.helpImageComponent("https://i.imgur.com/a2Av3AK.png", "Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate">
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/qGAhXog.png", "Ukáže % hodnocení i u filmů s méně než 10 hodnoceními")}
+                                ${this.helpImageComponent("https://i.imgur.com/qGAhXog.png", "Ukáže % hodnocení i u filmů s méně než 10 hodnoceními")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsFromFavorites" name="ratings-from-favorites" ${disabled}>
                                 <label for="chkRatingsFromFavorites" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit hodnocení z průměru oblíbených</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/ol88F6z.png", "Zobrazí % hodnocení od přidaných oblíbených uživatelů")}
+                                ${this.helpImageComponent("https://i.imgur.com/ol88F6z.png", "Zobrazí % hodnocení od přidaných oblíbených uživatelů")}
                                 </div>
                                 <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
                                 <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/KtpT81X.png", "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'")}
+                                ${this.helpImageComponent("https://i.imgur.com/KtpT81X.png", "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsDate" name="add-ratings" ${disabled}>
                                 <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/CHpBDxK.png", "Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté")}
+                                ${this.helpImageComponent("https://i.imgur.com/CHpBDxK.png", "Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté")}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR")}
+                                ${this.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR")}
                                 <div>
                                     <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
@@ -2655,7 +2745,7 @@ async function deleteIndexedDB(dbName, storeName) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line">
                                 <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku</label>
-                                ${csfd.helpImageComponent("https://i.imgur.com/IPXzclo.png", "Donutí zobrazit název filmu na jeden řádek")}
+                                ${this.helpImageComponent("https://i.imgur.com/IPXzclo.png", "Donutí zobrazit název filmu na jeden řádek")}
                             </div>
                         </section>
                     </article>
@@ -2674,7 +2764,7 @@ async function deleteIndexedDB(dbName, storeName) {
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedVisitors" name="hide-selected-visitors">
                                 <label for="chkHideSelectedVisitors" style="${resetLabelStyle}">Skrýt uživatele v návštěvnících</label>
-                                <!--${csfd.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR")}-->
+                                <!--${this.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR")}-->
                                 <div>
                                     <input type="textbox" id="txtHideSelectedVisitors" name="hide-selected-visitors">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
@@ -2685,543 +2775,563 @@ async function deleteIndexedDB(dbName, storeName) {
 
                 </div>
             `;
-      $('.header-bar').prepend(button);
+    $('.header-bar').prepend(button);
 
-      await refreshTooltips();
+    await refreshTooltips();
 
-      // Show help image on hover
-      $(".help-hover-image").on('mouseenter', function (e) {
-        const url = $(this).attr("data-img-url");
-        const description = $(this).attr("data-description");
-        $("body").append(
-          `<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`
-        );
-        $("#image-when-hovering-text").css({
-          position: "absolute",
-          top: (e.pageY + 5) + "px",
-          left: (e.pageX + 25) + "px",
-          zIndex: "9999",
-          backgroundColor: "white",
-          padding: "5px",
-          border: "1px solid #6a6a6a",
-          borderRadius: "5px"
-        }).fadeIn("fast");
-      }).on('mouseleave', function () {
-        $("#image-when-hovering-text").remove();
+    // Show help image on hover
+    $(".help-hover-image").on('mouseenter', function (e) {
+      const url = $(this).attr("data-img-url");
+      const description = $(this).attr("data-description");
+      $("body").append(
+        `<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`
+      );
+      $("#image-when-hovering-text").css({
+        position: "absolute",
+        top: (e.pageY + 5) + "px",
+        left: (e.pageX + 25) + "px",
+        zIndex: "9999",
+        backgroundColor: "white",
+        padding: "5px",
+        border: "1px solid #6a6a6a",
+        borderRadius: "5px"
+      }).fadeIn("fast");
+    }).on('mouseleave', function () {
+      $("#image-when-hovering-text").remove();
+    });
+
+    $(".help-hover-image").on('mousemove', function (e) {
+      $("#image-when-hovering-text")
+        .css("top", (e.pageY + 5) + "px")
+        .css("left", (e.pageX + 25) + "px");
+    });
+
+    // Show() the section and remove the number from localStorage
+    $(".hidden-sections").on("click", ".restore-hidden-section", async function () {
+      let $element = $(this);
+      let sectionId = $element.attr("data-box-id");
+
+      // Remove from localStorage
+      let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
+      hiddenBoxesArray = hiddenBoxesArray.filter(item => item.boxId !== parseInt(sectionId));
+      let settingsName = "CSFD-Compare-hiddenBoxes";
+      localStorage.setItem(settingsName, JSON.stringify(hiddenBoxesArray));
+
+      // Show section
+      let $section = $(`section[data-box-id="${sectionId}"`);
+      $section.show();
+
+      // Remove button
+      $element.remove();
+    });
+
+    if (DEV_PANEL_ALWAYS_VISIBLE === true) {  // DEV SETTINGS
+      $(button).addClass("active");
+      $(button).on("click", function (event) {
+        // React only to clicks on the button itself
+        if (!event.target.className.includes("csfd-compare-menu")) {
+          return;
+        }
+        // Toggle active class
+        if ($(button).hasClass("active")) {
+          $(button).removeClass("active");
+        } else {
+          $(button).addClass("active");
+        }
+      });
+    } else {
+      let timer;
+      $(button).on("mouseover", function () {
+        if (timer) {
+          clearTimeout(timer);
+          timer = null;
+        }
+        if (!$(button).hasClass("active")) {
+          $(button).addClass("active");
+        }
       });
 
-      $(".help-hover-image").on('mousemove', function (e) {
-        $("#image-when-hovering-text")
-          .css("top", (e.pageY + 5) + "px")
-          .css("left", (e.pageX + 25) + "px");
-      });
-
-      // Show() the section and remove the number from localStorage
-      $(".hidden-sections").on("click", ".restore-hidden-section", async function () {
-        let $element = $(this);
-        let sectionId = $element.attr("data-box-id");
-
-        // Remove from localStorage
-        let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
-        hiddenBoxesArray = hiddenBoxesArray.filter(item => item.boxId !== parseInt(sectionId));
-        let settingsName = "CSFD-Compare-hiddenBoxes";
-        localStorage.setItem(settingsName, JSON.stringify(hiddenBoxesArray));
-
-        // Show section
-        let $section = $(`section[data-box-id="${sectionId}"`);
-        $section.show();
-
-        // Remove button
-        $element.remove();
-      });
-
-      if (DEV_PANEL_ALWAYS_VISIBLE === true) {  // DEV SETTINGS
-        $(button).addClass("active");
-        $(button).on("click", function (event) {
-          // React only to clicks on the button itself
-          if (!event.target.className.includes("csfd-compare-menu")) {
-            return;
-          }
-          // Toggle active class
-          if ($(button).hasClass("active")) {
+      $(button).on("mouseleave", function () {
+        if ($(button).hasClass("active")) {
+          timer = setTimeout(() => {
             $(button).removeClass("active");
+          }, 200);
+        }
+      });
+    }
+
+    $(button).find("#btnResetSettings").on("click", async function () {
+      console.debug("Resetting 'CSFD-Compare-settings' settings...");
+      localStorage.removeItem("CSFD-Compare-settings");
+      location.reload();
+    });
+
+    $(button).find("#btnRemoveSavedRatings").on("click", async function () {
+      const username = await csfd.getUsername();
+
+      if (!username) {
+        alert("Nejprve se přihlašte.");
+        return;
+      }
+
+      if (!confirm(`Opravdu chcete smazat uložená hodnocení uživatele ${username}?`)) {
+        return;
+      }
+
+      console.debug(`Removing saved ratings for user '${username}'...`);
+      localStorage.removeItem(`CSFD-Compare_${username}`);
+      location.reload();
+    });
+
+    $(button).find("#btnRemoveDBRatings").on("click", async function () {
+      const username = await csfd.getUsername();
+
+      if (!username) {
+        alert("Nejprve se přihlašte.");
+        return;
+      }
+
+      if (!confirm(`Opravdu chcete smazat všechna hodnocení z databáze?`)) {
+        return;
+      }
+
+      console.debug(`Removing all ratings from database...`);
+      await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, username)
+      location.reload();
+    });
+  }
+
+  async checkAndUpdateCurrentRating() {
+    const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
+    console.log(`Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
+
+    const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
+    console.log(`Current film date added: ${currentFilmDateAdded}`);
+
+    const filmUrl = this.getCurrentFilmUrl();
+    console.log(`Current film url: ${filmUrl}`);
+
+    const filmId = await this.getMovieIdFromHref(filmUrl);
+    console.log(`Current film id: ${filmId}`);
+
+    // Check if current film is in IndexedDb
+    const filmInIndexedDb = await getItemsFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), [filmId]);
+    console.log(`Film in IndexedDb:`, filmInIndexedDb);
+
+    // In case user removed rating, we need to remove it from the LC
+    if (rating === "" && filmInIndexedDb.length > 0) {
+      console.info("☠️ No rating on current page, but exists in DB => Removing in DB...");
+      const removed = await deleteItemFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), filmId);
+
+      if (removed) {
+        console.info("☠️ Movie removed from DB.");
+        await this.updateControlPanelRatingCount();
+        const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
+        console.log(`☠️ IndexedDB length: ${cur_rat}`);
+      }
+      return;
+    }
+
+    // Ignore if current film is not rated
+    if (rating === "") {
+      console.log("Current film is not rated, skipping...");
+      return;
+    }
+
+    // Check if current page rating corresponds with that in LocalStorage, if not, update it
+    const filmFullUrl = this.getCurrentFilmFullUrl();
+    const filmName = this.getFilmNameFromHref(filmFullUrl);
+    const type = this.getCurrentFilmType();
+    const year = this.getCurrentFilmYear();
+    const lastUpdate = this.getCurrentDateTime()
+    const movieId = await this.getMovieIdFromHref(filmUrl);
+    console.log(`Current film id: ${movieId}, ${typeof (movieId)}`);
+    const parentName = await this.getParentNameFromUrl(filmFullUrl);
+    const parentId = await this.getMovieIdFromHref(parentName);
+
+
+    const ratingsObject = {
+      url: filmName,
+      fullUrl: filmFullUrl,
+      rating: rating,
+      date: currentFilmDateAdded,
+      type: type,
+      year: year,
+      id: movieId,
+      parentName: parentName,
+      parentId: parentId,
+      computed: computed,
+      computedCount: computed ? this.getCurrentFilmComputedCount() : "",
+      computedFromText: computed ? computedFrom : "",
+      lastUpdate: lastUpdate,
+    };
+    const dataToUpdate = { [movieId]: ratingsObject };
+    console.log(`Data to update:`, dataToUpdate);
+
+    const updated = await saveToIndexedDB(INDEXED_DB_NAME, this.username, dataToUpdate);
+    if (updated) {
+      console.info("✅ Updated record in DB.");
+      // Without async because we don't need to wait for it
+      this.updateControlPanelRatingCount();
+    }
+  }
+
+  /**
+   * Returns current DateTime, e.g. 11.10.2022 1:49:42
+   * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
+   */
+  getCurrentDateTime() {
+    const d = new Date
+    const dateFormat = [
+      d.getDate(),
+      d.getMonth() + 1,
+      d.getFullYear()
+    ].join('.') + ' ' + [
+      d.getHours(),
+      d.getMinutes(),
+      d.getSeconds()
+    ].join(':');
+    return dateFormat
+  }
+
+  /**
+   * When user wants to open message, he needs to click on 'více' link.
+   * This removes the 'více' link and enables to click on the message.
+   *
+   * @returns {None}
+   */
+  clickableMessages() {
+    const $messagesBox = $('.dropdown-content.messages');
+    const $moreSpan = $messagesBox.find('.span-more-small');
+    if ($moreSpan.length < 1) { return; }
+
+    for (const $span of $moreSpan) {
+
+      // Hide "... více" button
+      $($span).hide();
+
+      const $content = $($span).closest('.article-content');
+      const $article = $content.closest('article');
+      $content.on('hover', function () {
+        $article.css('background-color', '#e1e0e0');
+      }, function () {
+        $article.css('background-color', 'initial');
+      });
+
+      const href = $($span).find('a').attr('href');
+      $content.wrap(`<a href="${href}"></a>`);
+    }
+  }
+
+  async clickableHeaderBoxes() {
+    // CLICKABLE HEADER BUTTONS
+    $(".user-link.wantsee").on("click", function () {
+      location.href = "/chci-videt/";
+    });
+    $(".user-link.favorites").on("click", function () {
+      location.href = "/soukrome/oblibene/";  // TODO: Toto pry nefunguje
+    });
+    $(".user-link.messages").on("click", function () {
+      location.href = "/posta/";
+    });
+
+    // CLICKABLE HEADER DIVS
+    const headers = $('.dropdown-content-head,.box-header');
+    for (const div of headers) {
+      const btn = $(div).find('a.button');
+
+      if (btn.length === 0) { continue; }
+      if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
+
+      $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
+
+      const h2 = $(div).find('h2');
+      const spanCount = h2.find('span.count');
+      $(div)
+        .on('mouseover', () => {
+          $(div).css({ backgroundColor: '#ba0305' });
+          $(h2[0]).css({ backgroundColor: '#ba0305', color: '#fff' });
+          if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
+        })
+        .on('mouseout', () => {
+          if ($(div).hasClass('dropdown-content-head')) {
+            $(div).css({ backgroundColor: '#ececec' });
           } else {
-            $(button).addClass("active");
+            $(div).css({ backgroundColor: '#e3e3e3' });
           }
+          $(h2[0]).css({ backgroundColor: 'initial', color: 'initial' });
+          if (spanCount.length == 1) { spanCount[0].style.color = 'initial'; }
         });
-      } else {
-        let timer;
-        $(button).on("mouseover", function () {
-          if (timer) {
-            clearTimeout(timer);
-            timer = null;
-          }
-          if (!$(button).hasClass("active")) {
-            $(button).addClass("active");
-          }
-        });
-
-        $(button).on("mouseleave", function () {
-          if ($(button).hasClass("active")) {
-            timer = setTimeout(() => {
-              $(button).removeClass("active");
-            }, 200);
-          }
-        });
-      }
-
-      $(button).find("#btnResetSettings").on("click", async function () {
-        console.debug("Resetting 'CSFD-Compare-settings' settings...");
-        localStorage.removeItem("CSFD-Compare-settings");
-        location.reload();
-      });
-
-      $(button).find("#btnRemoveSavedRatings").on("click", async function () {
-        const username = await csfd.getUsername();
-
-        if (!username) {
-          alert("Nejprve se přihlašte.");
-          return;
-        }
-
-        if (!confirm(`Opravdu chcete smazat uložená hodnocení uživatele ${username}?`)) {
-          return;
-        }
-
-        console.debug(`Removing saved ratings for user '${username}'...`);
-        localStorage.removeItem(`CSFD-Compare_${username}`);
-        location.reload();
-      });
-
-      $(button).find("#btnRemoveDBRatings").on("click", async function () {
-        const username = await csfd.getUsername();
-
-        if (!username) {
-          alert("Nejprve se přihlašte.");
-          return;
-        }
-
-        if (!confirm(`Opravdu chcete smazat všechna hodnocení z databáze?`)) {
-          return;
-        }
-
-        console.debug(`Removing all ratings from database...`);
-        await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, username)
-        location.reload();
-      });
     }
+  }
 
-    async checkAndUpdateCurrentRating() {
-      const { rating, computedFrom, computed } = await this.getCurrentFilmRating();
-      console.log(`Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
+  hideSelectedUserReviews() {
+    let articleHeaders = $('.article-header-review-name');
+    for (const element of articleHeaders) {
+      let userTitle = $(element).find('.user-title-name');
+      if (userTitle.length != 1) { continue; }
+      let ignoredUser = settings.hideSelectedUserReviewsList.includes(userTitle[0].text);
+      if (!ignoredUser) { continue; }
+      $(element).closest('article').hide();
+    }
+  }
 
-      const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
-      console.log(`Current film date added: ${currentFilmDateAdded}`);
+  /**
+   * Hide selected visitors from the "Personal-Favorites" page and "Visitors" page.
+   * Hides each row where the username is in the settings.hideSelectedVisitorsList
+   * @returns {Promise<None>}
+   */
+  async hideSelectedVisitors() {
+    const start = performance.now();
 
-      const filmUrl = this.getCurrentFilmUrl();
-      console.log(`Current film url: ${filmUrl}`);
-
-      const filmId = await this.getMovieIdFromHref(filmUrl);
-      console.log(`Current film id: ${filmId}`);
-
-      // Check if current film is in IndexedDb
-      const filmInIndexedDb = await getItemsFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), [filmId]);
-      console.log(`Film in IndexedDb:`, filmInIndexedDb);
-
-      // In case user removed rating, we need to remove it from the LC
-      if (rating === "" && filmInIndexedDb.length > 0) {
-        console.info("☠️ No rating on current page, but exists in DB => Removing in DB...");
-        const removed = await deleteItemFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), filmId);
-
-        if (removed) {
-          console.info("☠️ Movie removed from DB.");
-          await this.updateControlPanelRatingCount();
-          const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
-          console.log(`☠️ IndexedDB length: ${cur_rat}`);
-        }
-        return;
-      }
-
-      // Ignore if current film is not rated
-      if (rating === "") {
-        console.log("Current film is not rated, skipping...");
-        return;
-      }
-
-      // Check if current page rating corresponds with that in LocalStorage, if not, update it
-      const filmFullUrl = this.getCurrentFilmFullUrl();
-      const filmName = this.getFilmNameFromHref(filmFullUrl);
-      const type = this.getCurrentFilmType();
-      const year = this.getCurrentFilmYear();
-      const lastUpdate = this.getCurrentDateTime()
-      const movieId = await this.getMovieIdFromHref(filmUrl);
-      const parentName = await this.getParentNameFromUrl(filmFullUrl);
-      const parentId = await this.getMovieIdFromHref(parentName);
-
-
-      const ratingsObject = {
-        url: filmName,
-        fullUrl: filmFullUrl,
-        rating: rating,
-        date: currentFilmDateAdded,
-        type: type,
-        year: year,
-        id: movieId,
-        parentName: parentName,
-        parentId: parentId,
-        computed: computed,
-        computedCount: computed ? this.getCurrentFilmComputedCount() : "",
-        computedFromText: computed ? computedFrom : "",
-        lastUpdate: lastUpdate,
-      };
-      const dataToUpdate = { [movieId]: ratingsObject };
-      console.log(`Data to update:`, dataToUpdate);
-
-      const updated = await saveToIndexedDB(INDEXED_DB_NAME, this.username, dataToUpdate);
-      if (updated) {
-        console.info("✅ Updated record in DB.");
-        // Without async because we don't need to wait for it
-        this.updateControlPanelRatingCount();
+    // Hide visitors from TABLE
+    const rows = document.getElementsByTagName("tr");
+    // Check if there is a <td> with both <img> and <a>
+    for (const row of rows) {
+      // Ignore headers
+      if (row.getElementsByTagName("td").length < 2) { continue; }
+      const td = row.getElementsByTagName("td")[1];
+      // Ignore if there is no <img> (country flag) AND <a> (username)
+      if (td.getElementsByTagName("img").length !== 1) { continue; }
+      if (td.getElementsByTagName("a").length !== 1) { continue; }
+      const a = td.getElementsByTagName("a")[0];
+      const username = a.text;
+      if (settings.hideSelectedVisitorsList.includes(username)) {
+        row.style.display = "none";
       }
     }
-
-    /**
-     * Returns current DateTime, e.g. 11.10.2022 1:49:42
-     * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
-     */
-    getCurrentDateTime() {
-      const d = new Date
-      const dateFormat = [
-        d.getDate(),
-        d.getMonth() + 1,
-        d.getFullYear()
-      ].join('.') + ' ' + [
-        d.getHours(),
-        d.getMinutes(),
-        d.getSeconds()
-      ].join(':');
-      return dateFormat
-    }
-
-    /**
-     * When user wants to open message, he needs to click on 'více' link.
-     * This removes the 'více' link and enables to click on the message.
-     *
-     * @returns {None}
-     */
-    clickableMessages() {
-      const $messagesBox = $('.dropdown-content.messages');
-      const $moreSpan = $messagesBox.find('.span-more-small');
-      if ($moreSpan.length < 1) { return; }
-
-      for (const $span of $moreSpan) {
-
-        // Hide "... více" button
-        $($span).hide();
-
-        const $content = $($span).closest('.article-content');
-        const $article = $content.closest('article');
-        $content.on('hover', function () {
-          $article.css('background-color', '#e1e0e0');
-        }, function () {
-          $article.css('background-color', 'initial');
-        });
-
-        const href = $($span).find('a').attr('href');
-        $content.wrap(`<a href="${href}"></a>`);
+    // Hide visitors from WHO-FAVORS-ME
+    const articles = document.querySelectorAll('.who-favors-me-users article');
+    articles.forEach(article => {
+      const username = article.querySelector('header a').textContent.trim();
+      if (settings.hideSelectedVisitorsList.includes(username)) {
+        article.style.display = 'none';
       }
+    });
+
+    const end = performance.now();
+    const time = (end - start) / 1000;
+    console.debug(`[CC] hideSelectedVisitors() Time: ${time} seconds`);
+  }
+
+  /**
+   *
+   * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
+   */
+  async getCurrentFilmDateAdded(page = undefined) {
+    if (page === undefined) {
+      page = this.csfdPage;
+    } else {
+      page = $(page);
     }
 
-    async clickableHeaderBoxes() {
-      // CLICKABLE HEADER BUTTONS
-      $(".user-link.wantsee").on("click", function () {
-        location.href = "/chci-videt/";
-      });
-      $(".user-link.favorites").on("click", function () {
-        location.href = "/soukrome/oblibene/";  // TODO: Toto pry nefunguje
-      });
-      $(".user-link.messages").on("click", function () {
-        location.href = "/posta/";
-      });
-
-      // CLICKABLE HEADER DIVS
-      const headers = $('.dropdown-content-head,.box-header');
-      for (const div of headers) {
-        const btn = $(div).find('a.button');
-
-        if (btn.length === 0) { continue; }
-        if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
-
-        $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
-
-        const h2 = $(div).find('h2');
-        const spanCount = h2.find('span.count');
-        $(div)
-          .on('mouseover', () => {
-            $(div).css({ backgroundColor: '#ba0305' });
-            $(h2[0]).css({ backgroundColor: '#ba0305', color: '#fff' });
-            if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
-          })
-          .on('mouseout', () => {
-            if ($(div).hasClass('dropdown-content-head')) {
-              $(div).css({ backgroundColor: '#ececec' });
-            } else {
-              $(div).css({ backgroundColor: '#e3e3e3' });
-            }
-            $(h2[0]).css({ backgroundColor: 'initial', color: 'initial' });
-            if (spanCount.length == 1) { spanCount[0].style.color = 'initial'; }
-          });
-      }
-    }
-
-    hideSelectedUserReviews() {
-      let articleHeaders = $('.article-header-review-name');
-      for (const element of articleHeaders) {
-        let userTitle = $(element).find('.user-title-name');
-        if (userTitle.length != 1) { continue; }
-        let ignoredUser = settings.hideSelectedUserReviewsList.includes(userTitle[0].text);
-        if (!ignoredUser) { continue; }
-        $(element).closest('article').hide();
-      }
-    }
-
-    /**
-     * Hide selected visitors from the "Personal-Favorites" page and "Visitors" page.
-     * Hides each row where the username is in the settings.hideSelectedVisitorsList
-     * @returns {Promise<None>}
-     */
-    async hideSelectedVisitors() {
-      const start = performance.now();
-
-      // Hide visitors from TABLE
-      const rows = document.getElementsByTagName("tr");
-      // Check if there is a <td> with both <img> and <a>
-      for (const row of rows) {
-        // Ignore headers
-        if (row.getElementsByTagName("td").length < 2) { continue; }
-        const td = row.getElementsByTagName("td")[1];
-        // Ignore if there is no <img> (country flag) AND <a> (username)
-        if (td.getElementsByTagName("img").length !== 1) { continue; }
-        if (td.getElementsByTagName("a").length !== 1) { continue; }
-        const a = td.getElementsByTagName("a")[0];
-        const username = a.text;
-        if (settings.hideSelectedVisitorsList.includes(username)) {
-          row.style.display = "none";
-        }
-      }
-      // Hide visitors from WHO-FAVORS-ME
-      const articles = document.querySelectorAll('.who-favors-me-users article');
-      articles.forEach(article => {
-        const username = article.querySelector('header a').textContent.trim();
-        if (settings.hideSelectedVisitorsList.includes(username)) {
-          article.style.display = 'none';
-        }
-      });
-
-      const end = performance.now();
-      const time = (end - start) / 1000;
-      console.debug(`[CC] hideSelectedVisitors() Time: ${time} seconds`);
-    }
-
-    /**
-     *
-     * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
-     */
-    async getCurrentFilmDateAdded() {
-      let ratingText = this.csfdPage.find('span.stars-rating.initialized').attr('title');
+    let ratingText = page.find('span.stars-rating.initialized').attr('title');
+    if (ratingText === undefined) {
+      // Grab the rating date from mobile-rating
+      ratingText = page.find('.mobile-film-rating-detail a span').attr('title');
       if (ratingText === undefined) {
-        // Grab the rating date from mobile-rating
-        ratingText = this.csfdPage.find('.mobile-film-rating-detail a span').attr('title');
-        if (ratingText === undefined) {
-          return;
-        }
-      }
-      let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
-      if (match !== null) {
-        let ratingDate = match[0];
-        return ratingDate;
-      }
-      return undefined;
-    }
-
-    async addRatingsDate() {
-      // Grab the rating date from stars-rating
-      let ratingText = $('span.stars-rating.initialized').attr('title');
-      if (ratingText === undefined) {
-        // Grab the rating date from mobile-rating
-        ratingText = $('.mobile-film-rating-detail a span').attr('title');
-        if (ratingText === undefined) {
-          return;
-        }
-      }
-      let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
-      if (match !== null) {
-        let ratingDate = match[0];
-        let $myRatingCaption = $('.my-rating h3');
-        $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
-      }
-    }
-
-    /**
-     * From the title of .current-user-rating span get 'spocteno ze serii: x'
-     * and add it bellow the 'Moje hodnoceni' text
-     */
-    async addRatingsComputedCount() {
-      let $computedStars = $('.star.active.computed');
-      let isComputed = $computedStars.length != 0;
-      if (!isComputed) { return; }
-      let fromRatingsText = this.csfdPage.find('.current-user-rating > span').attr('title');
-      if (fromRatingsText === undefined) {
         return;
       }
+    }
+    let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+    if (match !== null) {
+      let ratingDate = match[0];
+      return ratingDate;
+    }
+    return undefined;
+  }
+
+  async addRatingsDate() {
+    // Grab the rating date from stars-rating
+    let ratingText = $('span.stars-rating.initialized').attr('title');
+    if (ratingText === undefined) {
+      // Grab the rating date from mobile-rating
+      ratingText = $('.mobile-film-rating-detail a span').attr('title');
+      if (ratingText === undefined) {
+        return;
+      }
+    }
+    let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+    if (match !== null) {
+      let ratingDate = match[0];
       let $myRatingCaption = $('.my-rating h3');
-      $myRatingCaption.html(`${$myRatingCaption.text()}<br>${fromRatingsText}`);
+      $myRatingCaption.html(`${$myRatingCaption.text()}<br>${ratingDate}`);
     }
+  }
 
-    async checkForUpdate() {
-      let pageHtml = await $.get(GREASYFORK_URL);
-      let version = $(pageHtml).find('dd.script-show-version > span').text();
-      return version;
+  /**
+   * From the title of .current-user-rating span get 'spocteno ze serii: x'
+   * and add it bellow the 'Moje hodnoceni' text
+   */
+  async addRatingsComputedCount() {
+    let $computedStars = $('.star.active.computed');
+    let isComputed = $computedStars.length != 0;
+    if (!isComputed) { return; }
+    let fromRatingsText = this.csfdPage.find('.current-user-rating > span').attr('title');
+    if (fromRatingsText === undefined) {
+      return;
     }
+    let $myRatingCaption = $('.my-rating h3');
+    $myRatingCaption.html(`${$myRatingCaption.text()}<br>${fromRatingsText}`);
+  }
 
-    async getChangelog() {
-      let pageHtml = await $.get(`${GREASYFORK_URL}/versions`);
-      let versionDateTime = $(pageHtml).find('.version-date').first().attr('datetime');
-      let versionNumber = $(pageHtml).find('.version-number a').first().text();
-      let versionDate = versionDateTime.substring(0, 10);
-      let versionTime = versionDateTime.substring(11, 16);
-      let changelogText = `
+  async checkForUpdate() {
+    let pageHtml = await $.get(GREASYFORK_URL);
+    let version = $(pageHtml).find('dd.script-show-version > span').text();
+    return version;
+  }
+
+  async getChangelog() {
+    let pageHtml = await $.get(`${GREASYFORK_URL}/versions`);
+    let versionDateTime = $(pageHtml).find('.version-date').first().attr('datetime');
+    let versionNumber = $(pageHtml).find('.version-number a').first().text();
+    let versionDate = versionDateTime.substring(0, 10);
+    let versionTime = versionDateTime.substring(11, 16);
+    let changelogText = `
                 <div style="font-size: 0.8rem; line-height: 1.5;">${versionDate} ${versionTime} (${versionNumber})<br>
                     <hr>
                     ${$(pageHtml).find('.version-changelog').html()}
                 </div>
             `;
-      return changelogText;
-    }
+    return changelogText;
+  }
 
-    async initializeClassVariables() {
-      this.userUrl = await this.getCurrentUser();
-      this.username = await this.getUsername();
-      this.storageKey = `${SCRIPTNAME}_${this.username}`;
-      this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
-      this.stars = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
-    }
+  async initializeClassVariables() {
+    this.userUrl = await this.getCurrentUser();
+    this.username = await this.getUsername();
+    this.storageKey = `${SCRIPTNAME}_${this.username}`;
+    this.userRatingsUrl = location.origin.endsWith('sk') ? `${this.userUrl}/hodnotenia` : `${this.userUrl}/hodnoceni`;
+    this.stars = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
+  }
 
-    async updateControlPanelRatingCount() {  // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
-      const start = performance.now();
+  async updateControlPanelRatingCount() {  // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
+    const start = performance.now();
 
-      const [current_ratings, rated] = await Promise.all([
-        this.getCurrentUserRatingsCount(),
-        getIndexedDBLength(INDEXED_DB_NAME, this.username)
-      ]);
+    const [current_ratings, rated] = await Promise.all([
+      this.getCurrentUserRatingsCount(),
+      getIndexedDBLength(INDEXED_DB_NAME, this.username)
+    ]);
 
-      const ratingsSpan = document.getElementById('cc-control-panel-rating-count');
-      const computedSpan = document.getElementById('cc-control-panel-computed-count');
+    const ratingsSpan = document.getElementById('cc-control-panel-rating-count');
+    const computedSpan = document.getElementById('cc-control-panel-computed-count');
 
-      ratingsSpan.textContent = `${rated.count} / ${current_ratings}`;
-      console.log(`[CC] updateControlPanelRatingCount() ${rated.count} / ${current_ratings}`);
-      computedSpan.textContent = `${rated.computedCount}`;
-      // computedSpan.textContent = '¯\\_(ツ)_/¯';
+    ratingsSpan.textContent = `${rated.count} / ${current_ratings}`;
+    console.log(`[CC] updateControlPanelRatingCount() ${rated.count} / ${current_ratings}`);
+    const missingComputedRatingsCount = await this.getMissingComputedRatings();
+    const computedRatingsCount = rated.computedCount + missingComputedRatingsCount;
+    computedSpan.textContent = `${rated.computedCount} / ${computedRatingsCount}`;
+    // computedSpan.textContent = `${rated.computedCount}`;
+    // computedSpan.textContent = '¯\\_(ツ)_/¯';
 
-      const end = performance.now();
-      const time = (end - start) / 1000;
-      console.debug(`[CC] updateControlPanelRatingCount() Time: ${time} seconds`);
-    }
+    const end = performance.now();
+    const time = (end - start) / 1000;
+    console.debug(`[CC] updateControlPanelRatingCount() Time: ${time} seconds`);
+  }
 
-    async isRatingCountOk() {
-      const { rated, computed } = await csfd.getLocalStorageRatingsCount();
-      const current_ratings = await this.getCurrentUserRatingsCount();
-      return rated === current_ratings
-    }
+  async isRatingCountOk() {
+    const { rated, computed } = await this.getLocalStorageRatingsCount();
+    const current_ratings = await this.getCurrentUserRatingsCount();
+    return rated === current_ratings
+  }
 
-    /**
-     * For some reason, IMDb button to link current film does not have icon. This function adds it.
-     *
-     * @returns {Promise<void>}
-     */
-    async addImdbIcon() {
-      const $image = $('<img>', {
-        // src: 'https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/171_Imdb_logo_logos-512.png',
-        src: 'https://images.squarespace-cdn.com/content/v1/57c984f1cd0f68cf4beeb2cf/1472911999963-KH5AM2AU675ZGJUJEGQV/imdb+logo.png',
-        alt: 'IMDB',
-        title: 'IMDB',
-        style: 'width: 26px; height: 26px; mix-blend-mode: darken;',
-        class: 'imdb-icon',
+  /**
+   * For some reason, IMDb button to link current film does not have icon. This function adds it.
+   *
+   * @returns {Promise<void>}
+   */
+  async addImdbIcon() {
+    const $image = $('<img>', {
+      // src: 'https://cdn4.iconfinder.com/data/icons/logos-and-brands/512/171_Imdb_logo_logos-512.png',
+      src: 'https://images.squarespace-cdn.com/content/v1/57c984f1cd0f68cf4beeb2cf/1472911999963-KH5AM2AU675ZGJUJEGQV/imdb+logo.png',
+      alt: 'IMDB',
+      title: 'IMDB',
+      style: 'width: 26px; height: 26px; mix-blend-mode: darken;',
+      class: 'imdb-icon',
+    });
+    const $imdbI = $('a.button-big.button-imdb i');
+    $imdbI.css({ 'opacity': '1', 'background-color': '#f5c518' });
+    $imdbI.append($image);
+  }
+
+  /**
+   * On discussion pages, add a button to reply to user's own comments.
+   *
+   * Limitations:
+   *  - If user replies to his own comment, he can't reply to the first someone else's comment.
+   *  - Can't reply to multiple user's own comments at once.
+   *
+   * @returns {Promise<void>}
+   */
+  async addChatReplyButton() {
+
+    // Get all divs with class 'icon-control' containing <i> with class 'icon-reply' in them (working reply buttons)
+    const replyIconControlElements = $('.icon-control:has(i.icon-reply)');
+    const $firstWorkingReplyIconControl = replyIconControlElements.first();
+    const missingIconElements = $('.icon-control').not($(':has(i.icon-reply'));
+
+    // Copy the working reply button and add it to the missingIconElements
+    missingIconElements.each(async (index, element) => {
+
+      // Clone working IconControl and remove potential '<a>' element whose child element has 'i.icon-trash'
+      const $replyIconControlClone = $firstWorkingReplyIconControl.clone();
+      $replyIconControlClone.find('a:has(i.icon-trash)').remove();
+
+      const $replyIconCloneHref = $replyIconControlClone.find('a');  // TODO: not trash
+      const $userTitle = element.closest('.article-content').querySelector('a.user-title-name');
+
+      const username = $userTitle.text;
+      const userId = $userTitle.href.split("/")[4].split("-")[0]
+      const postId = element.closest('article').getAttribute('id').split('-')[2];
+
+      $replyIconCloneHref.attr({
+        'data-nick': username,
+        'data-id': userId,
+        'data-post': postId,
       });
-      const $imdbI = $('a.button-big.button-imdb i');
-      $imdbI.css({ 'opacity': '1', 'background-color': '#f5c518' });
-      $imdbI.append($image);
-    }
 
-    /**
-     * On discussion pages, add a button to reply to user's own comments.
-     *
-     * Limitations:
-     *  - If user replies to his own comment, he can't reply to the first someone else's comment.
-     *  - Can't reply to multiple user's own comments at once.
-     *
-     * @returns {Promise<void>}
-     */
-    async addChatReplyButton() {
+      const $replyIconClone = $replyIconControlClone.find('i.icon-reply');
+      $replyIconClone.on('click', () => {
+        const $originalHref = $firstWorkingReplyIconControl.find('a');
 
-      // Get all divs with class 'icon-control' containing <i> with class 'icon-reply' in them (working reply buttons)
-      const replyIconControlElements = $('.icon-control:has(i.icon-reply)');
-      const $firstWorkingReplyIconControl = replyIconControlElements.first();
-      const missingIconElements = $('.icon-control').not($(':has(i.icon-reply'));
+        // Save original state
+        const originalState = {
+          'data-nick': $originalHref.attr('data-nick'),
+          'data-id': $originalHref.attr('data-id'),
+          'data-post': $originalHref.attr('data-post'),
+        };
 
-      // Copy the working reply button and add it to the missingIconElements
-      missingIconElements.each(async (index, element) => {
-
-        // Clone working IconControl and remove potential '<a>' element whose child element has 'i.icon-trash'
-        const $replyIconControlClone = $firstWorkingReplyIconControl.clone();
-        $replyIconControlClone.find('a:has(i.icon-trash)').remove();
-
-        const $replyIconCloneHref = $replyIconControlClone.find('a');  // TODO: not trash
-        const $userTitle = element.closest('.article-content').querySelector('a.user-title-name');
-
-        const username = $userTitle.text;
-        const userId = $userTitle.href.split("/")[4].split("-")[0]
-        const postId = element.closest('article').getAttribute('id').split('-')[2];
-
-        $replyIconCloneHref.attr({
+        // Edit the working reply button to contain the correct data
+        $originalHref.attr({
           'data-nick': username,
           'data-id': userId,
           'data-post': postId,
         });
 
-        const $replyIconClone = $replyIconControlClone.find('i.icon-reply');
-        $replyIconClone.on('click', () => {
-          const $originalHref = $firstWorkingReplyIconControl.find('a');
+        // Trigger the click on the working reply button
+        $originalHref.find('i.icon-reply').trigger('click');
 
-          // Save original state
-          const originalState = {
-            'data-nick': $originalHref.attr('data-nick'),
-            'data-id': $originalHref.attr('data-id'),
-            'data-post': $originalHref.attr('data-post'),
-          };
-
-          // Edit the working reply button to contain the correct data
-          $originalHref.attr({
-            'data-nick': username,
-            'data-id': userId,
-            'data-post': postId,
-          });
-
-          // Trigger the click on the working reply button
-          $originalHref.find('i.icon-reply').trigger('click');
-
-          // Return the working reply button to its original state
-          $originalHref.attr({
-            'data-nick': originalState['data-nick'],
-            'data-id': originalState['data-id'],
-            'data-post': originalState['data-post'],
-          });
+        // Return the working reply button to its original state
+        $originalHref.attr({
+          'data-nick': originalState['data-nick'],
+          'data-id': originalState['data-id'],
+          'data-post': originalState['data-post'],
         });
-
-        $(element).append($replyIconCloneHref);
       });
-    }
+
+      $(element).append($replyIconCloneHref);
+    });
   }
+}
+
+(async () => {
+  "use strict";
+  /* globals jQuery, $, waitForKeyElements */
+  /* jshint -W069 */
+  /* jshint -W083 */
+  /* jshint -W075 */
+
+
+
 
   // ============================================================================================
   // SCRIPT START
@@ -3367,7 +3477,7 @@ async function deleteIndexedDB(dbName, storeName) {
     csfd.checkForOldLocalstorageRatingKeys();
 
     // Update user ratings count
-    await csfd.updateControlPanelRatingCount();
+    csfd.updateControlPanelRatingCount();
 
     // =================================
     // Page - Diskuze
@@ -3513,3 +3623,8 @@ async function deleteIndexedDB(dbName, storeName) {
   // console.log(res);
 
 })();
+
+// Check if module object exists and export Csfd class
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = Csfd;
+}
