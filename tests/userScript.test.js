@@ -19,7 +19,7 @@ const { Csfd, initIndexedDB } = require("../csfd-compare.js");
 beforeAll(() => {
     const fs = require("fs");
     const path = require("path");
-    const htmlContent = fs.readFileSync(path.resolve(__dirname, "mainPage.html"), "utf8");
+    const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/mainPage.html"), "utf8");
     const csfd = new Csfd(htmlContent);
     return csfd;
 });
