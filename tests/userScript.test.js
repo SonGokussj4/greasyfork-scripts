@@ -16,23 +16,16 @@ const expect = chai.expect;
 const { Csfd, initIndexedDB } = require("../csfd-compare.js");
 // import { Csfd, initIndexedDB } from "../csfd-compare.js";
 
+
+let csfd;
 beforeAll(() => {
     const fs = require("fs");
     const path = require("path");
     const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/mainPage.html"), "utf8");
-    const csfd = new Csfd(htmlContent);
-    return csfd;
+    csfd = new Csfd(htmlContent);
 });
 
 describe("csfd.getParentNameFromUrl method", () => {
-
-    // Load htmlContent variable from file: 'mainPage.html'
-    // const fs = require("fs");
-    // const path = require("path");
-    // const htmlContent = fs.readFileSync(path.resolve(__dirname, "mainPage.html"), "utf8");
-
-    const csfd = new Csfd("");
-
     const cases = [
         ["/film/12345-nejaky-film/prehled/", ""],
         ["/film/12345-parent/321-child/prehled/", "12345-parent"],
@@ -42,20 +35,6 @@ describe("csfd.getParentNameFromUrl method", () => {
         ["https://www.csfd.cs/film/12345-parent", ""],
         ["/film/12345-parent", ""],
     ];
-
-    // test("getParentNameFromUrl function", async () => {
-    //     const url = "/film/12345-nejaky-film/prehled/";
-    //     const expected = "";
-    //     const result = await csfd.getParentNameFromUrl(url);
-    //     expect(result).to.equal(expected);
-    // });
-
-    // test("getParentNameFromUrl function", async () => {
-    //     const url = "/film/12345-parent/321-child/prehled/";
-    //     const expected = "12345-parent";
-    //     const result = await csfd.getParentNameFromUrl(url);
-    //     expect(result).to.equal(expected);
-    // });
 
     test.each(cases)(
         "Url: %p --> %p",
@@ -67,8 +46,6 @@ describe("csfd.getParentNameFromUrl method", () => {
 });
 
 describe("csfd.getMovieIdFromHref method", () => {
-    const csfd = new Csfd("");
-
     const cases = [
         ["", null],
         ["/774319-zhoubne-zlo/prehled/", 774319],
@@ -93,8 +70,6 @@ describe("csfd.getMovieIdFromHref method", () => {
 });
 
 describe("csfd.getMovieIdParentIdFromUrl method", () => {
-    const csfd = new Csfd("");
-
     const cases = [
         ["/film/", [NaN, NaN]],
         ["/film/697624-love-death-robots", [697624, NaN]],
@@ -112,8 +87,6 @@ describe("csfd.getMovieIdParentIdFromUrl method", () => {
 });
 
 describe("csfd.getFilmNameFromHref method", () => {
-    const csfd = new Csfd("");
-
     const cases = [
         ["https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/", "/film/1032817-naomi/"],
         ["https://www.csfd.cz/film/1032817-naomi/recenze/", "/film/1032817-naomi/"],
