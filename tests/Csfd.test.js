@@ -45,7 +45,7 @@ describe("csfd.getParentNameFromUrl method", () => {
     );
 });
 
-describe("csfd.getMovieIdFromHref method", () => {
+describe("csfd.getMovieIdFromUrl method", () => {
     const cases = [
         ["", NaN],
         ["/774319-zhoubne-zlo/prehled/", 774319],
@@ -63,7 +63,7 @@ describe("csfd.getMovieIdFromHref method", () => {
     test.each(cases)(
         "Url: %p --> %p",
         async (url, expectedResult) => {
-            const result = await csfd.getMovieIdFromHref(url);
+            const result = await csfd.getMovieIdFromUrl(url);
             expect(result).to.deep.equal(expectedResult);
             // expect(Object.is(result, expectedResult)).toBeTruthy();
         }
