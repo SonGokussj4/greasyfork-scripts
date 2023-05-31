@@ -866,7 +866,7 @@ class Csfd {
    * @param {string} fullUrl - Full URL of the movie (e.g. https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/)
    * @returns {string} - Film name (e.g. /film/1032817-naomi/)
    */
-  getFilmNameFromHref(fullUrl) {
+  getFilmNameFromFullUrl(fullUrl) {
     // Create a new URL object
     const url = new URL(fullUrl);
 
@@ -925,8 +925,20 @@ class Csfd {
    *
    * @returns {str} Current movie year
    */
-  getCurrentFilmYear() {
-    const match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
+  getCurrentFilmYear(page = undefined) {
+    let match;
+    if (page === undefined) {
+      match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
+    } else {
+      // Get meta title from page (html)
+      match = page.match(/<meta property="og:title" content="(.*)">/);
+      if (match === null) {
+        console.error("[ CC ] getCurrentFilmYear() Film year wasn't found...");
+        throw (`${SCRIPTNAME} Exiting...`);
+      }
+      match = match[1].match(/\((\d+)\)/);
+    }
+
     if (match.length === 2) {
       let year = match[1];
       // Convert to number
@@ -1377,7 +1389,7 @@ class Csfd {
     let $links = $('a.film-title-name');
     for (const $link of $links) {
       const href = $($link).attr('href');
-      const movieId = await this.getMovieIdFromHref(href);
+      const movieId = await this.getMovieIdFromUrl(href);
 
       const res = this.stars[movieId];
       if (res === undefined) {
@@ -1578,6 +1590,7 @@ class Csfd {
 
     $($button).on("click", async () => {
       console.debug("Refreshing Computed Ratings...");
+      // Get all ratings from IndexedDB
       const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
       // console.log(`len(allRatings) = ${Object.keys(allRatings).length}`);
       // const filteredKeys = Object.keys(allRatings).filter(key => allRatings[key].computed === true);
@@ -1589,6 +1602,7 @@ class Csfd {
 
       // console.log({ computedRatings });
 
+      // Filter out all ratings of type "episode"
       const episodesRatings = Object.keys(allRatings)
         .filter(key => allRatings[key].type === "episode")
         .reduce((obj, key) => {
@@ -1596,7 +1610,7 @@ class Csfd {
           return obj;
         }, {});
 
-      // Get all parentId and check if it exists in allRatings, if not, add it to empty array
+      // Get get their parentIds and check if it exists in allRatings, if not, add it to empty array
       const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
       const allParentIdsUnique = [...new Set(allParentIds)];
       console.log({ allParentIdsUnique });
@@ -1604,49 +1618,77 @@ class Csfd {
       const filteredNotFoundParentRatings = allParentIdsUnique.filter(id => !allRatings.hasOwnProperty(id));
       console.log({ filteredNotFoundParentRatings });
 
-      this.missingComputedRatingsCount = filteredNotFoundParentRatings.length;
-      console.log({ missingComputedRatingsCount: this.missingComputedRatingsCount });
+      // this.missingComputedRatingsCount = filteredNotFoundParentRatings.length;
+      // console.log({ missingComputedRatingsCount: this.missingComputedRatingsCount });
 
-      // const foundObjects = filteredNotFoundParentRatings.map(id => {
-      //   console.log({ values: Object.values(allRatings) });
-      //   const obj = Object.values(allRatings).find(item => item.id === Number(id));
-      //   console.log({ obj });
-      //   return obj;
-      // });
-
-      // console.log({ foundObjects });
-
-      // Fetch pages with missing parent ratings and add them to allRatings
       // Convert IDs inside filteredNotFoundParentRatings to urls like this: 12345 -> '/film/12345/'
       const urls = filteredNotFoundParentRatings.map(id => `/film/${id}/`);
       console.log({ urls });
 
-      // for (const url of urls) {
+      // Fetch pages with missing parent ratings and add them to allRatings
+
+      const firstTwoUrls = urls.slice(0, 2);
+      for (const url of firstTwoUrls) {
       //   // Fetch page
-      //   const page = await this.fetchPage(url);
+        const page = await this.fetchPage(url);
 
-      //   const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
-      //   if (!computed) {
-      //     console.log(`Skipping, because computed is false`);
-      //     continue;
-      //   }
-      //   console.log(`Url: ${url}, Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
+        const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
+        if (!computed) {
+          console.log(`Skipping, because computed is false`);
+          continue;
+        }
+        console.log(`Url: ${url}, Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
 
-      //   const filmUrl = this.getCurrentFilmUrl(page);
-      //   console.log(`Current film url: ${filmUrl}`);
+        const filmUrl = this.getCurrentFilmUrl(page);
+        console.log(`Current film url: ${filmUrl}`);
 
-      //   const filmId = await this.getMovieIdFromHref(filmUrl);
-      //   console.log(`Current film id: ${filmId}`);
+        const filmId = await this.getMovieIdFromUrl(filmUrl);
+        console.log(`Current film id: ${filmId}`);
 
       //   // const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page);
       //   // console.log(`Current film date added: ${currentFilmDateAdded}`);
 
-      //   const filmRatings = await this.getComputedRatings(page);
-      //   console.log(`Current film ratings:`, filmRatings);
+        const filmRatings = await this.getComputedRatings(page);
+        console.log(`Current film ratings:`, filmRatings);
 
-      // }
+      }
 
     });
+  }
+
+  async parseMoviePage(page) {
+    const url = this.getCurrentFilmUrl(page);
+    const filmId = await this.getMovieIdFromUrl(url);
+    // const filmRating = await this.getCurrentFilmRating(page);
+    // const computedCount = this.getCurrentFilmComputedCount(page);
+    const year = this.getCurrentFilmYear(page);
+
+    return {
+      // computed: filmRating.computed,
+      // computedCount,
+      // computedFromText,
+      // date,
+      // fullUrl,
+      id: filmId,
+      // lastUpdate,
+      // parentId,
+      // parentName,
+      // rating: filmRating.rating,
+      // type,
+      url,
+      year,
+    };
+
+    // const filmId = await this.getMovieIdFromHref(filmUrl);
+    // const filmRatings = await this.getComputedRatings(page);
+    // const filmDateAdded = await this.getCurrentFilmDateAdded(page);
+    // const filmRating = await this.getCurrentFilmRating(page);
+    // return {
+    //   filmId,
+    //   filmRatings,
+    //   filmDateAdded,
+    //   filmRating,
+    // };
   }
 
   async getMissingComputedRatings() {
@@ -2305,10 +2347,10 @@ class Csfd {
    * `/film/697624-love-death-robots/` --> `""`
    * `/film/
    */
-  async getParentNameFromUrl(name) {
+  async getParentNameFromUrl(url) {
     // Remove protocol and domain if present
     const urlRegex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n]+)/;
-    const path = name.replace(urlRegex, "");
+    const path = url.replace(urlRegex, "");
 
     // Remove trailing and leading slashes
     const cleanedPath = path.replace(/^\/|\/$/g, '');
@@ -2327,21 +2369,21 @@ class Csfd {
 
   /**
    *
-   * @param {str} href csfd link for movie/series/episode
+   * @param {str} url csfd link for movie/series/episode
    * @returns {Promise<int>} Movie ID number
    *
    * Example:
-   * - href = '/film/774319-zhoubne-zlo/' --> 774319
-   * - href = '/film/1058697-devadesatky/1121972-epizoda-6/' --> 1121972
-   * - href = '1058697-devadesatky' --> 1058697
-   * - href = 'sdfsfdsf-devadesatky' --> NaN
-   * - href = \'' --> NaN
-   * - href = null --> NaN
+   * - url = '/film/774319-zhoubne-zlo/' --> 774319
+   * - url = '/film/1058697-devadesatky/1121972-epizoda-6/' --> 1121972
+   * - url = '1058697-devadesatky' --> 1058697
+   * - url = 'sdfsfdsf-devadesatky' --> NaN
+   * - url = \'' --> NaN
+   * - url = null --> NaN
    */
-  async getMovieIdFromHref(href) {
-    if (!href) { return NaN; }
+  async getMovieIdFromUrl(url) {
+    if (!url) { return NaN; }
 
-    const found_groups = href.match(/(\d)+-[-\w]+/ig);
+    const found_groups = url.match(/(\d)+-[-\w]+/ig);
 
     if (!found_groups) { return NaN; }
     const movieIds = found_groups.map(x => x.split("-")[0]);
@@ -2914,7 +2956,7 @@ class Csfd {
     const filmUrl = this.getCurrentFilmUrl();
     console.log(`Current film url: ${filmUrl}`);
 
-    const filmId = await this.getMovieIdFromHref(filmUrl);
+    const filmId = await this.getMovieIdFromUrl(filmUrl);
     console.log(`Current film id: ${filmId}`);
 
     // Check if current film is in IndexedDb
@@ -2943,14 +2985,14 @@ class Csfd {
 
     // Check if current page rating corresponds with that in LocalStorage, if not, update it
     const filmFullUrl = this.getCurrentFilmFullUrl();
-    const filmName = this.getFilmNameFromHref(filmFullUrl);
+    const filmName = this.getFilmNameFromFullUrl(filmFullUrl);
     const type = this.getCurrentFilmType();
     const year = this.getCurrentFilmYear();
     const lastUpdate = this.getCurrentDateTime()
-    const movieId = await this.getMovieIdFromHref(filmUrl);
+    const movieId = await this.getMovieIdFromUrl(filmUrl);
     console.log(`Current film id: ${movieId}, ${typeof (movieId)}`);
     const parentName = await this.getParentNameFromUrl(filmFullUrl);
-    const parentId = await this.getMovieIdFromHref(parentName);
+    const parentId = await this.getMovieIdFromUrl(parentName);
 
 
     const ratingsObject = {
