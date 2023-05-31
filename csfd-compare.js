@@ -3021,11 +3021,25 @@ class Csfd {
     }
   }
 
-  /**
-   * Returns current DateTime, e.g. 11.10.2022 1:49:42
-   * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
-   */
+ /**
+ * Returns current DateTime, e.g. 11.10.2022 1:49:42
+ * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
+ */
   getCurrentDateTime() {
+    // SLOW AF
+    // const d = new Date();
+    // const dateFormat = d.toLocaleString('en-GB', {
+    //   day: '2-digit',
+    //   month: '2-digit',
+    //   year: 'numeric',
+    //   hour: '2-digit',
+    //   minute: '2-digit',
+    //   second: '2-digit',
+    // });
+    // // 'DD/MM/YYYY, hh:mm:ss' --> 'DD.MM.YYYY hh:mm:ss'
+    // const dateFormatFixed = dateFormat.replace(/\//g, '.').replace(',', '');
+    // return dateFormatFixed;
+
     const d = new Date
     const dateFormat = [
       d.getDate(),
