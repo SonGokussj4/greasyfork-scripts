@@ -87,7 +87,7 @@ describe("csfd.getMovieIdParentIdFromUrl method", () => {
     );
 });
 
-describe("csfd.getFilmNameFromHref method", () => {
+describe("csfd.getFilmNameFromFullUrl method", () => {
     const cases = [
         ["https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/", "/film/1032817-naomi/"],
         ["https://www.csfd.cz/film/1032817-naomi/recenze/", "/film/1032817-naomi/"],
@@ -100,7 +100,7 @@ describe("csfd.getFilmNameFromHref method", () => {
     test.each(cases)(
         "Url: %p --> %p",
         async (url, expectedResult) => {
-            const result = await csfd.getFilmNameFromHref(url);
+            const result = await csfd.getFilmNameFromFullUrl(url);
             expect(result).to.equal(expectedResult);
         }
     );
