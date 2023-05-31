@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "test-movies": "jest movieLoad.test.js"
   },
   "devDependencies": {
     "chai": "^4.3.7",
@@ -8,5 +9,12 @@
     "jest-environment-jsdom": "^29.5.0",
     "jquery": "^3.7.0",
     "jsdom": "^22.1.0"
+  },
+  "jest": {
+    "setupFiles": [
+      "./setup-jquery.js"
+    ],
+    "testEnvironment": "jest-environment-jsdom",
+    "verbose": true
   }
 }
