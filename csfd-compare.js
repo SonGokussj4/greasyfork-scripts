@@ -35,7 +35,7 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
   dbVersion = 1;
 
-const DEV_PANEL_ALWAYS_VISIBLE = true;
+const DEV_PANEL_ALWAYS_VISIBLE = false;
 
 // GM_addStyle(`
 //   .my-custom-style-test {
@@ -337,10 +337,17 @@ async function saveToIndexedDB(dbName, storeName, data) {
   const store = transaction.objectStore(storeName);
 
   try {
-    for (const id in data) {
-      // Add item to the store, key should be INT
-      const item = { ...data[id], id: Number(id) };
-      store.put(item);
+    // If data is a list of objects, add each one to the store
+    // If the first key is a number, it's a list
+    if (!isNaN(Object.keys(data)[0]) && typeof data === 'object') {
+      for (const id in data) {
+        // Add item to the store, key should be INT
+        const item = { ...data[id], id: Number(id) };
+        store.put(item);
+      }
+    // If data is a single object, add it to the store
+    } else {
+      store.put(data);
     }
 
     const end = performance.now();
@@ -850,8 +857,10 @@ class Csfd {
    * @returns {str} Current movie: https://www.csfd.sk/film/739784-star-trek-lower-decks/recenze/
    *
    */
-  getCurrentFilmFullUrl() {
-    const foundMatch = $('meta[property="og:url"]').attr('content');
+  getCurrentFilmFullUrl(content = null) {
+    const foundMatch = content === null
+      ? $('meta[property="og:url"]').attr('content')
+      : content.match(/<meta property="og:url" content="(.*)">/)[1];
 
     // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
     if (!foundMatch) {
@@ -889,10 +898,14 @@ class Csfd {
   /**
    * Return current movie Type (film, serial, episode)
    *
+   * @param {html} content
    * @returns {str} Current movie type: film, serial, episode, movie, ...
    */
-  getCurrentFilmType() {
-    const foundTypes = $(".film-header span.type");
+  getCurrentFilmType(content = null) {
+    const foundTypes = content === null
+    ? $(".film-header span.type")
+    : $(content).find(".film-header span.type");
+
     let foundMatch = "";
 
     // No "type" found
@@ -925,9 +938,9 @@ class Csfd {
    *
    * @returns {str} Current movie year
    */
-  getCurrentFilmYear(page = undefined) {
+  getCurrentFilmYear(page = null) {
     let match;
-    if (page === undefined) {
+    if (page === null) {
       match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
     } else {
       // Get meta title from page (html)
@@ -956,13 +969,15 @@ class Csfd {
    * @returns {bool} `true` if current movie rating is computed, `false` otherwise
    */
   async isCurrentFilmComputed(content = null) {
-    const $computedStars = content === null ? $('.star.active.computed') : $(content).find('.star.active.computed');
+    const $computedStars = content === null
+      ? $('.star.active.computed')
+      : $(content).find('.star.active.computed');
 
     if ($computedStars.length > 0) {
       return true;
     }
 
-    const secondTry = await this.isCurrentFilmRatingComputed();
+    const secondTry = await this.isCurrentFilmRatingComputed(content);
     if (secondTry) {
       return true;
     }
@@ -970,20 +985,33 @@ class Csfd {
     return false;
   }
 
-  async isCurrentFilmRatingComputed() {
-    const $computedStars = this.csfdPage.find(".current-user-rating .star-rating.computed");
+  async isCurrentFilmRatingComputed(content = null) {
+    const $computedStars = content === null
+      ? this.csfdPage.find(".current-user-rating .star-rating.computed")
+      : $(content).find(".current-user-rating .star-rating.computed");
 
     if ($computedStars.length !== 0) { return true; }
 
     return false;
   }
 
+  /**
+   *
+   * @param {html} content
+   * @returns {int} Current movie computed rating
+   */
   getCurrentFilmComputedCount(content = null) {
-    const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : content.find('li.current-user-rating');
+    const $curUserRating = content === null
+      ? this.csfdPage.find('li.current-user-rating')
+      : $(content).find('li.current-user-rating');
+
     const countedText = $($curUserRating).find('span[title]').attr('title');
     // split by :
     const counted = countedText?.split(':')[1]?.trim();
-    return counted;
+    if (counted === undefined) {
+      return NaN;
+    }
+    return Number(counted);
   }
 
   async getCurrentFilmComputed() {
@@ -1035,7 +1063,9 @@ class Csfd {
     const currentRatingIsComputed = await this.isCurrentFilmComputed(content);
 
     if (currentRatingIsComputed) {
-      const { ratingCount, computedFromText } = content === null ? await this.getCurrentFilmComputed() : await this.getComputedRatings(content);
+      const { ratingCount, computedFromText } = content === null
+        ? await this.getCurrentFilmComputed() :
+        await this.getComputedRatings(content);
 
       return {
         rating: ratingCount,
@@ -1044,12 +1074,15 @@ class Csfd {
       };
     }
 
-    const $activeStars = this.csfdPage.find(".star.active");
+    const $activeStars = content === null
+      ? this.csfdPage.find(".star.active")
+      : $(content).find(".star.active");
+
 
     // No rating
     if ($activeStars.length === 0) {
       return {
-        rating: "",
+        rating: NaN,
         computedFrom: "",
         computed: false,
       };
@@ -1059,7 +1092,7 @@ class Csfd {
     if ($activeStars.length === 1) {
       if ($activeStars.attr('data-rating') === "0") {
         return {
-          rating: "0",
+          rating: 0,
           computedFrom: "",
           computed: false,
         };
@@ -1089,10 +1122,10 @@ class Csfd {
   async fillMissingSettingsKeys() {
     let settings = await getSettings();
 
-    let currentKeys = Object.keys(settings);
-    let defaultKeys = Object.keys(defaultSettings);
+    const currentKeys = Object.keys(settings);
+    const defaultKeys = Object.keys(defaultSettings);
     for (const defaultKey of defaultKeys) {
-      let exists = currentKeys.includes(defaultKey);
+      const exists = currentKeys.includes(defaultKey);
       if (!exists) {
         settings[defaultKey] = defaultSettings[defaultKey];
       }
@@ -1627,9 +1660,11 @@ class Csfd {
 
       // Fetch pages with missing parent ratings and add them to allRatings
 
-      const firstTwoUrls = urls.slice(0, 2);
-      for (const url of firstTwoUrls) {
-      //   // Fetch page
+      // TODO: DEBUG
+      // const firstTwoUrls = urls.slice(0, 2);
+      // for (const url of firstTwoUrls) {
+      for (const url of urls) {
+        // Fetch page
         const page = await this.fetchPage(url);
 
         const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
@@ -1637,58 +1672,53 @@ class Csfd {
           console.log(`Skipping, because computed is false`);
           continue;
         }
-        console.log(`Url: ${url}, Current rating: ${rating}, computedFrom: ${computedFrom}, computed: ${computed}`);
+        const movie = await this.parseMoviePage(page);
+        console.log({ movie });
 
-        const filmUrl = this.getCurrentFilmUrl(page);
-        console.log(`Current film url: ${filmUrl}`);
+        // Add to allRatings
+        allRatings[Number(movie.filmId)] = movie;
 
-        const filmId = await this.getMovieIdFromUrl(filmUrl);
-        console.log(`Current film id: ${filmId}`);
-
-      //   // const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page);
-      //   // console.log(`Current film date added: ${currentFilmDateAdded}`);
-
-        const filmRatings = await this.getComputedRatings(page);
-        console.log(`Current film ratings:`, filmRatings);
-
+        // Add to IndexedDB
+        await saveToIndexedDB(INDEXED_DB_NAME, this.username, movie);
       }
 
     });
   }
 
   async parseMoviePage(page) {
+    const start = performance.now();
+
+    const computedCount = this.getCurrentFilmComputedCount(page);
+    const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
+    const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page);
     const url = this.getCurrentFilmUrl(page);
     const filmId = await this.getMovieIdFromUrl(url);
-    // const filmRating = await this.getCurrentFilmRating(page);
-    // const computedCount = this.getCurrentFilmComputedCount(page);
+    const lastUpdate = this.getCurrentDateTime()
+    const type = this.getCurrentFilmType(page);
     const year = this.getCurrentFilmYear(page);
+    const fullUrl = this.getCurrentFilmFullUrl(page);
+    const parentName = await this.getParentNameFromUrl(fullUrl);
+    const parentId = await this.getMovieIdFromUrl(parentName);
+
+    const end = performance.now();
+    const time = (end - start) / 1000;
+    console.debug(`[CC] parseMoviePage() Time: ${time} seconds`);
 
     return {
-      // computed: filmRating.computed,
-      // computedCount,
-      // computedFromText,
-      // date,
-      // fullUrl,
+      computed,
+      computedCount,
+      computedFromText: computedFrom,
+      date: currentFilmDateAdded,
+      fullUrl,
       id: filmId,
-      // lastUpdate,
-      // parentId,
-      // parentName,
-      // rating: filmRating.rating,
-      // type,
+      lastUpdate,
+      parentId,
+      parentName,
+      rating,
+      type,
       url,
       year,
     };
-
-    // const filmId = await this.getMovieIdFromHref(filmUrl);
-    // const filmRatings = await this.getComputedRatings(page);
-    // const filmDateAdded = await this.getCurrentFilmDateAdded(page);
-    // const filmRating = await this.getCurrentFilmRating(page);
-    // return {
-    //   filmId,
-    //   filmRatings,
-    //   filmDateAdded,
-    //   filmRating,
-    // };
   }
 
   async getMissingComputedRatings() {
@@ -2429,10 +2459,8 @@ class Csfd {
 
     let res = await this.getAllPages(force);
     console.log(`getAllPagesNew() ... Total ratings: ${Object.keys(res).length}`);
-    console.log({ res });
 
     // Save all to IndexedDB
-    // this.exportRatings();
     await saveToIndexedDB(INDEXED_DB_NAME, username, res);
     csfd.stars = res;
 
@@ -3177,19 +3205,17 @@ class Csfd {
    *
    * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
    */
-  async getCurrentFilmDateAdded(page = undefined) {
-    if (page === undefined) {
-      page = this.csfdPage;
-    } else {
-      page = $(page);
-    }
+  async getCurrentFilmDateAdded(content = null) {
+    content = content === null
+      ? this.csfdPage
+      : $(content);
 
-    let ratingText = page.find('span.stars-rating.initialized').attr('title');
+    let ratingText = content.find('span.stars-rating.initialized').attr('title');
     if (ratingText === undefined) {
       // Grab the rating date from mobile-rating
-      ratingText = page.find('.mobile-film-rating-detail a span').attr('title');
+      ratingText = content.find('.mobile-film-rating-detail a span').attr('title');
       if (ratingText === undefined) {
-        return;
+        return "";
       }
     }
     let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
@@ -3197,7 +3223,7 @@ class Csfd {
       let ratingDate = match[0];
       return ratingDate;
     }
-    return undefined;
+    return "";
   }
 
   async addRatingsDate() {
@@ -3223,14 +3249,14 @@ class Csfd {
    * and add it bellow the 'Moje hodnoceni' text
    */
   async addRatingsComputedCount() {
-    let $computedStars = $('.star.active.computed');
-    let isComputed = $computedStars.length != 0;
+    const $computedStars = $('.star.active.computed');
+    const isComputed = $computedStars.length != 0;
     if (!isComputed) { return; }
-    let fromRatingsText = this.csfdPage.find('.current-user-rating > span').attr('title');
+    const fromRatingsText = this.csfdPage.find('.current-user-rating > span').attr('title');
     if (fromRatingsText === undefined) {
       return;
     }
-    let $myRatingCaption = $('.my-rating h3');
+    const $myRatingCaption = $('.my-rating h3');
     $myRatingCaption.html(`${$myRatingCaption.text()}<br>${fromRatingsText}`);
   }
 
@@ -3435,6 +3461,7 @@ class Csfd {
   profileMethod(csfd, 'settingsPanelComponent');
   profileMethod(csfd, 'showOnOneLine');
   profileMethod(csfd, 'updateControlPanelRatingCount');
+  profileMethod(csfd, 'parseMoviePage');
   // =================================
   // PROFILING ASYNC FUNCTIONS
   // =================================
