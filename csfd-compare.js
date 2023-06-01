@@ -69,6 +69,10 @@ const profilingData = {};
 //   }
 // }
 
+function roundTo(number, decimals) {
+  return Math.floor(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+}
+
 function profileFunction(fn, name) {
   return function (...args) {
     const start = performance.now();
@@ -860,7 +864,7 @@ class Csfd {
   async getCurrentFilmFullUrl(content = null) {
     const foundMatch = content === null
       ? $('meta[property="og:url"]').attr('content')
-      : content.match(/<meta property="og:url" content="(.*)">/)[1];
+      : content.querySelector('meta[property="og:url"]').getAttribute('content');
 
     // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
     if (!foundMatch) {
@@ -1589,6 +1593,7 @@ class Csfd {
     $($button).on("click", async function () {
       console.debug("refreshing ratings");
       const csfd = new Csfd($('div.page-content'));
+
       if (forceUpdate === true) {
         if (!confirm(`Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`)) {
           forceUpdate = false;
@@ -1662,9 +1667,9 @@ class Csfd {
       // Fetch pages with missing parent ratings and add them to allRatings
 
       // TODO: DEBUG
-      // const firstTwoUrls = urls.slice(0, 2);
-      // for (const url of firstTwoUrls) {
-      for (const url of urls) {
+      const firstTwoUrls = urls.slice(0, 2);
+      for (const url of firstTwoUrls) {
+      // for (const url of urls) {
         // Fetch page
         const page = await this.fetchPage(url);
 
@@ -1680,7 +1685,7 @@ class Csfd {
         allRatings[Number(movie.filmId)] = movie;
 
         // Add to IndexedDB
-        await saveToIndexedDB(INDEXED_DB_NAME, this.username, movie);
+        // await saveToIndexedDB(INDEXED_DB_NAME, this.username, movie);
       }
 
     });
@@ -1689,21 +1694,70 @@ class Csfd {
   async parseMoviePage(page) {
     // const start = performance.now();
 
+    // const start01 = performance.now();
+    const fullUrl = await this.getCurrentFilmFullUrl(page)
+    // const time01 = roundTo((performance.now() - start01) / 1000, 6)
+
+    // const start02 = performance.now();
+    const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page)
+    // const time02 = roundTo((performance.now() - start02) / 1000, 6)
+
+    // const start03 = performance.now();
     const computedCount = await this.getCurrentFilmComputedCount(page);
-    const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
-    const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page);
+    // const time03 = roundTo((performance.now() - start03) / 1000, 6)
+
+    // const start04 = performance.now();
     const url = await this.getCurrentFilmUrl(page);
-    const filmId = await this.getMovieIdFromUrl(url);
-    const lastUpdate = await this.getCurrentDateTime()
-    const type = await this.getCurrentFilmType(page);
+    // const time04 = roundTo((performance.now() - start04) / 1000, 6)
+
+    // const start05 = performance.now();
     const year = await this.getCurrentFilmYear(page);
-    const fullUrl = await this.getCurrentFilmFullUrl(page);
+    // const time05 = roundTo((performance.now() - start05) / 1000, 6)
+
+    // const start06 = performance.now();
+    const type = await this.getCurrentFilmType(page);
+    // const time06 = roundTo((performance.now() - start06) / 1000, 6)
+
+    // const start07 = performance.now();
+    const ratingData = await this.getCurrentFilmRating(page);
+    // const time07 = roundTo((performance.now() - start07) / 1000, 6)
+
+    // const start1 = performance.now();
+    const { rating, computedFrom, computed } = ratingData;
+    // const time1 = roundTo((performance.now() - start1) / 1000, 6)
+
+    // const start2 = performance.now();
+    const filmId = await this.getMovieIdFromUrl(url);
+    // const time2 = roundTo((performance.now() - start2) / 1000, 6)
+
+    // const start3 = performance.now();
+    const lastUpdate = await this.getCurrentDateTime();
+    // const time3 = roundTo((performance.now() - start3) / 1000, 6)
+
+    // const start4 = performance.now();
     const parentName = await this.getParentNameFromUrl(fullUrl);
+    // const time4 = roundTo((performance.now() - start4) / 1000, 6)
+
+    // const start5 = performance.now();
     const parentId = await this.getMovieIdFromUrl(parentName);
+    // const time5 = roundTo((performance.now() - start5) / 1000, 6)
 
     // const end = performance.now();
     // const time = (end - start) / 1000;
+    // console.debug('===================================================================')
     // console.debug(`[CC] parseMoviePage() Time: ${time} seconds`);
+    // console.debug(`     ⎿ Time01 (getCurrentFilmFullUrl): ${time01} seconds`);
+    // console.debug(`     ⎿ Time02 (getCurrentFilmDateAdded): ${time02} seconds`);
+    // console.debug(`     ⎿ Time03 (getCurrentFilmComputedTime): ${time03} seconds`);
+    // console.debug(`     ⎿ Time04 (getCurrentFilmUrl): ${time04} seconds`);
+    // console.debug(`     ⎿ Time05 (getCurrentFilmYear): ${time05} seconds`);
+    // console.debug(`     ⎿ Time06 (getCurrentFilmType): ${time06} seconds`);
+    // console.debug(`     ⎿ Time07 (getCurrentFilmRating): ${time07} seconds`);
+    // console.debug(`     ⎿ Time1 (... unpact ratingData): ${time1} seconds`);
+    // console.debug(`     ⎿ Time2 (getMovieIdFromUrl): ${time2} seconds`);
+    // console.debug(`     ⎿ Time3 (getCurrentDateTime): ${time3} seconds`);
+    // console.debug(`     ⎿ Time4 (getParentNameFromUrl): ${time4} seconds`);
+    // console.debug(`     ⎿ Time5 (getMovieIdFromUrl): ${time5} seconds`);
 
     return {
       computed,
@@ -1750,7 +1804,7 @@ class Csfd {
     const response = await fetch(url);
     const html = await response.text();
     // const $html = $(html);
-    return html;
+    return new DOMParser().parseFromString(html, "text/html");
   }
 
   async badgesComponent(ratingsInLS, curUserRatings, computedRatings) {
@@ -3208,23 +3262,46 @@ class Csfd {
   }
 
   /**
-   *
+   * @param {string} content
    * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
    */
   async getCurrentFilmDateAdded(content = null) {
-    content = content === null
-      ? this.csfdPage
-      : $(content);
+    // content = content === null
+    //   ? this.csfdPage
+    //   : $(content);
 
-    let ratingText = content.find('span.stars-rating.initialized').attr('title');
-    if (ratingText === undefined) {
+    // let ratingText = content.find('span.stars-rating.initialized').attr('title');
+    // if (ratingText === undefined) {
+    //   // Grab the rating date from mobile-rating
+    //   ratingText = content.find('.mobile-film-rating-detail a span').attr('title');
+    //   if (ratingText === undefined) {
+    //     return "";
+    //   }
+    // }
+    // let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+    // if (match !== null) {
+    //   let ratingDate = match[0];
+    //   return ratingDate;
+    // }
+    // return "";
+
+    if (content === null) {
+      content = this.csfdPage;
+    }
+
+    // Get 'span.stars-rating.initialized' and attribute 'title'
+    let ratingText = content.querySelector('span.stars-rating').getAttribute('title');
+
+    if (ratingText === null) {
       // Grab the rating date from mobile-rating
-      ratingText = content.find('.mobile-film-rating-detail a span').attr('title');
-      if (ratingText === undefined) {
+      ratingText = content.querySelector('.mobile-film-rating-detail a span').getAttribute('title');
+      if (ratingText === null) {
         return "";
       }
     }
+
     let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+
     if (match !== null) {
       let ratingDate = match[0];
       return ratingDate;
