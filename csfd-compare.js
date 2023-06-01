@@ -1695,45 +1695,65 @@ class Csfd {
   async parseMoviePage(page) {
     // const start = performance.now();
 
-    // const start01 = performance.now();
-    const fullUrl = await this.getCurrentFilmFullUrl(page)
-    // const time01 = roundTo((performance.now() - start01) / 1000, 6)
+    const [
+      fullUrl,
+      currentFilmDateAdded,
+      computedCount,
+      url,
+      year,
+      type,
+      { rating, computedFrom, computed },
+      lastUpdate,
+    ] = await Promise.all([
+      this.getCurrentFilmFullUrl(page),
+      this.getCurrentFilmDateAdded(page),
+      this.getCurrentFilmComputedCount(page),
+      this.getCurrentFilmUrl(page),
+      this.getCurrentFilmYear(page),
+      this.getCurrentFilmType(page),
+      this.getCurrentFilmRating(page),
+      this.getCurrentDateTime(),
+    ]);
 
-    // const start02 = performance.now();
-    const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page)
-    // const time02 = roundTo((performance.now() - start02) / 1000, 6)
+    // // const start01 = performance.now();
+    // const fullUrl = await this.getCurrentFilmFullUrl(page)
+    // // const time01 = roundTo((performance.now() - start01) / 1000, 6)
 
-    // const start03 = performance.now();
-    const computedCount = await this.getCurrentFilmComputedCount(page);
-    // const time03 = roundTo((performance.now() - start03) / 1000, 6)
+    // // const start02 = performance.now();
+    // const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page)
+    // // const time02 = roundTo((performance.now() - start02) / 1000, 6)
 
-    // const start04 = performance.now();
-    const url = await this.getCurrentFilmUrl(page);
-    // const time04 = roundTo((performance.now() - start04) / 1000, 6)
+    // // const start03 = performance.now();
+    // const computedCount = await this.getCurrentFilmComputedCount(page);
+    // // const time03 = roundTo((performance.now() - start03) / 1000, 6)
 
-    // const start05 = performance.now();
-    const year = await this.getCurrentFilmYear(page);
-    // const time05 = roundTo((performance.now() - start05) / 1000, 6)
+    // // const start04 = performance.now();
+    // const url = await this.getCurrentFilmUrl(page);
+    // // const time04 = roundTo((performance.now() - start04) / 1000, 6)
 
-    // const start06 = performance.now();
-    const type = await this.getCurrentFilmType(page);
-    // const time06 = roundTo((performance.now() - start06) / 1000, 6)
+    // // const start05 = performance.now();
+    // const year = await this.getCurrentFilmYear(page);
+    // // const time05 = roundTo((performance.now() - start05) / 1000, 6)
 
-    // const start07 = performance.now();
-    const ratingData = await this.getCurrentFilmRating(page);
-    // const time07 = roundTo((performance.now() - start07) / 1000, 6)
+    // // const start06 = performance.now();
+    // const type = await this.getCurrentFilmType(page);
+    // // const time06 = roundTo((performance.now() - start06) / 1000, 6)
 
-    // const start1 = performance.now();
-    const { rating, computedFrom, computed } = ratingData;
-    // const time1 = roundTo((performance.now() - start1) / 1000, 6)
+    // // const start07 = performance.now();
+    // const ratingData = await this.getCurrentFilmRating(page);
+    // // const time07 = roundTo((performance.now() - start07) / 1000, 6)
+
+    // // const start1 = performance.now();
+    // const { rating, computedFrom, computed } = ratingData;
+    // // const time1 = roundTo((performance.now() - start1) / 1000, 6)
 
     // const start2 = performance.now();
     const filmId = await this.getMovieIdFromUrl(url);
     // const time2 = roundTo((performance.now() - start2) / 1000, 6)
 
-    // const start3 = performance.now();
-    const lastUpdate = await this.getCurrentDateTime();
-    // const time3 = roundTo((performance.now() - start3) / 1000, 6)
+    // // const start3 = performance.now();
+    // const lastUpdate = await this.getCurrentDateTime();
+    // // const time3 = roundTo((performance.now() - start3) / 1000, 6)
 
     // const start4 = performance.now();
     const parentName = await this.getParentNameFromUrl(fullUrl);
@@ -1743,8 +1763,9 @@ class Csfd {
     const parentId = await this.getMovieIdFromUrl(parentName);
     // const time5 = roundTo((performance.now() - start5) / 1000, 6)
 
-    // const end = performance.now();
-    // const time = (end - start) / 1000;
+
+
+    // const time = roundTo((performance.now() - start) / 1000, 6)
     // console.debug('===================================================================')
     // console.debug(`[CC] parseMoviePage() Time: ${time} seconds`);
     // console.debug(`     ⎿ Time01 (getCurrentFilmFullUrl): ${time01} seconds`);
