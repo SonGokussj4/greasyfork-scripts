@@ -824,13 +824,13 @@ class Csfd {
 
   /**
    *
-   * @returns {str} Current movie: `<MovieId>-<MovieUrlTitle>`
+   * @returns {Promise<str>} Current movie: `<MovieId>-<MovieUrlTitle>`
    *
    * Example:
    * - https://www.csfd.sk/film/739784-star-trek-lower-decks/prehlad/ --> `739784-star-trek-lower-decks`
    * - https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/ --> `1032819-don-t-believe-everything-you-think`
    */
-  getCurrentFilmUrl(page = undefined) {
+  async getCurrentFilmUrl(page = undefined) {
     let foundMatch;
     if (page === undefined) {
       foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
@@ -854,10 +854,10 @@ class Csfd {
 
   /**
    *
-   * @returns {str} Current movie: https://www.csfd.sk/film/739784-star-trek-lower-decks/recenze/
+   * @returns {Promise<str>} Current movie: https://www.csfd.sk/film/739784-star-trek-lower-decks/recenze/
    *
    */
-  getCurrentFilmFullUrl(content = null) {
+  async getCurrentFilmFullUrl(content = null) {
     const foundMatch = content === null
       ? $('meta[property="og:url"]').attr('content')
       : content.match(/<meta property="og:url" content="(.*)">/)[1];
@@ -873,9 +873,9 @@ class Csfd {
   /**
    * Get film name from the URL (e.g. /film/1032817-naomi/)
    * @param {string} fullUrl - Full URL of the movie (e.g. https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/)
-   * @returns {string} - Film name (e.g. /film/1032817-naomi/)
+   * @returns {Promise<string>} - Film name (e.g. /film/1032817-naomi/)
    */
-  getFilmNameFromFullUrl(fullUrl) {
+  async getFilmNameFromFullUrl(fullUrl) {
     // Create a new URL object
     const url = new URL(fullUrl);
 
@@ -899,9 +899,9 @@ class Csfd {
    * Return current movie Type (film, serial, episode)
    *
    * @param {html} content
-   * @returns {str} Current movie type: film, serial, episode, movie, ...
+   * @returns {Promise<str>} Current movie type: film, serial, episode, movie, ...
    */
-  getCurrentFilmType(content = null) {
+  async getCurrentFilmType(content = null) {
     const foundTypes = content === null
     ? $(".film-header span.type")
     : $(content).find(".film-header span.type");
@@ -936,15 +936,16 @@ class Csfd {
   /**
    * from property `og:title` extract the movie year `'Movie Title (2019)' --> 2019`
    *
-   * @returns {str} Current movie year
+   * @param {html} content
+   * @returns {Promise<str>} Current movie year
    */
-  getCurrentFilmYear(page = null) {
+  async getCurrentFilmYear(content = null) {
     let match;
-    if (page === null) {
+    if (content === null) {
       match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
     } else {
-      // Get meta title from page (html)
-      match = page.match(/<meta property="og:title" content="(.*)">/);
+      // Get meta title from content (html)
+      match = content.match(/<meta property="og:title" content="(.*)">/);
       if (match === null) {
         console.error("[ CC ] getCurrentFilmYear() Film year wasn't found...");
         throw (`${SCRIPTNAME} Exiting...`);
@@ -1000,7 +1001,7 @@ class Csfd {
    * @param {html} content
    * @returns {int} Current movie computed rating
    */
-  getCurrentFilmComputedCount(content = null) {
+  async getCurrentFilmComputedCount(content = null) {
     const $curUserRating = content === null
       ? this.csfdPage.find('li.current-user-rating')
       : $(content).find('li.current-user-rating');
@@ -1686,23 +1687,23 @@ class Csfd {
   }
 
   async parseMoviePage(page) {
-    const start = performance.now();
+    // const start = performance.now();
 
-    const computedCount = this.getCurrentFilmComputedCount(page);
+    const computedCount = await this.getCurrentFilmComputedCount(page);
     const { rating, computedFrom, computed } = await this.getCurrentFilmRating(page);
     const currentFilmDateAdded = await this.getCurrentFilmDateAdded(page);
-    const url = this.getCurrentFilmUrl(page);
+    const url = await this.getCurrentFilmUrl(page);
     const filmId = await this.getMovieIdFromUrl(url);
-    const lastUpdate = this.getCurrentDateTime()
-    const type = this.getCurrentFilmType(page);
-    const year = this.getCurrentFilmYear(page);
-    const fullUrl = this.getCurrentFilmFullUrl(page);
+    const lastUpdate = await this.getCurrentDateTime()
+    const type = await this.getCurrentFilmType(page);
+    const year = await this.getCurrentFilmYear(page);
+    const fullUrl = await this.getCurrentFilmFullUrl(page);
     const parentName = await this.getParentNameFromUrl(fullUrl);
     const parentId = await this.getMovieIdFromUrl(parentName);
 
-    const end = performance.now();
-    const time = (end - start) / 1000;
-    console.debug(`[CC] parseMoviePage() Time: ${time} seconds`);
+    // const end = performance.now();
+    // const time = (end - start) / 1000;
+    // console.debug(`[CC] parseMoviePage() Time: ${time} seconds`);
 
     return {
       computed,
@@ -1740,6 +1741,11 @@ class Csfd {
     return this.missingComputedRatingsCount;
   }
 
+  /**
+   * Fetches page from url and returns it as html using fetch API
+   * @param {string} url film url
+   * @returns {html} html of the page
+   */
   async fetchPage(url) {
     const response = await fetch(url);
     const html = await response.text();
@@ -2108,7 +2114,7 @@ class Csfd {
         'computed': false,
         'computedCount': "",
         'computedFromText': "",
-        'lastUpdate': this.getCurrentDateTime(),
+        'lastUpdate': await this.getCurrentDateTime(),
       };
     }
     return dc;
@@ -2242,7 +2248,7 @@ class Csfd {
             'computed': false,
             'computedCount': "",
             'computedFromText': "",
-            'lastUpdate': this.getCurrentDateTime(),
+            'lastUpdate': await this.getCurrentDateTime(),
           };
 
         }
@@ -2981,7 +2987,7 @@ class Csfd {
     const currentFilmDateAdded = await this.getCurrentFilmDateAdded();
     console.log(`Current film date added: ${currentFilmDateAdded}`);
 
-    const filmUrl = this.getCurrentFilmUrl();
+    const filmUrl = await this.getCurrentFilmUrl();
     console.log(`Current film url: ${filmUrl}`);
 
     const filmId = await this.getMovieIdFromUrl(filmUrl);
@@ -3012,11 +3018,11 @@ class Csfd {
     }
 
     // Check if current page rating corresponds with that in LocalStorage, if not, update it
-    const filmFullUrl = this.getCurrentFilmFullUrl();
-    const filmName = this.getFilmNameFromFullUrl(filmFullUrl);
-    const type = this.getCurrentFilmType();
-    const year = this.getCurrentFilmYear();
-    const lastUpdate = this.getCurrentDateTime()
+    const filmFullUrl = await this.getCurrentFilmFullUrl();
+    const filmName = await this.getFilmNameFromFullUrl(filmFullUrl);
+    const type = await this.getCurrentFilmType();
+    const year = await this.getCurrentFilmYear();
+    const lastUpdate = await this.getCurrentDateTime()
     const movieId = await this.getMovieIdFromUrl(filmUrl);
     console.log(`Current film id: ${movieId}, ${typeof (movieId)}`);
     const parentName = await this.getParentNameFromUrl(filmFullUrl);
@@ -3034,7 +3040,7 @@ class Csfd {
       parentName: parentName,
       parentId: parentId,
       computed: computed,
-      computedCount: computed ? this.getCurrentFilmComputedCount() : "",
+      computedCount: computed ? await this.getCurrentFilmComputedCount() : NaN,
       computedFromText: computed ? computedFrom : "",
       lastUpdate: lastUpdate,
     };
@@ -3053,7 +3059,7 @@ class Csfd {
  * Returns current DateTime, e.g. 11.10.2022 1:49:42
  * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
  */
-  getCurrentDateTime() {
+  async getCurrentDateTime() {
     // SLOW AF
     // const d = new Date();
     // const dateFormat = d.toLocaleString('en-GB', {
