@@ -840,18 +840,19 @@ class Csfd {
       foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
     } else {
       // Get meta URL from page (html)
-      const metaUrl = page.match(/<meta property="og:url" content="(.*)">/);
+      // Write this in vanilla JS, not jQuery: page.match(/<meta property="og:url" content="(.*)">/);
+      const metaUrl = page.querySelector('meta[property="og:url"]').getAttribute('content');
       if (metaUrl === null) {
         console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
-        throw (`${SCRIPTNAME} Exiting...`);
+        throw (`${SCRIPTNAME} Exiting... metaUrl === null`);
       }
-      foundMatch = metaUrl[1].match(/\d+-[\w-]+/ig);
+      foundMatch = metaUrl.match(/\d+-[\w-]+/ig);
     }
 
     // TODO: getCurrentFilmUrl by melo vrátit film URL ne jen cast... ne?
     if (!foundMatch) {
       console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
-      throw (`${SCRIPTNAME} Exiting...`);
+      throw (`${SCRIPTNAME} Exiting... foundMatch === null`);
     }
     return foundMatch[foundMatch.length - 1];
   }
@@ -944,21 +945,21 @@ class Csfd {
    * @returns {Promise<str>} Current movie year
    */
   async getCurrentFilmYear(content = null) {
-    let match;
+    let foundMatch;
     if (content === null) {
-      match = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
+      foundMatch = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
     } else {
       // Get meta title from content (html)
-      match = content.match(/<meta property="og:title" content="(.*)">/);
-      if (match === null) {
+      const metaTitle = content.querySelector('meta[property="og:title"]').getAttribute('content');
+      if (metaTitle === null) {
         console.error("[ CC ] getCurrentFilmYear() Film year wasn't found...");
-        throw (`${SCRIPTNAME} Exiting...`);
+        throw (`${SCRIPTNAME} Exiting... metaTitle === null`);
       }
-      match = match[1].match(/\((\d+)\)/);
+      foundMatch = metaTitle.match(/\((\d+)\)/);
     }
 
-    if (match.length === 2) {
-      let year = match[1];
+    if (foundMatch.length === 2) {
+      let year = foundMatch[1];
       // Convert to number
       if (!isNaN(year)) {
         year = parseInt(year);
