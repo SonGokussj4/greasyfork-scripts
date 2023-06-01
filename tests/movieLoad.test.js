@@ -22,12 +22,14 @@ beforeAll(() => {
 describe("csfd.parseMoviePage method", () => {
     test("parseMoviePage (movie rated)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/movieRated.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '31.5.2023 0:17:49';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: false,
             computedCount: NaN,
@@ -83,12 +85,14 @@ describe("csfd.parseMoviePage method", () => {
 
     test("parseMoviePage (TV movie rated)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/tvMovieRated.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '31.5.2023 23:24:56';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: false,
             computedCount: NaN,
@@ -144,12 +148,14 @@ describe("csfd.parseMoviePage method", () => {
 
     test("parseMoviePage (episode rated)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/episodeRated.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '29.5.2023 1:29:40';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: false,
             computedCount: NaN,
@@ -202,12 +208,14 @@ describe("csfd.parseMoviePage method", () => {
 
     test("parseMoviePage (series rated)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/seriesRated.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '29.5.2023 1:29:40';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: false,
             computedCount: NaN,
@@ -260,12 +268,14 @@ describe("csfd.parseMoviePage method", () => {
 
     test("parseMoviePage (series computed)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/seriesComputed.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '31.5.2023 22:48:34';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: true,
             computedCount: 1,
@@ -318,12 +328,14 @@ describe("csfd.parseMoviePage method", () => {
 
     test("parseMoviePage (season rated)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/seasonRated.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '31.5.2023 22:53:28';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: false,
             computedCount: NaN,
@@ -376,12 +388,14 @@ describe("csfd.parseMoviePage method", () => {
 
     test("parseMoviePage (season unrated)", async () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/seasonUnrated.html"), "utf8");
+        const parser = new DOMParser();
+        const content = parser.parseFromString(htmlContent, "text/html");
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '';
         });
 
-        const result = await csfd.parseMoviePage(htmlContent);
+        const result = await csfd.parseMoviePage(content);
         const expected = {
             computed: false,
             computedCount: NaN,
