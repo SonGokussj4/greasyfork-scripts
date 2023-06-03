@@ -1481,10 +1481,10 @@ class Csfd {
     const $page = this.csfdPage;
     const $tbl = $page.find('#snippet--ratings table tbody');
 
-    $tbl.find('tr').each(async function () {
-      const $row = $(this);
+    $tbl.find('tr').each(async (index, element) => {
+      const $row = $(element);
       const href = $row.find('a.film-title-name').attr('href');
-      const movieId = await csfd.getMovieIdFromHref(href);
+      const movieId = await this.getMovieIdFromUrl(href);
       const myRating = starsDict[movieId];
 
       let $span = "";
