@@ -2631,6 +2631,7 @@ class Csfd {
       $(this).find('.hide-me').hide();
     });
 
+    const self = this;
     $('.hide-me').on('click', async function (event) {
       const $section = $(event.target).closest('section');
       const boxId = $section.data('box-id');
@@ -2643,7 +2644,7 @@ class Csfd {
       if (!settings.includes(dict)) {
         settings.push(dict);
         localStorage.setItem(boxSettingsName, JSON.stringify(settings));
-        csfd.addHideSectionButton(boxId, boxName);
+        self.addHideSectionButton(boxId, boxName);
       }
       $section.hide();
     });
