@@ -36,6 +36,7 @@ window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndex
   dbVersion = 1;
 
 const DEV_PANEL_ALWAYS_VISIBLE = false;
+const DEV_PERFORMANCE_METRICS = false;
 
 // GM_addStyle(`
 //   .my-custom-style-test {
@@ -2766,6 +2767,7 @@ class Csfd {
     });
 
     const { computed: computed_ratings, rated: rated_ratings } = await this.getLocalStorageRatingsCount();
+    //TODO: Problem with this.username - undefined
     console.log(`[ DEBUG ] this.username: ${this.username}`);
     const new_rated_ratings = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
     const current_ratings = await this.getCurrentUserRatingsCount();
@@ -3538,55 +3540,57 @@ class Csfd {
   console.debug("CSFD-Compare - Script started")
   const csfd = new Csfd($('div.page-content'));
 
-  // =================================
-  // PROFILING METHODS
-  // =================================
-  profileMethod(csfd, 'addHideSectionButton');
-  profileMethod(csfd, 'addImdbIcon');
-  profileMethod(csfd, 'addRatingsComputedCount');
-  profileMethod(csfd, 'addRatingsDate');
-  profileMethod(csfd, 'addSettingsEvents');
-  profileMethod(csfd, 'addSettingsPanel');
-  profileMethod(csfd, 'addStars');
-  profileMethod(csfd, 'checkAndUpdateCurrentRating');
-  profileMethod(csfd, 'checkForUpdate');
-  profileMethod(csfd, 'clickableHeaderBoxes');
-  profileMethod(csfd, 'getChangelog');
-  profileMethod(csfd, 'getCurrentFilmDateAdded');
-  profileMethod(csfd, 'getUsername');
-  profileMethod(csfd, 'helpImageComponent');
-  profileMethod(csfd, 'hideSelectedVisitors');
-  profileMethod(csfd, 'initializeClassVariables');
-  profileMethod(csfd, 'isRatingCountOk');
-  profileMethod(csfd, 'loadInitialSettings');
-  profileMethod(csfd, 'onPageDiskuze');
-  profileMethod(csfd, 'onPageOtherUser');
-  profileMethod(csfd, 'onPageOtherUserHodnoceni');
-  profileMethod(csfd, 'onPersonalFavorite');
-  profileMethod(csfd, 'removableHomeBoxes');
-  profileMethod(csfd, 'settingsPanelComponent');
-  profileMethod(csfd, 'showOnOneLine');
-  profileMethod(csfd, 'updateControlPanelRatingCount');
-  profileMethod(csfd, 'parseMoviePage');
-  // =================================
-  // PROFILING ASYNC FUNCTIONS
-  // =================================
-  onHomepage = profileAsyncFunction(onHomepage, 'onHomepage');
-  getSettings = profileAsyncFunction(getSettings, 'getSettings');
-  initIndexedDB = profileAsyncFunction(initIndexedDB, 'initIndexedDB');
-  checkSettingsValidity = profileAsyncFunction(checkSettingsValidity, 'checkSettingsValidity');
-  deleteAllDataFromIndexedDB = profileAsyncFunction(deleteAllDataFromIndexedDB, 'deleteAllDataFromIndexedDB');
-  deleteIndexedDB = profileAsyncFunction(deleteIndexedDB, 'deleteIndexedDB');
-  deleteItemFromIndexedDB = profileAsyncFunction(deleteItemFromIndexedDB, 'deleteItemFromIndexedDB');
-  doesIndexedDBExist = profileAsyncFunction(doesIndexedDBExist, 'doesIndexedDBExist');
-  getAllFromIndexedDB = profileAsyncFunction(getAllFromIndexedDB, 'getAllFromIndexedDB');
-  getIndexedDBLength = profileAsyncFunction(getIndexedDBLength, 'getIndexedDBLength');
-  getItemsByPropertyFromIndexedDB = profileAsyncFunction(getItemsByPropertyFromIndexedDB, 'getItemsByPropertyFromIndexedDB');
-  getItemsFromIndexedDB = profileAsyncFunction(getItemsFromIndexedDB, 'getItemsFromIndexedDB');
-  mergeDict = profileAsyncFunction(mergeDict, 'mergeDict');
-  refreshTooltips = profileAsyncFunction(refreshTooltips, 'refreshTooltips');
-  saveToIndexedDB = profileAsyncFunction(saveToIndexedDB, 'saveToIndexedDB');
-  updateIndexedDB = profileAsyncFunction(updateIndexedDB, 'updateIndexedDB');
+  if (DEV_PERFORMANCE_METRICS) {
+    // =================================
+    // PROFILING METHODS
+    // =================================
+    profileMethod(csfd, 'addHideSectionButton');
+    profileMethod(csfd, 'addImdbIcon');
+    profileMethod(csfd, 'addRatingsComputedCount');
+    profileMethod(csfd, 'addRatingsDate');
+    profileMethod(csfd, 'addSettingsEvents');
+    profileMethod(csfd, 'addSettingsPanel');
+    profileMethod(csfd, 'addStars');
+    profileMethod(csfd, 'checkAndUpdateCurrentRating');
+    profileMethod(csfd, 'checkForUpdate');
+    profileMethod(csfd, 'clickableHeaderBoxes');
+    profileMethod(csfd, 'getChangelog');
+    profileMethod(csfd, 'getCurrentFilmDateAdded');
+    profileMethod(csfd, 'getUsername');
+    profileMethod(csfd, 'helpImageComponent');
+    profileMethod(csfd, 'hideSelectedVisitors');
+    profileMethod(csfd, 'initializeClassVariables');
+    profileMethod(csfd, 'isRatingCountOk');
+    profileMethod(csfd, 'loadInitialSettings');
+    profileMethod(csfd, 'onPageDiskuze');
+    profileMethod(csfd, 'onPageOtherUser');
+    profileMethod(csfd, 'onPageOtherUserHodnoceni');
+    profileMethod(csfd, 'onPersonalFavorite');
+    profileMethod(csfd, 'removableHomeBoxes');
+    profileMethod(csfd, 'settingsPanelComponent');
+    profileMethod(csfd, 'showOnOneLine');
+    profileMethod(csfd, 'updateControlPanelRatingCount');
+    profileMethod(csfd, 'parseMoviePage');
+    // =================================
+    // PROFILING ASYNC FUNCTIONS
+    // =================================
+    onHomepage = profileAsyncFunction(onHomepage, 'onHomepage');
+    getSettings = profileAsyncFunction(getSettings, 'getSettings');
+    initIndexedDB = profileAsyncFunction(initIndexedDB, 'initIndexedDB');
+    checkSettingsValidity = profileAsyncFunction(checkSettingsValidity, 'checkSettingsValidity');
+    deleteAllDataFromIndexedDB = profileAsyncFunction(deleteAllDataFromIndexedDB, 'deleteAllDataFromIndexedDB');
+    deleteIndexedDB = profileAsyncFunction(deleteIndexedDB, 'deleteIndexedDB');
+    deleteItemFromIndexedDB = profileAsyncFunction(deleteItemFromIndexedDB, 'deleteItemFromIndexedDB');
+    doesIndexedDBExist = profileAsyncFunction(doesIndexedDBExist, 'doesIndexedDBExist');
+    getAllFromIndexedDB = profileAsyncFunction(getAllFromIndexedDB, 'getAllFromIndexedDB');
+    getIndexedDBLength = profileAsyncFunction(getIndexedDBLength, 'getIndexedDBLength');
+    getItemsByPropertyFromIndexedDB = profileAsyncFunction(getItemsByPropertyFromIndexedDB, 'getItemsByPropertyFromIndexedDB');
+    getItemsFromIndexedDB = profileAsyncFunction(getItemsFromIndexedDB, 'getItemsFromIndexedDB');
+    mergeDict = profileAsyncFunction(mergeDict, 'mergeDict');
+    refreshTooltips = profileAsyncFunction(refreshTooltips, 'refreshTooltips');
+    saveToIndexedDB = profileAsyncFunction(saveToIndexedDB, 'saveToIndexedDB');
+    updateIndexedDB = profileAsyncFunction(updateIndexedDB, 'updateIndexedDB');
+  }
 
 
 
@@ -3802,7 +3806,9 @@ class Csfd {
 
   // Call TippyJs constructor
   await refreshTooltips();
-  console.table(profilingData);
+  if (DEV_PERFORMANCE_METRICS) {
+    console.table(profilingData);
+  }
   // console.log({ memoizeData });
 
   // =================================
