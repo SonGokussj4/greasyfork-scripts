@@ -3315,7 +3315,8 @@ class Csfd {
     }
 
     // Get 'span.stars-rating.initialized' and attribute 'title'
-    let ratingText = content.querySelector('span.stars-rating').getAttribute('title');
+    // let ratingText = content.querySelector('span.stars-rating').getAttribute('title');
+    let ratingText = content.find('span.stars-rating').attr('title');
 
     if (ratingText === null) {
       // Grab the rating date from mobile-rating
