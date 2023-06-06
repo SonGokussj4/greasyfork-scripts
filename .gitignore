@@ -1,0 +1,14 @@
+csfd-extended.js
+csfd-MoviePreview.js
+csfd-StarNames.js
+
+package-lock.json
+.jshintrc
+
+node_modules/
+logs/
+.vscode/
+coverage/
+
+# TEMP
+csfd-compare-new.js

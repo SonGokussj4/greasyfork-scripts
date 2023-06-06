@@ -7,6 +7,13 @@
 
 ## Changelog
 
+> **v0.6.0.2** _(2022-12-28)_
+
+### FIX
+
+- Opraveno ukládání správného uživatelského jména do LocalStorage, i když má mezery.  
+  Doteď se ukládalo bez mezer.
+
 > **v0.6.0.1** _(2022-12-28)_
 
 ### FIX
