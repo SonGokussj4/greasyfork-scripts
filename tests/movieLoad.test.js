@@ -24,12 +24,13 @@ describe("csfd.parseMoviePage method", () => {
         const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/movieRated.html"), "utf8");
         const parser = new DOMParser();
         const content = parser.parseFromString(htmlContent, "text/html");
+        const jqueryContent = $(content);
 
         jest.spyOn(csfd, 'getCurrentDateTime').mockImplementation(() => {
             return '31.5.2023 0:17:49';
         });
 
-        const result = await csfd.parseMoviePage(content);
+        const result = await csfd.parseMoviePage(jqueryContent);
         const expected = {
             computed: false,
             computedCount: NaN,

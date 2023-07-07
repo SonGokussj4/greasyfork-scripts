@@ -46,7 +46,9 @@ const DEV_PERFORMANCE_METRICS = false;
 //   }
 // `);
 
-
+// // Add myComponent to the page
+// document.body.appendChild(myComponent());
+// document.body.appendChild(myComponent2('Kvejgar'));
 
 // let memoizeData = {};
 const profilingData = {};
@@ -842,6 +844,10 @@ class Csfd {
     } else {
       // Get meta URL from page (html)
       // Write this in vanilla JS, not jQuery: page.match(/<meta property="og:url" content="(.*)">/);
+      // If content is type of jquery, convert it to DOM
+      if (page instanceof jQuery) {
+        page = page[0];
+      }
       const metaUrl = page.querySelector('meta[property="og:url"]').getAttribute('content');
       if (metaUrl === null) {
         console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
@@ -864,8 +870,14 @@ class Csfd {
    *
    */
   async getCurrentFilmFullUrl(content = null) {
+
+    // If content is type of jquery, convert it to DOM
+    if (content instanceof jQuery) {
+      content = content[0];
+    }
+
     const foundMatch = content === null
-      ? $('meta[property="og:url"]').attr('content')
+      ? document.querySelector('meta[property="og:url"]').getAttribute('content')
       : content.querySelector('meta[property="og:url"]').getAttribute('content');
 
     // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
@@ -951,6 +963,10 @@ class Csfd {
       foundMatch = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
     } else {
       // Get meta title from content (html)
+      // If content is type of jquery, convert it to DOM
+      if (content instanceof jQuery) {
+        content = content[0];
+      }
       const metaTitle = content.querySelector('meta[property="og:title"]').getAttribute('content');
       if (metaTitle === null) {
         console.error("[ CC ] getCurrentFilmYear() Film year wasn't found...");
@@ -1633,15 +1649,6 @@ class Csfd {
       console.debug("Refreshing Computed Ratings...");
       // Get all ratings from IndexedDB
       const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
-      // console.log(`len(allRatings) = ${Object.keys(allRatings).length}`);
-      // const filteredKeys = Object.keys(allRatings).filter(key => allRatings[key].computed === true);
-
-      // const computedRatings = filteredKeys.reduce((obj, key) => {
-      //   obj[key] = allRatings[key];
-      //   return obj;
-      // }, {});
-
-      // console.log({ computedRatings });
 
       // Filter out all ratings of type "episode"
       const episodesRatings = Object.keys(allRatings)
@@ -1655,6 +1662,14 @@ class Csfd {
       const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
       const allParentIdsUnique = [...new Set(allParentIds)];
       console.log({ allParentIdsUnique });
+
+      const filteredRatings = allParentIdsUnique.map(id => allRatings[id]);
+      console.log({ filteredRatings });
+      // allRatings corresponding with id in allParentIdsUnique and not computed === true
+      const filteredRatingsWithoutNull = filteredRatings.filter(rating => rating);
+      console.log({ filteredRatingsWithoutNull });
+      const notComputed = filteredRatingsWithoutNull.filter(rating => rating.computed);
+      console.log({ notComputed });
 
       const filteredNotFoundParentRatings = allParentIdsUnique.filter(id => !allRatings.hasOwnProperty(id));
       console.log({ filteredNotFoundParentRatings });
@@ -3291,32 +3306,19 @@ class Csfd {
    * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
    */
   async getCurrentFilmDateAdded(content = null) {
-    // content = content === null
-    //   ? this.csfdPage
-    //   : $(content);
-
-    // let ratingText = content.find('span.stars-rating.initialized').attr('title');
-    // if (ratingText === undefined) {
-    //   // Grab the rating date from mobile-rating
-    //   ratingText = content.find('.mobile-film-rating-detail a span').attr('title');
-    //   if (ratingText === undefined) {
-    //     return "";
-    //   }
-    // }
-    // let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
-    // if (match !== null) {
-    //   let ratingDate = match[0];
-    //   return ratingDate;
-    // }
-    // return "";
 
     if (content === null) {
       content = this.csfdPage;
     }
 
+    // If content is type of jquery, convert it to DOM
+    if (content instanceof jQuery) {
+      content = content[0];
+    }
+
     // Get 'span.stars-rating.initialized' and attribute 'title'
-    // let ratingText = content.querySelector('span.stars-rating').getAttribute('title');
-    let ratingText = content.find('span.stars-rating').attr('title');
+    let ratingText = content.querySelector('span.stars-rating').getAttribute('title');
+    // let ratingText = content.find('span.stars-rating').attr('title');
 
     if (ratingText === null) {
       // Grab the rating date from mobile-rating
@@ -3594,6 +3596,10 @@ class Csfd {
   }
 
 
+  // =================================
+  // Page - Homepage
+  // =================================
+  if (await onHomepage()) { csfd.removableHomeBoxes(); }
 
   // =================================
   // LOAD SETTINGS
@@ -3615,6 +3621,7 @@ class Csfd {
   await csfd.addSettingsPanel();
   await csfd.loadInitialSettings();
   await csfd.addSettingsEvents();
+
 
 
   // =================================
@@ -3643,12 +3650,6 @@ class Csfd {
   if (location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
     if (settings.showOnOneLine) { csfd.showOnOneLine(); }
   }
-
-
-  // =================================
-  // Page - Homepage
-  // =================================
-  if (await onHomepage()) { csfd.removableHomeBoxes(); }
 
   // =================================
   // NOT LOGGED IN
