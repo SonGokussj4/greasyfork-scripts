@@ -8,69 +8,34 @@
 // @match        http*://www.csfd.cz/*
 // @match        http*://www.csfd.sk/*
 // @grant        GM_addStyle
-// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
-// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
-
-// ==/UserScript==
 // @grant        GM_setValue
 // @grant        GM_getValue
 // @grant        GM_listValues
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @require      https://code.jquery.com/jquery-3.7.1.min.js
 // @run-at       document-start
+// ==/UserScript==
 
-
-const VERSION = 'v0.6.0.2';
+const VERSION = 'v0.6.0.3';
 const SCRIPTNAME = 'CSFD-Compare';
 const SETTINGSNAME = 'CSFD-Compare-settings';
 const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
 
 const SETTINGSNAME_HIDDEN_BOXES = 'CSFD-Compare-hiddenBoxes';
 
-const NUM_RATINGS_PER_PAGE = 50;  // Was 100, now it's 50...
+const NUM_RATINGS_PER_PAGE = 50; // Was 100, now it's 50...
 const INDEXED_DB_VERSION = 1;
 const INDEXED_DB_NAME = 'CC-Ratings';
 
-const DEBUG_MAX_PAGES_LOAD = 0;  // 0 = no limit
+const DEBUG_MAX_PAGES_LOAD = 0; // 0 = no limit
 
-window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB,
-  IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction,
-  dbVersion = 1;
+window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB;
+window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction;
 
 const DEV_PANEL_ALWAYS_VISIBLE = false;
 const DEV_PERFORMANCE_METRICS = false;
 
-// GM_addStyle(`
-//   .my-custom-style-test {
-//     background-color: red;
-//     width: 100px;
-//     height: 100px;
-//   }
-// `);
-
-// // Add myComponent to the page
-// document.body.appendChild(myComponent());
-// document.body.appendChild(myComponent2('Kvejgar'));
-
-// let memoizeData = {};
 const profilingData = {};
-
-// function memoize(fn, fnName = '') {
-//   const cache = {}
-
-//   return async function (key, ...args) {
-//     if (cache[key]) {
-//       return cache[key]
-//     }
-//     if (!memoizeData[fnName]) {
-//       memoizeData[fnName] = {
-//         count: 0,
-//       }
-//     }
-//     memoizeData[fnName] = {
-//       count: memoizeData[fnName].count + 1,
-//     }
-//     return (cache[key] = await fn(...args))
-//   }
-// }
 
 function roundTo(number, decimals) {
   return Math.floor(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -84,7 +49,7 @@ function profileFunction(fn, name) {
 
     if (!profilingData[name]) {
       profilingData[name] = {
-        type: "function",
+        type: 'function',
         calledNumber: 0,
         completeTime_ms: 0,
       };
@@ -106,7 +71,7 @@ function profileAsyncFunction(fn, name) {
 
     if (!profilingData[name]) {
       profilingData[name] = {
-        type: "async function",
+        type: 'async function',
         calledNumber: 0,
         completeTime_ms: 0,
       };
@@ -130,7 +95,7 @@ function profileMethod(obj, methodName) {
 
     if (!profilingData[methodName]) {
       profilingData[methodName] = {
-        type: "method",
+        type: 'method',
         calledNumber: 0,
         completeTime_ms: 0,
       };
@@ -143,7 +108,6 @@ function profileMethod(obj, methodName) {
     return result;
   };
 }
-
 
 let defaultSettings = {
   // HOME PAGE
@@ -175,24 +139,21 @@ let defaultSettings = {
   hideSelectedVisitorList: [],
 };
 
-
 class Api {
-
   async getCurrentPageRatings(url) {
-
     const response = await fetch(url, {
       method: 'POST',
       headers: {
-        'Accept': 'application/json, text/plain, */*',
+        Accept: 'application/json, text/plain, */*',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         Ids: [9499, 563036, 123],
       }),
     });
-    console.log("response", response);
+    console.log('response', response);
     const data = await response.json();
-    console.log("data", data);
+    console.log('data', data);
     return data;
   }
 }
@@ -204,11 +165,10 @@ class Api {
  * @param {string} settingsName - Settings Name
  */
 async function checkSettingsValidity(settings, settingsName) {
-
   if (settingsName === SETTINGSNAME_HIDDEN_BOXES) {
     const isArray = Array.isArray(settings);
     let keysValid = true;
-    settings.forEach(element => {
+    settings.forEach((element) => {
       const keys = Object.keys(element);
       if (keys.length !== 2) {
         keysValid = false;
@@ -227,7 +187,7 @@ async function checkSettingsValidity(settings, settingsName) {
  * This function returns a promise that will resolve after "t" milliseconds
  */
 function delay(t) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, t);
   });
 }
@@ -249,10 +209,10 @@ async function refreshTooltips() {
   try {
     tippy('[data-tippy-content]', {
       // interactive: true,
-      popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } }
+      popperOptions: { modifiers: { computeStyle: { gpuAcceleration: false } } },
     });
   } catch (err) {
-    console.log("Error: refreshTooltips():", err);
+    console.log('Error: refreshTooltips():', err);
   }
 }
 
@@ -267,7 +227,9 @@ async function refreshTooltips() {
  */
 async function mergeDict(list) {
   const merged = list.reduce(function (r, o) {
-    Object.keys(o).forEach(function (k) { r[k] = o[k]; });
+    Object.keys(o).forEach(function (k) {
+      r[k] = o[k];
+    });
     return r;
   }, {});
   return merged;
@@ -352,7 +314,7 @@ async function saveToIndexedDB(dbName, storeName, data) {
         const item = { ...data[id], id: Number(id) };
         store.put(item);
       }
-    // If data is a single object, add it to the store
+      // If data is a single object, add it to the store
     } else {
       store.put(data);
     }
@@ -420,7 +382,6 @@ async function updateIndexedDB(dbName, storeName, data) {
     console.log('Error: updateIndexedDB():', err);
     return false;
   }
-
 }
 
 /**
@@ -452,7 +413,6 @@ async function doesIndexedDBExist(dbName) {
  * @returns {Promise<Array<Object>>} items - Data from the store
  */
 async function getAllFromIndexedDB(dbName, storeName) {
-
   // if (!(await doesIndexedDBExist(dbName))) {
   //   return 0;
   // }
@@ -564,7 +524,6 @@ async function getItemsByPropertyFromIndexedDB(dbName, storeName, property, valu
  * @returns {Promise<number>} count - Number of items in the store
  */
 async function getIndexedDBLength(dbName, storeName) {
-
   if (!(await doesIndexedDBExist(dbName))) {
     return 0;
   }
@@ -714,9 +673,24 @@ async function deleteIndexedDB(dbName, storeName) {
   db.close();
 }
 
+/**
+ * @typedef {Object} Rating
+ * @property {string} url - URL of the movie
+ * @property {string} fullUrl - Full URL including domain
+ * @property {number} rating - User rating (0-5)
+ * @property {string} date - Rating date
+ * @property {string} type - Type of content (movie/series/episode)
+ * @property {number} year - Release year
+ * @property {number} id - Movie ID
+ * @property {string} parentName - Parent series name if applicable
+ * @property {number} parentId - Parent series ID if applicable
+ * @property {boolean} computed - Whether rating is computed
+ * @property {number} computedCount - Number of ratings used for computation
+ * @property {string} computedFromText - Description of computation
+ * @property {string} lastUpdate - Last update timestamp
+ */
 
 class Csfd {
-
   constructor(csfdPage) {
     this.csfdPage = csfdPage;
     this.stars = {};
@@ -733,12 +707,7 @@ class Csfd {
     this.RESULT = {};
 
     // Ignore the ads... Make 'hodnoceni' table wider.
-    // TODO: Toto do hodnoceni!
-    // $('.column.column-80').attr('class', '.column column-90');
-    const ratingsColumn = document.querySelector('.column.column-80');
-    if (ratingsColumn) {
-      ratingsColumn.setAttribute('class', '.column column-90');
-    }
+    $('.column.column-80').removeClass('column-80').addClass('column-90');
   }
 
   async isLoggedIn() {
@@ -760,7 +729,7 @@ class Csfd {
     }
 
     if (typeof loggedInUser === 'undefined') {
-      console.log("Trying again...");
+      console.log('Trying again...');
 
       // [OLD Firefox] workaround (the first returns undefined....?)
       let profile = document.querySelectorAll('.profile');
@@ -771,7 +740,7 @@ class Csfd {
 
       if (typeof loggedInUser === 'undefined') {
         console.error(`${SCRIPTNAME}: Can't find logged in username...`);
-        throw (`${SCRIPTNAME}: exit`);  // TODO: Popup informing user
+        throw `${SCRIPTNAME}: exit`; // TODO: Popup informing user
       }
     }
     return loggedInUser;
@@ -821,7 +790,7 @@ class Csfd {
   async getLocalStorageRatingsCount() {
     // const ratings = await this.getLocalStorageRatings();  // TODO: Smazat toto?
     const ratings = this.stars;
-    const computedCount = Object.values(ratings).filter(rating => rating.computed).length;
+    const computedCount = Object.values(ratings).filter((rating) => rating.computed).length;
     const ratedCount = Object.keys(ratings).length - computedCount;
     return {
       computed: computedCount,
@@ -840,7 +809,9 @@ class Csfd {
   async getCurrentFilmUrl(page = undefined) {
     let foundMatch;
     if (page === undefined) {
-      foundMatch = $('meta[property="og:url"]').attr('content').match(/\d+-[\w-]+/ig);
+      foundMatch = $('meta[property="og:url"]')
+        .attr('content')
+        .match(/\d+-[\w-]+/gi);
     } else {
       // Get meta URL from page (html)
       // Write this in vanilla JS, not jQuery: page.match(/<meta property="og:url" content="(.*)">/);
@@ -851,15 +822,15 @@ class Csfd {
       const metaUrl = page.querySelector('meta[property="og:url"]').getAttribute('content');
       if (metaUrl === null) {
         console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
-        throw (`${SCRIPTNAME} Exiting... metaUrl === null`);
+        throw `${SCRIPTNAME} Exiting... metaUrl === null`;
       }
-      foundMatch = metaUrl.match(/\d+-[\w-]+/ig);
+      foundMatch = metaUrl.match(/\d+-[\w-]+/gi);
     }
 
     // TODO: getCurrentFilmUrl by melo vrátit film URL ne jen cast... ne?
     if (!foundMatch) {
       console.error("TODO: getCurrentFilmUrl() Film URL wasn't found...");
-      throw (`${SCRIPTNAME} Exiting... foundMatch === null`);
+      throw `${SCRIPTNAME} Exiting... foundMatch === null`;
     }
     return foundMatch[foundMatch.length - 1];
   }
@@ -870,20 +841,20 @@ class Csfd {
    *
    */
   async getCurrentFilmFullUrl(content = null) {
-
     // If content is type of jquery, convert it to DOM
     if (content instanceof jQuery) {
       content = content[0];
     }
 
-    const foundMatch = content === null
-      ? document.querySelector('meta[property="og:url"]').getAttribute('content')
-      : content.querySelector('meta[property="og:url"]').getAttribute('content');
+    const foundMatch =
+      content === null
+        ? document.querySelector('meta[property="og:url"]').getAttribute('content')
+        : content.querySelector('meta[property="og:url"]').getAttribute('content');
 
     // TODO: getCurrentFilmFullUrl by melo vrátit film URL ne jen cast... ne?
     if (!foundMatch) {
       console.error("TODO: getCurrentFilmFullUrl() Film URL wasn't found...");
-      return "";
+      return '';
     }
     return foundMatch;
   }
@@ -901,7 +872,7 @@ class Csfd {
     const pathname = url.pathname;
 
     // Split the pathname into segments
-    const segments = pathname.split('/').filter(segment => segment !== '');
+    const segments = pathname.split('/').filter((segment) => segment !== '');
 
     // Get the first two segments
     const filmPath = segments.slice(0, 2).join('/');
@@ -912,7 +883,6 @@ class Csfd {
     return result;
   }
 
-
   /**
    * Return current movie Type (film, serial, episode)
    *
@@ -920,15 +890,13 @@ class Csfd {
    * @returns {Promise<str>} Current movie type: film, serial, episode, movie, ...
    */
   async getCurrentFilmType(content = null) {
-    const foundTypes = content === null
-    ? $(".film-header span.type")
-    : $(content).find(".film-header span.type");
+    const foundTypes = content === null ? $('.film-header span.type') : $(content).find('.film-header span.type');
 
-    let foundMatch = "";
+    let foundMatch = '';
 
     // No "type" found
     if (foundTypes.length === 0) {
-      return "movie";
+      return 'movie';
 
       // One span.type found ... (film), (serial), ...
     } else if (foundTypes.length === 1) {
@@ -937,7 +905,7 @@ class Csfd {
       // Multiple span.type found, get the one containing "(" and ")"
     } else if (foundTypes.length > 1) {
       foundTypes.each(function (index, element) {
-        if ($(element).text().includes("(")) {
+        if ($(element).text().includes('(')) {
           foundMatch = $(element).text().toLowerCase();
         }
       });
@@ -960,7 +928,9 @@ class Csfd {
   async getCurrentFilmYear(content = null) {
     let foundMatch;
     if (content === null) {
-      foundMatch = $('meta[property="og:title"]').attr('content').match(/\((\d+)\)/);
+      foundMatch = $('meta[property="og:title"]')
+        .attr('content')
+        .match(/\((\d+)\)/);
     } else {
       // Get meta title from content (html)
       // If content is type of jquery, convert it to DOM
@@ -970,7 +940,7 @@ class Csfd {
       const metaTitle = content.querySelector('meta[property="og:title"]').getAttribute('content');
       if (metaTitle === null) {
         console.error("[ CC ] getCurrentFilmYear() Film year wasn't found...");
-        throw (`${SCRIPTNAME} Exiting... metaTitle === null`);
+        throw `${SCRIPTNAME} Exiting... metaTitle === null`;
       }
       foundMatch = metaTitle.match(/\((\d+)\)/);
     }
@@ -983,7 +953,7 @@ class Csfd {
       }
       return year;
     }
-    return "";
+    return '';
   }
 
   /**
@@ -992,9 +962,7 @@ class Csfd {
    * @returns {bool} `true` if current movie rating is computed, `false` otherwise
    */
   async isCurrentFilmComputed(content = null) {
-    const $computedStars = content === null
-      ? $('.star.active.computed')
-      : $(content).find('.star.active.computed');
+    const $computedStars = content === null ? $('.star.active.computed') : $(content).find('.star.active.computed');
 
     if ($computedStars.length > 0) {
       return true;
@@ -1009,11 +977,14 @@ class Csfd {
   }
 
   async isCurrentFilmRatingComputed(content = null) {
-    const $computedStars = content === null
-      ? this.csfdPage.find(".current-user-rating .star-rating.computed")
-      : $(content).find(".current-user-rating .star-rating.computed");
+    const $computedStars =
+      content === null
+        ? this.csfdPage.find('.current-user-rating .star-rating.computed')
+        : $(content).find('.current-user-rating .star-rating.computed');
 
-    if ($computedStars.length !== 0) { return true; }
+    if ($computedStars.length !== 0) {
+      return true;
+    }
 
     return false;
   }
@@ -1024,9 +995,7 @@ class Csfd {
    * @returns {int} Current movie computed rating
    */
   async getCurrentFilmComputedCount(content = null) {
-    const $curUserRating = content === null
-      ? this.csfdPage.find('li.current-user-rating')
-      : $(content).find('li.current-user-rating');
+    const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : $(content).find('li.current-user-rating');
 
     const countedText = $($curUserRating).find('span[title]').attr('title');
     // split by :
@@ -1041,7 +1010,6 @@ class Csfd {
     const result = await this.getComputedRatings(this.csfdPage);
     return result;
   }
-
 
   /**
    *
@@ -1086,9 +1054,8 @@ class Csfd {
     const currentRatingIsComputed = await this.isCurrentFilmComputed(content);
 
     if (currentRatingIsComputed) {
-      const { ratingCount, computedFromText } = content === null
-        ? await this.getCurrentFilmComputed() :
-        await this.getComputedRatings(content);
+      const { ratingCount, computedFromText } =
+        content === null ? await this.getCurrentFilmComputed() : await this.getComputedRatings(content);
 
       return {
         rating: ratingCount,
@@ -1097,26 +1064,23 @@ class Csfd {
       };
     }
 
-    const $activeStars = content === null
-      ? this.csfdPage.find(".star.active")
-      : $(content).find(".star.active");
-
+    const $activeStars = content === null ? this.csfdPage.find('.star.active') : $(content).find('.star.active');
 
     // No rating
     if ($activeStars.length === 0) {
       return {
         rating: NaN,
-        computedFrom: "",
+        computedFrom: '',
         computed: false,
       };
     }
 
     // Rating "odpad" or "1"
     if ($activeStars.length === 1) {
-      if ($activeStars.attr('data-rating') === "0") {
+      if ($activeStars.attr('data-rating') === '0') {
         return {
           rating: 0,
-          computedFrom: "",
+          computedFrom: '',
           computed: false,
         };
       }
@@ -1125,21 +1089,22 @@ class Csfd {
     // Rating "1" to "5"
     return {
       rating: $activeStars.length,
-      computedFrom: "",
+      computedFrom: '',
       computed: false,
     };
-
   }
 
   async getCurrentUserRatingsCount() {
-    return $.get(this.userRatingsUrl)
-      .then(function (data) {
-        const count = $(data).find('.box-user-rating span.count').text().replace(/[\s()]/g, '');
-        if (count) {
-          return parseInt(count);
-        }
-        return 0;
-      });
+    return $.get(this.userRatingsUrl).then(function (data) {
+      const count = $(data)
+        .find('.box-user-rating span.count')
+        .text()
+        .replace(/[\s()]/g, '');
+      if (count) {
+        return parseInt(count);
+      }
+      return 0;
+    });
   }
 
   async fillMissingSettingsKeys() {
@@ -1161,15 +1126,14 @@ class Csfd {
     const ratings = this.stars;
     const keys = Object.keys(ratings);
     for (const key of keys) {
-      if (key.includes("/")) {
+      if (key.includes('/')) {
         alert(`
             CSFD-Compare
 
             Byl nalezen starý způsob ukládání hodnocení do LocalStorage!
             Prosím, smažte staré hodnocení a znovu je nahrajte.
 
-            CC -> Smazat Uložená hodnocení`
-        );
+            CC -> Smazat Uložená hodnocení`);
         return null;
       }
     }
@@ -1200,8 +1164,8 @@ class Csfd {
 
     // Resulting dictionary
     const result = {
-      'ratingCount': starCount,
-      'computedFromText': $countedText,
+      ratingCount: starCount,
+      computedFromText: $countedText,
       // 'movieId': movieId,
       // 'parentId': parentId
     };
@@ -1209,7 +1173,6 @@ class Csfd {
   }
 
   async loadInitialSettings() {
-
     const boxSettingsName = 'CSFD-Compare-settings';
     const settings = await getSettings(boxSettingsName);
 
@@ -1233,7 +1196,9 @@ class Csfd {
     $('#chkAddRatingsComputedCount').attr('checked', settings.addRatingsComputedCount);
     $('#chkHideSelectedUserReviews').attr('checked', settings.hideSelectedUserReviews);
     settings.hideSelectedUserReviews || $('#txtHideSelectedUserReviews').parent().hide();
-    if (settings.hideSelectedUserReviewsList !== undefined) { $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', ')); }
+    if (settings.hideSelectedUserReviewsList !== undefined) {
+      $('#txtHideSelectedUserReviews').val(settings.hideSelectedUserReviewsList.join(', '));
+    }
 
     // ACTORS
     $('#chkShowOnOneLine').attr('checked', settings.showOnOneLine);
@@ -1243,7 +1208,9 @@ class Csfd {
     $('#chkAddChatReplyButton').attr('checked', settings.addChatReplyButton);
     $('#chkHideSelectedVisitors').attr('checked', settings.hideSelectedVisitors);
     settings.hideSelectedVisitors || $('#txtHideSelectedVisitors').parent().hide();
-    if (settings.hideSelectedVisitorsList !== undefined) { $('#txtHideSelectedVisitors').val(settings.hideSelectedVisitorsList.join(', ')); }
+    if (settings.hideSelectedVisitorsList !== undefined) {
+      $('#txtHideSelectedVisitors').val(settings.hideSelectedVisitorsList.join(', '));
+    }
   }
 
   async addSettingsEvents() {
@@ -1256,92 +1223,92 @@ class Csfd {
     $('#chkControlPanelOnHover').on('change', function () {
       settings.showControlPanelOnHover = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkClickableHeaderBoxes').on('change', function () {
       settings.clickableHeaderBoxes = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkClickableMessages').on('change', function () {
       settings.clickableMessages = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkAddStars').on('change', function () {
       settings.addStars = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     // USER
     $('#chkDisplayMessageButton').on('change', function () {
       settings.displayMessageButton = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkDisplayFavoriteButton').on('change', function () {
       settings.displayFavoriteButton = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkHideUserControlPanel').on('change', function () {
       settings.hideUserControlPanel = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkCompareUserRatings').on('change', function () {
       settings.compareUserRatings = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     // FILM/SERIES
     $('#chkShowLinkToImage').on('change', function () {
       settings.showLinkToImage = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkRatingsEstimate').on('change', function () {
       settings.ratingsEstimate = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkRatingsFromFavorites').on('change', function () {
       settings.ratingsFromFavorites = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkAddRatingsDate').on('change', function () {
       settings.addRatingsDate = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkAddRatingsComputedCount').on('change', function () {
       settings.addRatingsComputedCount = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     $('#chkHideSelectedUserReviews').on('change', function () {
       settings.hideSelectedUserReviews = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
       $('#txtHideSelectedUserReviews').parent().toggle();
     });
 
     $('#txtHideSelectedUserReviews').on('change', function () {
-      let ignoredUsers = this.value.replace(/\s/g, '').split(",");
+      let ignoredUsers = this.value.replace(/\s/g, '').split(',');
       settings.hideSelectedUserReviewsList = ignoredUsers;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
       Glob.popup(`Ignorovaní uživatelé:\n${ignoredUsers.join(', ')}`, 4);
@@ -1351,24 +1318,24 @@ class Csfd {
     $('#chkShowOnOneLine').on('change', function () {
       settings.showOnOneLine = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
 
     // EXPERIMENTAL
     $('#chkLoadComputedRatings').on('change', function () {
       settings.loadComputedRatings = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
     $('#chkAddChatReplyButton').on('change', function () {
       settings.addChatReplyButton = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
     });
     $('#chkHideSelectedVisitors').on('change', function () {
       settings.hideSelectedVisitors = this.checked;
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
-      Glob.popup("Nastavení uloženo (obnovte stránku)", 2);
+      Glob.popup('Nastavení uloženo (obnovte stránku)', 2);
       $('#txtHideSelectedVisitors').parent().toggle();
     });
     $('#txtHideSelectedVisitors').on('change', function () {
@@ -1377,7 +1344,6 @@ class Csfd {
       localStorage.setItem(SETTINGSNAME, JSON.stringify(settings));
       Glob.popup(`Ignorovaní uživatelé:\n${hiddenVisitors.join(', ')}`, 4);
     });
-
   }
 
   async onPageOtherUserHodnoceni() {
@@ -1429,16 +1395,16 @@ class Csfd {
     if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
       return;
     }
-    let starsCss = { marginLeft: "5px" };
+    let starsCss = { marginLeft: '5px' };
     // On UserPage or PersonalFavorite page, modify the CSS by adding solid red border outline
-    if (await this.onPageOtherUser() || await this.onPersonalFavorite()) {
+    if ((await this.onPageOtherUser()) || (await this.onPersonalFavorite())) {
       starsCss = {
-        marginLeft: "5px",
-        borderWidth: "1px",
-        borderStyle: "solid",
-        borderColor: "#c78888",
-        borderRadius: "5px",
-        padding: "0px 5px",
+        marginLeft: '5px',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: '#c78888',
+        borderRadius: '5px',
+        padding: '0px 5px',
       };
     }
 
@@ -1456,14 +1422,14 @@ class Csfd {
         continue;
       }
       const starClass = res.rating !== 0 ? `stars-${res.rating}` : `trash`;
-      const starText = res.rating !== 0 ? "" : "odpad!";
-      const className = res.computed ? "star-rating computed" : "star-rating";
+      const starText = res.rating !== 0 ? '' : 'odpad!';
+      const className = res.computed ? 'star-rating computed' : 'star-rating';
       const title = res.computed ? res.computedFromText : res.date;
 
       // Construct the HTML
-      const $starSpan = $("<span>", {
-        'class': className,
-        html: `<span class="stars ${starClass}" title="${title}">${starText}</span>`
+      const $starSpan = $('<span>', {
+        class: className,
+        html: `<span class="stars ${starClass}" title="${title}">${starText}</span>`,
       }).css(starsCss);
 
       // Add the HTML
@@ -1471,11 +1437,11 @@ class Csfd {
 
       // If the rating is computed, add SUP element indicating from how many ratings it was computed
       if (res.computed) {
-        const $numSpan = $("<span>", {
-          'html': `<sup> (${res.computedCount})</sup>`
+        const $numSpan = $('<span>', {
+          html: `<sup> (${res.computedCount})</sup>`,
         }).css({
           'font-size': '13px',
-          'color': '#7b7b7b'
+          color: '#7b7b7b',
         });
         $starSpan.find('span').after($numSpan);
       }
@@ -1493,7 +1459,9 @@ class Csfd {
     const lcRatingsCount = Object.keys(starsDict).length;
 
     // No ratings in LocalStorage, do nothing
-    if (lcRatingsCount === 0) { return; }
+    if (lcRatingsCount === 0) {
+      return;
+    }
 
     const $page = this.csfdPage;
     const $tbl = $page.find('#snippet--ratings table tbody');
@@ -1504,7 +1472,7 @@ class Csfd {
       const movieId = await this.getMovieIdFromUrl(href);
       const myRating = starsDict[movieId];
 
-      let $span = "";
+      let $span = '';
       if (myRating?.rating === 0) {
         $span = `<span class="stars trash">odpad!</span>`;
       } else {
@@ -1516,7 +1484,7 @@ class Csfd {
       }
 
       // Color the rating to red (star-rating) or black (star-rating computed) if computed
-      const className = myRating?.computed ? "star-rating computed" : "star-rating";
+      const className = myRating?.computed ? 'star-rating computed' : 'star-rating';
 
       // Build the HTML for computed rating SUP element: e.g. (3)
       const $computedSup = `
@@ -1530,11 +1498,11 @@ class Csfd {
       const $currentUserSpan = `
           <span class="${className}">
             ${$span}
-            ${myRating?.computed ? $computedSup : ""}
+            ${myRating?.computed ? $computedSup : ''}
           </span>
         `;
 
-      const $currentUserTd = $row.find('td:nth-child(2)')
+      const $currentUserTd = $row.find('td:nth-child(2)');
       $currentUserTd.after(`
                     <td class="star-rating-only">
                         ${$currentUserSpan}
@@ -1553,8 +1521,8 @@ class Csfd {
         let windowWidth = $(window).width();
         if (windowWidth <= 635) {
           panel.appendTo(document.body);
-          panel.css("top", "133px");
-          panel.css("right", "15px");
+          panel.css('top', '133px');
+          panel.css('right', '15px');
         }
       }
     });
@@ -1567,14 +1535,13 @@ class Csfd {
     $(panel).on('mouseleave', () => {
       if (panel.hasClass('active')) panel.removeClass('active');
     });
-
   }
 
   async addWarningToUserProfile() {
     const ratingCountOk = this.isRatingCountOk();
     if (ratingCountOk) return;
 
-    $(".csfd-compare-menu").append(`
+    $('.csfd-compare-menu').append(`
                 <div class='counter'>
                     <span><b>!</b></span>
                 </div>
@@ -1587,19 +1554,20 @@ class Csfd {
 
     const $button = $('<button>', {
       id: 'refr-ratings-button',
-      "class": 'csfd-compare-reload',
+      class: 'csfd-compare-reload',
       html: `<center>
                  <b> >> Načíst hodnocení (new) << </b> <br />
                </center>`,
     }).css({
-      textTransform: "initial",
-      fontSize: "0.9em",
-      padding: "5px",
-      border: "4px solid whitesmoke",
-      borderRadius: "8px",
-      width: "-moz-available",
-      width: "-webkit-fill-available",
-      width: "100%",
+      textTransform: 'initial',
+      fontSize: '0.9em',
+      padding: '5px',
+      border: '4px solid whitesmoke',
+      borderRadius: '8px',
+      width: '-moz-available',
+      width: '-webkit-fill-available',
+      width: '100%',
+      height: 'auto',
     });
     const $div = $('<div>', {
       html: $button,
@@ -1608,12 +1576,16 @@ class Csfd {
 
     let forceUpdate = ratingsInLS > curUserRatings ? true : false;
 
-    $($button).on("click", async function () {
-      console.debug("refreshing ratings");
+    $($button).on('click', async function () {
+      console.debug('refreshing ratings');
       const csfd = new Csfd($('div.page-content'));
 
       if (forceUpdate === true) {
-        if (!confirm(`Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`)) {
+        if (
+          !confirm(
+            `Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`
+          )
+        ) {
           forceUpdate = false;
         }
       }
@@ -1624,61 +1596,62 @@ class Csfd {
   async btnLoadComputedRatings() {
     const $button = $('<button>', {
       id: 'btn-load-computed-ratings',
-      "class": 'csfd-compare-reload',
+      class: 'csfd-compare-reload',
       html: `<center>
                   <b> >> Přinačíst vypočtená hodnocení << </b> <br />
                   (Work in progress)
                 </center>`,
     }).css({
-      textTransform: "initial",
-      fontSize: "0.9em",
-      padding: "5px",
-      border: "4px solid whitesmoke",
-      borderRadius: "8px",
-      width: "-moz-available",
-      width: "-webkit-fill-available",
-      width: "100%",
-      backgroundColor: "#212121",
+      textTransform: 'initial',
+      fontSize: '0.9em',
+      padding: '5px',
+      border: '4px solid whitesmoke',
+      borderRadius: '8px',
+      width: '-moz-available',
+      width: '-webkit-fill-available',
+      width: '100%',
+      height: 'auto',
+      backgroundColor: '#212121',
     });
     const $div = $('<div>', {
       html: $button,
     });
     $('.csfd-compare-settings').after($div);
 
-    $($button).on("click", async () => {
-      console.debug("Refreshing Computed Ratings...");
+    $($button).on('click', async () => {
+      console.debug('Refreshing Computed Ratings...');
       // Get all ratings from IndexedDB
       const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
 
       // Filter out all ratings of type "episode"
       const episodesRatings = Object.keys(allRatings)
-        .filter(key => allRatings[key].type === "episode")
+        .filter((key) => allRatings[key].type === 'episode')
         .reduce((obj, key) => {
           obj[key] = allRatings[key];
           return obj;
         }, {});
 
       // Get get their parentIds and check if it exists in allRatings, if not, add it to empty array
-      const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
+      const allParentIds = Object.keys(episodesRatings).map((key) => episodesRatings[key].parentId);
       const allParentIdsUnique = [...new Set(allParentIds)];
       console.log({ allParentIdsUnique });
 
-      const filteredRatings = allParentIdsUnique.map(id => allRatings[id]);
+      const filteredRatings = allParentIdsUnique.map((id) => allRatings[id]);
       console.log({ filteredRatings });
       // allRatings corresponding with id in allParentIdsUnique and not computed === true
-      const filteredRatingsWithoutNull = filteredRatings.filter(rating => rating);
+      const filteredRatingsWithoutNull = filteredRatings.filter((rating) => rating);
       console.log({ filteredRatingsWithoutNull });
-      const notComputed = filteredRatingsWithoutNull.filter(rating => rating.computed);
+      const notComputed = filteredRatingsWithoutNull.filter((rating) => rating.computed);
       console.log({ notComputed });
 
-      const filteredNotFoundParentRatings = allParentIdsUnique.filter(id => !allRatings.hasOwnProperty(id));
+      const filteredNotFoundParentRatings = allParentIdsUnique.filter((id) => !allRatings.hasOwnProperty(id));
       console.log({ filteredNotFoundParentRatings });
 
       // this.missingComputedRatingsCount = filteredNotFoundParentRatings.length;
       // console.log({ missingComputedRatingsCount: this.missingComputedRatingsCount });
 
       // Convert IDs inside filteredNotFoundParentRatings to urls like this: 12345 -> '/film/12345/'
-      const urls = filteredNotFoundParentRatings.map(id => `/film/${id}/`);
+      const urls = filteredNotFoundParentRatings.map((id) => `/film/${id}/`);
       console.log({ urls });
 
       // Fetch pages with missing parent ratings and add them to allRatings
@@ -1686,7 +1659,7 @@ class Csfd {
       // TODO: DEBUG
       const firstTwoUrls = urls.slice(0, 2);
       for (const url of firstTwoUrls) {
-      // for (const url of urls) {
+        // for (const url of urls) {
         // Fetch page
         const page = await this.fetchPage(url);
 
@@ -1704,32 +1677,23 @@ class Csfd {
         // Add to IndexedDB
         // await saveToIndexedDB(INDEXED_DB_NAME, this.username, movie);
       }
-
     });
   }
 
   async parseMoviePage(page) {
     // const start = performance.now();
 
-    const [
-      fullUrl,
-      currentFilmDateAdded,
-      computedCount,
-      url,
-      year,
-      type,
-      { rating, computedFrom, computed },
-      lastUpdate,
-    ] = await Promise.all([
-      this.getCurrentFilmFullUrl(page),
-      this.getCurrentFilmDateAdded(page),
-      this.getCurrentFilmComputedCount(page),
-      this.getCurrentFilmUrl(page),
-      this.getCurrentFilmYear(page),
-      this.getCurrentFilmType(page),
-      this.getCurrentFilmRating(page),
-      this.getCurrentDateTime(),
-    ]);
+    const [fullUrl, currentFilmDateAdded, computedCount, url, year, type, { rating, computedFrom, computed }, lastUpdate] =
+      await Promise.all([
+        this.getCurrentFilmFullUrl(page),
+        this.getCurrentFilmDateAdded(page),
+        this.getCurrentFilmComputedCount(page),
+        this.getCurrentFilmUrl(page),
+        this.getCurrentFilmYear(page),
+        this.getCurrentFilmType(page),
+        this.getCurrentFilmRating(page),
+        this.getCurrentDateTime(),
+      ]);
 
     // // const start01 = performance.now();
     // const fullUrl = await this.getCurrentFilmFullUrl(page)
@@ -1779,8 +1743,6 @@ class Csfd {
     const parentId = await this.getMovieIdFromUrl(parentName);
     // const time5 = roundTo((performance.now() - start5) / 1000, 6)
 
-
-
     // const time = roundTo((performance.now() - start) / 1000, 6)
     // console.debug('===================================================================')
     // console.debug(`[CC] parseMoviePage() Time: ${time} seconds`);
@@ -1817,17 +1779,17 @@ class Csfd {
   async getMissingComputedRatings() {
     const allRatings = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
     const episodesRatings = Object.keys(allRatings)
-      .filter(key => allRatings[key].type === "episode")
+      .filter((key) => allRatings[key].type === 'episode')
       .reduce((obj, key) => {
         obj[key] = allRatings[key];
         return obj;
       }, {});
 
     // Get all parentId and check if it exists in allRatings, if not, add it to empty array
-    const allParentIds = Object.keys(episodesRatings).map(key => episodesRatings[key].parentId);
+    const allParentIds = Object.keys(episodesRatings).map((key) => episodesRatings[key].parentId);
     const allParentIdsUnique = [...new Set(allParentIds)];
 
-    const filteredNotFoundParentRatings = allParentIdsUnique.filter(id => !allRatings.hasOwnProperty(id));
+    const filteredNotFoundParentRatings = allParentIdsUnique.filter((id) => !allRatings.hasOwnProperty(id));
 
     this.missingComputedRatingsCount = filteredNotFoundParentRatings.length;
     return this.missingComputedRatingsCount;
@@ -1842,12 +1804,12 @@ class Csfd {
     const response = await fetch(url);
     const html = await response.text();
     // const $html = $(html);
-    return new DOMParser().parseFromString(html, "text/html");
+    return new DOMParser().parseFromString(html, 'text/html');
   }
 
   async badgesComponent(ratingsInLS, curUserRatings, computedRatings) {
     // TODO" Tohle už teď bude fungovat, jen to zakomponovat...
-    return "<b>ahoj</b>";
+    return '<b>ahoj</b>';
   }
 
   displayMessageButton() {
@@ -1857,16 +1819,16 @@ class Csfd {
       return;
     }
 
-    let button = document.createElement("button");
-    button.setAttribute("data-tippy-content", $('#dropdown-control-panel li a.ajax')[0].text);
-    button.setAttribute("style", "float: right; border-radius: 5px;");
+    let button = document.createElement('button');
+    button.setAttribute('data-tippy-content', $('#dropdown-control-panel li a.ajax')[0].text);
+    button.setAttribute('style', 'float: right; border-radius: 5px;');
     button.innerHTML = `
                 <a class="ajax"
                     rel="contentModal"
                     data-mfp-src="#panelModal"
                     href="${userHref}"><i class="icon icon-messages"></i></a>
             `;
-    $(".user-profile-content > h1").append(button);
+    $('.user-profile-content > h1').append(button);
   }
 
   async displayFavoriteButton() {
@@ -1876,14 +1838,14 @@ class Csfd {
       return;
     }
     let tooltipText = favoriteButton[0].text;
-    let addRemoveIndicator = "+";
-    if (tooltipText.includes("Odebrat") || tooltipText.includes("Odobrať")) {
-      addRemoveIndicator = "-";
+    let addRemoveIndicator = '+';
+    if (tooltipText.includes('Odebrat') || tooltipText.includes('Odobrať')) {
+      addRemoveIndicator = '-';
     }
 
-    let button = document.createElement("button");
-    button.setAttribute("style", "float: right; border-radius: 5px; margin: 0px 5px;");
-    button.setAttribute("data-tippy-content", tooltipText);
+    let button = document.createElement('button');
+    button.setAttribute('style', 'float: right; border-radius: 5px; margin: 0px 5px;');
+    button.setAttribute('data-tippy-content', tooltipText);
     button.innerHTML = `
                 <a class="ajax"
                     rel="contentModal"
@@ -1893,15 +1855,15 @@ class Csfd {
                         <i class="icon icon-favorites"></i>
                 </a>
             `;
-    $(".user-profile-content > h1").append(button);
+    $('.user-profile-content > h1').append(button);
 
     $(button).on('click', async function () {
-      if (addRemoveIndicator == "+") {
+      if (addRemoveIndicator == '+') {
         $('#add-remove-indicator')[0].innerText = '-';
-        button._tippy.setContent("Odebrat z oblíbených");
+        button._tippy.setContent('Odebrat z oblíbených');
       } else {
         $('#add-remove-indicator')[0].innerText = '+';
-        button._tippy.setContent("Přidat do oblíbených");
+        button._tippy.setContent('Přidat do oblíbených');
       }
       await refreshTooltips();
     });
@@ -1909,7 +1871,9 @@ class Csfd {
 
   hideUserControlPanel() {
     let panel = $('.button-control-panel:not(.small)');
-    if (panel.length !== 1) { return; }
+    if (panel.length !== 1) {
+      return;
+    }
     panel.hide();
   }
 
@@ -1919,12 +1883,12 @@ class Csfd {
     let src = $img.attr('src');
     let width = $img.attr('width');
 
-    let $div = $(`<div>`, { "class": 'link-to-image' })
+    let $div = $(`<div>`, { class: 'link-to-image' })
       .css({
-        'position': 'absolute',
-        'right': '0px',
-        'bottom': '0px',
-        'display': 'none',
+        position: 'absolute',
+        right: '0px',
+        bottom: '0px',
+        display: 'none',
         'z-index': '999',
         'padding-left': '0.5em',
         'padding-right': '0.5em',
@@ -1932,17 +1896,17 @@ class Csfd {
         'margin-right': '0.5em',
         'background-color': 'rgba(255, 245, 245, 0.85)',
         'border-radius': '5px 0px',
-        'font-weight': 'bold'
+        'font-weight': 'bold',
       })
       .html(`<a href="${src}">w${width}</a>`);
 
     $film.find('a').after($div);
 
     $film.on('mouseover', () => {
-      $div.show("fast");
+      $div.show('fast');
     });
     $film.on('mouseleave', () => {
-      $div.hide("fast");
+      $div.hide('fast');
     });
   }
 
@@ -1950,24 +1914,27 @@ class Csfd {
    * Show link for all possible picture sizes
    */
   async showLinkToImageOnOtherGalleryImages() {
-
     let $pictures = this.csfdPage.find('.gallery-item picture');
 
     let pictureIdx = 0;
     for (const $picture of $pictures) {
       let obj = {};
 
-      let src = $($picture).find('img').attr('src').replace(/cache[/]resized[/]w\d+[/]/g, '');
+      let src = $($picture)
+        .find('img')
+        .attr('src')
+        .replace(/cache[/]resized[/]w\d+[/]/g, '');
 
       obj['100 %'] = src;
 
       let $sources = $($picture).find('source');
 
       for (const $source of $sources) {
-
         const srcset = $($source).attr('srcset');
 
-        if (srcset === undefined) { continue; }
+        if (srcset === undefined) {
+          continue;
+        }
 
         let attributeText = srcset.replace(/\dx/g, '').replace(/\s/g, '');
         let links = attributeText.split(',');
@@ -1985,27 +1952,26 @@ class Csfd {
 
       let idx = 0;
       for (const item in obj) {
-
-        let $div = $(`<div>`, { "class": `link-to-image-gallery picture-idx-${pictureIdx}` })
+        let $div = $(`<div>`, { class: `link-to-image-gallery picture-idx-${pictureIdx}` })
           .css({
-            'position': 'absolute',
-            'right': '0px',
-            'bottom': '0px',
-            'display': 'none',
+            position: 'absolute',
+            right: '0px',
+            bottom: '0px',
+            display: 'none',
             'z-index': '999',
             'padding-left': '0.5em',
             'padding-right': '0.5em',
-            'margin-bottom': `${0.5 + (idx * 2)}em`,
+            'margin-bottom': `${0.5 + idx * 2}em`,
             'margin-right': '0.5em',
             'background-color': 'rgba(255, 245, 245, 0.75)',
             'border-radius': '5px 0px',
-            'font-weight': 'bold'
+            'font-weight': 'bold',
           })
           .html(`<a href="${obj[item]}">${item}</a>`);
 
         $($picture).find('img').after($div);
         $($picture).attr('data-idx', pictureIdx);
-        $($picture).parent().css({ position: 'relative' });  // need to have this for absolute position to work
+        $($picture).parent().css({ position: 'relative' }); // need to have this for absolute position to work
 
         idx += 1;
       }
@@ -2014,11 +1980,11 @@ class Csfd {
 
       $($picture).on('mouseover', () => {
         const pictureIdx = $($picture).attr('data-idx');
-        $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).show("fast");
+        $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).show('fast');
       });
       $($picture).on('mouseleave', () => {
         const pictureIdx = $($picture).attr('data-idx');
-        $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide("fast");
+        $(`.link-to-image-gallery.picture-idx-${pictureIdx}`).hide('fast');
       });
     }
   }
@@ -2033,7 +1999,9 @@ class Csfd {
     let $ratingSpans = this.csfdPage.find('li.favored:not(.current-user-rating) .star-rating .stars');
 
     // No favorite people ratings found
-    if ($ratingSpans.length === 0) { return; }
+    if ($ratingSpans.length === 0) {
+      return;
+    }
 
     let ratingNumbers = [];
     for (let $span of $ratingSpans) {
@@ -2049,7 +2017,6 @@ class Csfd {
                 <span style="position: absolute;">${$ratingAverage.text()}</span>
                 <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
             `);
-
   }
   /**
    * When there is less than 10 ratings on a movie, csfd waits with the rating.
@@ -2058,24 +2025,29 @@ class Csfd {
    * @returns null
    */
   async ratingsEstimate() {
-
     // Find rating-average element
     let $ratingAverage = this.csfdPage.find('.box-rating-container .film-rating-average');
 
     // Not found, exit fn()
-    if ($ratingAverage.length !== 1) { return; }
+    if ($ratingAverage.length !== 1) {
+      return;
+    }
 
     // Get the text
     let curRating = $ratingAverage.text().replace(/\s/g, '');
 
     // If the text if anything than '?%', exit fn()
-    if (!curRating.includes('?%')) { return; }
+    if (!curRating.includes('?%')) {
+      return;
+    }
 
     // Get all other users ratings
     let $userRatings = this.csfdPage.find('section.others-rating .star-rating');
 
     // If no ratings in other ratings, exit fn()
-    if ($userRatings.length === 0) { return; }
+    if ($userRatings.length === 0) {
+      return;
+    }
 
     // Fill the list with ratings as numbers
     let ratingNumbers = [];
@@ -2107,14 +2079,14 @@ class Csfd {
    */
   getRatingColor(ratingPercent) {
     switch (true) {
-      case (ratingPercent < 29):
-        return "#535353";
-      case (ratingPercent >= 30 && ratingPercent < 69):
-        return "#658db4";
-      case (ratingPercent >= 70):
-        return "#ba0305";
+      case ratingPercent < 29:
+        return '#535353';
+      case ratingPercent >= 30 && ratingPercent < 69:
+        return '#658db4';
+      case ratingPercent >= 70:
+        return '#ba0305';
       default:
-        return "#d2d2d2";
+        return '#d2d2d2';
     }
   }
   /**
@@ -2145,7 +2117,6 @@ class Csfd {
     this.showLinkToImageOnOtherGalleryImages();
   }
 
-
   async doSomethingNew(url) {
     let data = await $.get(url);
     const $rows = $(data).find('#snippet--ratings tr');
@@ -2157,9 +2128,8 @@ class Csfd {
     // Process each row of the rating page
     // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
     for (const $row of $rows) {
-
-      const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
-      const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+      const name = $($row).find('td.name a').attr('href'); // /film/697624-love-death-robots/800484-zakazane-ovoce/
+      const filmInfo = $($row).find('td.name > h3 > span > span'); // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
       console.log({ name });
       console.log({ filmInfo });
 
@@ -2195,25 +2165,24 @@ class Csfd {
       const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
 
       dc[movieId] = {
-        'url': name,
-        'fullUrl': location.origin + name,
-        'rating': rating,
-        'date': date,
-        'type': showType,
-        'year': showYear,
-        'parentName': parentName,
-        'parentId': parentId,
-        'computed': false,
-        'computedCount': "",
-        'computedFromText': "",
-        'lastUpdate': await this.getCurrentDateTime(),
+        url: name,
+        fullUrl: location.origin + name,
+        rating: rating,
+        date: date,
+        type: showType,
+        year: showYear,
+        parentName: parentName,
+        parentId: parentId,
+        computed: false,
+        computedCount: '',
+        computedFromText: '',
+        lastUpdate: await this.getCurrentDateTime(),
       };
     }
     return dc;
   }
 
   async getAllPages(force = false) {
-
     const boxSettingsName = 'CSFD-Compare-settings';
     const settings = await getSettings(boxSettingsName);
 
@@ -2224,7 +2193,7 @@ class Csfd {
     this.userRatingsCount = await this.getCurrentUserRatingsCount();
 
     const allUrls = [];
-    maxPageNum = DEBUG_MAX_PAGES_LOAD != 0 ? DEBUG_MAX_PAGES_LOAD : maxPageNum;  // DEBUG PURPOSES
+    maxPageNum = DEBUG_MAX_PAGES_LOAD != 0 ? DEBUG_MAX_PAGES_LOAD : maxPageNum; // DEBUG PURPOSES
     for (let idx = 1; idx <= maxPageNum; idx++) {
       const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
       allUrls.push(url);
@@ -2275,7 +2244,7 @@ class Csfd {
     // for (const chunk of limitedChunks) {  // TODO: Debug
     for (const chunk of chunks) {
       Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * NUM_RATINGS_PER_PAGE}/${this.userRatingsCount}`, 5, 200, 0);
-      const content = await Promise.all(chunk.map(url => $.get(url)));
+      const content = await Promise.all(chunk.map((url) => $.get(url)));
       contents.push(content);
       chunkDone += chunk.length * NUM_RATINGS_PER_PAGE;
     }
@@ -2292,9 +2261,8 @@ class Csfd {
         // Process each row of the rating page
         // $row = <>ItemName | ItemUrl | (year) | (type) | (Detail) | Rating | Date</>
         for (const $row of $rows) {
-
-          const name = $($row).find('td.name a').attr('href');  // /film/697624-love-death-robots/800484-zakazane-ovoce/
-          const filmInfo = $($row).find('td.name > h3 > span > span');  // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
+          const name = $($row).find('td.name a').attr('href'); // /film/697624-love-death-robots/800484-zakazane-ovoce/
+          const filmInfo = $($row).find('td.name > h3 > span > span'); // (2007)(série)(S02) // (2021)(epizoda)(S02E05)
 
           const [showType, showYear, parentName, [movieId, parentId]] = await Promise.all([
             this.getShowType(filmInfo),
@@ -2328,21 +2296,20 @@ class Csfd {
           const date = $($row).find('td.date-only').text().replace(/[\s]/g, '');
 
           dc[movieId] = {
-            'url': name,
-            'fullUrl': location.origin + name,
-            'rating': rating,
-            'date': date,
-            'type': showType,
-            'year': showYear,
-            'id': movieId,
-            'parentName': parentName,
-            'parentId': parentId,
-            'computed': false,
-            'computedCount': "",
-            'computedFromText': "",
-            'lastUpdate': await this.getCurrentDateTime(),
+            url: name,
+            fullUrl: location.origin + name,
+            rating: rating,
+            date: date,
+            type: showType,
+            year: showYear,
+            id: movieId,
+            parentName: parentName,
+            parentId: parentId,
+            computed: false,
+            computedCount: '',
+            computedFromText: '',
+            lastUpdate: await this.getCurrentDateTime(),
           };
-
         }
       }
     }
@@ -2365,7 +2332,7 @@ class Csfd {
    * - --> ????
    */
   async getShowYear(filmInfo) {
-    const showYear = (filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????');
+    const showYear = filmInfo.length >= 1 ? $(filmInfo[0]).text().slice(1, -1) : '????';
     return parseInt(showYear);
   }
 
@@ -2383,19 +2350,21 @@ class Csfd {
    * - (2019) --> movie
    */
   async getShowType(filmInfo) {
-    const showType = (filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film');
+    const showType = filmInfo.length > 1 ? $(filmInfo[1]).text().slice(1, -1) : 'film';
 
     switch (showType) {
-      case "epizoda": case "epizóda":
+      case 'epizoda':
+      case 'epizóda':
         return 'episode';
 
-      case "série": case "séria":
+      case 'série':
+      case 'séria':
         return 'season';
 
-      case "seriál":
+      case 'seriál':
         return 'series';
 
-      case "TV film":
+      case 'TV film':
         return 'tv movie';
 
       case 'film':
@@ -2420,20 +2389,21 @@ class Csfd {
    * - film --> movie
    */
   getShowTypeFromType(showType) {
-
     showType = showType.toLowerCase();
 
     switch (showType) {
-      case "epizoda": case "epizóda":
+      case 'epizoda':
+      case 'epizóda':
         return 'episode';
 
-      case "série": case "séria":
+      case 'série':
+      case 'séria':
         return 'season';
 
-      case "seriál":
+      case 'seriál':
         return 'series';
 
-      case "tv film":
+      case 'tv film':
         return 'tv movie';
 
       case 'film':
@@ -2478,17 +2448,17 @@ class Csfd {
   async getParentNameFromUrl(url) {
     // Remove protocol and domain if present
     const urlRegex = /^(?:https?:\/\/)?(?:[^@\n]+@)?(?:www\.)?([^:/\n]+)/;
-    const path = url.replace(urlRegex, "");
+    const path = url.replace(urlRegex, '');
 
     // Remove trailing and leading slashes
     const cleanedPath = path.replace(/^\/|\/$/g, '');
 
     // Split the path by '/'
-    const splitted = cleanedPath.split("/");
+    const splitted = cleanedPath.split('/');
 
     // If the length of the split array is less than or equal to 3, return an empty string
     if (splitted.length <= 3) {
-      return "";
+      return '';
     }
 
     // Otherwise, return the second element from the split array
@@ -2509,12 +2479,16 @@ class Csfd {
    * - url = null --> NaN
    */
   async getMovieIdFromUrl(url) {
-    if (!url) { return NaN; }
+    if (!url) {
+      return NaN;
+    }
 
-    const found_groups = url.match(/(\d)+-[-\w]+/ig);
+    const found_groups = url.match(/(\d)+-[-\w]+/gi);
 
-    if (!found_groups) { return NaN; }
-    const movieIds = found_groups.map(x => x.split("-")[0]);
+    if (!found_groups) {
+      return NaN;
+    }
+    const movieIds = found_groups.map((x) => x.split('-')[0]);
     const movieId = movieIds[movieIds.length - 1];
 
     return Number(movieId);
@@ -2586,7 +2560,6 @@ class Csfd {
     // let ratingsWithYear = await getItemsByPropertyFromIndexedDB(INDEXED_DB_NAME, "songokussj", "year_idx", 2023);
     // console.log({ ratingsWithYear });
 
-
     // // Delete all data from IndexedDB
     // console.log("Deleting all data from IndexedDB");
     // await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, "songokussj");
@@ -2614,14 +2587,14 @@ class Csfd {
       const $section = $(this).closest('section');
       $section.attr('data-box-id', index);
 
-      if (settings.some(x => x.boxId == index)) {
+      if (settings.some((x) => x.boxId == index)) {
         $section.hide();
       }
 
       const $btnHideBox = $('<a>', {
-        'class': 'hide-me button',
+        class: 'hide-me button',
         href: 'javascript:void(0)',
-        html: `Skrýt`
+        html: `Skrýt`,
       }).css({
         margin: 'auto',
         marginLeft: '10px',
@@ -2641,19 +2614,29 @@ class Csfd {
       $h2.append($btnHideBox[0]);
     });
 
-    $('.box-header').on('mouseover', async function () {
-      $(this).find('.hide-me').show();
-    }).on('mouseout', async function () {
-      $(this).find('.hide-me').hide();
-    });
+    $('.box-header')
+      .on('mouseover', async function () {
+        $(this).find('.hide-me').show();
+      })
+      .on('mouseout', async function () {
+        $(this).find('.hide-me').hide();
+      });
 
     const self = this;
     $('.hide-me').on('click', async function (event) {
       const $section = $(event.target).closest('section');
       const boxId = $section.data('box-id');
-      let boxName = $section.find('h2').first().text().replace(/\n|\t|Skrýt/g, "");  // clean from '\t', '\n'
+      let boxName = $section
+        .find('h2')
+        .first()
+        .text()
+        .replace(/\n|\t|Skrýt/g, ''); // clean from '\t', '\n'
       if (boxName === '') {
-        boxName = $section.find('p').first().text().replace(/\n|\t|Skrýt/g, "");
+        boxName = $section
+          .find('p')
+          .first()
+          .text()
+          .replace(/\n|\t|Skrýt/g, '');
       }
       const dict = { boxId: boxId, boxName: boxName };
       const settings = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
@@ -2670,19 +2653,19 @@ class Csfd {
     const $sections = $(`div.creator-filmography`).find(`section`);
     let $nooverflowH3 = $sections.find(`h3.film-title-nooverflow`);
     $nooverflowH3.css({
-      "display": "inline-block",
-      "white-space": "nowrap",
-      "text-overflow": "ellipsis",
-      "overflow": "hidden",
-      "max-width": "230px",
+      display: 'inline-block',
+      'white-space': 'nowrap',
+      'text-overflow': 'ellipsis',
+      overflow: 'hidden',
+      'max-width': '230px',
     });
     const $filmTitleNameA = $nooverflowH3.find(`a.film-title-name`);
     $filmTitleNameA.css({
-      "white-space": "nowrap",
+      'white-space': 'nowrap',
     });
     $filmTitleNameA.each(function () {
       const $this = $(this);
-      $this.attr("title", $this.text());
+      $this.attr('title', $this.text());
     });
   }
 
@@ -2714,9 +2697,9 @@ class Csfd {
                       data-description="${description}"
                       data-img-url="${url}"><a href="${url}" target="_blank">💬</a></span>
             `).css({
-      "cursor": "pointer",
-      "color": "rgba(255, 255, 255, 0.8)",
-    })
+      cursor: 'pointer',
+      color: 'rgba(255, 255, 255, 0.8)',
+    });
     return $span.get(0).outerHTML;
   }
 
@@ -2731,19 +2714,19 @@ class Csfd {
             </div>
           </section>
         </article>
-      `)
+      `);
 
     return $div.get(0).outerHTML;
   }
 
   async addSettingsPanel() {
-    let dropdownStyle = 'right: 150px; width: max-content; max-width: 360px;';
+    let dropdownStyle = 'right: 150px; width: max-content; max-width: 400px;';
     let disabled = '';
     let needToLoginTooltip = '';
     let needToLoginStyle = '';
 
-    if (!await this.isLoggedIn()) {
-      dropdownStyle = 'right: 50px; width: max-content; max-width: 360px;';
+    if (!(await this.isLoggedIn())) {
+      dropdownStyle = 'right: 50px; width: max-content; max-width: 400px;';
       disabled = 'disabled';
       needToLoginTooltip = `data-tippy-content="Funguje jen po přihlášení do CSFD"`;
       needToLoginStyle = 'color: grey;';
@@ -2751,7 +2734,7 @@ class Csfd {
 
     let button = document.createElement('li');
     // button.classList.add('active');  // TODO: Debug - Nonstop zobrazení CC Menu
-    let resetLabelStyle = "-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;";
+    let resetLabelStyle = '-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;';
 
     // Add box-id attribute to .box-header(s)
     $('.box-header').each(async function (index, value) {
@@ -2763,10 +2746,10 @@ class Csfd {
     let resultDisplayArray = [];
     let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
     hiddenBoxesArray = await checkSettingsValidity(hiddenBoxesArray, SETTINGSNAME_HIDDEN_BOXES);
-    hiddenBoxesArray.sort((a, b) => a - b);  // sort by numbers
-    hiddenBoxesArray.forEach(element => {
+    hiddenBoxesArray.sort((a, b) => a - b); // sort by numbers
+    hiddenBoxesArray.forEach((element) => {
       let boxId = element.boxId;
-      let boxName = element.boxName.replace(/\n|\t/g, "");  // clean text of '\n' and '\t';
+      let boxName = element.boxName.replace(/\n|\t/g, ''); // clean text of '\n' and '\t';
       resultDisplayArray.push(`
                     <button class="restore-hidden-section" data-box-id="${boxId}" title="${boxName}"
                             style="border-radius: 4px;
@@ -2815,7 +2798,7 @@ class Csfd {
                         <h2 class="article-header">Domácí stránka - skryté panely</h2>
                         <section>
                             <div class="article-content">
-                                <div class="hidden-sections" style="max-width: fit-content;">${resultDisplayArray.join("")}</div>
+                                <div class="hidden-sections" style="max-width: fit-content;">${resultDisplayArray.join('')}</div>
                             </div>
                         </section>
                     </article>
@@ -2826,17 +2809,26 @@ class Csfd {
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableHeaderBoxes" name="clickable-header-boxes">
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Boxy s tlačítkem "VÍCE" jsou klikatelné celé</label>
-                                ${this.helpImageComponent("https://i.imgur.com/8AwhbGK.png", "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/8AwhbGK.png',
+                                  "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'"
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkClickableMessages" name="clickable-messages" ${disabled}>
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítka "více...")</label>
-                                ${this.helpImageComponent("https://i.imgur.com/ettGHsH.png", "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/ettGHsH.png',
+                                  "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'"
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddStars" name="add-stars" ${disabled}>
                                 <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů/seriálů</label>
-                                ${this.helpImageComponent("https://i.imgur.com/aTrSU2X.png", "Přidá hvězdy hodnocení u viděných filmů/seriálů")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/aTrSU2X.png',
+                                  'Přidá hvězdy hodnocení u viděných filmů/seriálů'
+                                )}
                             </div>
                         </section>
                     </article>
@@ -2847,27 +2839,36 @@ class Csfd {
                             <div class="article-content">
                                 <input type="checkbox" id="chkControlPanelOnHover" name="control-panel-on-hover">
                                 <label for="chkControlPanelOnHover" style="${resetLabelStyle}">Otevřít ovládací panel přejetím myší</label>
-                                ${this.helpImageComponent("https://i.imgur.com/N2hfkZ6.png", "Otevřít ovládací panel přejetím myší")}
+                                ${this.helpImageComponent('https://i.imgur.com/N2hfkZ6.png', 'Otevřít ovládací panel přejetím myší')}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkCompareUserRatings" name="compare-user-ratings" ${disabled}>
                                 <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
-                                ${this.helpImageComponent("https://i.imgur.com/cDX0JaX.png", "Přidá sloupec pro porovnání hodnocení s mými hodnoceními")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/cDX0JaX.png',
+                                  'Přidá sloupec pro porovnání hodnocení s mými hodnoceními'
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideUserControlPanel" name="chide-user-control-panel" ${disabled}>
                                 <label for="chkHideUserControlPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt ovládací panel</label>
-                                ${this.helpImageComponent("https://i.imgur.com/KLzFqxM.png", "Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/KLzFqxM.png',
+                                  'Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže'
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkDisplayMessageButton" name="display-message-button" ${disabled}>
                                 <label for="chkDisplayMessageButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko odeslání zprávy</label>
-                                ${this.helpImageComponent("https://i.imgur.com/N1JuzYk.png", "Zobrazení tlačítka pro odeslání zprávy")}
+                                ${this.helpImageComponent('https://i.imgur.com/N1JuzYk.png', 'Zobrazení tlačítka pro odeslání zprávy')}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkDisplayFavoriteButton" name="display-favorite-button" ${disabled}>
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
-                                ${this.helpImageComponent("https://i.imgur.com/vbnFpEU.png", "Zobrazení tlačítka pro přidání/odebrání z oblíbených")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/vbnFpEU.png',
+                                  'Zobrazení tlačítka pro přidání/odebrání z oblíbených'
+                                )}
                             </div>
                         </section>
                     </article>
@@ -2878,32 +2879,50 @@ class Csfd {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowLinkToImage" name="show-link-to-image">
                                 <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
-                                ${this.helpImageComponent("https://i.imgur.com/a2Av3AK.png", "Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/a2Av3AK.png',
+                                  'Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici'
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsEstimate" name="ratings-estimate">
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
-                                ${this.helpImageComponent("https://i.imgur.com/qGAhXog.png", "Ukáže % hodnocení i u filmů s méně než 10 hodnoceními")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/qGAhXog.png',
+                                  'Ukáže % hodnocení i u filmů s méně než 10 hodnoceními'
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkRatingsFromFavorites" name="ratings-from-favorites" ${disabled}>
                                 <label for="chkRatingsFromFavorites" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit hodnocení z průměru oblíbených</label>
-                                ${this.helpImageComponent("https://i.imgur.com/ol88F6z.png", "Zobrazí % hodnocení od přidaných oblíbených uživatelů")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/ol88F6z.png',
+                                  'Zobrazí % hodnocení od přidaných oblíbených uživatelů'
+                                )}
                                 </div>
                                 <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsComputedCount" name="compare-user-ratings" ${disabled}>
                                 <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
-                                ${this.helpImageComponent("https://i.imgur.com/KtpT81X.png", "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/KtpT81X.png',
+                                  "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'"
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkAddRatingsDate" name="add-ratings" ${disabled}>
                                 <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
-                                ${this.helpImageComponent("https://i.imgur.com/CHpBDxK.png", "Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/CHpBDxK.png',
+                                  'Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté'
+                                )}
                             </div>
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedUserReviews" name="hide-selected-user-reviews">
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
-                                ${this.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR")}
+                                ${this.helpImageComponent(
+                                  'https://i.imgur.com/k6GGE9K.png',
+                                  'Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR'
+                                )}
                                 <div>
                                     <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
@@ -2918,7 +2937,7 @@ class Csfd {
                             <div class="article-content">
                                 <input type="checkbox" id="chkShowOnOneLine" name="show-on-one-line">
                                 <label for="chkShowOnOneLine" style="${resetLabelStyle}"}>Filmy na jednom řádku</label>
-                                ${this.helpImageComponent("https://i.imgur.com/IPXzclo.png", "Donutí zobrazit název filmu na jeden řádek")}
+                                ${this.helpImageComponent('https://i.imgur.com/IPXzclo.png', 'Donutí zobrazit název filmu na jeden řádek')}
                             </div>
                         </section>
                     </article>
@@ -2937,7 +2956,10 @@ class Csfd {
                             <div class="article-content">
                                 <input type="checkbox" id="chkHideSelectedVisitors" name="hide-selected-visitors">
                                 <label for="chkHideSelectedVisitors" style="${resetLabelStyle}">Skrýt uživatele v návštěvnících</label>
-                                <!--${this.helpImageComponent("https://i.imgur.com/k6GGE9K.png", "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR")}-->
+                                <!--${this.helpImageComponent(
+                                  'https://i.imgur.com/k6GGE9K.png',
+                                  "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR"
+                                )}-->
                                 <div>
                                     <input type="textbox" id="txtHideSelectedVisitors" name="hide-selected-visitors">
                                     <label style="${resetLabelStyle}">(např: POMO, golfista)</label>
@@ -2953,41 +2975,43 @@ class Csfd {
     await refreshTooltips();
 
     // Show help image on hover
-    $(".help-hover-image").on('mouseenter', function (e) {
-      const url = $(this).attr("data-img-url");
-      const description = $(this).attr("data-description");
-      $("body").append(
-        `<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`
-      );
-      $("#image-when-hovering-text").css({
-        position: "absolute",
-        top: (e.pageY + 5) + "px",
-        left: (e.pageX + 25) + "px",
-        zIndex: "9999",
-        backgroundColor: "white",
-        padding: "5px",
-        border: "1px solid #6a6a6a",
-        borderRadius: "5px"
-      }).fadeIn("fast");
-    }).on('mouseleave', function () {
-      $("#image-when-hovering-text").remove();
-    });
+    $('.help-hover-image')
+      .on('mouseenter', function (e) {
+        const url = $(this).attr('data-img-url');
+        const description = $(this).attr('data-description');
+        $('body').append(`<p id='image-when-hovering-text'><img src='${url}'/><br>${description}</p>`);
+        $('#image-when-hovering-text')
+          .css({
+            position: 'absolute',
+            top: e.pageY + 5 + 'px',
+            left: e.pageX + 25 + 'px',
+            zIndex: '9999',
+            backgroundColor: 'white',
+            padding: '5px',
+            border: '1px solid #6a6a6a',
+            borderRadius: '5px',
+          })
+          .fadeIn('fast');
+      })
+      .on('mouseleave', function () {
+        $('#image-when-hovering-text').remove();
+      });
 
-    $(".help-hover-image").on('mousemove', function (e) {
-      $("#image-when-hovering-text")
-        .css("top", (e.pageY + 5) + "px")
-        .css("left", (e.pageX + 25) + "px");
+    $('.help-hover-image').on('mousemove', function (e) {
+      $('#image-when-hovering-text')
+        .css('top', e.pageY + 5 + 'px')
+        .css('left', e.pageX + 25 + 'px');
     });
 
     // Show() the section and remove the number from localStorage
-    $(".hidden-sections").on("click", ".restore-hidden-section", async function () {
+    $('.hidden-sections').on('click', '.restore-hidden-section', async function () {
       let $element = $(this);
-      let sectionId = $element.attr("data-box-id");
+      let sectionId = $element.attr('data-box-id');
 
       // Remove from localStorage
       let hiddenBoxesArray = await getSettings(SETTINGSNAME_HIDDEN_BOXES);
-      hiddenBoxesArray = hiddenBoxesArray.filter(item => item.boxId !== parseInt(sectionId));
-      let settingsName = "CSFD-Compare-hiddenBoxes";
+      hiddenBoxesArray = hiddenBoxesArray.filter((item) => item.boxId !== parseInt(sectionId));
+      let settingsName = 'CSFD-Compare-hiddenBoxes';
       localStorage.setItem(settingsName, JSON.stringify(hiddenBoxesArray));
 
       // Show section
@@ -2998,80 +3022,87 @@ class Csfd {
       $element.remove();
     });
 
-    if (DEV_PANEL_ALWAYS_VISIBLE === true) {  // DEV SETTINGS
-      $(button).addClass("active");
-      $(button).on("click", function (event) {
+    if (DEV_PANEL_ALWAYS_VISIBLE === true) {
+      // DEV SETTINGS
+      $(button).addClass('active');
+      $(button).on('click', function (event) {
         // React only to clicks on the button itself
-        if (!event.target.className.includes("csfd-compare-menu")) {
+        if (!event.target.className.includes('csfd-compare-menu')) {
           return;
         }
         // Toggle active class
-        if ($(button).hasClass("active")) {
-          $(button).removeClass("active");
+        if ($(button).hasClass('active')) {
+          $(button).removeClass('active');
         } else {
-          $(button).addClass("active");
+          $(button).addClass('active');
         }
       });
     } else {
       let timer;
-      $(button).on("mouseover", function () {
+      $(button).on('mouseover', function () {
         if (timer) {
           clearTimeout(timer);
           timer = null;
         }
-        if (!$(button).hasClass("active")) {
-          $(button).addClass("active");
+        if (!$(button).hasClass('active')) {
+          $(button).addClass('active');
         }
       });
 
-      $(button).on("mouseleave", function () {
-        if ($(button).hasClass("active")) {
+      $(button).on('mouseleave', function () {
+        if ($(button).hasClass('active')) {
           timer = setTimeout(() => {
-            $(button).removeClass("active");
+            $(button).removeClass('active');
           }, 200);
         }
       });
     }
 
-    $(button).find("#btnResetSettings").on("click", async function () {
-      console.debug("Resetting 'CSFD-Compare-settings' settings...");
-      localStorage.removeItem("CSFD-Compare-settings");
-      location.reload();
-    });
+    $(button)
+      .find('#btnResetSettings')
+      .on('click', async function () {
+        console.debug("Resetting 'CSFD-Compare-settings' settings...");
+        localStorage.removeItem('CSFD-Compare-settings');
+        location.reload();
+      });
 
-    $(button).find("#btnRemoveSavedRatings").on("click", async () => {
-      const username = await this.getUsername();
+    $(button)
+      .find('#btnRemoveSavedRatings')
+      .on('click', async () => {
+        const username = await this.getUsername();
 
-      if (!username) {
-        alert("Nejprve se přihlašte.");
-        return;
-      }
+        if (!username) {
+          alert('Nejprve se přihlašte.');
+          return;
+        }
 
-      if (!confirm(`Opravdu chcete smazat uložená hodnocení uživatele ${username}?`)) {
-        return;
-      }
+        if (!confirm(`Opravdu chcete smazat uložená hodnocení uživatele ${username}?`)) {
+          return;
+        }
 
-      console.debug(`Removing saved ratings for user '${username}'...`);
-      localStorage.removeItem(`CSFD-Compare_${username}`);
-      location.reload();
-    });
+        console.debug(`Removing saved ratings for user '${username}'...`);
+        localStorage.removeItem(`CSFD-Compare_${username}`);
+        location.reload();
+      });
 
-    $(button).find("#btnRemoveDBRatings").on("click", async () => {
-      const username = await this.getUsername();
+    $(button)
+      .find('#btnRemoveDBRatings')
+      .on('click', async () => {
+        const username = await this.getUsername();
 
-      if (!username) {
-        alert("Nejprve se přihlašte.");
-        return;
-      }
+        if (!username) {
+          alert('Nejprve se přihlašte.');
+          return;
+        }
 
-      if (!confirm(`Opravdu chcete smazat všechna hodnocení z databáze?`)) {
-        return;
-      }
+        if (!confirm(`Opravdu chcete smazat všechna hodnocení z databáze?`)) {
+          return;
+        }
 
-      console.debug(`Removing all ratings from database...`);
-      await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, username)
-      location.reload();
-    });
+        console.debug(`Removing all ratings from database...`);
+        await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, username);
+        location.reload();
+      });
   }
 
   async checkAndUpdateCurrentRating() {
@@ -3092,12 +3123,12 @@ class Csfd {
     console.log(`Film in IndexedDb:`, filmInIndexedDb);
 
     // In case user removed rating, we need to remove it from the LC
-    if (rating === "" && filmInIndexedDb.length > 0) {
-      console.info("☠️ No rating on current page, but exists in DB => Removing in DB...");
+    if (rating === '' && filmInIndexedDb.length > 0) {
+      console.info('☠️ No rating on current page, but exists in DB => Removing in DB...');
       const removed = await deleteItemFromIndexedDB(INDEXED_DB_NAME, await this.getUsername(), filmId);
 
       if (removed) {
-        console.info("☠️ Movie removed from DB.");
+        console.info('☠️ Movie removed from DB.');
         await this.updateControlPanelRatingCount();
         const cur_rat = await getIndexedDBLength(INDEXED_DB_NAME, this.username);
         console.log(`☠️ IndexedDB length: ${cur_rat}`);
@@ -3106,8 +3137,8 @@ class Csfd {
     }
 
     // Ignore if current film is not rated
-    if (rating === "") {
-      console.log("Current film is not rated, skipping...");
+    if (rating === '') {
+      console.log('Current film is not rated, skipping...');
       return;
     }
 
@@ -3116,12 +3147,11 @@ class Csfd {
     const filmName = await this.getFilmNameFromFullUrl(filmFullUrl);
     const type = await this.getCurrentFilmType();
     const year = await this.getCurrentFilmYear();
-    const lastUpdate = await this.getCurrentDateTime()
+    const lastUpdate = await this.getCurrentDateTime();
     const movieId = await this.getMovieIdFromUrl(filmUrl);
-    console.log(`Current film id: ${movieId}, ${typeof (movieId)}`);
+    console.log(`Current film id: ${movieId}, ${typeof movieId}`);
     const parentName = await this.getParentNameFromUrl(filmFullUrl);
     const parentId = await this.getMovieIdFromUrl(parentName);
-
 
     const ratingsObject = {
       url: filmName,
@@ -3135,7 +3165,7 @@ class Csfd {
       parentId: parentId,
       computed: computed,
       computedCount: computed ? await this.getCurrentFilmComputedCount() : NaN,
-      computedFromText: computed ? computedFrom : "",
+      computedFromText: computed ? computedFrom : '',
       lastUpdate: lastUpdate,
     };
     const dataToUpdate = { [movieId]: ratingsObject };
@@ -3143,16 +3173,16 @@ class Csfd {
 
     const updated = await saveToIndexedDB(INDEXED_DB_NAME, this.username, dataToUpdate);
     if (updated) {
-      console.info("✅ Updated record in DB.");
+      console.info('✅ Updated record in DB.');
       // Without async because we don't need to wait for it
       this.updateControlPanelRatingCount();
     }
   }
 
- /**
- * Returns current DateTime, e.g. 11.10.2022 1:49:42
- * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
- */
+  /**
+   * Returns current DateTime, e.g. 11.10.2022 1:49:42
+   * @returns {str} DateTime in format DD.MM.YYYY hh:mm:ss
+   */
   async getCurrentDateTime() {
     // SLOW AF
     // const d = new Date();
@@ -3168,17 +3198,10 @@ class Csfd {
     // const dateFormatFixed = dateFormat.replace(/\//g, '.').replace(',', '');
     // return dateFormatFixed;
 
-    const d = new Date
-    const dateFormat = [
-      d.getDate(),
-      d.getMonth() + 1,
-      d.getFullYear()
-    ].join('.') + ' ' + [
-      d.getHours(),
-      d.getMinutes(),
-      d.getSeconds()
-    ].join(':');
-    return dateFormat
+    const d = new Date();
+    const dateFormat =
+      [d.getDate(), d.getMonth() + 1, d.getFullYear()].join('.') + ' ' + [d.getHours(), d.getMinutes(), d.getSeconds()].join(':');
+    return dateFormat;
   }
 
   /**
@@ -3190,20 +3213,20 @@ class Csfd {
   clickableMessages() {
     const $messagesBox = $('.dropdown-content.messages');
     const $moreSpan = $messagesBox.find('.span-more-small');
-    if ($moreSpan.length < 1) { return; }
+    if ($moreSpan.length < 1) {
+      return;
+    }
 
     for (const $span of $moreSpan) {
-
       // Hide "... více" button
       $($span).hide();
 
       const $content = $($span).closest('.article-content');
       const $article = $content.closest('article');
-      $content.on('hover', function () {
-        $article.css('background-color', '#e1e0e0');
-      }, function () {
-        $article.css('background-color', 'initial');
-      });
+      $content.hover(
+        () => $article.css('background-color', '#e1e0e0'),
+        () => $article.css('background-color', 'initial')
+      );
 
       const href = $($span).find('a').attr('href');
       $content.wrap(`<a href="${href}"></a>`);
@@ -3212,14 +3235,14 @@ class Csfd {
 
   async clickableHeaderBoxes() {
     // CLICKABLE HEADER BUTTONS
-    $(".user-link.wantsee").on("click", function () {
-      location.href = "/chci-videt/";
+    $('.user-link.wantsee').on('click', function () {
+      location.href = '/chci-videt/';
     });
-    $(".user-link.favorites").on("click", function () {
-      location.href = "/soukrome/oblibene/";  // TODO: Toto pry nefunguje
+    $('.user-link.favorites').on('click', function () {
+      location.href = '/soukrome/oblibene/'; // TODO: Toto pry nefunguje
     });
-    $(".user-link.messages").on("click", function () {
-      location.href = "/posta/";
+    $('.user-link.messages').on('click', function () {
+      location.href = '/posta/';
     });
 
     // CLICKABLE HEADER DIVS
@@ -3227,8 +3250,12 @@ class Csfd {
     for (const div of headers) {
       const btn = $(div).find('a.button');
 
-      if (btn.length === 0) { continue; }
-      if (!["více", "viac"].includes(btn[0].text.toLowerCase())) { continue; }
+      if (btn.length === 0) {
+        continue;
+      }
+      if (!['více', 'viac'].includes(btn[0].text.toLowerCase())) {
+        continue;
+      }
 
       $(div).wrap(`<a href="${btn.attr('href')}"></a>`);
 
@@ -3238,7 +3265,9 @@ class Csfd {
         .on('mouseover', () => {
           $(div).css({ backgroundColor: '#ba0305' });
           $(h2[0]).css({ backgroundColor: '#ba0305', color: '#fff' });
-          if (spanCount.length == 1) { spanCount[0].style.color = '#fff'; }
+          if (spanCount.length == 1) {
+            spanCount[0].style.color = '#fff';
+          }
         })
         .on('mouseout', () => {
           if ($(div).hasClass('dropdown-content-head')) {
@@ -3247,7 +3276,9 @@ class Csfd {
             $(div).css({ backgroundColor: '#e3e3e3' });
           }
           $(h2[0]).css({ backgroundColor: 'initial', color: 'initial' });
-          if (spanCount.length == 1) { spanCount[0].style.color = 'initial'; }
+          if (spanCount.length == 1) {
+            spanCount[0].style.color = 'initial';
+          }
         });
     }
   }
@@ -3256,9 +3287,13 @@ class Csfd {
     let articleHeaders = $('.article-header-review-name');
     for (const element of articleHeaders) {
       let userTitle = $(element).find('.user-title-name');
-      if (userTitle.length != 1) { continue; }
+      if (userTitle.length != 1) {
+        continue;
+      }
       let ignoredUser = settings.hideSelectedUserReviewsList.includes(userTitle[0].text);
-      if (!ignoredUser) { continue; }
+      if (!ignoredUser) {
+        continue;
+      }
       $(element).closest('article').hide();
     }
   }
@@ -3272,24 +3307,30 @@ class Csfd {
     const start = performance.now();
 
     // Hide visitors from TABLE
-    const rows = document.getElementsByTagName("tr");
+    const rows = document.getElementsByTagName('tr');
     // Check if there is a <td> with both <img> and <a>
     for (const row of rows) {
       // Ignore headers
-      if (row.getElementsByTagName("td").length < 2) { continue; }
-      const td = row.getElementsByTagName("td")[1];
+      if (row.getElementsByTagName('td').length < 2) {
+        continue;
+      }
+      const td = row.getElementsByTagName('td')[1];
       // Ignore if there is no <img> (country flag) AND <a> (username)
-      if (td.getElementsByTagName("img").length !== 1) { continue; }
-      if (td.getElementsByTagName("a").length !== 1) { continue; }
-      const a = td.getElementsByTagName("a")[0];
+      if (td.getElementsByTagName('img').length !== 1) {
+        continue;
+      }
+      if (td.getElementsByTagName('a').length !== 1) {
+        continue;
+      }
+      const a = td.getElementsByTagName('a')[0];
       const username = a.text;
       if (settings.hideSelectedVisitorsList.includes(username)) {
-        row.style.display = "none";
+        row.style.display = 'none';
       }
     }
     // Hide visitors from WHO-FAVORS-ME
     const articles = document.querySelectorAll('.who-favors-me-users article');
-    articles.forEach(article => {
+    articles.forEach((article) => {
       const username = article.querySelector('header a').textContent.trim();
       if (settings.hideSelectedVisitorsList.includes(username)) {
         article.style.display = 'none';
@@ -3306,7 +3347,6 @@ class Csfd {
    * @returns {Promise<{rating: string, computedFrom: string, computed: boolean}>}
    */
   async getCurrentFilmDateAdded(content = null) {
-
     if (content === null) {
       content = this.csfdPage;
     }
@@ -3324,17 +3364,17 @@ class Csfd {
       // Grab the rating date from mobile-rating
       ratingText = content.querySelector('.mobile-film-rating-detail a span').getAttribute('title');
       if (ratingText === null) {
-        return "";
+        return '';
       }
     }
 
-    let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+    let match = ratingText.match('[0-9]{2}[.][0-9]{2}[.][0-9]{4}');
 
     if (match !== null) {
       let ratingDate = match[0];
       return ratingDate;
     }
-    return "";
+    return '';
   }
 
   async addRatingsDate() {
@@ -3347,7 +3387,7 @@ class Csfd {
         return;
       }
     }
-    let match = ratingText.match("[0-9]{2}[.][0-9]{2}[.][0-9]{4}");
+    let match = ratingText.match('[0-9]{2}[.][0-9]{2}[.][0-9]{4}');
     if (match !== null) {
       let ratingDate = match[0];
       let $myRatingCaption = $('.my-rating h3');
@@ -3362,7 +3402,9 @@ class Csfd {
   async addRatingsComputedCount() {
     const $computedStars = $('.star.active.computed');
     const isComputed = $computedStars.length != 0;
-    if (!isComputed) { return; }
+    if (!isComputed) {
+      return;
+    }
     const fromRatingsText = this.csfdPage.find('.current-user-rating > span').attr('title');
     if (fromRatingsText === undefined) {
       return;
@@ -3400,12 +3442,13 @@ class Csfd {
     this.stars = await getAllFromIndexedDB(INDEXED_DB_NAME, this.username);
   }
 
-  async updateControlPanelRatingCount() {  // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
+  async updateControlPanelRatingCount() {
+    // TODO: KDE TOTO CO TOTO JE DO DULEZITE?
     const start = performance.now();
 
     const [current_ratings, rated] = await Promise.all([
       this.getCurrentUserRatingsCount(),
-      getIndexedDBLength(INDEXED_DB_NAME, this.username)
+      getIndexedDBLength(INDEXED_DB_NAME, this.username),
     ]);
 
     const ratingsSpan = document.getElementById('cc-control-panel-rating-count');
@@ -3427,7 +3470,7 @@ class Csfd {
   async isRatingCountOk() {
     const { rated, computed } = await this.getLocalStorageRatingsCount();
     const current_ratings = await this.getCurrentUserRatingsCount();
-    return rated === current_ratings
+    return rated === current_ratings;
   }
 
   /**
@@ -3445,7 +3488,7 @@ class Csfd {
       class: 'imdb-icon',
     });
     const $imdbI = $('a.button-big.button-imdb i');
-    $imdbI.css({ 'opacity': '1', 'background-color': '#f5c518' });
+    $imdbI.css({ opacity: '1', 'background-color': '#f5c518' });
     $imdbI.append($image);
   }
 
@@ -3459,24 +3502,22 @@ class Csfd {
    * @returns {Promise<void>}
    */
   async addChatReplyButton() {
-
     // Get all divs with class 'icon-control' containing <i> with class 'icon-reply' in them (working reply buttons)
     const replyIconControlElements = $('.icon-control:has(i.icon-reply)');
     const $firstWorkingReplyIconControl = replyIconControlElements.first();
-    const missingIconElements = $('.icon-control').not($(':has(i.icon-reply'));
+    const missingIconElements = $('.icon-control').not($(':has(i.icon-reply)'));
 
     // Copy the working reply button and add it to the missingIconElements
     missingIconElements.each(async (index, element) => {
-
       // Clone working IconControl and remove potential '<a>' element whose child element has 'i.icon-trash'
       const $replyIconControlClone = $firstWorkingReplyIconControl.clone();
       $replyIconControlClone.find('a:has(i.icon-trash)').remove();
 
-      const $replyIconCloneHref = $replyIconControlClone.find('a');  // TODO: not trash
+      const $replyIconCloneHref = $replyIconControlClone.find('a'); // TODO: not trash
       const $userTitle = element.closest('.article-content').querySelector('a.user-title-name');
 
       const username = $userTitle.text;
-      const userId = $userTitle.href.split("/")[4].split("-")[0]
+      const userId = $userTitle.href.split('/')[4].split('-')[0];
       const postId = element.closest('article').getAttribute('id').split('-')[2];
 
       $replyIconCloneHref.attr({
@@ -3520,27 +3561,24 @@ class Csfd {
 }
 
 (async () => {
-  "use strict";
+  'use strict';
   /* globals jQuery, $, waitForKeyElements */
   /* jshint -W069 */
   /* jshint -W083 */
   /* jshint -W075 */
 
-
-
-
   // ============================================================================================
   // SCRIPT START
   // ============================================================================================
   if (!('indexedDB' in window)) {
-    console.warn("[CC] !!! ====================================== !!!");
+    console.warn('[CC] !!! ====================================== !!!');
     console.warn("[CC] !!! This browser doesn't support IndexedDB !!!");
-    console.warn("[CC] !!! Ratings will be saved in Local Storage !!!");
-    console.warn("[CC] !!! ====================================== !!!");
+    console.warn('[CC] !!! Ratings will be saved in Local Storage !!!');
+    console.warn('[CC] !!! ====================================== !!!');
   }
 
-  await delay(20);  // Greasemonkey workaround, wait a little bit for page to somehow load
-  console.debug("CSFD-Compare - Script started")
+  await delay(20); // Greasemonkey workaround, wait a little bit for page to somehow load
+  console.debug('CSFD-Compare - Script started');
   const csfd = new Csfd($('div.page-content'));
 
   if (DEV_PERFORMANCE_METRICS) {
@@ -3595,11 +3633,12 @@ class Csfd {
     updateIndexedDB = profileAsyncFunction(updateIndexedDB, 'updateIndexedDB');
   }
 
-
   // =================================
   // Page - Homepage
   // =================================
-  if (await onHomepage()) { csfd.removableHomeBoxes(); }
+  if (await onHomepage()) {
+    csfd.removableHomeBoxes();
+  }
 
   // =================================
   // LOAD SETTINGS
@@ -3612,7 +3651,9 @@ class Csfd {
   // Page - Soukrome
   // =================================
   if (location.href.includes('/soukrome/') || location.href.includes('/sukromne/')) {
-    if (settings.hideSelectedVisitors) { csfd.hideSelectedVisitors(); }
+    if (settings.hideSelectedVisitors) {
+      csfd.hideSelectedVisitors();
+    }
   }
 
   // =================================
@@ -3622,45 +3663,57 @@ class Csfd {
   await csfd.loadInitialSettings();
   await csfd.addSettingsEvents();
 
-
-
   // =================================
   // GLOBAL
   // =================================
   csfd.addImdbIcon();
 
-  if (settings.clickableHeaderBoxes) { csfd.clickableHeaderBoxes(); }
+  if (settings.clickableHeaderBoxes) {
+    csfd.clickableHeaderBoxes();
+  }
   // TODO: Toto nic nedela???
-  if (settings.showControlPanelOnHover) { csfd.openControlPanelOnHover(); }
-
+  if (settings.showControlPanelOnHover) {
+    csfd.openControlPanelOnHover();
+  }
 
   // =================================
   // Page - Film/Series
   // =================================
   if (location.href.includes('/film/') || location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
-    if (settings.hideSelectedUserReviews) { csfd.hideSelectedUserReviews(); }
-    if (settings.showLinkToImage) { csfd.showLinkToImage(); }
-    if (settings.ratingsEstimate) { csfd.ratingsEstimate(); }
-    if (settings.ratingsFromFavorites) { csfd.ratingsFromFavorites(); }
+    if (settings.hideSelectedUserReviews) {
+      csfd.hideSelectedUserReviews();
+    }
+    if (settings.showLinkToImage) {
+      csfd.showLinkToImage();
+    }
+    if (settings.ratingsEstimate) {
+      csfd.ratingsEstimate();
+    }
+    if (settings.ratingsFromFavorites) {
+      csfd.ratingsFromFavorites();
+    }
   }
 
   // =================================
   // Page - Tvurce
   // =================================
   if (location.href.includes('/tvurce/') || location.href.includes('/tvorca/')) {
-    if (settings.showOnOneLine) { csfd.showOnOneLine(); }
+    if (settings.showOnOneLine) {
+      csfd.showOnOneLine();
+    }
   }
 
   // =================================
   // NOT LOGGED IN
   // =================================
-  if (!await csfd.isLoggedIn()) {
+  if (!(await csfd.isLoggedIn())) {
     // User page
     if (location.href.includes('/uzivatel/')) {
-      if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
+      if (settings.hideUserControlPanel) {
+        csfd.hideUserControlPanel();
+      }
     }
   }
-
 
   // =================================
   // LOGGED IN
@@ -3680,11 +3733,13 @@ class Csfd {
     // =================================
     // Page - Diskuze
     // =================================
-    if (await csfd.onPageDiskuze() && settings.addChatReplyButton) {
-      csfd.addChatReplyButton()
+    if ((await csfd.onPageDiskuze()) && settings.addChatReplyButton) {
+      csfd.addChatReplyButton();
     }
 
-    if (settings.addStars && await csfd.notOnUserPage()) { csfd.addStars(); }
+    if (settings.addStars && (await csfd.notOnUserPage())) {
+      csfd.addStars();
+    }
 
     let ratingsInLocalStorage = 0;
     let computedRatingsInLocalStorage = 0;
@@ -3701,20 +3756,26 @@ class Csfd {
       } else {
         csfd.userRatingsCount = currentUserRatingsCount;
       }
-      csfd.btnLoadComputedRatings();  // TODO:
+      csfd.btnLoadComputedRatings(); // TODO:
     }
 
     // =================================
     // Header modifications
     // =================================
-    if (settings.clickableMessages) { csfd.clickableMessages(); }
+    if (settings.clickableMessages) {
+      csfd.clickableMessages();
+    }
 
     // =================================
     // Page - Film
     // =================================
     if (location.href.includes('/film/')) {
-      if (settings.addRatingsDate) { csfd.addRatingsDate(); }
-      if (settings.addRatingsComputedCount) { csfd.addRatingsComputedCount(); }
+      if (settings.addRatingsDate) {
+        csfd.addRatingsDate();
+      }
+      if (settings.addRatingsComputedCount) {
+        csfd.addRatingsComputedCount();
+      }
 
       // Dynamic LocalStorage update on Film/Series in case user changes ratings
       await csfd.checkAndUpdateCurrentRating();
@@ -3724,11 +3785,19 @@ class Csfd {
     // Page - Other User
     // =================================
     if (await csfd.onPageOtherUser()) {
-      if (settings.displayMessageButton) { csfd.displayMessageButton(); }
-      if (settings.displayFavoriteButton) { csfd.displayFavoriteButton(); }
-      if (settings.hideUserControlPanel) { csfd.hideUserControlPanel(); }
+      if (settings.displayMessageButton) {
+        csfd.displayMessageButton();
+      }
+      if (settings.displayFavoriteButton) {
+        csfd.displayFavoriteButton();
+      }
+      if (settings.hideUserControlPanel) {
+        csfd.hideUserControlPanel();
+      }
       if (await csfd.onPageOtherUserHodnoceni()) {
-        if (settings.compareUserRatings) { csfd.addRatingsColumn(); }
+        if (settings.compareUserRatings) {
+          csfd.addRatingsColumn();
+        }
       }
     }
   }
@@ -3752,7 +3821,7 @@ class Csfd {
       let version = await csfd.checkForUpdate();
       let changelogText = await csfd.getChangelog();
       updateCheckJson.changelogText = changelogText;
-      $verLink.attr("data-tippy-content", changelogText);
+      $verLink.attr('data-tippy-content', changelogText);
       if (version !== curVersion) {
         updateCheckJson.newVersion = true;
         updateCheckJson.newVersionNumber = version;
@@ -3774,15 +3843,14 @@ class Csfd {
           const versionText = `${$verLink.text()} (Update v${updateCheckJson.newVersionNumber})`;
           $verLink.text(versionText);
         }
-        $verLink.attr("data-tippy-content", updateCheckJson.changelogText);
+        $verLink.attr('data-tippy-content', updateCheckJson.changelogText);
       } else {
-        $verLink.attr("data-tippy-content", updateCheckJson.changelogText);
+        $verLink.attr('data-tippy-content', updateCheckJson.changelogText);
       }
       // $('#script-version')
       //     .text(updateCheckJson.versionText)
       //     .attr("data-tippy-content", updateCheckJson.changelogText);
     }
-
   } else {
     let version = await csfd.checkForUpdate();
     let curVersion = VERSION.replace('v', '');
@@ -3795,12 +3863,12 @@ class Csfd {
       let changelogText = await csfd.getChangelog();
       $verLink.text(versionText);
       updateCheckJson.changelogText = changelogText;
-      $verLink.attr("data-tippy-content", changelogText);
+      $verLink.attr('data-tippy-content', changelogText);
     } else {
       updateCheckJson.changelogText = await csfd.getChangelog();
       updateCheckJson.newVersion = false;
       updateCheckJson.versionText = VERSION;
-      $('#script-version').attr("data-tippy-content", updateCheckJson.changelogText);
+      $('#script-version').attr('data-tippy-content', updateCheckJson.changelogText);
     }
     updateCheckJson.lastCheck = Date.now();
     sessionStorage.updateChecked = JSON.stringify(updateCheckJson);
@@ -3821,11 +3889,10 @@ class Csfd {
   // const res = await api.getCurrentPageRatings(url);
   // console.log("CURRENT PAGE RATINGS");
   // console.log(res);
-
 })();
 
 // Check if module object exists and export Csfd class
-if (typeof module !== "undefined" && module.exports) {
+if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     Csfd,
     onHomepage,
