@@ -33,6 +33,7 @@
     color: white;
     cursor: pointer;
     transition: background 0.2s;
+    height: auto;
 }
 
 .alert-button:hover {
