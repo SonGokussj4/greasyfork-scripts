@@ -1,13 +1,22 @@
 .alert-content {
     position: relative;
+    text-align: center;
 }
 
 .close-btn {
     position: absolute;
-    top: 0;
-    right: 0;
+    top: 10px;
+    right: 10px;
+    border: none;
+    background: none;
+    font-size: 20px;
     cursor: pointer;
-    padding: 5px;
+    color: #7f8c8d;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: whitesmoke;
 }
 
 .fancy-alert-button {
@@ -15,4 +24,64 @@
     top: 10px;
     right: 10px;
     z-index: 1000;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1001;
+}
+
+.modal-overlay.visible {
+    opacity: 1;
+}
+.fancy-alert {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    transform: translateY(-20px);
+    transition: transform 0.3s ease;
+    max-width: 400px;
+    width: 90%;
+}
+
+.modal-overlay.visible .fancy-alert {
+    transform: translateY(0);
+}
+
+.alert-title {
+    font-size: 1.5em;
+    margin-bottom: 15px;
+    color: #2c3e50;
+}
+
+.alert-message {
+    color: #34495e;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.alert-button {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    height: auto;
+}
+
+.alert-button:hover {
+    background: #2980b9;
 }
