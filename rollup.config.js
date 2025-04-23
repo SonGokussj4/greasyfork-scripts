@@ -2,6 +2,7 @@
 import css from 'rollup-plugin-css-only';
 import postcss from 'rollup-plugin-postcss';
 import commonjs from '@rollup/plugin-commonjs';
+import { string } from 'rollup-plugin-string';
 
 // PostCSS plugins
 import simplevars from 'postcss-simple-vars';
@@ -40,6 +41,9 @@ export default {
     postcss({
       plugins: [simplevars(), nested(), cssnext({ warnForDuplicates: false }), cssnano()],
       extensions: ['.css'],
+    }),
+    string({
+      include: '**/*.html',
     }),
     commonjs(),
   ],

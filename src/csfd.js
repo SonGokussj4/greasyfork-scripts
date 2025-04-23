@@ -10,29 +10,53 @@ export class Csfd {
     this.userUrl = undefined;
     this.username = undefined;
     this.userRatingsUrl = undefined;
+    this.isLoggedIn = false; // New property
   }
 
+  /**
+   *
+   * @returns {string|undefined} - Returns the user URL or undefined if not found
+   * @description - This function retrieves the current user's URL from the CSFD page and sets isLoggedIn.
+   */
   async getCurrentUser() {
     const userEl = document.querySelector('.profile.initialized');
     if (userEl) {
+      this.isLoggedIn = true;
       return userEl.getAttribute('href');
     }
-    throw new Error('User not logged in');
+    this.isLoggedIn = false;
+    console.debug('[CC] - User not found');
+    return undefined;
   }
 
+  /**
+   * @returns {string|undefined} - Returns the username or undefined if not found
+   * @description - This function retrieves the current user's username from the CSFD page.
+   */
   async getUsername() {
     const userHref = await this.getCurrentUser();
+    if (!userHref) {
+      console.debug('[CC] - User URL not found');
+      return undefined;
+    }
     const match = userHref.match(/\/(\d+)-(.+?)\//);
     if (match && match.length >= 3) {
       this.username = match[2];
       return this.username;
     }
+    console.debug('[CC] - Username not found');
     return undefined;
+  }
+
+  getIsLoggedIn() {
+    return this.isLoggedIn;
   }
 
   async initialize() {
     this.userUrl = await this.getCurrentUser();
+    console.debug('[CC] - User URL:', this.userUrl);
     this.username = await this.getUsername();
+    console.debug('[CC] - Username:', this.username);
     this.storageKey = `${'CSFD-Compare'}_${this.username}`;
     this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
     console.debug('[CC] - User URL:', this.userUrl);
