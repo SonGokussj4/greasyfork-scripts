@@ -159,7 +159,7 @@
   var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
   styleInject(css_248z$2);
 
-  var css_248z$1 = ".cc-settings{right:150px;top:100%;width:380px}.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;padding:2px 4px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:12px;height:auto;padding:6px;-webkit-transition:background .2s;transition:background .2s}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}";
+  var css_248z$1 = ".cc-settings{right:50px;top:100%;width:380px}.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;padding:2px 4px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:12px;height:auto;padding:6px;-webkit-transition:background .2s;transition:background .2s}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}";
   styleInject(css_248z$1);
 
   var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}";
@@ -178,21 +178,125 @@
     const $button = $(settingsButton);
     $('.header-bar').prepend($button);
 
+    let hoverTimeout;
+    let hideTimeout;
+
     // If DEBUG is enabled, just add $('.header-bar li').addClass('hovered');
     // if not, have the code bellow
     console.log('[ CC ] DEBUG:', DEBUG);
     {
-      $('.header-bar li').addClass('hovered');
-      $button.addClass('active');
+      // --- GROUP FANCY ALERT BUTTON AND CHECKBOX AT TOP RIGHT ---
+      // Create or find a top-right container for controls
+      let controlsContainer = document.querySelector('.fancy-alert-controls');
+      if (!controlsContainer) {
+        controlsContainer = document.createElement('div');
+        controlsContainer.className = 'fancy-alert-controls';
+        controlsContainer.style.position = 'fixed';
+        controlsContainer.style.top = '4px';
+        controlsContainer.style.right = '150px';
+        controlsContainer.style.zIndex = '9999';
+        controlsContainer.style.display = 'flex';
+        controlsContainer.style.alignItems = 'center';
+        controlsContainer.style.background = 'rgba(255,255,255,0.95)';
+        controlsContainer.style.borderRadius = '8px';
+        controlsContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+        controlsContainer.style.padding = '8px 16px';
+        document.body.appendChild(controlsContainer);
+      }
 
-      $button.find('.csfd-compare-menu').click(function (e) {
-        e.stopPropagation();
-        if ($button.hasClass('active')) {
-          $button.removeClass('active');
-          $('.header-bar li').removeClass('hovered');
+      // Remove any previous checkbox/buttons from the container to avoid duplicates
+      controlsContainer.innerHTML = '';
+
+      // Add checkbox for toggling hovered state to the left of the alert button
+      const checkboxLabel = document.createElement('label');
+      checkboxLabel.style.display = 'inline-flex';
+      checkboxLabel.style.alignItems = 'center';
+      checkboxLabel.style.marginRight = '10px';
+      checkboxLabel.style.cursor = 'pointer';
+      checkboxLabel.textContent = 'Hovered';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.style.marginRight = '5px';
+      checkbox.checked = localStorage.getItem('headerBarHovered') === 'true';
+      checkboxLabel.prepend(checkbox);
+      controlsContainer.appendChild(checkboxLabel);
+
+      // Create or find the fancy alert button
+      let alertButton = document.querySelector('.fancy-alert-button');
+      if (!alertButton) {
+        alertButton = document.createElement('button');
+        alertButton.textContent = 'Show Fancy Alert';
+        alertButton.className = 'fancy-alert-button';
+        alertButton.addEventListener('click', () => {
+          fancyAlert();
+        });
+      } else {
+        // Remove from previous parent if needed
+        if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
+          alertButton.parentNode.removeChild(alertButton);
+        }
+      }
+      controlsContainer.appendChild(alertButton);
+
+      // If checked, use DEBUG behaviour, else use non-DEBUG behaviour
+      function enableDebugHover() {
+        $('.header-bar li').addClass('hovered');
+        $button.addClass('active');
+        $button
+          .find('.csfd-compare-menu')
+          .off('click.debug')
+          .on('click.debug', function (e) {
+            e.stopPropagation();
+            if ($button.hasClass('active')) {
+              $button.removeClass('active');
+              $('.header-bar li').removeClass('hovered');
+            } else {
+              $button.addClass('active');
+              $('.header-bar li').addClass('hovered');
+            }
+          });
+        $button.add($button.find('.dropdown-content')).off('mouseenter mouseleave');
+      }
+
+      function enableNormalHover() {
+        $('.header-bar li').removeClass('hovered');
+        $button.removeClass('active');
+        $button.find('.csfd-compare-menu').off('click.debug');
+        $button
+          .add($button.find('.dropdown-content'))
+          .off('mouseenter mouseleave')
+          .hover(
+            function () {
+              clearTimeout(hideTimeout);
+              hoverTimeout = setTimeout(() => {
+                $('.header-bar li').addClass('hovered');
+                $button.addClass('active');
+              }, 200);
+            },
+            function () {
+              clearTimeout(hoverTimeout);
+              hideTimeout = setTimeout(() => {
+                $('.header-bar li').removeClass('hovered');
+                $button.removeClass('active');
+              }, 200);
+            }
+          );
+      }
+
+      // Set initial state from localStorage
+      if (checkbox.checked) {
+        enableDebugHover();
+      } else {
+        enableNormalHover();
+      }
+
+      checkbox.addEventListener('change', function () {
+        if (checkbox.checked) {
+          localStorage.setItem('headerBarHovered', 'true');
+          enableDebugHover();
         } else {
-          $button.addClass('active');
-          $('.header-bar li').addClass('hovered');
+          localStorage.setItem('headerBarHovered', 'false');
+          enableNormalHover();
         }
       });
     }
@@ -236,11 +340,11 @@
     alertButton.className = 'fancy-alert-button';
     document.body.appendChild(alertButton);
     alertButton.addEventListener('click', () => {
-      fancyAlert();
+      fancyAlert$1();
     });
   })();
 
-  async function fancyAlert() {
+  async function fancyAlert$1() {
     console.log('fancyAlert called');
 
     // Create overlay
