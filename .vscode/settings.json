@@ -1,0 +1,21 @@
+{
+    "emeraldwalk.runonsave": {
+        "commands": [
+            {
+                "match": ".*\\.html$",
+                "cmd": "rollup -c",
+                "useShortcut": false
+            },
+            {
+                "match": ".*\\.css$",
+                "cmd": "rollup -c",
+                "useShortcut": false
+            },
+            {
+                "match": ".*\\.js$",
+                "cmd": "rollup -c",
+                "useShortcut": false
+            }
+        ]
+    }
+}
