@@ -153,7 +153,7 @@
     }
   }
 
-  var css_248z$3 = ".alert-content{position:relative;text-align:center}.close-btn{background:none;border:none;color:#7f8c8d;cursor:pointer;font-size:20px;position:absolute;right:10px;top:10px;-webkit-transition:color .2s;transition:color .2s}.close-btn:hover{color:#f5f5f5}.fancy-alert-button{position:fixed;right:10px;top:10px;z-index:1000}.modal-overlay{background:rgba(0,0,0,.5);display:-webkit-box;display:-ms-flexbox;display:flex;height:100%;left:0;position:fixed;top:0;width:100%;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;opacity:0;-webkit-transition:opacity .3s ease;transition:opacity .3s ease;z-index:1001}.modal-overlay.visible{opacity:1}";
+  var css_248z$3 = ".alert-content{position:relative;text-align:center}.close-btn{background:none;border:none;color:#7f8c8d;cursor:pointer;font-size:20px;position:absolute;right:10px;top:10px;-webkit-transition:color .2s;transition:color .2s}.close-btn:hover{color:#f5f5f5}.fancy-alert-button{position:fixed;right:10px;top:10px;z-index:1000}.modal-overlay{background:rgba(0,0,0,.5);display:-webkit-box;display:-ms-flexbox;display:flex;height:100%;left:0;position:fixed;top:0;width:100%;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;opacity:0;-webkit-transition:opacity .3s ease;transition:opacity .3s ease;z-index:10000}.modal-overlay.visible{opacity:1}";
   styleInject(css_248z$3);
 
   var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
@@ -168,6 +168,70 @@
   var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <i class=\"icon\">⭐CC</i>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head cc-settings-head\">\r\n        <div class=\"left-head flex gap-5\">\r\n            <h2>CSFD-Compare</h2>\r\n            <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\">v6.6.0</a>\r\n        </div>\r\n        <div class=\"right-head ml-auto\">\r\n            <span class=\"cc-badge cc-badge-red\">21355 / 23352</span>\r\n            <span class=\"cc-badge cc-badge-black\">0 / 1650</span>\r\n            <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\" class=\"button\">CC</a>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"flex justify-evenly gap-5 ph-5\">\r\n        <button class=\"cc-button cc-button-red grow\">Načíst hodnocení</button>\r\n        <button class=\"cc-button cc-button-black\">Načíst spočtená hodnocení</button>\r\n    </div>\r\n\r\n    <details style=\"margin-bottom: 16px;\">\r\n        <summary style=\"cursor: pointer; font-size: 12px; color: #444;\">🛠️ Další akce</summary>\r\n        <div\r\n            style=\"display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;\">\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Reset</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                LC</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                DB</button>\r\n        </div>\r\n    </details>\r\n\r\n    <article class=\"article\">\r\n        <div class=\"article-content\">\r\n            <form>\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option1\" /> Option 1\r\n                </label>\r\n                <br />\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option2\" /> Option 2\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
 
   const DEBUG = true;
+
+  let isFancyAlertOpen = false;
+
+  async function fancyAlert() {
+    if (isFancyAlertOpen) {
+      return;
+    }
+    isFancyAlertOpen = true;
+
+    console.log('fancyAlert called');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const alert = document.createElement('div');
+    alert.className = 'fancy-alert';
+    alert.innerHTML = `
+    <div class="alert-content">
+      <button class="close-btn">&times;</button>
+      <h2 class="alert-title">Welcome!</h2>
+      <p class="alert-message">This is a fancy modal alert with modern styling and animations.</p>
+      <button class="alert-button">Got it!</button>
+    </div>
+  `;
+
+    overlay.appendChild(alert);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+      overlay.classList.add('visible');
+    });
+
+    let isClosing = false;
+    const closeModal = () => {
+      if (isClosing) {
+        return;
+      }
+      isClosing = true;
+      overlay.classList.remove('visible');
+      setTimeout(() => {
+        overlay.remove();
+        isFancyAlertOpen = false;
+        isClosing = false;
+      }, 300);
+    };
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    alert.querySelector('.close-btn').addEventListener('click', closeModal);
+    alert.querySelector('.alert-button').addEventListener('click', closeModal);
+  }
+
+  function bindFancyAlertButton(alertButton) {
+    if (!alertButton || alertButton.dataset.fancyAlertBound === 'true') {
+      return;
+    }
+
+    alertButton.addEventListener('click', () => {
+      fancyAlert();
+    });
+    alertButton.dataset.fancyAlertBound = 'true';
+  }
 
   // addSettingsButton function that will create element 'li' as a 'let button'
 
@@ -227,15 +291,13 @@
         alertButton = document.createElement('button');
         alertButton.textContent = 'Show Fancy Alert';
         alertButton.className = 'fancy-alert-button';
-        alertButton.addEventListener('click', () => {
-          fancyAlert();
-        });
       } else {
         // Remove from previous parent if needed
         if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
           alertButton.parentNode.removeChild(alertButton);
         }
       }
+      bindFancyAlertButton(alertButton);
       controlsContainer.appendChild(alertButton);
 
       // If checked, use DEBUG behaviour, else use non-DEBUG behaviour
@@ -279,7 +341,7 @@
                 $('.header-bar li').removeClass('hovered');
                 $button.removeClass('active');
               }, 200);
-            }
+            },
           );
       }
 
@@ -335,54 +397,14 @@
     setControlsDisabledByLoginState(csfd.getIsLoggedIn(), ['option2']);
 
     // Add fancy alert
-    const alertButton = document.createElement('button');
-    alertButton.textContent = 'Show Fancy Alert';
-    alertButton.className = 'fancy-alert-button';
-    document.body.appendChild(alertButton);
-    alertButton.addEventListener('click', () => {
-      fancyAlert$1();
-    });
+    let alertButton = document.querySelector('.fancy-alert-button');
+    if (!alertButton) {
+      alertButton = document.createElement('button');
+      alertButton.textContent = 'Show Fancy Alert';
+      alertButton.className = 'fancy-alert-button';
+      document.body.appendChild(alertButton);
+    }
+    bindFancyAlertButton(alertButton);
   })();
-
-  async function fancyAlert$1() {
-    console.log('fancyAlert called');
-
-    // Create overlay
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-
-    // Create alert
-    const alert = document.createElement('div');
-    alert.className = 'fancy-alert';
-    alert.innerHTML = `
-    <div class="alert-content">
-      <button class="close-btn">&times;</button>
-      <h2 class="alert-title">Welcome!</h2>
-      <p class="alert-message">This is a fancy modal alert with modern styling and animations.</p>
-      <button class="alert-button">Got it!</button>
-    </div>
-  `;
-
-    overlay.appendChild(alert);
-    document.body.appendChild(overlay);
-
-    // Trigger animation
-    requestAnimationFrame(() => {
-      overlay.classList.add('visible');
-    });
-
-    // Close handlers
-    const closeModal = () => {
-      overlay.classList.remove('visible');
-      setTimeout(() => overlay.remove(), 300); // Wait for animation
-    };
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeModal();
-    });
-
-    alert.querySelector('.close-btn').addEventListener('click', closeModal);
-    alert.querySelector('.alert-button').addEventListener('click', closeModal);
-  }
 
 })();

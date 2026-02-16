@@ -4,6 +4,7 @@
 import htmlContent from './settings-button-content.html';
 // Load DEBUG variable from env file
 import { DEBUG } from './env.js';
+import { bindFancyAlertButton } from './fancy-alert.js';
 
 async function addSettingsButton() {
   ('use strict');
@@ -61,15 +62,13 @@ async function addSettingsButton() {
       alertButton = document.createElement('button');
       alertButton.textContent = 'Show Fancy Alert';
       alertButton.className = 'fancy-alert-button';
-      alertButton.addEventListener('click', () => {
-        fancyAlert();
-      });
     } else {
       // Remove from previous parent if needed
       if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
         alertButton.parentNode.removeChild(alertButton);
       }
     }
+    bindFancyAlertButton(alertButton);
     controlsContainer.appendChild(alertButton);
 
     // If checked, use DEBUG behaviour, else use non-DEBUG behaviour
@@ -113,7 +112,7 @@ async function addSettingsButton() {
               $('.header-bar li').removeClass('hovered');
               $button.removeClass('active');
             }, 200);
-          }
+          },
         );
     }
 
@@ -148,7 +147,7 @@ async function addSettingsButton() {
           $('.header-bar li').removeClass('hovered');
           $button.removeClass('active');
         }, 200);
-      }
+      },
     );
   }
 }
