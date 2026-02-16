@@ -5,12 +5,14 @@ import htmlContent from './settings-button-content.html';
 // Load DEBUG variable from env file
 import { DEBUG } from './env.js';
 import { bindFancyAlertButton } from './fancy-alert.js';
+import { initializeRatingsLoader } from './ratings-loader.js';
 
 async function addSettingsButton() {
   ('use strict');
   const settingsButton = document.createElement('li');
   settingsButton.classList.add('cc-menu-item');
   settingsButton.innerHTML = htmlContent;
+  initializeRatingsLoader(settingsButton);
   const $button = $(settingsButton);
   $('.header-bar').prepend($button);
 

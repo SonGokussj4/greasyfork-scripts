@@ -29,17 +29,41 @@ export async function checkSettingsValidity(settings, settingsName, defaultSetti
 
 export async function initIndexedDB(dbName, storeName) {
   return new Promise((resolve, reject) => {
-    const openRequest = indexedDB.open(dbName, INDEXED_DB_VERSION);
+    const openRequest = indexedDB.open(dbName);
+
     openRequest.onupgradeneeded = function (event) {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(storeName)) {
         db.createObjectStore(storeName, { keyPath: 'id' });
       }
-      resolve(db);
     };
+
     openRequest.onsuccess = function () {
-      resolve(openRequest.result);
+      const db = openRequest.result;
+
+      if (db.objectStoreNames.contains(storeName)) {
+        resolve(db);
+        return;
+      }
+
+      const nextVersion = db.version + 1;
+      db.close();
+
+      const upgradeRequest = indexedDB.open(dbName, nextVersion);
+      upgradeRequest.onupgradeneeded = function (event) {
+        const upgradedDb = event.target.result;
+        if (!upgradedDb.objectStoreNames.contains(storeName)) {
+          upgradedDb.createObjectStore(storeName, { keyPath: 'id' });
+        }
+      };
+      upgradeRequest.onsuccess = function () {
+        resolve(upgradeRequest.result);
+      };
+      upgradeRequest.onerror = function () {
+        reject(upgradeRequest.error);
+      };
     };
+
     openRequest.onerror = function () {
       reject(openRequest.error);
     };
@@ -99,7 +123,7 @@ export async function getItemsFromIndexedDB(dbName, storeName, ids) {
         const req = store.get(id);
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
-      })
+      }),
     );
   }
   return items;
