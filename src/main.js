@@ -6,7 +6,7 @@ import './styles/cc-menu.css';
 import './styles/general.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
-import { bindFancyAlertButton } from './fancy-alert.js';
+import { fancyAlert } from './fancy-alert.js';
 
 (async () => {
   'use strict';
@@ -32,5 +32,7 @@ import { bindFancyAlertButton } from './fancy-alert.js';
     alertButton.className = 'fancy-alert-button';
     document.body.appendChild(alertButton);
   }
-  bindFancyAlertButton(alertButton);
+  alertButton.addEventListener('click', () => {
+    fancyAlert();
+  });
 })();

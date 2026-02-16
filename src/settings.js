@@ -9,6 +9,7 @@ import { bindFancyAlertButton } from './fancy-alert.js';
 async function addSettingsButton() {
   ('use strict');
   const settingsButton = document.createElement('li');
+  settingsButton.classList.add('cc-menu-item');
   settingsButton.innerHTML = htmlContent;
   const $button = $(settingsButton);
   $('.header-bar').prepend($button);

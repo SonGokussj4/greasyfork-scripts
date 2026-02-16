@@ -51,3 +51,16 @@
 .cc-button-black:hover {
     background-color: #000000;
 }
+
+.header-bar .csfd-compare-menu {
+    position: relative;
+}
+
+.header-bar .csfd-compare-menu .cc-menu-icon {
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    display: block;
+    width: 24px;
+    height: 24px;
+}
