@@ -10,15 +10,15 @@ import { fancyAlert } from './fancy-alert.js';
 
 (async () => {
   'use strict';
-  console.debug('[ CC ] - Script started');
+  console.debug('🟣 Script started');
   await delay(20);
-  console.debug('[ CC ] - Adding main button');
+  console.debug('🟣 Adding main button');
   await addSettingsButton();
 
   const csfd = new Csfd(document.querySelector('div.page-content'));
-  console.debug('[ CC ] Initializing CSFD-Compare');
+  console.debug('🟣 Initializing CSFD-Compare');
   await csfd.initialize();
-  console.debug('[ CC ] Adding stars');
+  console.debug('🟣 Adding stars');
   await csfd.addStars();
 
   // Disable Option 2 if not logged in (now using utility)

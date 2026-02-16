@@ -25,7 +25,7 @@ export class Csfd {
       return userEl.getAttribute('href');
     }
     this.isLoggedIn = false;
-    console.debug('[CC] - User not found');
+    console.debug('🟣 User not found');
     return undefined;
   }
 
@@ -36,7 +36,7 @@ export class Csfd {
   async getUsername() {
     const userHref = await this.getCurrentUser();
     if (!userHref) {
-      console.debug('[CC] - User URL not found');
+      console.debug('🟣 User URL not found');
       return undefined;
     }
     const match = userHref.match(/\/(\d+)-(.+?)\//);
@@ -44,7 +44,7 @@ export class Csfd {
       this.username = match[2];
       return this.username;
     }
-    console.debug('[CC] - Username not found');
+    console.debug('🟣 Username not found');
     return undefined;
   }
 
@@ -54,15 +54,15 @@ export class Csfd {
 
   async initialize() {
     this.userUrl = await this.getCurrentUser();
-    console.debug('[CC] - User URL:', this.userUrl);
+    console.debug('🟣 User URL:', this.userUrl);
     this.username = await this.getUsername();
-    console.debug('[CC] - Username:', this.username);
+    console.debug('🟣 Username:', this.username);
     this.storageKey = `${'CSFD-Compare'}_${this.username}`;
     this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
-    console.debug('[CC] - User URL:', this.userUrl);
-    console.debug('[CC] - Username:', this.username);
-    console.debug('[CC] - Storage Key:', this.storageKey);
-    console.debug('[CC] - User Ratings URL:', this.userRatingsUrl);
+    console.debug('🟣 User URL:', this.userUrl);
+    console.debug('🟣 Username:', this.username);
+    console.debug('🟣 Storage Key:', this.storageKey);
+    console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
     const settings = await getSettings(SETTINGSNAME);
     if (settings) {
       this.stars = settings.stars;
@@ -70,7 +70,7 @@ export class Csfd {
     if (!this.stars) {
       this.stars = {};
     }
-    console.debug('[CC] - Stars:', this.stars);
+    console.debug('🟣 Stars:', this.stars);
   }
 
   async addStars() {
