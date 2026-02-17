@@ -20,6 +20,13 @@ import { fancyAlert } from './fancy-alert.js';
   await csfd.initialize();
   console.debug('🟣 Adding stars');
   await csfd.addStars();
+  await csfd.addGalleryImageFormatLinks();
+
+  window.addEventListener('cc-gallery-image-links-toggled', () => {
+    csfd.addGalleryImageFormatLinks().catch((error) => {
+      console.error('[CC] Failed to toggle gallery image format links:', error);
+    });
+  });
 
   // Disable Option 2 if not logged in (now using utility)
   setControlsDisabledByLoginState(csfd.getIsLoggedIn(), ['option2']);

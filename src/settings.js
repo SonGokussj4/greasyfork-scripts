@@ -7,11 +7,49 @@ import { DEBUG } from './env.js';
 import { bindFancyAlertButton } from './fancy-alert.js';
 import { initializeRatingsLoader } from './ratings-loader.js';
 import { initializeRatingsSync } from './ratings-sync.js';
-import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { INDEXED_DB_NAME, RATINGS_STORE_NAME, GALLERY_IMAGE_LINKS_ENABLED_KEY } from './config.js';
 import { getAllFromIndexedDB } from './storage.js';
 
 const MODAL_RENDER_SYNC_THRESHOLD = 700;
 const MODAL_RENDER_CHUNK_SIZE = 450;
+let infoToastTimeoutId;
+
+function isGalleryImageLinksEnabled() {
+  const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+  return persistedValue === null ? true : persistedValue === 'true';
+}
+
+function showSettingsInfoToast(message) {
+  let toastEl = document.querySelector('#cc-settings-info-toast');
+  if (!toastEl) {
+    toastEl = document.createElement('div');
+    toastEl.id = 'cc-settings-info-toast';
+    toastEl.style.position = 'fixed';
+    toastEl.style.left = '50%';
+    toastEl.style.top = '70px';
+    toastEl.style.transform = 'translateX(-50%)';
+    toastEl.style.zIndex = '10020';
+    toastEl.style.padding = '8px 12px';
+    toastEl.style.borderRadius = '8px';
+    toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
+    toastEl.style.color = '#fff';
+    toastEl.style.fontSize = '12px';
+    toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
+    toastEl.style.display = 'none';
+    document.body.appendChild(toastEl);
+  }
+
+  toastEl.textContent = message;
+  toastEl.style.display = 'block';
+
+  if (infoToastTimeoutId) {
+    clearTimeout(infoToastTimeoutId);
+  }
+  infoToastTimeoutId = window.setTimeout(() => {
+    toastEl.style.display = 'none';
+  }, 1800);
+}
+
 const ratingsModalCache = {
   userSlug: '',
   userRecords: null,
@@ -815,6 +853,22 @@ async function addSettingsButton() {
   settingsButton.innerHTML = htmlContent;
   initializeRatingsLoader(settingsButton);
   initializeRatingsSync(settingsButton);
+
+  const galleryImageLinksToggle = settingsButton.querySelector('#cc-enable-gallery-image-links');
+  if (galleryImageLinksToggle) {
+    galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
+    galleryImageLinksToggle.addEventListener('change', () => {
+      const enabled = galleryImageLinksToggle.checked;
+      localStorage.setItem(GALLERY_IMAGE_LINKS_ENABLED_KEY, String(enabled));
+      window.dispatchEvent(
+        new CustomEvent('cc-gallery-image-links-toggled', {
+          detail: { enabled },
+        }),
+      );
+
+      showSettingsInfoToast(enabled ? 'Formáty obrázků v galerii zapnuty.' : 'Formáty obrázků v galerii vypnuty.');
+    });
+  }
 
   const redBadge = settingsButton.querySelector('#cc-badge-red');
   const blackBadge = settingsButton.querySelector('#cc-badge-black');
