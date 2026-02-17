@@ -332,6 +332,94 @@ export class Csfd {
     return path.includes('/hodnoceni/') || path.includes('/hodnotenia/');
   }
 
+  getRatingsPageSlug() {
+    const path = location.pathname || '';
+    const match = path.match(/^\/uzivatel\/(\d+-[^/]+)\/(hodnoceni|hodnotenia)\/?/i);
+    return match ? match[1] : undefined;
+  }
+
+  isOnForeignRatingsPage() {
+    const ratingsPageSlug = this.getRatingsPageSlug();
+    if (!ratingsPageSlug || !this.userSlug) {
+      return false;
+    }
+
+    return ratingsPageSlug !== this.userSlug;
+  }
+
+  async addComparisonColumnOnForeignRatingsPage() {
+    const getRatingsTables = () =>
+      Array.from(
+        document.querySelectorAll('#snippet--ratings table, #snippet-ratings table, .snippet-ratings table, table'),
+      ).filter(
+        (table) => table.querySelector('td.star-rating-only') && table.querySelector('td.name a[href*="/film/"]'),
+      );
+
+    let ratingsTables = getRatingsTables();
+    if (ratingsTables.length === 0) {
+      await delay(350);
+      ratingsTables = getRatingsTables();
+      if (ratingsTables.length === 0) {
+        return;
+      }
+    }
+
+    for (const table of ratingsTables) {
+      table.classList.add('cc-compare-ratings-table');
+
+      const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
+        (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
+      );
+
+      if (rows.length === 0) {
+        continue;
+      }
+
+      const headerRow = table.querySelector('thead tr');
+      if (headerRow && !headerRow.querySelector('.cc-my-rating-col')) {
+        const colHeader = document.createElement('th');
+        colHeader.className = 'cc-my-rating-col';
+        colHeader.textContent = 'Moje';
+        const ratingHeader = headerRow.querySelector('th.star-rating-only');
+        if (ratingHeader) {
+          ratingHeader.insertAdjacentElement('beforebegin', colHeader);
+        } else {
+          headerRow.appendChild(colHeader);
+        }
+      }
+
+      for (const row of rows) {
+        if (row.querySelector('td.cc-my-rating-cell')) {
+          continue;
+        }
+
+        const nameLink = row.querySelector('td.name a[href*="/film/"]');
+        const ratingCell = row.querySelector('td.star-rating-only');
+        if (!nameLink || !ratingCell) {
+          continue;
+        }
+
+        const movieId = await this.getMovieIdFromUrl(nameLink.getAttribute('href'));
+        const ratingRecord = this.stars[movieId];
+
+        const myRatingCell = document.createElement('td');
+        myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+
+        if (ratingRecord) {
+          const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
+          const isComputed = typeof ratingRecord === 'object' && ratingRecord?.computed === true;
+          const starElement = this.createStarElement(ratingValue, isComputed);
+          if (starElement) {
+            starElement.classList.remove('cc-own-rating');
+            myRatingCell.appendChild(starElement);
+          }
+        }
+
+        ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+      }
+    }
+  }
+
   createStarElement(ratingValue, isComputed = false) {
     if (!Number.isFinite(ratingValue)) {
       return undefined;
@@ -359,6 +447,11 @@ export class Csfd {
 
   async addStars() {
     if (this.isOnOwnRatingsPage()) {
+      return;
+    }
+
+    if (this.isOnForeignRatingsPage()) {
+      await this.addComparisonColumnOnForeignRatingsPage();
       return;
     }
 

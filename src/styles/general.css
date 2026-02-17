@@ -152,3 +152,22 @@
 .cc-own-rating-computed .stars:before {
     color: var(--color-grey-dark2, #d2d2d2);
 }
+
+.cc-my-rating-col {
+    width: 64px;
+    text-align: center;
+}
+
+.cc-my-rating-cell {
+    width: 64px;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.cc-my-rating-cell .cc-own-rating {
+    margin-left: 0;
+}
+
+.cc-compare-ratings-table {
+    width: calc(100% + 24px);
+}
