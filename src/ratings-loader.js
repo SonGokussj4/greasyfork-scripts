@@ -1,13 +1,20 @@
 import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, RATINGS_STORE_NAME } from './config.js';
-import { saveToIndexedDB } from './storage.js';
+import { getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
 
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
 const REQUEST_DELAY_MIN_MS = 250;
 const REQUEST_DELAY_MAX_MS = 550;
 const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
+const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
 
 const loaderController = {
+  isRunning: false,
+  pauseRequested: false,
+  pauseReason: 'manual',
+};
+
+const computedLoaderController = {
   isRunning: false,
   pauseRequested: false,
   pauseReason: 'manual',
@@ -293,12 +300,372 @@ function clearPersistedLoaderState() {
   localStorage.removeItem(LOADER_STATE_STORAGE_KEY);
 }
 
+function getPersistedComputedLoaderState() {
+  try {
+    const raw = localStorage.getItem(COMPUTED_LOADER_STATE_STORAGE_KEY);
+    if (!raw) {
+      return undefined;
+    }
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setPersistedComputedLoaderState(state) {
+  localStorage.setItem(
+    COMPUTED_LOADER_STATE_STORAGE_KEY,
+    JSON.stringify({
+      ...state,
+      updatedAt: new Date().toISOString(),
+    }),
+  );
+}
+
+function clearPersistedComputedLoaderState() {
+  localStorage.removeItem(COMPUTED_LOADER_STATE_STORAGE_KEY);
+}
+
 function isStateForCurrentUser(state, userSlug) {
   if (!state || !userSlug) {
     return false;
   }
 
   return state.userSlug === userSlug;
+}
+
+function parseRatingFromStarsElement(starsEl) {
+  if (!starsEl) {
+    return NaN;
+  }
+
+  if (starsEl.classList.contains('trash')) {
+    return 0;
+  }
+
+  const starClass = Array.from(starsEl.classList).find((className) => /^stars-\d$/.test(className));
+  if (!starClass) {
+    return NaN;
+  }
+
+  return Number.parseInt(starClass.replace('stars-', ''), 10);
+}
+
+function parseCurrentUserRatingFromDocument(doc) {
+  const currentUserNode = doc.querySelector('.others-rating .current-user-rating') || doc.querySelector('.my-rating');
+  if (!currentUserNode) {
+    return undefined;
+  }
+
+  const starRatingNode =
+    currentUserNode.querySelector('.star-rating') || currentUserNode.querySelector('.stars-rating');
+  const starsEl = starRatingNode?.querySelector('.stars');
+  const rating = parseRatingFromStarsElement(starsEl);
+
+  if (!Number.isFinite(rating)) {
+    return undefined;
+  }
+
+  const titleWithComputed =
+    currentUserNode.querySelector('[title*="spočten" i]')?.getAttribute('title') ||
+    currentUserNode.querySelector('[title*="spocten" i]')?.getAttribute('title') ||
+    '';
+
+  const computedByClass =
+    starRatingNode?.classList.contains('computed') ||
+    currentUserNode.querySelector('.star.active.computed, .star.computed') !== null;
+
+  const computed = computedByClass || titleWithComputed.length > 0;
+  const computedCountMatch = titleWithComputed.match(/(\d+)/);
+  const computedCount = computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN;
+
+  return {
+    rating,
+    computed,
+    computedCount,
+    computedFromText: titleWithComputed,
+  };
+}
+
+function parsePageName(doc) {
+  const titleEl = doc.querySelector('.film-header h1');
+  return titleEl?.textContent?.replace(/\s+/g, ' ').trim() || '';
+}
+
+function parsePageYear(doc) {
+  const originText = doc.querySelector('.film-info-content .origin')?.textContent || '';
+  const yearMatch = originText.match(/\b(19|20)\d{2}\b/);
+  return yearMatch ? Number.parseInt(yearMatch[0], 10) : NaN;
+}
+
+function parsePageType(doc) {
+  const typeText = doc.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
+  if (typeText.includes('epizoda')) return 'episode';
+  if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
+  if (typeText.includes('série') || typeText.includes('serie')) return 'series';
+  return 'movie';
+}
+
+function parsePageDate(doc) {
+  const title =
+    doc.querySelector('.my-rating .stars-rating')?.getAttribute('title') ||
+    doc.querySelector('.others-rating .current-user-rating [title*="Vloženo" i]')?.getAttribute('title') ||
+    '';
+  const match = title.match(/(\d{1,2}\.\d{1,2}\.\d{4})/);
+  return match ? match[1] : '';
+}
+
+function buildParentFullUrl(parentSlug) {
+  return new URL(`/film/${parentSlug}/`, location.origin).toString();
+}
+
+function buildParentReviewsUrl(parentSlug) {
+  return new URL(`/film/${parentSlug}/recenze/`, location.origin).toString();
+}
+
+function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord, parsedRating, doc }) {
+  const nowIso = new Date().toISOString();
+
+  return {
+    ...(existingRecord || {}),
+    id: `${userSlug}:${parentSlug}`,
+    userSlug,
+    movieId: parentId,
+    url: parentSlug,
+    fullUrl: buildParentFullUrl(parentSlug),
+    name: parsePageName(doc) || existingRecord?.name || '',
+    year: parsePageYear(doc),
+    type: parsePageType(doc),
+    rating: parsedRating.rating,
+    date: parsePageDate(doc) || existingRecord?.date || '',
+    parentId: Number.NaN,
+    parentName: '',
+    computed: parsedRating.computed,
+    computedCount: parsedRating.computedCount,
+    computedFromText: parsedRating.computedFromText,
+    lastUpdate: nowIso,
+  };
+}
+
+async function loadComputedParentRatingsForCurrentUser({
+  onProgress = () => {},
+  resumeState = undefined,
+  shouldPause = () => false,
+} = {}) {
+  const profilePath = getCurrentProfilePath();
+  if (!profilePath) {
+    throw new Error('Profil uživatele nebyl nalezen.');
+  }
+
+  const userSlug = extractUserSlugFromProfilePath(profilePath);
+  if (!userSlug) {
+    throw new Error('Nepodařilo se přečíst ID uživatele z profilu.');
+  }
+
+  const allRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+  const userRecords = allRecords.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+
+  let parentCandidatesCount = 0;
+  let unresolvedParents = [];
+  let startIndex = 0;
+  let processed = 0;
+  let saved = 0;
+  let skippedNonComputed = 0;
+
+  const recordsByMovieId = new Map();
+
+  for (const record of userRecords) {
+    const existing = recordsByMovieId.get(record.movieId);
+    if (!existing) {
+      recordsByMovieId.set(record.movieId, record);
+    } else if (existing?.computed === true && record?.computed !== true) {
+      recordsByMovieId.set(record.movieId, record);
+    }
+
+    if (record.computed === true && !record.computedFromText) {
+      record.computedFromText = 'spocten';
+    }
+  }
+
+  if (
+    resumeState &&
+    isStateForCurrentUser(resumeState, userSlug) &&
+    Array.isArray(resumeState.unresolvedParents) &&
+    resumeState.unresolvedParents.length > 0
+  ) {
+    unresolvedParents = resumeState.unresolvedParents;
+    parentCandidatesCount = Number.parseInt(resumeState.parentCandidatesCount || `${unresolvedParents.length}`, 10);
+    startIndex = Math.max(0, Number.parseInt(resumeState.nextIndex || '0', 10));
+    processed = Math.max(0, Number.parseInt(resumeState.processed || '0', 10));
+    saved = Math.max(0, Number.parseInt(resumeState.saved || '0', 10));
+    skippedNonComputed = Math.max(0, Number.parseInt(resumeState.skippedNonComputed || '0', 10));
+  } else {
+    const parentCandidatesMap = new Map();
+    for (const record of userRecords) {
+      if (Number.isFinite(record.parentId) && typeof record.parentName === 'string' && record.parentName.length > 0) {
+        parentCandidatesMap.set(record.parentId, record.parentName);
+      }
+    }
+
+    const parentCandidates = Array.from(parentCandidatesMap.entries()).map(([parentId, parentSlug]) => ({
+      parentId,
+      parentSlug,
+    }));
+    parentCandidatesCount = parentCandidates.length;
+
+    unresolvedParents = parentCandidates.filter(({ parentId }) => {
+      const existingParent = recordsByMovieId.get(parentId);
+      return !existingParent || existingParent.computed === true;
+    });
+  }
+
+  setPersistedComputedLoaderState({
+    status: 'running',
+    userSlug,
+    profilePath,
+    parentCandidatesCount,
+    unresolvedParents,
+    nextIndex: startIndex,
+    processed,
+    saved,
+    skippedNonComputed,
+  });
+
+  onProgress({
+    stage: 'prepare',
+    current: Math.min(startIndex, unresolvedParents.length),
+    total: unresolvedParents.length || 1,
+    message: `Kandidáti parent položek: ${parentCandidatesCount}, k dopočtu: ${unresolvedParents.length}`,
+  });
+
+  for (let index = startIndex; index < unresolvedParents.length; index++) {
+    if (shouldPause()) {
+      setPersistedComputedLoaderState({
+        status: 'paused',
+        pauseReason: computedLoaderController.pauseReason || 'manual',
+        userSlug,
+        profilePath,
+        parentCandidatesCount,
+        unresolvedParents,
+        nextIndex: index,
+        processed,
+        saved,
+        skippedNonComputed,
+      });
+
+      return {
+        userSlug,
+        candidates: parentCandidatesCount,
+        unresolved: unresolvedParents.length,
+        processed,
+        saved,
+        skippedNonComputed,
+        paused: true,
+        nextIndex: index,
+      };
+    }
+
+    const { parentId, parentSlug } = unresolvedParents[index];
+    processed = index + 1;
+
+    const existingRecord = recordsByMovieId.get(parentId);
+    const reviewsUrl = buildParentReviewsUrl(parentSlug);
+    const doc = await fetchRatingsPageDocument(reviewsUrl);
+    const parsedRating = parseCurrentUserRatingFromDocument(doc);
+
+    if (!parsedRating) {
+      onProgress({
+        stage: 'fetch',
+        current: processed,
+        total: unresolvedParents.length || 1,
+        message: `Stránka ${processed}/${unresolvedParents.length}: bez uživatelského hodnocení (${parentSlug})`,
+      });
+
+      setPersistedComputedLoaderState({
+        status: 'running',
+        userSlug,
+        profilePath,
+        parentCandidatesCount,
+        unresolvedParents,
+        nextIndex: index + 1,
+        processed,
+        saved,
+        skippedNonComputed,
+      });
+      continue;
+    }
+
+    if (!parsedRating.computed) {
+      skippedNonComputed += 1;
+      onProgress({
+        stage: 'fetch',
+        current: processed,
+        total: unresolvedParents.length || 1,
+        message: `Přeskakuji ne-spočtené hodnocení (${processed}/${unresolvedParents.length})`,
+      });
+
+      setPersistedComputedLoaderState({
+        status: 'running',
+        userSlug,
+        profilePath,
+        parentCandidatesCount,
+        unresolvedParents,
+        nextIndex: index + 1,
+        processed,
+        saved,
+        skippedNonComputed,
+      });
+      continue;
+    }
+
+    const record = toComputedParentRecord({
+      userSlug,
+      parentId,
+      parentSlug,
+      existingRecord,
+      parsedRating,
+      doc,
+    });
+
+    await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, record);
+    recordsByMovieId.set(parentId, record);
+    saved += 1;
+
+    setPersistedComputedLoaderState({
+      status: 'running',
+      userSlug,
+      profilePath,
+      parentCandidatesCount,
+      unresolvedParents,
+      nextIndex: index + 1,
+      processed,
+      saved,
+      skippedNonComputed,
+    });
+
+    onProgress({
+      stage: 'fetch',
+      current: processed,
+      total: unresolvedParents.length || 1,
+      message: `Dopočítávám ${processed}/${unresolvedParents.length}… (${saved} spočtených uloženo)`,
+    });
+
+    if (index < unresolvedParents.length - 1) {
+      await delay(randomDelay());
+    }
+  }
+
+  return {
+    userSlug,
+    candidates: parentCandidatesCount,
+    unresolved: unresolvedParents.length,
+    processed,
+    saved,
+    skippedNonComputed,
+    paused: false,
+    nextIndex: unresolvedParents.length,
+  };
 }
 
 async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgress = () => {}, resumeState = undefined) {
@@ -427,6 +794,7 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
 
 export function initializeRatingsLoader(rootElement) {
   const loadButton = rootElement.querySelector('#cc-load-ratings-btn');
+  const computedButton = rootElement.querySelector('#cc-load-computed-btn');
   const cancelPausedButton = rootElement.querySelector('#cc-cancel-ratings-loader-btn');
   const progress = {
     container: rootElement.querySelector('#cc-ratings-progress'),
@@ -435,16 +803,19 @@ export function initializeRatingsLoader(rootElement) {
     bar: rootElement.querySelector('#cc-ratings-progress-bar'),
   };
 
-  if (!loadButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
+  if (!loadButton || !computedButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
     return;
   }
 
-  const setCancelPausedButtonVisible = (visible) => {
+  const setCancelPausedButtonVisible = (visible, mode = 'ratings') => {
     if (!cancelPausedButton) {
       return;
     }
     cancelPausedButton.hidden = !visible;
     cancelPausedButton.disabled = false;
+    cancelPausedButton.dataset.mode = mode;
+    const labelEl = getButtonLabelElement(cancelPausedButton);
+    labelEl.textContent = mode === 'computed' ? 'Zrušit dopočet' : 'Zrušit načítání';
   };
 
   if (loadButton.dataset.ccRatingsBound === 'true') {
@@ -453,8 +824,32 @@ export function initializeRatingsLoader(rootElement) {
 
   loadButton.dataset.ccRatingsBound = 'true';
 
+  const setComputedButtonMode = (mode) => {
+    const labelEl = getButtonLabelElement(computedButton);
+    if (mode === 'running') {
+      computedButton.disabled = false;
+      labelEl.textContent = 'Pozastavit dopočet';
+      return;
+    }
+
+    if (mode === 'pausing') {
+      computedButton.disabled = true;
+      labelEl.textContent = 'Pozastavuji…';
+      return;
+    }
+
+    if (mode === 'resume') {
+      computedButton.disabled = false;
+      labelEl.textContent = 'Pokračovat v dopočtu';
+      return;
+    }
+
+    computedButton.disabled = false;
+    labelEl.textContent = 'Dopočítat seriály';
+  };
+
   const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
-    if (loaderController.isRunning) {
+    if (loaderController.isRunning || computedLoaderController.isRunning) {
       return;
     }
 
@@ -492,7 +887,7 @@ export function initializeRatingsLoader(rootElement) {
           current: Math.max(0, result.nextPage - 1),
           total: result.targetPages || 1,
         });
-        setCancelPausedButtonVisible(true);
+        setCancelPausedButtonVisible(true, 'ratings');
       } else {
         clearPersistedLoaderState();
         updateProgressUI(progress, {
@@ -500,7 +895,7 @@ export function initializeRatingsLoader(rootElement) {
           current: result.totalPagesLoaded,
           total: result.totalPagesLoaded || 1,
         });
-        setCancelPausedButtonVisible(false);
+        setCancelPausedButtonVisible(false, 'ratings');
       }
 
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
@@ -525,33 +920,149 @@ export function initializeRatingsLoader(rootElement) {
       const stateAfterRun = getPersistedLoaderState();
       if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
         setLoadButtonMode(loadButton, 'resume');
-        setCancelPausedButtonVisible(true);
+        setCancelPausedButtonVisible(true, 'ratings');
       } else {
         setLoadButtonMode(loadButton, 'idle');
-        setCancelPausedButtonVisible(false);
+        const computedState = getPersistedComputedLoaderState();
+        const hasComputedPause =
+          computedState?.status === 'paused' && isStateForCurrentUser(computedState, currentUserSlug);
+        setCancelPausedButtonVisible(hasComputedPause, hasComputedPause ? 'computed' : 'ratings');
+      }
+    }
+  };
+
+  const runComputedLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
+    if (loaderController.isRunning || computedLoaderController.isRunning) {
+      return;
+    }
+
+    try {
+      computedLoaderController.isRunning = true;
+      computedLoaderController.pauseRequested = false;
+      setComputedButtonMode('running');
+
+      const total = Math.max(1, Number.parseInt(resumeState?.unresolvedParents?.length || '1', 10));
+      const startIndex = Math.max(0, Number.parseInt(resumeState?.nextIndex || '0', 10));
+      updateProgressUI(progress, {
+        label: autoResume ? `Pokračuji v dopočtu od položky ${startIndex + 1}…` : 'Připravuji dopočet seriálů…',
+        current: Math.min(startIndex, total),
+        total,
+      });
+
+      const result = await loadComputedParentRatingsForCurrentUser({
+        resumeState,
+        shouldPause: () => computedLoaderController.pauseRequested,
+        onProgress: ({ current, total: progressTotal, message }) => {
+          updateProgressUI(progress, {
+            label: message,
+            current,
+            total: progressTotal,
+          });
+
+          if (computedLoaderController.pauseRequested) {
+            setComputedButtonMode('pausing');
+          }
+        },
+      });
+
+      if (result.paused) {
+        updateProgressUI(progress, {
+          label: `Dopočet pozastaven na položce ${Math.min(result.nextIndex + 1, result.unresolved)}/${result.unresolved || 1}`,
+          current: result.nextIndex,
+          total: result.unresolved || 1,
+        });
+        setCancelPausedButtonVisible(true, 'computed');
+      } else {
+        clearPersistedComputedLoaderState();
+        updateProgressUI(progress, {
+          label: `Hotovo: ${result.saved} uloženo, ${result.skippedNonComputed} přeskočeno`,
+          current: result.processed,
+          total: result.unresolved || 1,
+        });
+        setCancelPausedButtonVisible(false, 'computed');
+      }
+
+      window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+    } catch (error) {
+      setPersistedComputedLoaderState({
+        ...(getPersistedComputedLoaderState() || {}),
+        status: 'paused',
+        pauseReason: 'interrupted',
+      });
+      updateProgressUI(progress, {
+        label: `Chyba dopočtu: ${error.message}`,
+        current: 0,
+        total: 1,
+      });
+      console.error('[CC] Computed ratings loader failed:', error);
+    } finally {
+      computedLoaderController.isRunning = false;
+      computedLoaderController.pauseRequested = false;
+      computedLoaderController.pauseReason = 'manual';
+
+      const currentUserSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
+      const stateAfterRun = getPersistedComputedLoaderState();
+      if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
+        setComputedButtonMode('resume');
+        setCancelPausedButtonVisible(true, 'computed');
+      } else {
+        setComputedButtonMode('idle');
+        setCancelPausedButtonVisible(false, 'computed');
       }
     }
   };
 
   if (cancelPausedButton) {
     cancelPausedButton.addEventListener('click', () => {
-      if (loaderController.isRunning) {
+      if (loaderController.isRunning || computedLoaderController.isRunning) {
         return;
       }
 
-      clearPersistedLoaderState();
+      const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
+      const ratingsState = getPersistedLoaderState();
+      const computedState = getPersistedComputedLoaderState();
+
+      const hasRatingsPause = ratingsState?.status === 'paused' && isStateForCurrentUser(ratingsState, userSlug);
+      const hasComputedPause = computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug);
+
+      if (hasComputedPause && !hasRatingsPause) {
+        const pausedCurrent = Math.max(
+          0,
+          Number.parseInt(computedState?.processed || `${computedState?.nextIndex || 0}`, 10),
+        );
+        const pausedTotal = Math.max(1, Number.parseInt(computedState?.unresolvedParents?.length || '1', 10));
+        clearPersistedComputedLoaderState();
+        setComputedButtonMode('idle');
+        updateProgressUI(progress, {
+          label: 'Pozastavený dopočet byl zrušen',
+          current: pausedCurrent,
+          total: pausedTotal,
+        });
+      } else {
+        const pausedCurrent = Math.max(
+          0,
+          Number.parseInt(ratingsState?.loadedPages || `${Math.max(0, (ratingsState?.nextPage || 1) - 1)}`, 10),
+        );
+        const pausedTotal = Math.max(1, Number.parseInt(ratingsState?.targetPages || '1', 10));
+        clearPersistedLoaderState();
+        setLoadButtonMode(loadButton, 'idle');
+        updateProgressUI(progress, {
+          label: 'Pozastavené načítání bylo zrušeno',
+          current: pausedCurrent,
+          total: pausedTotal,
+        });
+      }
+
       setCancelPausedButtonVisible(false);
-      setLoadButtonMode(loadButton, 'idle');
-      updateProgressUI(progress, {
-        label: 'Pozastavené načítání bylo zrušeno',
-        current: 0,
-        total: 1,
-      });
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     });
   }
 
   loadButton.addEventListener('click', async () => {
+    if (computedLoaderController.isRunning) {
+      return;
+    }
+
     if (loaderController.isRunning) {
       loaderController.pauseRequested = true;
       loaderController.pauseReason = 'manual';
@@ -566,11 +1077,36 @@ export function initializeRatingsLoader(rootElement) {
     });
   });
 
+  if (computedButton.dataset.ccComputedBound !== 'true') {
+    computedButton.dataset.ccComputedBound = 'true';
+    computedButton.addEventListener('click', async () => {
+      if (loaderController.isRunning) {
+        return;
+      }
+
+      if (computedLoaderController.isRunning) {
+        computedLoaderController.pauseRequested = true;
+        computedLoaderController.pauseReason = 'manual';
+        setComputedButtonMode('pausing');
+        return;
+      }
+
+      const computedState = getPersistedComputedLoaderState();
+      await runComputedLoad({
+        resumeState: computedState?.status === 'paused' ? computedState : undefined,
+        autoResume: false,
+      });
+    });
+  }
+
   const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
   const state = getPersistedLoaderState();
+  const computedState = getPersistedComputedLoaderState();
+  let cancelMode = 'ratings';
+
   if (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) {
     setLoadButtonMode(loadButton, 'resume');
-    setCancelPausedButtonVisible(true);
+    cancelMode = 'ratings';
 
     if (state.pauseReason === 'manual') {
       updateProgressUI(progress, {
@@ -578,17 +1114,44 @@ export function initializeRatingsLoader(rootElement) {
         current: Math.max(0, (state.nextPage || 1) - 1),
         total: state.targetPages || 1,
       });
-      return;
+    } else {
+      updateProgressUI(progress, {
+        label: `Nalezeno nedokončené načítání (str. ${state.nextPage}/${state.targetPages || '?'}) — automaticky pokračuji…`,
+        current: Math.max(0, (state.nextPage || 1) - 1),
+        total: state.targetPages || 1,
+      });
+
+      setTimeout(() => {
+        runLoad({ resumeState: state, autoResume: true });
+      }, 500);
     }
-
-    updateProgressUI(progress, {
-      label: `Nalezeno nedokončené načítání (str. ${state.nextPage}/${state.targetPages || '?'}) — automaticky pokračuji…`,
-      current: Math.max(0, (state.nextPage || 1) - 1),
-      total: state.targetPages || 1,
-    });
-
-    setTimeout(() => {
-      runLoad({ resumeState: state, autoResume: true });
-    }, 500);
   }
+
+  if (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug)) {
+    setComputedButtonMode('resume');
+    cancelMode = 'computed';
+
+    if (computedState.pauseReason === 'manual') {
+      updateProgressUI(progress, {
+        label: `Dopočet pozastaven ručně na položce ${(computedState.nextIndex || 0) + 1}/${computedState.unresolvedParents?.length || 1}`,
+        current: computedState.nextIndex || 0,
+        total: computedState.unresolvedParents?.length || 1,
+      });
+    } else {
+      updateProgressUI(progress, {
+        label: `Nalezen nedokončený dopočet (${computedState.nextIndex || 0}/${computedState.unresolvedParents?.length || 1}) — automaticky pokračuji…`,
+        current: computedState.nextIndex || 0,
+        total: computedState.unresolvedParents?.length || 1,
+      });
+
+      setTimeout(() => {
+        runComputedLoad({ resumeState: computedState, autoResume: true });
+      }, 500);
+    }
+  }
+
+  const hasAnyPaused =
+    (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) ||
+    (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug));
+  setCancelPausedButtonVisible(hasAnyPaused, cancelMode);
 }

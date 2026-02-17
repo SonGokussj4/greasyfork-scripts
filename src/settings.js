@@ -26,7 +26,11 @@ function getCurrentUserRatingsUrl() {
 
   const url = new URL(profileHref, location.origin);
   const segment = location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
-  url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+  if (/\/(prehled|prehlad)\/?$/i.test(url.pathname)) {
+    url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+  } else {
+    url.pathname = url.pathname.endsWith('/') ? `${url.pathname}${segment}/` : `${url.pathname}/${segment}/`;
+  }
   url.search = '';
   return url.toString();
 }
@@ -77,9 +81,10 @@ async function refreshRatingsBadges(rootElement) {
   const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
   const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
   const computedCount = userRecords.filter((record) => record.computed === true).length;
+  const directRatingsCount = userRecords.length - computedCount;
   const totalRatings = await fetchTotalRatingsForCurrentUser();
 
-  redBadge.textContent = `${userRecords.length} / ${totalRatings}`;
+  redBadge.textContent = `${directRatingsCount} / ${totalRatings}`;
   blackBadge.textContent = `${computedCount}`;
 }
 

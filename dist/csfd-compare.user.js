@@ -643,7 +643,7 @@
   var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
   styleInject(css_248z$2);
 
-  var css_248z$1 = ".dropdown-content.cc-settings{border-radius:10px;margin-top:0;padding:8px 0 2px;right:8px;top:100%;width:360px}.cc-settings-head{-webkit-box-pack:justify;-ms-flex-pack:justify;background:#f9f9f9;border-radius:8px;justify-content:space-between;margin:0 8px 8px;padding:8px}.cc-head-main,.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-head-main{gap:6px}.cc-head-main h2{margin:0}.cc-version-link{font-size:12px;opacity:.85}.cc-head-badges,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-head-cc-link{font-weight:700;min-width:26px;text-align:center}.cc-icon-btn{border:0;border-radius:7px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:24px;width:24px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#242424;color:#fff;cursor:pointer;justify-content:center;text-decoration:none;-webkit-transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,transform .12s ease;transition:background-color .16s ease,transform .12s ease,-webkit-transform .12s ease}.cc-icon-btn:hover{background:#111;-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-icon-btn:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-icon-btn-sync.is-enabled{background:#aa2c16}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16}.cc-sync-icon-btn:focus,.cc-sync-icon-btn:focus-visible{background:#f3f3f3;border-color:#b0b0b0;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#fff3f0;border-color:#cf7c6d;color:#aa2c16}.cc-script-link-btn svg{height:14px;width:14px}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:1fr 1fr}.cc-settings-sync{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}#cc-sync-cloud-btn{margin-top:0}.cc-sync-mini{font-size:11px;min-width:68px;padding:6px 9px}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:4px 8px 10px;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{-moz-appearance:none;appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-ratings-cancel-link:active,.cc-ratings-cancel-link:focus,.cc-ratings-cancel-link:focus-visible{background:rgba(0,0,0,.08);color:#333;outline:none}.header-bar .csfd-compare-menu{position:relative}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}";
+  var css_248z$1 = ".dropdown-content.cc-settings{border-radius:10px;margin-top:0;padding:8px 0 2px;right:8px;top:100%;width:360px}.cc-settings-head{-webkit-box-pack:justify;-ms-flex-pack:justify;background:#f9f9f9;border-radius:8px;justify-content:space-between;margin:0 8px 8px;padding:8px}.cc-head-main,.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-head-main{gap:6px}.cc-head-main h2{margin:0}.cc-version-link{font-size:12px;opacity:.85}.cc-head-badges,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-head-cc-link{font-weight:700;min-width:26px;text-align:center}.cc-icon-btn{border:0;border-radius:7px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:24px;width:24px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#242424;color:#fff;cursor:pointer;justify-content:center;text-decoration:none;-webkit-transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,transform .12s ease;transition:background-color .16s ease,transform .12s ease,-webkit-transform .12s ease}.cc-icon-btn:hover{background:#111;-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-icon-btn:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-icon-btn-sync.is-enabled{background:#aa2c16}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16}.cc-sync-icon-btn:focus,.cc-sync-icon-btn:focus-visible{background:#f3f3f3;border-color:#b0b0b0;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#fff3f0;border-color:#cf7c6d;color:#aa2c16}.cc-script-link-btn svg{height:14px;width:14px}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}#cc-load-computed-btn{background-color:#242424!important}#cc-load-computed-btn:active,#cc-load-computed-btn:focus,#cc-load-computed-btn:focus-visible,#cc-load-computed-btn:hover{background-color:#000!important}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cc-settings-actions .cc-button{min-width:0;width:100%}.cc-settings-actions .cc-button-iconed span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-settings-sync{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}#cc-sync-cloud-btn{margin-top:0}.cc-sync-mini{font-size:11px;min-width:68px;padding:6px 9px}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:4px 8px 10px;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}#cc-ratings-progress-label{-webkit-box-flex:1;-ms-flex:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cc-ratings-progress-count{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{-moz-appearance:none;appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-ratings-cancel-link:active,.cc-ratings-cancel-link:focus,.cc-ratings-cancel-link:focus-visible{background:rgba(0,0,0,.08);color:#333;outline:none}.header-bar .csfd-compare-menu{position:relative}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}";
   styleInject(css_248z$1);
 
   var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}.cc-own-rating{margin-left:6px;vertical-align:middle}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}";
@@ -721,8 +721,15 @@
   const REQUEST_DELAY_MIN_MS = 250;
   const REQUEST_DELAY_MAX_MS = 550;
   const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
+  const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
 
   const loaderController = {
+    isRunning: false,
+    pauseRequested: false,
+    pauseReason: 'manual',
+  };
+
+  const computedLoaderController = {
     isRunning: false,
     pauseRequested: false,
     pauseReason: 'manual',
@@ -1008,12 +1015,372 @@
     localStorage.removeItem(LOADER_STATE_STORAGE_KEY);
   }
 
+  function getPersistedComputedLoaderState() {
+    try {
+      const raw = localStorage.getItem(COMPUTED_LOADER_STATE_STORAGE_KEY);
+      if (!raw) {
+        return undefined;
+      }
+      const parsed = JSON.parse(raw);
+      return typeof parsed === 'object' && parsed ? parsed : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function setPersistedComputedLoaderState(state) {
+    localStorage.setItem(
+      COMPUTED_LOADER_STATE_STORAGE_KEY,
+      JSON.stringify({
+        ...state,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+  }
+
+  function clearPersistedComputedLoaderState() {
+    localStorage.removeItem(COMPUTED_LOADER_STATE_STORAGE_KEY);
+  }
+
   function isStateForCurrentUser(state, userSlug) {
     if (!state || !userSlug) {
       return false;
     }
 
     return state.userSlug === userSlug;
+  }
+
+  function parseRatingFromStarsElement(starsEl) {
+    if (!starsEl) {
+      return NaN;
+    }
+
+    if (starsEl.classList.contains('trash')) {
+      return 0;
+    }
+
+    const starClass = Array.from(starsEl.classList).find((className) => /^stars-\d$/.test(className));
+    if (!starClass) {
+      return NaN;
+    }
+
+    return Number.parseInt(starClass.replace('stars-', ''), 10);
+  }
+
+  function parseCurrentUserRatingFromDocument(doc) {
+    const currentUserNode = doc.querySelector('.others-rating .current-user-rating') || doc.querySelector('.my-rating');
+    if (!currentUserNode) {
+      return undefined;
+    }
+
+    const starRatingNode =
+      currentUserNode.querySelector('.star-rating') || currentUserNode.querySelector('.stars-rating');
+    const starsEl = starRatingNode?.querySelector('.stars');
+    const rating = parseRatingFromStarsElement(starsEl);
+
+    if (!Number.isFinite(rating)) {
+      return undefined;
+    }
+
+    const titleWithComputed =
+      currentUserNode.querySelector('[title*="spočten" i]')?.getAttribute('title') ||
+      currentUserNode.querySelector('[title*="spocten" i]')?.getAttribute('title') ||
+      '';
+
+    const computedByClass =
+      starRatingNode?.classList.contains('computed') ||
+      currentUserNode.querySelector('.star.active.computed, .star.computed') !== null;
+
+    const computed = computedByClass || titleWithComputed.length > 0;
+    const computedCountMatch = titleWithComputed.match(/(\d+)/);
+    const computedCount = computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN;
+
+    return {
+      rating,
+      computed,
+      computedCount,
+      computedFromText: titleWithComputed,
+    };
+  }
+
+  function parsePageName(doc) {
+    const titleEl = doc.querySelector('.film-header h1');
+    return titleEl?.textContent?.replace(/\s+/g, ' ').trim() || '';
+  }
+
+  function parsePageYear(doc) {
+    const originText = doc.querySelector('.film-info-content .origin')?.textContent || '';
+    const yearMatch = originText.match(/\b(19|20)\d{2}\b/);
+    return yearMatch ? Number.parseInt(yearMatch[0], 10) : NaN;
+  }
+
+  function parsePageType(doc) {
+    const typeText = doc.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
+    if (typeText.includes('epizoda')) return 'episode';
+    if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
+    if (typeText.includes('série') || typeText.includes('serie')) return 'series';
+    return 'movie';
+  }
+
+  function parsePageDate(doc) {
+    const title =
+      doc.querySelector('.my-rating .stars-rating')?.getAttribute('title') ||
+      doc.querySelector('.others-rating .current-user-rating [title*="Vloženo" i]')?.getAttribute('title') ||
+      '';
+    const match = title.match(/(\d{1,2}\.\d{1,2}\.\d{4})/);
+    return match ? match[1] : '';
+  }
+
+  function buildParentFullUrl(parentSlug) {
+    return new URL(`/film/${parentSlug}/`, location.origin).toString();
+  }
+
+  function buildParentReviewsUrl(parentSlug) {
+    return new URL(`/film/${parentSlug}/recenze/`, location.origin).toString();
+  }
+
+  function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord, parsedRating, doc }) {
+    const nowIso = new Date().toISOString();
+
+    return {
+      ...(existingRecord || {}),
+      id: `${userSlug}:${parentSlug}`,
+      userSlug,
+      movieId: parentId,
+      url: parentSlug,
+      fullUrl: buildParentFullUrl(parentSlug),
+      name: parsePageName(doc) || existingRecord?.name || '',
+      year: parsePageYear(doc),
+      type: parsePageType(doc),
+      rating: parsedRating.rating,
+      date: parsePageDate(doc) || existingRecord?.date || '',
+      parentId: Number.NaN,
+      parentName: '',
+      computed: parsedRating.computed,
+      computedCount: parsedRating.computedCount,
+      computedFromText: parsedRating.computedFromText,
+      lastUpdate: nowIso,
+    };
+  }
+
+  async function loadComputedParentRatingsForCurrentUser({
+    onProgress = () => {},
+    resumeState = undefined,
+    shouldPause = () => false,
+  } = {}) {
+    const profilePath = getCurrentProfilePath();
+    if (!profilePath) {
+      throw new Error('Profil uživatele nebyl nalezen.');
+    }
+
+    const userSlug = extractUserSlugFromProfilePath(profilePath);
+    if (!userSlug) {
+      throw new Error('Nepodařilo se přečíst ID uživatele z profilu.');
+    }
+
+    const allRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+    const userRecords = allRecords.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+
+    let parentCandidatesCount = 0;
+    let unresolvedParents = [];
+    let startIndex = 0;
+    let processed = 0;
+    let saved = 0;
+    let skippedNonComputed = 0;
+
+    const recordsByMovieId = new Map();
+
+    for (const record of userRecords) {
+      const existing = recordsByMovieId.get(record.movieId);
+      if (!existing) {
+        recordsByMovieId.set(record.movieId, record);
+      } else if (existing?.computed === true && record?.computed !== true) {
+        recordsByMovieId.set(record.movieId, record);
+      }
+
+      if (record.computed === true && !record.computedFromText) {
+        record.computedFromText = 'spocten';
+      }
+    }
+
+    if (
+      resumeState &&
+      isStateForCurrentUser(resumeState, userSlug) &&
+      Array.isArray(resumeState.unresolvedParents) &&
+      resumeState.unresolvedParents.length > 0
+    ) {
+      unresolvedParents = resumeState.unresolvedParents;
+      parentCandidatesCount = Number.parseInt(resumeState.parentCandidatesCount || `${unresolvedParents.length}`, 10);
+      startIndex = Math.max(0, Number.parseInt(resumeState.nextIndex || '0', 10));
+      processed = Math.max(0, Number.parseInt(resumeState.processed || '0', 10));
+      saved = Math.max(0, Number.parseInt(resumeState.saved || '0', 10));
+      skippedNonComputed = Math.max(0, Number.parseInt(resumeState.skippedNonComputed || '0', 10));
+    } else {
+      const parentCandidatesMap = new Map();
+      for (const record of userRecords) {
+        if (Number.isFinite(record.parentId) && typeof record.parentName === 'string' && record.parentName.length > 0) {
+          parentCandidatesMap.set(record.parentId, record.parentName);
+        }
+      }
+
+      const parentCandidates = Array.from(parentCandidatesMap.entries()).map(([parentId, parentSlug]) => ({
+        parentId,
+        parentSlug,
+      }));
+      parentCandidatesCount = parentCandidates.length;
+
+      unresolvedParents = parentCandidates.filter(({ parentId }) => {
+        const existingParent = recordsByMovieId.get(parentId);
+        return !existingParent || existingParent.computed === true;
+      });
+    }
+
+    setPersistedComputedLoaderState({
+      status: 'running',
+      userSlug,
+      profilePath,
+      parentCandidatesCount,
+      unresolvedParents,
+      nextIndex: startIndex,
+      processed,
+      saved,
+      skippedNonComputed,
+    });
+
+    onProgress({
+      stage: 'prepare',
+      current: Math.min(startIndex, unresolvedParents.length),
+      total: unresolvedParents.length || 1,
+      message: `Kandidáti parent položek: ${parentCandidatesCount}, k dopočtu: ${unresolvedParents.length}`,
+    });
+
+    for (let index = startIndex; index < unresolvedParents.length; index++) {
+      if (shouldPause()) {
+        setPersistedComputedLoaderState({
+          status: 'paused',
+          pauseReason: computedLoaderController.pauseReason || 'manual',
+          userSlug,
+          profilePath,
+          parentCandidatesCount,
+          unresolvedParents,
+          nextIndex: index,
+          processed,
+          saved,
+          skippedNonComputed,
+        });
+
+        return {
+          userSlug,
+          candidates: parentCandidatesCount,
+          unresolved: unresolvedParents.length,
+          processed,
+          saved,
+          skippedNonComputed,
+          paused: true,
+          nextIndex: index,
+        };
+      }
+
+      const { parentId, parentSlug } = unresolvedParents[index];
+      processed = index + 1;
+
+      const existingRecord = recordsByMovieId.get(parentId);
+      const reviewsUrl = buildParentReviewsUrl(parentSlug);
+      const doc = await fetchRatingsPageDocument(reviewsUrl);
+      const parsedRating = parseCurrentUserRatingFromDocument(doc);
+
+      if (!parsedRating) {
+        onProgress({
+          stage: 'fetch',
+          current: processed,
+          total: unresolvedParents.length || 1,
+          message: `Stránka ${processed}/${unresolvedParents.length}: bez uživatelského hodnocení (${parentSlug})`,
+        });
+
+        setPersistedComputedLoaderState({
+          status: 'running',
+          userSlug,
+          profilePath,
+          parentCandidatesCount,
+          unresolvedParents,
+          nextIndex: index + 1,
+          processed,
+          saved,
+          skippedNonComputed,
+        });
+        continue;
+      }
+
+      if (!parsedRating.computed) {
+        skippedNonComputed += 1;
+        onProgress({
+          stage: 'fetch',
+          current: processed,
+          total: unresolvedParents.length || 1,
+          message: `Přeskakuji ne-spočtené hodnocení (${processed}/${unresolvedParents.length})`,
+        });
+
+        setPersistedComputedLoaderState({
+          status: 'running',
+          userSlug,
+          profilePath,
+          parentCandidatesCount,
+          unresolvedParents,
+          nextIndex: index + 1,
+          processed,
+          saved,
+          skippedNonComputed,
+        });
+        continue;
+      }
+
+      const record = toComputedParentRecord({
+        userSlug,
+        parentId,
+        parentSlug,
+        existingRecord,
+        parsedRating,
+        doc,
+      });
+
+      await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, record);
+      recordsByMovieId.set(parentId, record);
+      saved += 1;
+
+      setPersistedComputedLoaderState({
+        status: 'running',
+        userSlug,
+        profilePath,
+        parentCandidatesCount,
+        unresolvedParents,
+        nextIndex: index + 1,
+        processed,
+        saved,
+        skippedNonComputed,
+      });
+
+      onProgress({
+        stage: 'fetch',
+        current: processed,
+        total: unresolvedParents.length || 1,
+        message: `Dopočítávám ${processed}/${unresolvedParents.length}… (${saved} spočtených uloženo)`,
+      });
+
+      if (index < unresolvedParents.length - 1) {
+        await delay(randomDelay());
+      }
+    }
+
+    return {
+      userSlug,
+      candidates: parentCandidatesCount,
+      unresolved: unresolvedParents.length,
+      processed,
+      saved,
+      skippedNonComputed,
+      paused: false,
+      nextIndex: unresolvedParents.length,
+    };
   }
 
   async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgress = () => {}, resumeState = undefined) {
@@ -1142,6 +1509,7 @@
 
   function initializeRatingsLoader(rootElement) {
     const loadButton = rootElement.querySelector('#cc-load-ratings-btn');
+    const computedButton = rootElement.querySelector('#cc-load-computed-btn');
     const cancelPausedButton = rootElement.querySelector('#cc-cancel-ratings-loader-btn');
     const progress = {
       container: rootElement.querySelector('#cc-ratings-progress'),
@@ -1150,16 +1518,19 @@
       bar: rootElement.querySelector('#cc-ratings-progress-bar'),
     };
 
-    if (!loadButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
+    if (!loadButton || !computedButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
       return;
     }
 
-    const setCancelPausedButtonVisible = (visible) => {
+    const setCancelPausedButtonVisible = (visible, mode = 'ratings') => {
       if (!cancelPausedButton) {
         return;
       }
       cancelPausedButton.hidden = !visible;
       cancelPausedButton.disabled = false;
+      cancelPausedButton.dataset.mode = mode;
+      const labelEl = getButtonLabelElement(cancelPausedButton);
+      labelEl.textContent = mode === 'computed' ? 'Zrušit dopočet' : 'Zrušit načítání';
     };
 
     if (loadButton.dataset.ccRatingsBound === 'true') {
@@ -1168,8 +1539,32 @@
 
     loadButton.dataset.ccRatingsBound = 'true';
 
+    const setComputedButtonMode = (mode) => {
+      const labelEl = getButtonLabelElement(computedButton);
+      if (mode === 'running') {
+        computedButton.disabled = false;
+        labelEl.textContent = 'Pozastavit dopočet';
+        return;
+      }
+
+      if (mode === 'pausing') {
+        computedButton.disabled = true;
+        labelEl.textContent = 'Pozastavuji…';
+        return;
+      }
+
+      if (mode === 'resume') {
+        computedButton.disabled = false;
+        labelEl.textContent = 'Pokračovat v dopočtu';
+        return;
+      }
+
+      computedButton.disabled = false;
+      labelEl.textContent = 'Dopočítat seriály';
+    };
+
     const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
-      if (loaderController.isRunning) {
+      if (loaderController.isRunning || computedLoaderController.isRunning) {
         return;
       }
 
@@ -1207,7 +1602,7 @@
             current: Math.max(0, result.nextPage - 1),
             total: result.targetPages || 1,
           });
-          setCancelPausedButtonVisible(true);
+          setCancelPausedButtonVisible(true, 'ratings');
         } else {
           clearPersistedLoaderState();
           updateProgressUI(progress, {
@@ -1215,7 +1610,7 @@
             current: result.totalPagesLoaded,
             total: result.totalPagesLoaded || 1,
           });
-          setCancelPausedButtonVisible(false);
+          setCancelPausedButtonVisible(false, 'ratings');
         }
 
         window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
@@ -1240,33 +1635,149 @@
         const stateAfterRun = getPersistedLoaderState();
         if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
           setLoadButtonMode(loadButton, 'resume');
-          setCancelPausedButtonVisible(true);
+          setCancelPausedButtonVisible(true, 'ratings');
         } else {
           setLoadButtonMode(loadButton, 'idle');
-          setCancelPausedButtonVisible(false);
+          const computedState = getPersistedComputedLoaderState();
+          const hasComputedPause =
+            computedState?.status === 'paused' && isStateForCurrentUser(computedState, currentUserSlug);
+          setCancelPausedButtonVisible(hasComputedPause, hasComputedPause ? 'computed' : 'ratings');
+        }
+      }
+    };
+
+    const runComputedLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
+      if (loaderController.isRunning || computedLoaderController.isRunning) {
+        return;
+      }
+
+      try {
+        computedLoaderController.isRunning = true;
+        computedLoaderController.pauseRequested = false;
+        setComputedButtonMode('running');
+
+        const total = Math.max(1, Number.parseInt(resumeState?.unresolvedParents?.length || '1', 10));
+        const startIndex = Math.max(0, Number.parseInt(resumeState?.nextIndex || '0', 10));
+        updateProgressUI(progress, {
+          label: autoResume ? `Pokračuji v dopočtu od položky ${startIndex + 1}…` : 'Připravuji dopočet seriálů…',
+          current: Math.min(startIndex, total),
+          total,
+        });
+
+        const result = await loadComputedParentRatingsForCurrentUser({
+          resumeState,
+          shouldPause: () => computedLoaderController.pauseRequested,
+          onProgress: ({ current, total: progressTotal, message }) => {
+            updateProgressUI(progress, {
+              label: message,
+              current,
+              total: progressTotal,
+            });
+
+            if (computedLoaderController.pauseRequested) {
+              setComputedButtonMode('pausing');
+            }
+          },
+        });
+
+        if (result.paused) {
+          updateProgressUI(progress, {
+            label: `Dopočet pozastaven na položce ${Math.min(result.nextIndex + 1, result.unresolved)}/${result.unresolved || 1}`,
+            current: result.nextIndex,
+            total: result.unresolved || 1,
+          });
+          setCancelPausedButtonVisible(true, 'computed');
+        } else {
+          clearPersistedComputedLoaderState();
+          updateProgressUI(progress, {
+            label: `Hotovo: ${result.saved} uloženo, ${result.skippedNonComputed} přeskočeno`,
+            current: result.processed,
+            total: result.unresolved || 1,
+          });
+          setCancelPausedButtonVisible(false, 'computed');
+        }
+
+        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+      } catch (error) {
+        setPersistedComputedLoaderState({
+          ...(getPersistedComputedLoaderState() || {}),
+          status: 'paused',
+          pauseReason: 'interrupted',
+        });
+        updateProgressUI(progress, {
+          label: `Chyba dopočtu: ${error.message}`,
+          current: 0,
+          total: 1,
+        });
+        console.error('[CC] Computed ratings loader failed:', error);
+      } finally {
+        computedLoaderController.isRunning = false;
+        computedLoaderController.pauseRequested = false;
+        computedLoaderController.pauseReason = 'manual';
+
+        const currentUserSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
+        const stateAfterRun = getPersistedComputedLoaderState();
+        if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
+          setComputedButtonMode('resume');
+          setCancelPausedButtonVisible(true, 'computed');
+        } else {
+          setComputedButtonMode('idle');
+          setCancelPausedButtonVisible(false, 'computed');
         }
       }
     };
 
     if (cancelPausedButton) {
       cancelPausedButton.addEventListener('click', () => {
-        if (loaderController.isRunning) {
+        if (loaderController.isRunning || computedLoaderController.isRunning) {
           return;
         }
 
-        clearPersistedLoaderState();
+        const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
+        const ratingsState = getPersistedLoaderState();
+        const computedState = getPersistedComputedLoaderState();
+
+        const hasRatingsPause = ratingsState?.status === 'paused' && isStateForCurrentUser(ratingsState, userSlug);
+        const hasComputedPause = computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug);
+
+        if (hasComputedPause && !hasRatingsPause) {
+          const pausedCurrent = Math.max(
+            0,
+            Number.parseInt(computedState?.processed || `${computedState?.nextIndex || 0}`, 10),
+          );
+          const pausedTotal = Math.max(1, Number.parseInt(computedState?.unresolvedParents?.length || '1', 10));
+          clearPersistedComputedLoaderState();
+          setComputedButtonMode('idle');
+          updateProgressUI(progress, {
+            label: 'Pozastavený dopočet byl zrušen',
+            current: pausedCurrent,
+            total: pausedTotal,
+          });
+        } else {
+          const pausedCurrent = Math.max(
+            0,
+            Number.parseInt(ratingsState?.loadedPages || `${Math.max(0, (ratingsState?.nextPage || 1) - 1)}`, 10),
+          );
+          const pausedTotal = Math.max(1, Number.parseInt(ratingsState?.targetPages || '1', 10));
+          clearPersistedLoaderState();
+          setLoadButtonMode(loadButton, 'idle');
+          updateProgressUI(progress, {
+            label: 'Pozastavené načítání bylo zrušeno',
+            current: pausedCurrent,
+            total: pausedTotal,
+          });
+        }
+
         setCancelPausedButtonVisible(false);
-        setLoadButtonMode(loadButton, 'idle');
-        updateProgressUI(progress, {
-          label: 'Pozastavené načítání bylo zrušeno',
-          current: 0,
-          total: 1,
-        });
         window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
       });
     }
 
     loadButton.addEventListener('click', async () => {
+      if (computedLoaderController.isRunning) {
+        return;
+      }
+
       if (loaderController.isRunning) {
         loaderController.pauseRequested = true;
         loaderController.pauseReason = 'manual';
@@ -1281,11 +1792,36 @@
       });
     });
 
+    if (computedButton.dataset.ccComputedBound !== 'true') {
+      computedButton.dataset.ccComputedBound = 'true';
+      computedButton.addEventListener('click', async () => {
+        if (loaderController.isRunning) {
+          return;
+        }
+
+        if (computedLoaderController.isRunning) {
+          computedLoaderController.pauseRequested = true;
+          computedLoaderController.pauseReason = 'manual';
+          setComputedButtonMode('pausing');
+          return;
+        }
+
+        const computedState = getPersistedComputedLoaderState();
+        await runComputedLoad({
+          resumeState: computedState?.status === 'paused' ? computedState : undefined,
+          autoResume: false,
+        });
+      });
+    }
+
     const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
     const state = getPersistedLoaderState();
+    const computedState = getPersistedComputedLoaderState();
+    let cancelMode = 'ratings';
+
     if (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) {
       setLoadButtonMode(loadButton, 'resume');
-      setCancelPausedButtonVisible(true);
+      cancelMode = 'ratings';
 
       if (state.pauseReason === 'manual') {
         updateProgressUI(progress, {
@@ -1293,19 +1829,46 @@
           current: Math.max(0, (state.nextPage || 1) - 1),
           total: state.targetPages || 1,
         });
-        return;
+      } else {
+        updateProgressUI(progress, {
+          label: `Nalezeno nedokončené načítání (str. ${state.nextPage}/${state.targetPages || '?'}) — automaticky pokračuji…`,
+          current: Math.max(0, (state.nextPage || 1) - 1),
+          total: state.targetPages || 1,
+        });
+
+        setTimeout(() => {
+          runLoad({ resumeState: state, autoResume: true });
+        }, 500);
       }
-
-      updateProgressUI(progress, {
-        label: `Nalezeno nedokončené načítání (str. ${state.nextPage}/${state.targetPages || '?'}) — automaticky pokračuji…`,
-        current: Math.max(0, (state.nextPage || 1) - 1),
-        total: state.targetPages || 1,
-      });
-
-      setTimeout(() => {
-        runLoad({ resumeState: state, autoResume: true });
-      }, 500);
     }
+
+    if (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug)) {
+      setComputedButtonMode('resume');
+      cancelMode = 'computed';
+
+      if (computedState.pauseReason === 'manual') {
+        updateProgressUI(progress, {
+          label: `Dopočet pozastaven ručně na položce ${(computedState.nextIndex || 0) + 1}/${computedState.unresolvedParents?.length || 1}`,
+          current: computedState.nextIndex || 0,
+          total: computedState.unresolvedParents?.length || 1,
+        });
+      } else {
+        updateProgressUI(progress, {
+          label: `Nalezen nedokončený dopočet (${computedState.nextIndex || 0}/${computedState.unresolvedParents?.length || 1}) — automaticky pokračuji…`,
+          current: computedState.nextIndex || 0,
+          total: computedState.unresolvedParents?.length || 1,
+        });
+
+        setTimeout(() => {
+          runComputedLoad({ resumeState: computedState, autoResume: true });
+        }, 500);
+      }
+    }
+
+    const hasAnyPaused =
+      (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) ||
+      (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug));
+    setCancelPausedButtonVisible(hasAnyPaused, cancelMode);
   }
 
   const SYNC_ENABLED_KEY = 'cc_sync_enabled';
@@ -1437,7 +2000,11 @@
 
     const url = new URL(profileHref, location.origin);
     const segment = location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
-    url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+    if (/\/(prehled|prehlad)\/?$/i.test(url.pathname)) {
+      url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+    } else {
+      url.pathname = url.pathname.endsWith('/') ? `${url.pathname}${segment}/` : `${url.pathname}/${segment}/`;
+    }
     url.search = '';
     return url.toString();
   }
@@ -1488,9 +2055,10 @@
     const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
     const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
     const computedCount = userRecords.filter((record) => record.computed === true).length;
+    const directRatingsCount = userRecords.length - computedCount;
     const totalRatings = await fetchTotalRatingsForCurrentUser();
 
-    redBadge.textContent = `${userRecords.length} / ${totalRatings}`;
+    redBadge.textContent = `${directRatingsCount} / ${totalRatings}`;
     blackBadge.textContent = `${computedCount}`;
   }
 
