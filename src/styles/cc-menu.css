@@ -1,24 +1,58 @@
-.cc-settings {
-    width: 380px;
-    right: 50px;
+.dropdown-content.cc-settings {
+    width: 360px;
+    margin-top: 0;
+    right: 8px;
     top: 100%;
+    border-radius: 10px;
+    padding: 8px 0 2px;
 }
 
 .cc-settings-head {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    /* padding: 10px; */
+    margin: 0 8px 8px;
+    padding: 8px;
+    border-radius: 8px;
+    background: var(--color-grey-lighter, #f9f9f9);
+}
+
+.cc-head-main {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cc-head-main h2 {
+    margin: 0;
+}
+
+.cc-version-link {
+    font-size: 12px;
+    opacity: 0.85;
+}
+
+.cc-head-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.cc-head-cc-link {
+    min-width: 26px;
+    text-align: center;
+    font-weight: 700;
 }
 
 .cc-badge {
     font-weight: bold;
     background-color: #2c3e50;
     color: white;
-    padding: 2px 4px;
+    padding: 2px 6px;
     border-radius: 6px;
     cursor: help;
     font-size: 0.7rem;
+    line-height: 1.4;
 }
 
 .cc-badge-red {
@@ -32,12 +66,22 @@
 .cc-button {
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 6px;
+    border-radius: 7px;
+    padding: 6px 8px;
     cursor: pointer;
     font-size: 12px;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.12s;
     height: auto;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.cc-button:hover {
+    transform: translateY(-1px);
+}
+
+.cc-button:active {
+    transform: translateY(0);
 }
 
 .cc-button-red {
@@ -52,13 +96,39 @@
     background-color: #000000;
 }
 
+.cc-button-iconed {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.cc-button-icon {
+    width: 12px;
+    height: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-settings-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.cc-settings-sync {
+    display: flex;
+    justify-content: flex-end;
+}
+
 #cc-sync-cloud-btn {
-    margin-top: 2px;
+    margin-top: 0;
 }
 
 .cc-sync-mini {
-    min-width: 72px;
-    padding: 4px 10px;
+    min-width: 68px;
+    padding: 6px 9px;
     font-size: 11px;
 }
 
@@ -157,7 +227,7 @@
 }
 
 .cc-ratings-progress {
-    margin: 8px 5px 10px;
+    margin: 4px 8px 10px;
     padding: 8px;
     border: 1px solid #e4e4e4;
     border-radius: 6px;

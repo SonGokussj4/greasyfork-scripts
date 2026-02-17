@@ -5,6 +5,13 @@ import { delay } from './utils.js';
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
 const REQUEST_DELAY_MIN_MS = 250;
 const REQUEST_DELAY_MAX_MS = 550;
+const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
+
+const loaderController = {
+  isRunning: false,
+  pauseRequested: false,
+  pauseReason: 'manual',
+};
 
 function randomDelay() {
   return Math.floor(Math.random() * (REQUEST_DELAY_MAX_MS - REQUEST_DELAY_MIN_MS + 1)) + REQUEST_DELAY_MIN_MS;
@@ -229,13 +236,72 @@ function updateProgressUI(progress, state) {
   bar.style.width = `${pct}%`;
 }
 
-function setButtonState(button, isLoading) {
-  if (!button) return;
-  button.disabled = isLoading;
-  button.textContent = isLoading ? 'Načítám…' : 'Načíst hodnocení';
+function getButtonLabelElement(button) {
+  return button?.querySelector('span:last-child') || button;
 }
 
-async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgress = () => {}) {
+function setLoadButtonMode(button, mode) {
+  if (!button) return;
+
+  const labelEl = getButtonLabelElement(button);
+  if (mode === 'running') {
+    button.disabled = false;
+    labelEl.textContent = 'Pozastavit načítání';
+    return;
+  }
+
+  if (mode === 'pausing') {
+    button.disabled = true;
+    labelEl.textContent = 'Pozastavuji…';
+    return;
+  }
+
+  if (mode === 'resume') {
+    button.disabled = false;
+    labelEl.textContent = 'Pokračovat v načítání';
+    return;
+  }
+
+  button.disabled = false;
+  labelEl.textContent = 'Načíst moje hodnocení';
+}
+
+function getPersistedLoaderState() {
+  try {
+    const raw = localStorage.getItem(LOADER_STATE_STORAGE_KEY);
+    if (!raw) {
+      return undefined;
+    }
+    const parsed = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed ? parsed : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function setPersistedLoaderState(state) {
+  localStorage.setItem(
+    LOADER_STATE_STORAGE_KEY,
+    JSON.stringify({
+      ...state,
+      updatedAt: new Date().toISOString(),
+    }),
+  );
+}
+
+function clearPersistedLoaderState() {
+  localStorage.removeItem(LOADER_STATE_STORAGE_KEY);
+}
+
+function isStateForCurrentUser(state, userSlug) {
+  if (!state || !userSlug) {
+    return false;
+  }
+
+  return state.userSlug === userSlug;
+}
+
+async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgress = () => {}, resumeState = undefined) {
   const profilePath = getCurrentProfilePath();
   if (!profilePath) {
     throw new Error('Profil uživatele nebyl nalezen.');
@@ -252,13 +318,58 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
   const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
   const paginationMode = detectPaginationModeFromDocument(firstDoc);
-  const targetPages =
+  const detectedTargetPages =
     maxPages === 0 ? Math.max(1, maxDetectedPages) : Math.max(1, Math.min(maxPages, maxDetectedPages));
 
-  let totalParsed = 0;
-  let loadedPages = 0;
+  const startPage = Math.max(1, Number.parseInt(resumeState?.nextPage || '1', 10));
+  const targetPages = Math.max(startPage, Number.parseInt(resumeState?.targetPages || detectedTargetPages, 10));
+  let totalParsed = Number.parseInt(resumeState?.totalParsed || '0', 10);
+  let loadedPages = Number.parseInt(resumeState?.loadedPages || '0', 10);
 
-  for (let page = 1; page <= targetPages; page++) {
+  setPersistedLoaderState({
+    status: 'running',
+    userSlug,
+    profilePath,
+    maxPages,
+    totalRatings,
+    maxDetectedPages,
+    paginationMode,
+    targetPages,
+    nextPage: startPage,
+    loadedPages,
+    totalParsed,
+  });
+
+  for (let page = startPage; page <= targetPages; page++) {
+    if (loaderController.pauseRequested) {
+      setPersistedLoaderState({
+        status: 'paused',
+        pauseReason: loaderController.pauseReason || 'manual',
+        userSlug,
+        profilePath,
+        maxPages,
+        totalRatings,
+        maxDetectedPages,
+        paginationMode,
+        targetPages,
+        nextPage: page,
+        loadedPages,
+        totalParsed,
+      });
+
+      return {
+        userSlug,
+        totalPagesLoaded: loadedPages,
+        totalPagesDetected: maxDetectedPages,
+        totalParsed,
+        totalRatings,
+        storeName: getStoreNameForUser(),
+        paused: true,
+        nextPage: page,
+        targetPages,
+      };
+    }
+
     const doc =
       page === 1
         ? firstDoc
@@ -274,6 +385,21 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
 
     totalParsed += pageRatings.length;
     loadedPages += 1;
+
+    setPersistedLoaderState({
+      status: 'running',
+      userSlug,
+      profilePath,
+      maxPages,
+      totalRatings,
+      maxDetectedPages,
+      paginationMode,
+      targetPages,
+      nextPage: page + 1,
+      loadedPages,
+      totalParsed,
+    });
+
     onProgress({
       page,
       totalPages: targetPages,
@@ -293,6 +419,9 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
     totalParsed,
     totalRatings,
     storeName: getStoreNameForUser(),
+    paused: false,
+    nextPage: targetPages + 1,
+    targetPages,
   };
 }
 
@@ -315,26 +444,61 @@ export function initializeRatingsLoader(rootElement) {
 
   loadButton.dataset.ccRatingsBound = 'true';
 
-  loadButton.addEventListener('click', async () => {
+  const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
+    if (loaderController.isRunning) {
+      return;
+    }
+
     try {
-      setButtonState(loadButton, true);
-      updateProgressUI(progress, { label: 'Připravuji načítání…', current: 0, total: 1 });
+      loaderController.isRunning = true;
+      loaderController.pauseRequested = false;
+      setLoadButtonMode(loadButton, 'running');
 
-      const result = await loadRatingsForCurrentUser(DEFAULT_MAX_PAGES, ({ page, totalPages, totalParsed }) => {
-        updateProgressUI(progress, {
-          label: `Načítám stránku ${page}/${totalPages}… (${totalParsed} položek)`,
-          current: page,
-          total: totalPages,
-        });
-      });
-
+      const startPage = Math.max(1, Number.parseInt(resumeState?.nextPage || '1', 10));
       updateProgressUI(progress, {
-        label: `Hotovo: ${result.totalParsed} hodnocení uloženo (${result.totalPagesLoaded} str., DB: ${result.storeName})`,
-        current: result.totalPagesLoaded,
-        total: result.totalPagesLoaded || 1,
+        label: autoResume ? `Pokračuji od stránky ${startPage}…` : 'Připravuji načítání…',
+        current: Math.max(0, startPage - 1),
+        total: Math.max(1, Number.parseInt(resumeState?.targetPages || '1', 10)),
       });
+
+      const result = await loadRatingsForCurrentUser(
+        resumeState?.maxPages ?? DEFAULT_MAX_PAGES,
+        ({ page, totalPages, totalParsed }) => {
+          updateProgressUI(progress, {
+            label: `Načítám stránku ${page}/${totalPages}… (${totalParsed} položek)`,
+            current: page,
+            total: totalPages,
+          });
+
+          if (loaderController.pauseRequested) {
+            setLoadButtonMode(loadButton, 'pausing');
+          }
+        },
+        resumeState,
+      );
+
+      if (result.paused) {
+        updateProgressUI(progress, {
+          label: `Pozastaveno na stránce ${result.nextPage}/${result.targetPages}`,
+          current: Math.max(0, result.nextPage - 1),
+          total: result.targetPages || 1,
+        });
+      } else {
+        clearPersistedLoaderState();
+        updateProgressUI(progress, {
+          label: `Hotovo: ${result.totalParsed} hodnocení uloženo (${result.totalPagesLoaded} str., DB: ${result.storeName})`,
+          current: result.totalPagesLoaded,
+          total: result.totalPagesLoaded || 1,
+        });
+      }
+
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     } catch (error) {
+      setPersistedLoaderState({
+        ...(getPersistedLoaderState() || {}),
+        status: 'paused',
+        pauseReason: 'interrupted',
+      });
       updateProgressUI(progress, {
         label: `Chyba: ${error.message}`,
         current: 0,
@@ -342,7 +506,57 @@ export function initializeRatingsLoader(rootElement) {
       });
       console.error('[CC] Ratings loader failed:', error);
     } finally {
-      setButtonState(loadButton, false);
+      loaderController.isRunning = false;
+      loaderController.pauseRequested = false;
+      loaderController.pauseReason = 'manual';
+
+      const currentUserSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
+      const stateAfterRun = getPersistedLoaderState();
+      if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
+        setLoadButtonMode(loadButton, 'resume');
+      } else {
+        setLoadButtonMode(loadButton, 'idle');
+      }
     }
+  };
+
+  loadButton.addEventListener('click', async () => {
+    if (loaderController.isRunning) {
+      loaderController.pauseRequested = true;
+      loaderController.pauseReason = 'manual';
+      setLoadButtonMode(loadButton, 'pausing');
+      return;
+    }
+
+    const state = getPersistedLoaderState();
+    await runLoad({
+      resumeState: state?.status === 'paused' ? state : undefined,
+      autoResume: false,
+    });
   });
+
+  const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
+  const state = getPersistedLoaderState();
+  if (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) {
+    setLoadButtonMode(loadButton, 'resume');
+
+    if (state.pauseReason === 'manual') {
+      updateProgressUI(progress, {
+        label: `Pozastaveno ručně na stránce ${state.nextPage}/${state.targetPages || '?'}`,
+        current: Math.max(0, (state.nextPage || 1) - 1),
+        total: state.targetPages || 1,
+      });
+      return;
+    }
+
+    updateProgressUI(progress, {
+      label: `Nalezeno nedokončené načítání (str. ${state.nextPage}/${state.targetPages || '?'}) — automaticky pokračuji…`,
+      current: Math.max(0, (state.nextPage || 1) - 1),
+      total: state.targetPages || 1,
+    });
+
+    setTimeout(() => {
+      runLoad({ resumeState: state, autoResume: true });
+    }, 500);
+  }
 }
