@@ -10,6 +10,35 @@ import { initializeRatingsSync } from './ratings-sync.js';
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
 import { getAllFromIndexedDB } from './storage.js';
 
+const MODAL_RENDER_SYNC_THRESHOLD = 700;
+const MODAL_RENDER_CHUNK_SIZE = 450;
+const ratingsModalCache = {
+  userSlug: '',
+  userRecords: null,
+  rowsByScope: {
+    direct: null,
+    computed: null,
+  },
+};
+
+function invalidateRatingsModalCache() {
+  ratingsModalCache.userSlug = '';
+  ratingsModalCache.userRecords = null;
+  ratingsModalCache.rowsByScope = {
+    direct: null,
+    computed: null,
+  };
+}
+
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function getCurrentUserSlug() {
   const profileEl = document.querySelector('a.profile.initialized');
   const profileHref = profileEl?.getAttribute('href') || '';
@@ -86,6 +115,42 @@ async function refreshRatingsBadges(rootElement) {
 
   redBadge.textContent = `${directRatingsCount} / ${totalRatings}`;
   blackBadge.textContent = `${computedCount}`;
+}
+
+async function getCachedUserRecords(userSlug) {
+  if (
+    ratingsModalCache.userSlug === userSlug &&
+    Array.isArray(ratingsModalCache.userRecords) &&
+    ratingsModalCache.userRecords.length >= 0
+  ) {
+    return ratingsModalCache.userRecords;
+  }
+
+  const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+  const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+
+  ratingsModalCache.userSlug = userSlug;
+  ratingsModalCache.userRecords = userRecords;
+  ratingsModalCache.rowsByScope.direct = null;
+  ratingsModalCache.rowsByScope.computed = null;
+
+  return userRecords;
+}
+
+async function getCachedRowsForScope(userSlug, scope) {
+  if (ratingsModalCache.userSlug === userSlug && Array.isArray(ratingsModalCache.rowsByScope[scope])) {
+    return ratingsModalCache.rowsByScope[scope];
+  }
+
+  const userRecords = await getCachedUserRecords(userSlug);
+  const scopedRecords =
+    scope === 'computed'
+      ? userRecords.filter((record) => record.computed === true)
+      : userRecords.filter((record) => record.computed !== true);
+
+  const rows = toModalRows(scopedRecords);
+  ratingsModalCache.rowsByScope[scope] = rows;
+  return rows;
 }
 
 function resolveRecordUrl(record) {
@@ -338,6 +403,7 @@ function getRatingsTableModal() {
     typeFilters: new Set(['all']),
     sortKey: 'name',
     sortDir: 'asc',
+    renderToken: 0,
   };
 
   const detailsOverlay = document.createElement('div');
@@ -446,58 +512,104 @@ function getRatingsTableModal() {
     updateTypeToggleText();
   };
 
+  const buildRowHtml = (row, rowIndex) => {
+    const detailsButton = `<button type="button" class="cc-ratings-table-details-btn cc-script-link-btn" data-row-index="${rowIndex}" aria-label="Zobrazit detail">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" />
+            <path d="M12 11.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="12" cy="8.2" r="1" fill="currentColor" />
+          </svg>
+        </button>`;
+
+    const iconLink = row.url
+      ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${escapeHtml(row.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M14 4H20V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>`
+      : '';
+
+    const escapedName = escapeHtml(row.name || 'Bez názvu');
+    const nameLink = row.url
+      ? `<a class="cc-ratings-table-name-link" href="${escapeHtml(row.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a>`
+      : `<span class="cc-ratings-table-name-link">${escapedName}</span>`;
+
+    return `
+      <tr>
+        <td>
+          <div class="cc-ratings-table-name-row">
+            <span class="cc-ratings-square ${escapeHtml(row.ratingSquareClass)}" aria-hidden="true"></span>
+            ${nameLink}
+            ${detailsButton}
+            ${iconLink}
+          </div>
+        </td>
+        <td class="cc-ratings-table-type">${escapeHtml(row.typeDisplay)}</td>
+        <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
+        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml(row.ratingText)}</td>
+        <td class="cc-ratings-table-date">${escapeHtml(row.date || '—')}</td>
+      </tr>
+    `;
+  };
+
+  const renderRowsFast = (rows, renderToken) => {
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="cc-ratings-table-empty">Žádná data</td></tr>';
+      return;
+    }
+
+    if (rows.length <= MODAL_RENDER_SYNC_THRESHOLD) {
+      let html = '';
+      for (let index = 0; index < rows.length; index++) {
+        html += buildRowHtml(rows[index], index);
+      }
+      if (state.renderToken === renderToken) {
+        tbody.innerHTML = html;
+      }
+      return;
+    }
+
+    tbody.innerHTML = '';
+    let index = 0;
+
+    const renderChunk = () => {
+      if (state.renderToken !== renderToken) {
+        return;
+      }
+
+      const end = Math.min(index + MODAL_RENDER_CHUNK_SIZE, rows.length);
+      let html = '';
+      for (let cursor = index; cursor < end; cursor++) {
+        html += buildRowHtml(rows[cursor], cursor);
+      }
+
+      if (index === 0) {
+        tbody.innerHTML = html;
+      } else {
+        tbody.insertAdjacentHTML('beforeend', html);
+      }
+
+      index = end;
+      if (index < rows.length) {
+        setTimeout(renderChunk, 0);
+      }
+    };
+
+    renderChunk();
+  };
+
   const render = () => {
+    state.renderToken += 1;
+    const renderToken = state.renderToken;
     const typeFiltered = filterRowsByType(state.rows, state.typeFilters);
     const filtered = filterRows(typeFiltered, state.search);
     const sorted = sortRows(filtered, state.sortKey, state.sortDir);
     state.visibleRows = sorted;
 
     summary.textContent = `${sorted.length} položek`;
-    tbody.innerHTML = '';
-
-    if (sorted.length === 0) {
-      const emptyRow = document.createElement('tr');
-      emptyRow.innerHTML = '<td colspan="5" class="cc-ratings-table-empty">Žádná data</td>';
-      tbody.appendChild(emptyRow);
-    } else {
-      sorted.forEach((row, rowIndex) => {
-        const tr = document.createElement('tr');
-        const detailsButton = `<button type="button" class="cc-ratings-table-details-btn cc-script-link-btn" data-row-index="${rowIndex}" aria-label="Zobrazit detail">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" />
-                <path d="M12 11.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <circle cx="12" cy="8.2" r="1" fill="currentColor" />
-              </svg>
-            </button>`;
-        const iconLink = row.url
-          ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${row.url}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <path d="M14 4H20V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </a>`
-          : '';
-        const nameLink = row.url
-          ? `<a class="cc-ratings-table-name-link" href="${row.url}" target="_blank" rel="noopener noreferrer">${row.name || 'Bez názvu'}</a>`
-          : `<span class="cc-ratings-table-name-link">${row.name || 'Bez názvu'}</span>`;
-        tr.innerHTML = `
-          <td>
-            <div class="cc-ratings-table-name-row">
-              <span class="cc-ratings-square ${row.ratingSquareClass}" aria-hidden="true"></span>
-              ${nameLink}
-              ${detailsButton}
-              ${iconLink}
-            </div>
-          </td>
-          <td class="cc-ratings-table-type">${row.typeDisplay}</td>
-          <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
-          <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${row.ratingText}</td>
-          <td class="cc-ratings-table-date">${row.date || '—'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-    }
+    renderRowsFast(sorted, renderToken);
 
     for (const button of sortButtons) {
       const key = button.dataset.sortKey;
@@ -654,14 +766,7 @@ async function openRatingsTableModal(rootElement, scope) {
     return;
   }
 
-  const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-  const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
-  const scopedRecords =
-    scope === 'computed'
-      ? userRecords.filter((record) => record.computed === true)
-      : userRecords.filter((record) => record.computed !== true);
-
-  const rows = toModalRows(scopedRecords);
+  const rows = await getCachedRowsForScope(userSlug, scope);
   const modal = getRatingsTableModal();
   modal.openWithData({
     rows,
@@ -727,6 +832,7 @@ async function addSettingsButton() {
   });
 
   const handleRatingsUpdated = () => {
+    invalidateRatingsModalCache();
     refreshRatingsBadges(settingsButton).catch((error) => {
       console.error('[CC] Failed to refresh badges:', error);
     });

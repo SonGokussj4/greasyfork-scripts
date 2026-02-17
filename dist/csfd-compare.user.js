@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ČSFD Compare V2
-// @version      0.8.0
+// @version      0.8.1
 // @namespace    csfd.cz
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
@@ -649,7 +649,7 @@
   var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}.cc-own-rating{margin-left:6px;vertical-align:middle}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}";
   styleInject(css_248z);
 
-  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head cc-settings-head\">\r\n        <div class=\"left-head cc-head-main\">\r\n            <h2>CSFD-Compare</h2>\r\n            <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\" class=\"cc-version-link\">v6.6.0</a>\r\n        </div>\r\n        <div class=\"right-head ml-auto cc-head-badges\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\"\r\n                    class=\"cc-sync-icon-btn cc-script-link-btn\" title=\"Skript na GreasyFork\"\r\n                    aria-label=\"Skript na GreasyFork\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path d=\"M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15\"\r\n                            stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        <path d=\"M10 14L20 4\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        <path d=\"M14 4H20V10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                            stroke-linejoin=\"round\" />\r\n                    </svg>\r\n                </a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-actions ph-5\">\r\n        <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red grow cc-button-iconed\">\r\n            <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                    <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                    <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                        stroke-linejoin=\"round\" />\r\n                    <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                </svg>\r\n            </span>\r\n            <span>Načíst moje hodnocení</span>\r\n        </button>\r\n        <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n            <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                    <path d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                        stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                </svg>\r\n            </span>\r\n            <span>Dopočítat seriály</span>\r\n        </button>\r\n    </div>\r\n\r\n    <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n        <div class=\"cc-ratings-progress-head\">\r\n            <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n            <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n        </div>\r\n        <div class=\"cc-ratings-progress-track\">\r\n            <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n        </div>\r\n        <div class=\"cc-ratings-progress-actions\">\r\n            <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit načítání</button>\r\n        </div>\r\n    </div>\r\n\r\n    <details style=\"margin-bottom: 16px;\">\r\n        <summary style=\"cursor: pointer; font-size: 12px; color: #444;\">🛠️ Další akce</summary>\r\n        <div\r\n            style=\"display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;\">\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Reset</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                LC</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                DB</button>\r\n        </div>\r\n    </details>\r\n\r\n    <article class=\"article\">\r\n        <div class=\"article-content\">\r\n            <form>\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option1\" /> Option 1\r\n                </label>\r\n                <br />\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option2\" /> Option 2\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
+  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head cc-settings-head\">\r\n        <div class=\"left-head cc-head-main\">\r\n            <h2>CSFD-Compare</h2>\r\n            <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\" class=\"cc-version-link\">v0.8.0</a>\r\n        </div>\r\n        <div class=\"right-head ml-auto cc-head-badges\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\"\r\n                    class=\"cc-sync-icon-btn cc-script-link-btn\" title=\"Skript na GreasyFork\"\r\n                    aria-label=\"Skript na GreasyFork\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path d=\"M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15\"\r\n                            stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        <path d=\"M10 14L20 4\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        <path d=\"M14 4H20V10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                            stroke-linejoin=\"round\" />\r\n                    </svg>\r\n                </a>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-actions ph-5\">\r\n        <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red grow cc-button-iconed\">\r\n            <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                    <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                    <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                        stroke-linejoin=\"round\" />\r\n                    <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                </svg>\r\n            </span>\r\n            <span>Načíst moje hodnocení</span>\r\n        </button>\r\n        <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n            <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                    <path d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                        stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                </svg>\r\n            </span>\r\n            <span>Dopočítat seriály</span>\r\n        </button>\r\n    </div>\r\n\r\n    <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n        <div class=\"cc-ratings-progress-head\">\r\n            <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n            <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n        </div>\r\n        <div class=\"cc-ratings-progress-track\">\r\n            <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n        </div>\r\n        <div class=\"cc-ratings-progress-actions\">\r\n            <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit načítání</button>\r\n        </div>\r\n    </div>\r\n\r\n    <details style=\"margin-bottom: 16px;\">\r\n        <summary style=\"cursor: pointer; font-size: 12px; color: #444;\">🛠️ Další akce</summary>\r\n        <div\r\n            style=\"display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;\">\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Reset</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                LC</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                DB</button>\r\n        </div>\r\n    </details>\r\n\r\n    <article class=\"article\">\r\n        <div class=\"article-content\">\r\n            <form>\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option1\" /> Option 1\r\n                </label>\r\n                <br />\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option2\" /> Option 2\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
 
   const DEBUG = true;
 
@@ -1984,6 +1984,35 @@
   // addSettingsButton function that will create element 'li' as a 'let button'
 
 
+  const MODAL_RENDER_SYNC_THRESHOLD = 700;
+  const MODAL_RENDER_CHUNK_SIZE = 450;
+  const ratingsModalCache = {
+    userSlug: '',
+    userRecords: null,
+    rowsByScope: {
+      direct: null,
+      computed: null,
+    },
+  };
+
+  function invalidateRatingsModalCache() {
+    ratingsModalCache.userSlug = '';
+    ratingsModalCache.userRecords = null;
+    ratingsModalCache.rowsByScope = {
+      direct: null,
+      computed: null,
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
   function getCurrentUserSlug() {
     const profileEl = document.querySelector('a.profile.initialized');
     const profileHref = profileEl?.getAttribute('href') || '';
@@ -2060,6 +2089,42 @@
 
     redBadge.textContent = `${directRatingsCount} / ${totalRatings}`;
     blackBadge.textContent = `${computedCount}`;
+  }
+
+  async function getCachedUserRecords(userSlug) {
+    if (
+      ratingsModalCache.userSlug === userSlug &&
+      Array.isArray(ratingsModalCache.userRecords) &&
+      ratingsModalCache.userRecords.length >= 0
+    ) {
+      return ratingsModalCache.userRecords;
+    }
+
+    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+    const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+
+    ratingsModalCache.userSlug = userSlug;
+    ratingsModalCache.userRecords = userRecords;
+    ratingsModalCache.rowsByScope.direct = null;
+    ratingsModalCache.rowsByScope.computed = null;
+
+    return userRecords;
+  }
+
+  async function getCachedRowsForScope(userSlug, scope) {
+    if (ratingsModalCache.userSlug === userSlug && Array.isArray(ratingsModalCache.rowsByScope[scope])) {
+      return ratingsModalCache.rowsByScope[scope];
+    }
+
+    const userRecords = await getCachedUserRecords(userSlug);
+    const scopedRecords =
+      scope === 'computed'
+        ? userRecords.filter((record) => record.computed === true)
+        : userRecords.filter((record) => record.computed !== true);
+
+    const rows = toModalRows(scopedRecords);
+    ratingsModalCache.rowsByScope[scope] = rows;
+    return rows;
   }
 
   function resolveRecordUrl(record) {
@@ -2312,6 +2377,7 @@
       typeFilters: new Set(['all']),
       sortKey: 'name',
       sortDir: 'asc',
+      renderToken: 0,
     };
 
     const detailsOverlay = document.createElement('div');
@@ -2420,58 +2486,104 @@
       updateTypeToggleText();
     };
 
+    const buildRowHtml = (row, rowIndex) => {
+      const detailsButton = `<button type="button" class="cc-ratings-table-details-btn cc-script-link-btn" data-row-index="${rowIndex}" aria-label="Zobrazit detail">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" />
+            <path d="M12 11.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <circle cx="12" cy="8.2" r="1" fill="currentColor" />
+          </svg>
+        </button>`;
+
+      const iconLink = row.url
+        ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${escapeHtml(row.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            <path d="M14 4H20V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </a>`
+        : '';
+
+      const escapedName = escapeHtml(row.name || 'Bez názvu');
+      const nameLink = row.url
+        ? `<a class="cc-ratings-table-name-link" href="${escapeHtml(row.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a>`
+        : `<span class="cc-ratings-table-name-link">${escapedName}</span>`;
+
+      return `
+      <tr>
+        <td>
+          <div class="cc-ratings-table-name-row">
+            <span class="cc-ratings-square ${escapeHtml(row.ratingSquareClass)}" aria-hidden="true"></span>
+            ${nameLink}
+            ${detailsButton}
+            ${iconLink}
+          </div>
+        </td>
+        <td class="cc-ratings-table-type">${escapeHtml(row.typeDisplay)}</td>
+        <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
+        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml(row.ratingText)}</td>
+        <td class="cc-ratings-table-date">${escapeHtml(row.date || '—')}</td>
+      </tr>
+    `;
+    };
+
+    const renderRowsFast = (rows, renderToken) => {
+      if (rows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="cc-ratings-table-empty">Žádná data</td></tr>';
+        return;
+      }
+
+      if (rows.length <= MODAL_RENDER_SYNC_THRESHOLD) {
+        let html = '';
+        for (let index = 0; index < rows.length; index++) {
+          html += buildRowHtml(rows[index], index);
+        }
+        if (state.renderToken === renderToken) {
+          tbody.innerHTML = html;
+        }
+        return;
+      }
+
+      tbody.innerHTML = '';
+      let index = 0;
+
+      const renderChunk = () => {
+        if (state.renderToken !== renderToken) {
+          return;
+        }
+
+        const end = Math.min(index + MODAL_RENDER_CHUNK_SIZE, rows.length);
+        let html = '';
+        for (let cursor = index; cursor < end; cursor++) {
+          html += buildRowHtml(rows[cursor], cursor);
+        }
+
+        if (index === 0) {
+          tbody.innerHTML = html;
+        } else {
+          tbody.insertAdjacentHTML('beforeend', html);
+        }
+
+        index = end;
+        if (index < rows.length) {
+          setTimeout(renderChunk, 0);
+        }
+      };
+
+      renderChunk();
+    };
+
     const render = () => {
+      state.renderToken += 1;
+      const renderToken = state.renderToken;
       const typeFiltered = filterRowsByType(state.rows, state.typeFilters);
       const filtered = filterRows(typeFiltered, state.search);
       const sorted = sortRows(filtered, state.sortKey, state.sortDir);
       state.visibleRows = sorted;
 
       summary.textContent = `${sorted.length} položek`;
-      tbody.innerHTML = '';
-
-      if (sorted.length === 0) {
-        const emptyRow = document.createElement('tr');
-        emptyRow.innerHTML = '<td colspan="5" class="cc-ratings-table-empty">Žádná data</td>';
-        tbody.appendChild(emptyRow);
-      } else {
-        sorted.forEach((row, rowIndex) => {
-          const tr = document.createElement('tr');
-          const detailsButton = `<button type="button" class="cc-ratings-table-details-btn cc-script-link-btn" data-row-index="${rowIndex}" aria-label="Zobrazit detail">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" />
-                <path d="M12 11.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <circle cx="12" cy="8.2" r="1" fill="currentColor" />
-              </svg>
-            </button>`;
-          const iconLink = row.url
-            ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${row.url}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
-              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                <path d="M14 4H20V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-              </svg>
-            </a>`
-            : '';
-          const nameLink = row.url
-            ? `<a class="cc-ratings-table-name-link" href="${row.url}" target="_blank" rel="noopener noreferrer">${row.name || 'Bez názvu'}</a>`
-            : `<span class="cc-ratings-table-name-link">${row.name || 'Bez názvu'}</span>`;
-          tr.innerHTML = `
-          <td>
-            <div class="cc-ratings-table-name-row">
-              <span class="cc-ratings-square ${row.ratingSquareClass}" aria-hidden="true"></span>
-              ${nameLink}
-              ${detailsButton}
-              ${iconLink}
-            </div>
-          </td>
-          <td class="cc-ratings-table-type">${row.typeDisplay}</td>
-          <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
-          <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${row.ratingText}</td>
-          <td class="cc-ratings-table-date">${row.date || '—'}</td>
-        `;
-          tbody.appendChild(tr);
-        });
-      }
+      renderRowsFast(sorted, renderToken);
 
       for (const button of sortButtons) {
         const key = button.dataset.sortKey;
@@ -2628,14 +2740,7 @@
       return;
     }
 
-    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-    const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
-    const scopedRecords =
-      scope === 'computed'
-        ? userRecords.filter((record) => record.computed === true)
-        : userRecords.filter((record) => record.computed !== true);
-
-    const rows = toModalRows(scopedRecords);
+    const rows = await getCachedRowsForScope(userSlug, scope);
     const modal = getRatingsTableModal();
     modal.openWithData({
       rows,
@@ -2700,6 +2805,7 @@
     });
 
     const handleRatingsUpdated = () => {
+      invalidateRatingsModalCache();
       refreshRatingsBadges(settingsButton).catch((error) => {
         console.error('[CC] Failed to refresh badges:', error);
       });
