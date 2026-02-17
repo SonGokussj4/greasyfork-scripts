@@ -125,9 +125,67 @@ function formatRatingForModal(ratingValue) {
 
   const clamped = Math.max(0, Math.min(5, Math.trunc(ratingValue)));
   return {
-    stars: `${'★'.repeat(clamped)}${'☆'.repeat(5 - clamped)}`,
+    stars: '★'.repeat(clamped),
     isOdpad: false,
   };
+}
+
+function extractSeriesInfoToken(record, typeKey) {
+  const candidates = [record?.url, record?.fullUrl, record?.name]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+
+  for (const source of candidates) {
+    const seasonEpisodeMatch = source.match(/s(\d{1,2})e(\d{1,2})/i);
+    if (seasonEpisodeMatch) {
+      const season = seasonEpisodeMatch[1].padStart(2, '0');
+      const episode = seasonEpisodeMatch[2].padStart(2, '0');
+      return `S${season}E${episode}`;
+    }
+
+    const seasonOnlyMatch = source.match(/(?:season|série|serie|seri[áa]l)[\s\-\(]*s?(\d{1,2})/i);
+    if (seasonOnlyMatch) {
+      const season = seasonOnlyMatch[1].padStart(2, '0');
+      return `S${season}`;
+    }
+
+    const episodeOnlyMatch = source.match(/(?:episode|epizoda|ep\.?)[\s\-\(]*(\d{1,3})/i);
+    if (episodeOnlyMatch) {
+      const episode = episodeOnlyMatch[1].padStart(2, '0');
+      return `E${episode}`;
+    }
+  }
+
+  return typeKey === 'season' ? 'S??' : typeKey === 'episode' ? 'E??' : '';
+}
+
+function getRatingSquareClass(ratingValue) {
+  if (!Number.isFinite(ratingValue)) {
+    return 'is-unknown';
+  }
+
+  if (ratingValue <= 1) return 'is-1';
+  if (ratingValue === 2) return 'is-2';
+  if (ratingValue === 3) return 'is-3';
+  if (ratingValue === 4) return 'is-4';
+  return 'is-5';
+}
+
+function parseCzechDateToSortableValue(dateText) {
+  const trimmed = String(dateText || '').trim();
+  const match = trimmed.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!match) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  const day = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const year = Number.parseInt(match[3], 10);
+  if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+    return Number.NEGATIVE_INFINITY;
+  }
+
+  return year * 10000 + month * 100 + day;
 }
 
 function toModalRows(records) {
@@ -135,16 +193,27 @@ function toModalRows(records) {
     const ratingValue = Number.isFinite(record.rating) ? record.rating : Number.NEGATIVE_INFINITY;
     const normalizedType = normalizeModalType(record.type);
     const formattedRating = formatRatingForModal(record.rating);
+    const parsedYear = Number.isFinite(record.year) ? record.year : NaN;
+    const typeToken = extractSeriesInfoToken(record, normalizedType.key);
+    const typeDisplay =
+      normalizedType.key === 'season' || normalizedType.key === 'episode'
+        ? `${normalizedType.label} (${typeToken})`
+        : normalizedType.label;
 
     return {
       name: (record.name || '').trim(),
       url: resolveRecordUrl(record),
       typeKey: normalizedType.key,
       typeLabel: normalizedType.label,
+      typeDisplay,
+      yearValue: parsedYear,
       ratingText: formattedRating.stars,
       ratingIsOdpad: formattedRating.isOdpad,
       ratingValue,
+      ratingSquareClass: getRatingSquareClass(record.rating),
       date: (record.date || '').trim(),
+      dateSortValue: parseCzechDateToSortableValue(record.date),
+      rawRecord: { ...record },
     };
   });
 }
@@ -156,7 +225,13 @@ function normalizeSearchText(value) {
 function sortRows(rows, sortKey, sortDir) {
   const sorted = [...rows].sort((a, b) => {
     if (sortKey === 'type') {
-      return a.typeLabel.localeCompare(b.typeLabel, 'en', { sensitivity: 'base' });
+      return a.typeDisplay.localeCompare(b.typeDisplay, 'en', { sensitivity: 'base' });
+    }
+
+    if (sortKey === 'year') {
+      const aYear = Number.isFinite(a.yearValue) ? a.yearValue : -Infinity;
+      const bYear = Number.isFinite(b.yearValue) ? b.yearValue : -Infinity;
+      return aYear - bYear;
     }
 
     if (sortKey === 'rating') {
@@ -164,7 +239,7 @@ function sortRows(rows, sortKey, sortDir) {
     }
 
     if (sortKey === 'date') {
-      return a.date.localeCompare(b.date, 'cs', { sensitivity: 'base' });
+      return a.dateSortValue - b.dateSortValue;
     }
 
     return a.name.localeCompare(b.name, 'cs', { sensitivity: 'base' });
@@ -184,17 +259,19 @@ function filterRows(rows, search) {
       normalizeSearchText(row.name).includes(query) ||
       normalizeSearchText(row.url).includes(query) ||
       normalizeSearchText(row.typeLabel).includes(query) ||
+      normalizeSearchText(row.typeDisplay).includes(query) ||
+      normalizeSearchText(row.yearValue).includes(query) ||
       normalizeSearchText(row.ratingText).includes(query) ||
       normalizeSearchText(row.date).includes(query)
     );
   });
 }
 
-function filterRowsByType(rows, typeFilter) {
-  if (!typeFilter || typeFilter === 'all') {
+function filterRowsByType(rows, typeFilters) {
+  if (!typeFilters || typeFilters.size === 0 || typeFilters.has('all')) {
     return rows;
   }
-  return rows.filter((row) => row.typeKey === typeFilter);
+  return rows.filter((row) => typeFilters.has(row.typeKey));
 }
 
 function getRatingsTableModal() {
@@ -214,13 +291,16 @@ function getRatingsTableModal() {
       </div>
       <div class="cc-ratings-table-toolbar">
         <input type="search" class="cc-ratings-table-search" placeholder="Filtrovat (název, URL, hodnocení, datum)…" />
-        <select class="cc-ratings-table-type-filter" aria-label="Filtr typu">
-          <option value="all">All types</option>
-          <option value="movie">Movie</option>
-          <option value="series">Series</option>
-          <option value="season">Season</option>
-          <option value="episode">Episode</option>
-        </select>
+        <div class="cc-ratings-type-multiselect" data-open="false">
+          <button type="button" class="cc-ratings-type-toggle" aria-expanded="false">All types</button>
+          <div class="cc-ratings-type-menu" hidden>
+            <label><input type="checkbox" value="all" checked /> All</label>
+            <label><input type="checkbox" value="movie" /> Movie</label>
+            <label><input type="checkbox" value="series" /> Series</label>
+            <label><input type="checkbox" value="season" /> Season</label>
+            <label><input type="checkbox" value="episode" /> Episode</label>
+          </div>
+        </div>
         <span class="cc-ratings-table-summary">0 položek</span>
       </div>
       <div class="cc-ratings-table-wrap">
@@ -229,8 +309,9 @@ function getRatingsTableModal() {
             <tr>
               <th><button type="button" data-sort-key="name"><span class="cc-sort-label">Název</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
               <th><button type="button" data-sort-key="type"><span class="cc-sort-label">Typ</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
+              <th><button type="button" data-sort-key="year"><span class="cc-sort-label">Rok</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
               <th><button type="button" data-sort-key="rating"><span class="cc-sort-label">Hodnocení</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th><button type="button" data-sort-key="date"><span class="cc-sort-label">Datum</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
+              <th><button type="button" data-sort-key="date"><span class="cc-sort-label">Datum hodnocení</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -241,7 +322,10 @@ function getRatingsTableModal() {
 
   const closeBtn = overlay.querySelector('.cc-ratings-table-close');
   const searchInput = overlay.querySelector('.cc-ratings-table-search');
-  const typeFilter = overlay.querySelector('.cc-ratings-table-type-filter');
+  const typeMulti = overlay.querySelector('.cc-ratings-type-multiselect');
+  const typeToggle = overlay.querySelector('.cc-ratings-type-toggle');
+  const typeMenu = overlay.querySelector('.cc-ratings-type-menu');
+  const typeCheckboxes = Array.from(overlay.querySelectorAll('.cc-ratings-type-menu input[type="checkbox"]'));
   const summary = overlay.querySelector('.cc-ratings-table-summary');
   const tbody = overlay.querySelector('tbody');
   const title = overlay.querySelector('#cc-ratings-table-title');
@@ -249,29 +333,150 @@ function getRatingsTableModal() {
 
   const state = {
     rows: [],
+    visibleRows: [],
     search: '',
-    typeFilter: 'all',
+    typeFilters: new Set(['all']),
     sortKey: 'name',
     sortDir: 'asc',
   };
 
+  const detailsOverlay = document.createElement('div');
+  detailsOverlay.className = 'cc-rating-detail-overlay';
+  detailsOverlay.innerHTML = `
+    <div class="cc-rating-detail-card" role="dialog" aria-modal="true" aria-labelledby="cc-rating-detail-title">
+      <div class="cc-rating-detail-head">
+        <h4 id="cc-rating-detail-title">Detail záznamu</h4>
+        <button type="button" class="cc-rating-detail-close" aria-label="Zavřít">×</button>
+      </div>
+      <div class="cc-rating-detail-body"></div>
+    </div>
+  `;
+  const detailsBody = detailsOverlay.querySelector('.cc-rating-detail-body');
+  const detailsTitle = detailsOverlay.querySelector('#cc-rating-detail-title');
+  const closeDetailsBtn = detailsOverlay.querySelector('.cc-rating-detail-close');
+
+  const openDetailsModal = (row) => {
+    const record = row?.rawRecord || {};
+    const orderedKeys = [
+      'id',
+      'userSlug',
+      'movieId',
+      'name',
+      'url',
+      'fullUrl',
+      'type',
+      'year',
+      'rating',
+      'date',
+      'parentId',
+      'parentName',
+      'computed',
+      'computedCount',
+      'computedFromText',
+      'lastUpdate',
+    ];
+    const extraKeys = Object.keys(record)
+      .filter((key) => !orderedKeys.includes(key))
+      .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+    const keys = [...orderedKeys.filter((key) => key in record), ...extraKeys];
+
+    detailsTitle.textContent = row?.name ? `Detail: ${row.name}` : 'Detail záznamu';
+    detailsBody.innerHTML = '';
+
+    for (const key of keys) {
+      const value = record[key];
+      const rowEl = document.createElement('div');
+      rowEl.className = 'cc-rating-detail-row';
+
+      const keyEl = document.createElement('div');
+      keyEl.className = 'cc-rating-detail-key';
+      keyEl.textContent = key;
+
+      const valueEl = document.createElement('div');
+      valueEl.className = 'cc-rating-detail-value';
+      if (value === null) {
+        valueEl.textContent = 'null';
+      } else if (typeof value === 'undefined') {
+        valueEl.textContent = 'undefined';
+      } else if (typeof value === 'object') {
+        valueEl.textContent = JSON.stringify(value);
+      } else if (typeof value === 'number' && Number.isNaN(value)) {
+        valueEl.textContent = 'NaN';
+      } else {
+        valueEl.textContent = String(value);
+      }
+
+      rowEl.appendChild(keyEl);
+      rowEl.appendChild(valueEl);
+      detailsBody.appendChild(rowEl);
+    }
+
+    detailsOverlay.classList.add('is-open');
+  };
+
+  const closeDetailsModal = () => {
+    detailsOverlay.classList.remove('is-open');
+  };
+
+  closeDetailsBtn.addEventListener('click', closeDetailsModal);
+  detailsOverlay.addEventListener('click', (event) => {
+    if (event.target === detailsOverlay) {
+      closeDetailsModal();
+    }
+  });
+
+  const updateTypeToggleText = () => {
+    if (state.typeFilters.has('all') || state.typeFilters.size === 0) {
+      typeToggle.textContent = 'All types';
+      return;
+    }
+
+    const labels = [];
+    if (state.typeFilters.has('movie')) labels.push('Movie');
+    if (state.typeFilters.has('series')) labels.push('Series');
+    if (state.typeFilters.has('season')) labels.push('Season');
+    if (state.typeFilters.has('episode')) labels.push('Episode');
+    typeToggle.textContent = labels.join(', ');
+  };
+
+  const syncTypeCheckboxes = () => {
+    for (const input of typeCheckboxes) {
+      input.checked = state.typeFilters.has(input.value);
+    }
+    updateTypeToggleText();
+  };
+
   const render = () => {
-    const typeFiltered = filterRowsByType(state.rows, state.typeFilter);
+    const typeFiltered = filterRowsByType(state.rows, state.typeFilters);
     const filtered = filterRows(typeFiltered, state.search);
     const sorted = sortRows(filtered, state.sortKey, state.sortDir);
+    state.visibleRows = sorted;
 
     summary.textContent = `${sorted.length} položek`;
     tbody.innerHTML = '';
 
     if (sorted.length === 0) {
       const emptyRow = document.createElement('tr');
-      emptyRow.innerHTML = '<td colspan="4" class="cc-ratings-table-empty">Žádná data</td>';
+      emptyRow.innerHTML = '<td colspan="5" class="cc-ratings-table-empty">Žádná data</td>';
       tbody.appendChild(emptyRow);
     } else {
-      for (const row of sorted) {
+      sorted.forEach((row, rowIndex) => {
         const tr = document.createElement('tr');
+        const detailsButton = `<button type="button" class="cc-ratings-table-details-btn cc-script-link-btn" data-row-index="${rowIndex}" aria-label="Zobrazit detail">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" />
+                <path d="M12 11.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <circle cx="12" cy="8.2" r="1" fill="currentColor" />
+              </svg>
+            </button>`;
         const iconLink = row.url
-          ? `<a class="cc-ratings-table-link-icon" href="${row.url}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">↗</a>`
+          ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${row.url}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                <path d="M14 4H20V10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>`
           : '';
         const nameLink = row.url
           ? `<a class="cc-ratings-table-name-link" href="${row.url}" target="_blank" rel="noopener noreferrer">${row.name || 'Bez názvu'}</a>`
@@ -279,16 +484,19 @@ function getRatingsTableModal() {
         tr.innerHTML = `
           <td>
             <div class="cc-ratings-table-name-row">
+              <span class="cc-ratings-square ${row.ratingSquareClass}" aria-hidden="true"></span>
               ${nameLink}
+              ${detailsButton}
               ${iconLink}
             </div>
           </td>
-          <td class="cc-ratings-table-type">${row.typeLabel}</td>
+          <td class="cc-ratings-table-type">${row.typeDisplay}</td>
+          <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
           <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${row.ratingText}</td>
           <td class="cc-ratings-table-date">${row.date || '—'}</td>
         `;
         tbody.appendChild(tr);
-      }
+      });
     }
 
     for (const button of sortButtons) {
@@ -305,12 +513,15 @@ function getRatingsTableModal() {
   overlay.openWithData = ({ rows, modalTitle }) => {
     state.rows = rows;
     state.search = '';
-    state.typeFilter = 'all';
+    state.typeFilters = new Set(['all']);
     state.sortKey = 'name';
     state.sortDir = 'asc';
     title.textContent = modalTitle;
     searchInput.value = '';
-    typeFilter.value = 'all';
+    typeMulti.dataset.open = 'false';
+    typeMenu.hidden = true;
+    typeToggle.setAttribute('aria-expanded', 'false');
+    syncTypeCheckboxes();
     render();
     overlay.classList.add('is-open');
     document.body.classList.add('cc-ratings-modal-open');
@@ -319,6 +530,7 @@ function getRatingsTableModal() {
 
   overlay.closeModal = () => {
     overlay.classList.remove('is-open');
+    closeDetailsModal();
     document.body.classList.remove('cc-ratings-modal-open');
   };
 
@@ -329,9 +541,32 @@ function getRatingsTableModal() {
     }
   });
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && overlay.classList.contains('is-open')) {
+    if (event.key !== 'Escape') {
+      return;
+    }
+
+    if (detailsOverlay.classList.contains('is-open')) {
+      closeDetailsModal();
+      return;
+    }
+
+    if (overlay.classList.contains('is-open')) {
       overlay.closeModal();
     }
+  });
+
+  tbody.addEventListener('click', (event) => {
+    const detailsButton = event.target.closest('.cc-ratings-table-details-btn');
+    if (!detailsButton) {
+      return;
+    }
+
+    const rowIndex = Number.parseInt(detailsButton.getAttribute('data-row-index') || '-1', 10);
+    if (!Number.isFinite(rowIndex) || rowIndex < 0 || rowIndex >= state.visibleRows.length) {
+      return;
+    }
+
+    openDetailsModal(state.visibleRows[rowIndex]);
   });
 
   searchInput.addEventListener('input', () => {
@@ -339,9 +574,54 @@ function getRatingsTableModal() {
     render();
   });
 
-  typeFilter.addEventListener('change', () => {
-    state.typeFilter = typeFilter.value;
-    render();
+  typeToggle.addEventListener('click', () => {
+    const isOpen = typeMulti.dataset.open === 'true';
+    const nextOpen = !isOpen;
+    typeMulti.dataset.open = nextOpen ? 'true' : 'false';
+    typeMenu.hidden = !nextOpen;
+    typeToggle.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+  });
+
+  typeMenu.addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
+  for (const input of typeCheckboxes) {
+    input.addEventListener('change', () => {
+      const value = input.value;
+
+      if (value === 'all' && input.checked) {
+        state.typeFilters = new Set(['all']);
+      } else if (value !== 'all') {
+        state.typeFilters.delete('all');
+
+        if (input.checked) {
+          state.typeFilters.add(value);
+        } else {
+          state.typeFilters.delete(value);
+        }
+
+        if (state.typeFilters.size === 0) {
+          state.typeFilters = new Set(['all']);
+        }
+      } else if (value === 'all' && !input.checked && state.typeFilters.size === 1 && state.typeFilters.has('all')) {
+        state.typeFilters = new Set(['all']);
+      }
+
+      syncTypeCheckboxes();
+      render();
+    });
+  }
+
+  document.addEventListener('click', (event) => {
+    if (!overlay.classList.contains('is-open')) {
+      return;
+    }
+    if (!typeMulti.contains(event.target)) {
+      typeMulti.dataset.open = 'false';
+      typeMenu.hidden = true;
+      typeToggle.setAttribute('aria-expanded', 'false');
+    }
   });
 
   for (const button of sortButtons) {
@@ -361,7 +641,10 @@ function getRatingsTableModal() {
     });
   }
 
+  syncTypeCheckboxes();
+
   document.body.appendChild(overlay);
+  document.body.appendChild(detailsOverlay);
   return overlay;
 }
 
