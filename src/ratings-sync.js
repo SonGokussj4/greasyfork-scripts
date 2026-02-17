@@ -83,7 +83,9 @@ function createSyncSetupModal() {
 
 function updateSyncButtonLabel(button) {
   const { enabled } = getSyncSetupState();
-  button.textContent = enabled ? 'Sync ✓' : 'Sync';
+  button.classList.toggle('is-enabled', enabled);
+  button.setAttribute('title', enabled ? 'Cloud sync zapnutý' : 'Cloud sync');
+  button.setAttribute('aria-label', enabled ? 'Cloud sync zapnutý' : 'Cloud sync');
 }
 
 export function initializeRatingsSync(rootElement) {
