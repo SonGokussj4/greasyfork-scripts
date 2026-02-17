@@ -260,6 +260,39 @@
     transition: width 0.25s ease;
 }
 
+.cc-ratings-progress-actions {
+    margin-top: 6px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.cc-ratings-cancel-link {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    background: transparent;
+    color: #7a7a7a;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.cc-ratings-cancel-link:hover {
+    color: #444;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.cc-ratings-cancel-link:focus,
+.cc-ratings-cancel-link:focus-visible,
+.cc-ratings-cancel-link:active {
+    color: #333;
+    background: rgba(0, 0, 0, 0.08);
+    outline: none;
+}
+
 .header-bar .csfd-compare-menu {
     position: relative;
 }

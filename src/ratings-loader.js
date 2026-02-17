@@ -427,6 +427,7 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
 
 export function initializeRatingsLoader(rootElement) {
   const loadButton = rootElement.querySelector('#cc-load-ratings-btn');
+  const cancelPausedButton = rootElement.querySelector('#cc-cancel-ratings-loader-btn');
   const progress = {
     container: rootElement.querySelector('#cc-ratings-progress'),
     label: rootElement.querySelector('#cc-ratings-progress-label'),
@@ -437,6 +438,14 @@ export function initializeRatingsLoader(rootElement) {
   if (!loadButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
     return;
   }
+
+  const setCancelPausedButtonVisible = (visible) => {
+    if (!cancelPausedButton) {
+      return;
+    }
+    cancelPausedButton.hidden = !visible;
+    cancelPausedButton.disabled = false;
+  };
 
   if (loadButton.dataset.ccRatingsBound === 'true') {
     return;
@@ -483,6 +492,7 @@ export function initializeRatingsLoader(rootElement) {
           current: Math.max(0, result.nextPage - 1),
           total: result.targetPages || 1,
         });
+        setCancelPausedButtonVisible(true);
       } else {
         clearPersistedLoaderState();
         updateProgressUI(progress, {
@@ -490,6 +500,7 @@ export function initializeRatingsLoader(rootElement) {
           current: result.totalPagesLoaded,
           total: result.totalPagesLoaded || 1,
         });
+        setCancelPausedButtonVisible(false);
       }
 
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
@@ -514,11 +525,31 @@ export function initializeRatingsLoader(rootElement) {
       const stateAfterRun = getPersistedLoaderState();
       if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
         setLoadButtonMode(loadButton, 'resume');
+        setCancelPausedButtonVisible(true);
       } else {
         setLoadButtonMode(loadButton, 'idle');
+        setCancelPausedButtonVisible(false);
       }
     }
   };
+
+  if (cancelPausedButton) {
+    cancelPausedButton.addEventListener('click', () => {
+      if (loaderController.isRunning) {
+        return;
+      }
+
+      clearPersistedLoaderState();
+      setCancelPausedButtonVisible(false);
+      setLoadButtonMode(loadButton, 'idle');
+      updateProgressUI(progress, {
+        label: 'Pozastavené načítání bylo zrušeno',
+        current: 0,
+        total: 1,
+      });
+      window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+    });
+  }
 
   loadButton.addEventListener('click', async () => {
     if (loaderController.isRunning) {
@@ -539,6 +570,7 @@ export function initializeRatingsLoader(rootElement) {
   const state = getPersistedLoaderState();
   if (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) {
     setLoadButtonMode(loadButton, 'resume');
+    setCancelPausedButtonVisible(true);
 
     if (state.pauseReason === 'manual') {
       updateProgressUI(progress, {
