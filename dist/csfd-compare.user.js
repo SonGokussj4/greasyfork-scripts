@@ -23,6 +23,7 @@
   const SETTINGSNAME = 'CSFD-Compare-settings';
   const NUM_RATINGS_PER_PAGE = 50;
   const INDEXED_DB_NAME = 'CC-Ratings';
+  const RATINGS_STORE_NAME = 'ratings';
 
   async function getSettings(settingsName = 'CSFD-Compare-settings', defaultSettings = {}) {
     if (!localStorage.getItem(settingsName)) {
@@ -98,6 +99,28 @@
     }
   }
 
+  async function getAllFromIndexedDB(dbName, storeName) {
+    const db = await initIndexedDB(dbName, storeName);
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readonly');
+      const store = transaction.objectStore(storeName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  async function deleteItemFromIndexedDB(dbName, storeName, id) {
+    const db = await initIndexedDB(dbName, storeName);
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(storeName, 'readwrite');
+      const store = transaction.objectStore(storeName);
+      const req = store.delete(id);
+      req.onsuccess = () => resolve(true);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
   function delay(t) {
     return new Promise((resolve) => setTimeout(resolve, t));
   }
@@ -111,6 +134,7 @@
       this.username = undefined;
       this.userRatingsUrl = undefined;
       this.isLoggedIn = false; // New property
+      this.userSlug = undefined;
     }
 
     /**
@@ -158,6 +182,7 @@
       this.username = await this.getUsername();
       console.debug('🟣 Username:', this.username);
       this.storageKey = `${'CSFD-Compare'}_${this.username}`;
+      this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
       this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
       console.debug('🟣 User URL:', this.userUrl);
       console.debug('🟣 Username:', this.username);
@@ -170,36 +195,333 @@
       if (!this.stars) {
         this.stars = {};
       }
-      console.debug('🟣 Stars:', this.stars);
+
+      await this.loadStarsFromIndexedDb();
+      await this.syncCurrentPageRatingWithIndexedDb();
+    }
+
+    getCurrentItemUrlAndIds() {
+      const path = location.pathname || '';
+      if (!path.includes('/film/')) {
+        return {
+          movieId: NaN,
+          urlSlug: '',
+          parentId: NaN,
+          parentName: '',
+          fullUrl: '',
+        };
+      }
+
+      const slugMatches = Array.from(path.matchAll(/\/(\d+-[^/]+)/g)).map((match) => match[1]);
+      const idMatches = slugMatches
+        .map((slug) => Number.parseInt((slug.match(/^(\d+)-/) || [])[1], 10))
+        .filter((id) => Number.isFinite(id));
+
+      const movieId = idMatches.length ? idMatches[idMatches.length - 1] : NaN;
+      const parentId = idMatches.length > 1 ? idMatches[0] : NaN;
+      const parentName = slugMatches.length > 1 ? slugMatches[0] : '';
+      const urlSlug = slugMatches.length ? slugMatches[slugMatches.length - 1] : '';
+
+      const cleanPath = path.replace(/\/(recenze|komentare|prehled|prehlad)\/?$/i, '/');
+      const fullUrl = `${location.origin}${cleanPath}`;
+
+      return {
+        movieId,
+        urlSlug,
+        parentId,
+        parentName,
+        fullUrl,
+      };
+    }
+
+    getCurrentPageOwnRating() {
+      const activeStars = Array.from(document.querySelectorAll('.my-rating .stars-rating a.star.active[data-rating]'));
+      if (activeStars.length === 0) {
+        return null;
+      }
+
+      const rawRatings = activeStars
+        .map((star) => Number.parseInt(star.getAttribute('data-rating') || '', 10))
+        .filter((value) => Number.isFinite(value));
+
+      if (rawRatings.length === 0) {
+        return null;
+      }
+
+      if (rawRatings.includes(0)) {
+        return 0;
+      }
+
+      const maxRatingPercent = Math.max(...rawRatings);
+      return Math.max(0, Math.min(5, Math.round(maxRatingPercent / 20)));
+    }
+
+    getCurrentPageRatingDate() {
+      const title = document.querySelector('.my-rating .stars-rating')?.getAttribute('title') || '';
+      const match = title.match(/(\d{1,2}\.\d{1,2}\.\d{4})/);
+      return match ? match[1] : '';
+    }
+
+    getCurrentPageName() {
+      const titleEl = document.querySelector('.film-header h1');
+      return titleEl?.textContent?.replace(/\s+/g, ' ').trim() || '';
+    }
+
+    getCurrentPageYear() {
+      const originText = document.querySelector('.film-info-content .origin')?.textContent || '';
+      const yearMatch = originText.match(/\b(19|20)\d{2}\b/);
+      return yearMatch ? Number.parseInt(yearMatch[0], 10) : NaN;
+    }
+
+    getCurrentPageType() {
+      const typeText = document.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
+      if (typeText.includes('epizoda')) return 'episode';
+      if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
+      if (typeText.includes('série') || typeText.includes('serie')) return 'series';
+      return 'movie';
+    }
+
+    getCurrentPageComputedInfo() {
+      const computedStars = document.querySelectorAll('.my-rating .stars-rating a.star.computed');
+
+      const computedTitle =
+        document.querySelector('.others-rating .current-user-rating [title*="spočten" i]')?.getAttribute('title') ||
+        document.querySelector('.mobile-film-rating-detail [title*="spočten" i]')?.getAttribute('title') ||
+        document.querySelector('.my-rating .stars-rating[title*="spočten" i]')?.getAttribute('title') ||
+        document.querySelector('.others-rating .current-user-rating [title*="spocten" i]')?.getAttribute('title') ||
+        document.querySelector('.mobile-film-rating-detail [title*="spocten" i]')?.getAttribute('title') ||
+        document.querySelector('.my-rating .stars-rating[title*="spocten" i]')?.getAttribute('title') ||
+        '';
+
+      const isComputed = computedStars.length > 0 || computedTitle.length > 0;
+
+      const computedCountMatch = computedTitle.match(/(\d+)/);
+      const computedCount = computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN;
+
+      return {
+        isComputed,
+        computedFromText: computedTitle,
+        computedCount,
+      };
+    }
+
+    createCurrentPageRecord({ movieId, urlSlug, parentId, parentName, fullUrl, rating, existingRecord }) {
+      const computedInfo = this.getCurrentPageComputedInfo();
+      const nowIso = new Date().toISOString();
+      return {
+        ...(existingRecord || {}),
+        id: `${this.userSlug}:${urlSlug}`,
+        userSlug: this.userSlug,
+        movieId,
+        url: urlSlug,
+        fullUrl,
+        name: this.getCurrentPageName() || existingRecord?.name || '',
+        year: this.getCurrentPageYear(),
+        type: this.getCurrentPageType(),
+        rating,
+        date: this.getCurrentPageRatingDate() || existingRecord?.date || '',
+        parentId,
+        parentName,
+        computed: computedInfo.isComputed,
+        computedCount: computedInfo.computedCount,
+        computedFromText: computedInfo.computedFromText,
+        lastUpdate: nowIso,
+      };
+    }
+
+    async syncCurrentPageRatingWithIndexedDb() {
+      if (!this.userSlug || !this.getIsLoggedIn()) {
+        return;
+      }
+
+      const pageInfo = this.getCurrentItemUrlAndIds();
+      if (!Number.isFinite(pageInfo.movieId) || !pageInfo.urlSlug) {
+        return;
+      }
+
+      let pageRating = this.getCurrentPageOwnRating();
+      if (pageRating === null) {
+        await delay(250);
+        pageRating = this.getCurrentPageOwnRating();
+      }
+
+      const existingRecord = this.stars[pageInfo.movieId];
+      const storageId = `${this.userSlug}:${pageInfo.urlSlug}`;
+
+      if (pageRating === null) {
+        if (existingRecord) {
+          await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, storageId);
+          delete this.stars[pageInfo.movieId];
+          window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+        }
+        return;
+      }
+
+      const normalizedExistingRating =
+        typeof existingRecord === 'number'
+          ? existingRecord
+          : Number.isFinite(existingRecord?.rating)
+            ? existingRecord.rating
+            : NaN;
+
+      const currentComputedInfo = this.getCurrentPageComputedInfo();
+      const existingComputed = typeof existingRecord === 'object' && existingRecord?.computed === true;
+      const existingComputedCount = Number.isFinite(existingRecord?.computedCount) ? existingRecord.computedCount : null;
+      const currentComputedCount = Number.isFinite(currentComputedInfo.computedCount)
+        ? currentComputedInfo.computedCount
+        : null;
+      const existingComputedText =
+        typeof existingRecord?.computedFromText === 'string' ? existingRecord.computedFromText : '';
+      const computedUnchanged =
+        existingComputed === currentComputedInfo.isComputed &&
+        existingComputedCount === currentComputedCount &&
+        existingComputedText === currentComputedInfo.computedFromText;
+
+      if (normalizedExistingRating === pageRating && existingRecord?.id === storageId && computedUnchanged) {
+        return;
+      }
+
+      const newRecord = this.createCurrentPageRecord({
+        ...pageInfo,
+        rating: pageRating,
+        existingRecord: typeof existingRecord === 'object' ? existingRecord : undefined,
+      });
+
+      await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, newRecord);
+      this.stars[pageInfo.movieId] = newRecord;
+      window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+    }
+
+    async loadStarsFromIndexedDb() {
+      if (!this.userSlug) {
+        return;
+      }
+
+      try {
+        const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+        const userRecords = records.filter(
+          (record) => record.userSlug === this.userSlug && Number.isFinite(record.movieId),
+        );
+
+        for (const record of userRecords) {
+          this.stars[record.movieId] = record;
+        }
+      } catch (error) {
+        console.error('[CC] Failed to load stars from IndexedDB:', error);
+      }
+    }
+
+    getCandidateFilmLinks() {
+      return Array.from(document.querySelectorAll('a[href*="/film/"]')).filter((link) => {
+        const href = link.getAttribute('href') || '';
+        if (!/\/\d+-/.test(href)) {
+          return false;
+        }
+
+        if (/\/(galerie|videa?|tvurci|obsahy?)\//.test(href)) {
+          return false;
+        }
+
+        if (link.closest('.film-posters, .box-video, .gallery, .aside-movie-profile')) {
+          return false;
+        }
+
+        if (link.closest('.article-header-review-action, .article-header-review')) {
+          return false;
+        }
+
+        if (link.closest('.film-header-name, .film-header-name-control')) {
+          return false;
+        }
+
+        if (link.querySelector('img')) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    isOnOwnRatingsPage() {
+      if (!this.userSlug) {
+        return false;
+      }
+
+      const path = location.pathname || '';
+      if (!path.startsWith(`/uzivatel/${this.userSlug}/`)) {
+        return false;
+      }
+
+      return path.includes('/hodnoceni/') || path.includes('/hodnotenia/');
+    }
+
+    createStarElement(ratingValue, isComputed = false) {
+      if (!Number.isFinite(ratingValue)) {
+        return undefined;
+      }
+
+      const starRating = document.createElement('span');
+      starRating.className = 'star-rating cc-own-rating';
+      if (isComputed) {
+        starRating.classList.add('computed', 'cc-own-rating-computed');
+      }
+
+      const stars = document.createElement('span');
+      stars.className = 'stars';
+
+      if (ratingValue === 0) {
+        stars.classList.add('trash');
+      } else {
+        const normalizedRating = Math.min(5, Math.max(1, ratingValue));
+        stars.classList.add(`stars-${normalizedRating}`);
+      }
+
+      starRating.appendChild(stars);
+      return starRating;
     }
 
     async addStars() {
-      const links = document.querySelectorAll('a.film-title-name');
+      if (this.isOnOwnRatingsPage()) {
+        return;
+      }
+
+      const links = this.getCandidateFilmLinks();
       for (let link of links) {
+        if (link.dataset.ccStarAdded === 'true') {
+          continue;
+        }
+
         const movieId = await this.getMovieIdFromUrl(link.getAttribute('href'));
-        const rating = this.stars[movieId];
-        if (!rating) continue;
-        const starSpan = document.createElement('span');
-        starSpan.className = 'star-rating';
-        starSpan.textContent = rating.rating ? rating.rating : '';
-        link.parentElement.appendChild(starSpan);
+        const ratingRecord = this.stars[movieId];
+        if (!ratingRecord) continue;
+
+        const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
+        const isComputed = typeof ratingRecord === 'object' && ratingRecord?.computed === true;
+        const starElement = this.createStarElement(ratingValue, isComputed);
+        if (!starElement) continue;
+
+        link.insertAdjacentElement('afterend', starElement);
+        link.dataset.ccStarAdded = 'true';
       }
     }
 
     async getMovieIdFromUrl(url) {
       if (!url) return NaN;
-      const match = url.match(/\/(\d+)-/);
-      return match ? Number(match[1]) : NaN;
+
+      const matches = Array.from(url.matchAll(/\/(\d+)-/g));
+      if (matches.length === 0) {
+        return NaN;
+      }
+
+      return Number(matches[matches.length - 1][1]);
     }
   }
 
   function styleInject(css, ref) {
-    if (ref === void 0) ref = {};
+    if ( ref === void 0 ) ref = {};
     var insertAt = ref.insertAt;
 
-    if (!css || typeof document === 'undefined') {
-      return;
-    }
+    if (!css || typeof document === 'undefined') { return; }
 
     var head = document.head || document.getElementsByTagName('head')[0];
     var style = document.createElement('style');
@@ -222,24 +544,19 @@
     }
   }
 
-  var css_248z$3 =
-    '.alert-content{position:relative;text-align:center}.close-btn{background:none;border:none;color:#7f8c8d;cursor:pointer;font-size:20px;position:absolute;right:10px;top:10px;-webkit-transition:color .2s;transition:color .2s}.close-btn:hover{color:#f5f5f5}.fancy-alert-button{position:fixed;right:10px;top:10px;z-index:1000}.modal-overlay{background:rgba(0,0,0,.5);display:-webkit-box;display:-ms-flexbox;display:flex;height:100%;left:0;position:fixed;top:0;width:100%;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;opacity:0;-webkit-transition:opacity .3s ease;transition:opacity .3s ease;z-index:10000}.modal-overlay.visible{opacity:1}';
+  var css_248z$3 = ".alert-content{position:relative;text-align:center}.close-btn{background:none;border:none;color:#7f8c8d;cursor:pointer;font-size:20px;position:absolute;right:10px;top:10px;-webkit-transition:color .2s;transition:color .2s}.close-btn:hover{color:#f5f5f5}.fancy-alert-button{position:fixed;right:10px;top:10px;z-index:1000}.modal-overlay{background:rgba(0,0,0,.5);display:-webkit-box;display:-ms-flexbox;display:flex;height:100%;left:0;position:fixed;top:0;width:100%;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;opacity:0;-webkit-transition:opacity .3s ease;transition:opacity .3s ease;z-index:10000}.modal-overlay.visible{opacity:1}";
   styleInject(css_248z$3);
 
-  var css_248z$2 =
-    '.fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}';
+  var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
   styleInject(css_248z$2);
 
-  var css_248z$1 =
-    '.cc-settings{right:50px;top:100%;width:380px}.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;padding:2px 4px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:12px;height:auto;padding:6px;-webkit-transition:background .2s;transition:background .2s}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:8px 5px 10px;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.header-bar .csfd-compare-menu{position:relative}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}';
+  var css_248z$1 = ".cc-settings{right:50px;top:100%;width:380px}.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;padding:2px 4px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:12px;height:auto;padding:6px;-webkit-transition:background .2s;transition:background .2s}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}#cc-sync-cloud-btn{margin-top:2px}.cc-sync-mini{font-size:11px;min-width:72px;padding:4px 10px}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:8px 5px 10px;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.header-bar .csfd-compare-menu{position:relative}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}";
   styleInject(css_248z$1);
 
-  var css_248z =
-    '.flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}';
+  var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}.cc-own-rating{margin-left:6px;vertical-align:middle}.cc-own-rating-computed .stars:before{color:#d2d2d2}";
   styleInject(css_248z);
 
-  var htmlContent =
-    '<a href="javascript:void(0)" rel="dropdownContent" class="user-link csfd-compare-menu initialized">\r\n    <svg class="cc-menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"\r\n        aria-hidden="true" focusable="false">\r\n        <text x="12" y="12" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-size="11"\r\n            font-weight="800" letter-spacing="0.2">CC</text>\r\n    </svg>\r\n</a>\r\n<div class="dropdown-content cc-settings">\r\n\r\n    <div class="dropdown-content-head cc-settings-head">\r\n        <div class="left-head flex gap-5">\r\n            <h2>CSFD-Compare</h2>\r\n            <a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v6.6.0</a>\r\n        </div>\r\n        <div class="right-head ml-auto">\r\n            <span class="cc-badge cc-badge-red">21355 / 23352</span>\r\n            <span class="cc-badge cc-badge-black">0 / 1650</span>\r\n            <a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare" class="button">CC</a>\r\n        </div>\r\n    </div>\r\n\r\n    <div class="flex justify-evenly gap-5 ph-5">\r\n        <button id="cc-load-ratings-btn" class="cc-button cc-button-red grow">Načíst hodnocení</button>\r\n        <button id="cc-load-computed-btn" class="cc-button cc-button-black">Načíst spočtená hodnocení</button>\r\n    </div>\r\n\r\n    <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>\r\n        <div class="cc-ratings-progress-head">\r\n            <span id="cc-ratings-progress-label">Připravuji načítání…</span>\r\n            <span id="cc-ratings-progress-count">0 / 0</span>\r\n        </div>\r\n        <div class="cc-ratings-progress-track">\r\n            <div id="cc-ratings-progress-bar" class="cc-ratings-progress-bar" style="width: 0%"></div>\r\n        </div>\r\n    </div>\r\n\r\n    <details style="margin-bottom: 16px;">\r\n        <summary style="cursor: pointer; font-size: 12px; color: #444;">🛠️ Další akce</summary>\r\n        <div\r\n            style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;">\r\n            <button\r\n                style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Reset</button>\r\n            <button\r\n                style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Smazat\r\n                LC</button>\r\n            <button\r\n                style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Smazat\r\n                DB</button>\r\n        </div>\r\n    </details>\r\n\r\n    <article class="article">\r\n        <div class="article-content">\r\n            <form>\r\n                <label>\r\n                    <input type="checkbox" name="option1" /> Option 1\r\n                </label>\r\n                <br />\r\n                <label>\r\n                    <input type="checkbox" name="option2" /> Option 2\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n</div>';
+  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head cc-settings-head\">\r\n        <div class=\"left-head flex gap-5\">\r\n            <h2>CSFD-Compare</h2>\r\n            <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\">v6.6.0</a>\r\n        </div>\r\n        <div class=\"right-head ml-auto\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\">0</span>\r\n            <a href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\" class=\"button\">CC</a>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"flex justify-evenly gap-5 ph-5\">\r\n        <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red grow\">Načíst hodnocení</button>\r\n        <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black\">Načíst spočtená hodnocení</button>\r\n    </div>\r\n\r\n    <div class=\"flex justify-end ph-5 pv-5\">\r\n        <button id=\"cc-sync-cloud-btn\" class=\"cc-button cc-button-black cc-sync-mini\">Sync</button>\r\n    </div>\r\n\r\n    <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n        <div class=\"cc-ratings-progress-head\">\r\n            <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n            <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n        </div>\r\n        <div class=\"cc-ratings-progress-track\">\r\n            <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n        </div>\r\n    </div>\r\n\r\n    <details style=\"margin-bottom: 16px;\">\r\n        <summary style=\"cursor: pointer; font-size: 12px; color: #444;\">🛠️ Další akce</summary>\r\n        <div\r\n            style=\"display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;\">\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Reset</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                LC</button>\r\n            <button\r\n                style=\"background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;\">Smazat\r\n                DB</button>\r\n        </div>\r\n    </details>\r\n\r\n    <article class=\"article\">\r\n        <div class=\"article-content\">\r\n            <form>\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option1\" /> Option 1\r\n                </label>\r\n                <br />\r\n                <label>\r\n                    <input type=\"checkbox\" name=\"option2\" /> Option 2\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
 
   const DEBUG = true;
 
@@ -307,7 +624,7 @@
     alertButton.dataset.fancyAlertBound = 'true';
   }
 
-  const DEFAULT_MAX_PAGES = 4;
+  const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
   const REQUEST_DELAY_MIN_MS = 250;
   const REQUEST_DELAY_MAX_MS = 550;
 
@@ -342,12 +659,22 @@
   }
 
   function buildRatingsPageUrl(profilePath, pageNumber = 1) {
+    return buildRatingsPageUrlWithMode(profilePath, pageNumber, 'path');
+  }
+
+  function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
     const ratingsSegment = getRatingsSegment();
     const basePath = profilePath.replace(/\/(prehled|prehlad)\/?$/i, `/${ratingsSegment}/`);
     const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
     if (pageNumber <= 1) {
       return new URL(normalizedBasePath, location.origin).toString();
+    }
+
+    if (mode === 'query') {
+      const url = new URL(normalizedBasePath, location.origin);
+      url.searchParams.set('page', String(pageNumber));
+      return url.toString();
     }
 
     return new URL(`${normalizedBasePath}strana-${pageNumber}/`, location.origin).toString();
@@ -368,7 +695,7 @@
     return parser.parseFromString(html, 'text/html');
   }
 
-  function parseTotalRatingsFromDocument(doc) {
+  function parseTotalRatingsFromDocument$1(doc) {
     const heading = doc.querySelector('h2')?.textContent || '';
     const match = heading.match(/\(([^)]+)\)/);
     if (!match) {
@@ -380,11 +707,11 @@
   }
 
   function parseMaxPaginationPageFromDocument(doc) {
-    const pageLinks = Array.from(doc.querySelectorAll('a[href*="strana-"]'));
+    const pageLinks = Array.from(doc.querySelectorAll('a[href*="strana-"], a[href*="?page="], a[href*="&page="]'));
     const pageNumbers = pageLinks
       .map((link) => {
         const href = link.getAttribute('href') || '';
-        const match = href.match(/strana-(\d+)/);
+        const match = href.match(/(?:strana-|[?&]page=)(\d+)/);
         return match ? Number.parseInt(match[1], 10) : NaN;
       })
       .filter((value) => !Number.isNaN(value));
@@ -393,8 +720,13 @@
       return Math.max(...pageNumbers);
     }
 
-    const totalRatings = parseTotalRatingsFromDocument(doc);
+    const totalRatings = parseTotalRatingsFromDocument$1(doc);
     return totalRatings > 0 ? Math.ceil(totalRatings / NUM_RATINGS_PER_PAGE) : 1;
+  }
+
+  function detectPaginationModeFromDocument(doc) {
+    const queryPaginationLink = doc.querySelector('a[href*="?page="], a[href*="&page="]');
+    return queryPaginationLink ? 'query' : 'path';
   }
 
   function normalizeType(rawType) {
@@ -452,7 +784,15 @@
     const yearValue = infoValues.find((value) => /^\d{4}$/.test(value));
     const rawType = infoValues.find((value) => !/^\d{4}$/.test(value));
 
-    const starEl = row.querySelector('td.star-rating-only .star-rating .stars');
+    const starRatingWrapper = row.querySelector('td.star-rating-only .star-rating');
+    const starEl = starRatingWrapper?.querySelector('.stars');
+    const computed = starRatingWrapper?.classList.contains('computed') || false;
+    const computedFromText =
+      row.querySelector('td.star-rating-only [title*="spočten" i]')?.getAttribute('title') ||
+      row.querySelector('td.star-rating-only [title*="spocten" i]')?.getAttribute('title') ||
+      '';
+    const computedCountMatch = computedFromText.match(/(\d+)/);
+    const computedCount = computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN;
     const dateText = row.querySelector('td.date-only')?.textContent?.trim() || '';
     const { id, parentId, parentName } = parseIdsFromUrl(relativeUrl);
 
@@ -470,9 +810,9 @@
       date: dateText,
       parentId,
       parentName,
-      computed: false,
-      computedCount: NaN,
-      computedFromText: '',
+      computed,
+      computedCount,
+      computedFromText,
       lastUpdate: new Date().toISOString(),
     };
   }
@@ -483,7 +823,7 @@
   }
 
   function getStoreNameForUser() {
-    return 'ratings';
+    return RATINGS_STORE_NAME;
   }
 
   function toStorageRecord(record, userSlug) {
@@ -531,15 +871,20 @@
     const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
     const firstDoc = await fetchRatingsPageDocument(firstPageUrl);
 
-    const totalRatings = parseTotalRatingsFromDocument(firstDoc);
+    const totalRatings = parseTotalRatingsFromDocument$1(firstDoc);
     const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
-    const targetPages = Math.max(1, maxPages);
+    const paginationMode = detectPaginationModeFromDocument(firstDoc);
+    const targetPages =
+      maxPages === 0 ? Math.max(1, maxDetectedPages) : Math.max(1, Math.min(maxPages, maxDetectedPages));
 
     let totalParsed = 0;
     let loadedPages = 0;
 
     for (let page = 1; page <= targetPages; page++) {
-      const doc = page === 1 ? firstDoc : await fetchRatingsPageDocument(buildRatingsPageUrl(profilePath, page));
+      const doc =
+        page === 1
+          ? firstDoc
+          : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode));
       const pageRatings = parseRatingsFromDocument(doc, location.origin);
 
       if (page > 1 && pageRatings.length === 0) {
@@ -595,7 +940,7 @@
     loadButton.addEventListener('click', async () => {
       try {
         setButtonState(loadButton, true);
-        updateProgressUI(progress, { label: 'Připravuji načítání…', current: 0, total: 4 });
+        updateProgressUI(progress, { label: 'Připravuji načítání…', current: 0, total: 1 });
 
         const result = await loadRatingsForCurrentUser(DEFAULT_MAX_PAGES, ({ page, totalPages, totalParsed }) => {
           updateProgressUI(progress, {
@@ -608,8 +953,9 @@
         updateProgressUI(progress, {
           label: `Hotovo: ${result.totalParsed} hodnocení uloženo (${result.totalPagesLoaded} str., DB: ${result.storeName})`,
           current: result.totalPagesLoaded,
-          total: DEFAULT_MAX_PAGES,
+          total: result.totalPagesLoaded || 1,
         });
+        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
       } catch (error) {
         updateProgressUI(progress, {
           label: `Chyba: ${error.message}`,
@@ -623,13 +969,207 @@
     });
   }
 
+  const SYNC_ENABLED_KEY = 'cc_sync_enabled';
+  const SYNC_ACCESS_KEY = 'cc_sync_access_key';
+
+  function getSyncSetupState() {
+    return {
+      enabled: localStorage.getItem(SYNC_ENABLED_KEY) === 'true',
+      accessKey: localStorage.getItem(SYNC_ACCESS_KEY) || '',
+    };
+  }
+
+  function saveSyncSetupState({ enabled, accessKey }) {
+    localStorage.setItem(SYNC_ENABLED_KEY, String(Boolean(enabled)));
+    localStorage.setItem(SYNC_ACCESS_KEY, (accessKey || '').trim());
+  }
+
+  function removeSyncModal() {
+    document.querySelector('.cc-sync-modal-overlay')?.remove();
+  }
+
+  function createSyncSetupModal() {
+    removeSyncModal();
+
+    const { enabled, accessKey } = getSyncSetupState();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cc-sync-modal-overlay';
+
+    const modal = document.createElement('div');
+    modal.className = 'cc-sync-modal';
+    modal.innerHTML = `
+    <div class="cc-sync-modal-head">
+      <h3>Cloud sync setup (beta)</h3>
+      <button type="button" class="cc-sync-close" aria-label="Close">&times;</button>
+    </div>
+    <p class="cc-sync-help">
+      Nastavte jeden Sync key. Funkční cloud synchronizace bude doplněna v dalším kroku.
+    </p>
+    <label class="cc-sync-toggle-row">
+      <input id="cc-sync-enabled-input" type="checkbox" ${enabled ? 'checked' : ''}>
+      <span>Povolit sync</span>
+    </label>
+    <label class="cc-sync-label" for="cc-sync-key-input">Sync key</label>
+    <input id="cc-sync-key-input" class="cc-sync-input" type="password" placeholder="Vložte váš Sync key" value="${accessKey.replace(/"/g, '&quot;')}">
+    <div class="cc-sync-actions">
+      <button type="button" class="cc-sync-save cc-button cc-button-red">Uložit</button>
+      <button type="button" class="cc-sync-cancel cc-button cc-button-black">Zavřít</button>
+    </div>
+    <div class="cc-sync-note">Tip: stejný key použijte na obou počítačích.</div>
+  `;
+
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+      overlay.classList.add('visible');
+    });
+
+    const closeModal = () => {
+      overlay.classList.remove('visible');
+      setTimeout(removeSyncModal, 180);
+    };
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) {
+        closeModal();
+      }
+    });
+
+    modal.querySelector('.cc-sync-close')?.addEventListener('click', closeModal);
+    modal.querySelector('.cc-sync-cancel')?.addEventListener('click', closeModal);
+    modal.querySelector('.cc-sync-save')?.addEventListener('click', () => {
+      const enabledInput = modal.querySelector('#cc-sync-enabled-input');
+      const keyInput = modal.querySelector('#cc-sync-key-input');
+
+      saveSyncSetupState({
+        enabled: Boolean(enabledInput?.checked),
+        accessKey: keyInput?.value || '',
+      });
+
+      closeModal();
+    });
+  }
+
+  function updateSyncButtonLabel(button) {
+    const { enabled } = getSyncSetupState();
+    button.textContent = enabled ? 'Sync ✓' : 'Sync';
+  }
+
+  function initializeRatingsSync(rootElement) {
+    const syncButton = rootElement.querySelector('#cc-sync-cloud-btn');
+
+    if (!syncButton) {
+      return;
+    }
+
+    if (syncButton.dataset.ccSyncBound === 'true') {
+      return;
+    }
+
+    syncButton.dataset.ccSyncBound = 'true';
+    updateSyncButtonLabel(syncButton);
+
+    syncButton.addEventListener('click', () => {
+      createSyncSetupModal();
+      setTimeout(() => updateSyncButtonLabel(syncButton), 220);
+    });
+  }
+
   // addSettingsButton function that will create element 'li' as a 'let button'
+
+
+  function getCurrentUserSlug() {
+    const profileEl = document.querySelector('a.profile.initialized');
+    const profileHref = profileEl?.getAttribute('href') || '';
+    const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+    return match ? match[1] : undefined;
+  }
+
+  function getCurrentUserRatingsUrl() {
+    const profileEl = document.querySelector('a.profile.initialized');
+    const profileHref = profileEl?.getAttribute('href');
+    if (!profileHref) {
+      return undefined;
+    }
+
+    const url = new URL(profileHref, location.origin);
+    const segment = location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
+    url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+    url.search = '';
+    return url.toString();
+  }
+
+  function parseTotalRatingsFromDocument(doc) {
+    const heading = doc.querySelector('h2')?.textContent || '';
+    const match = heading.match(/\(([^)]+)\)/);
+    if (!match) {
+      return 0;
+    }
+    const parsed = Number.parseInt(match[1].replace(/\s+/g, ''), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  async function fetchTotalRatingsForCurrentUser() {
+    const ratingsUrl = getCurrentUserRatingsUrl();
+    if (!ratingsUrl) {
+      return 0;
+    }
+
+    const response = await fetch(ratingsUrl, {
+      credentials: 'include',
+      method: 'GET',
+    });
+    if (!response.ok) {
+      return 0;
+    }
+
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return parseTotalRatingsFromDocument(doc);
+  }
+
+  async function refreshRatingsBadges(rootElement) {
+    const redBadge = rootElement.querySelector('#cc-badge-red');
+    const blackBadge = rootElement.querySelector('#cc-badge-black');
+    if (!redBadge || !blackBadge) {
+      return;
+    }
+
+    const userSlug = getCurrentUserSlug();
+    if (!userSlug) {
+      redBadge.textContent = '0 / 0';
+      blackBadge.textContent = '0';
+      return;
+    }
+
+    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+    const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+    const computedCount = userRecords.filter((record) => record.computed === true).length;
+    const totalRatings = await fetchTotalRatingsForCurrentUser();
+
+    redBadge.textContent = `${userRecords.length} / ${totalRatings}`;
+    blackBadge.textContent = `${computedCount}`;
+  }
 
   async function addSettingsButton() {
     const settingsButton = document.createElement('li');
     settingsButton.classList.add('cc-menu-item');
     settingsButton.innerHTML = htmlContent;
     initializeRatingsLoader(settingsButton);
+    initializeRatingsSync(settingsButton);
+    refreshRatingsBadges(settingsButton).catch((error) => {
+      console.error('[CC] Failed to refresh badges:', error);
+    });
+
+    const handleRatingsUpdated = () => {
+      refreshRatingsBadges(settingsButton).catch((error) => {
+        console.error('[CC] Failed to refresh badges:', error);
+      });
+    };
+    window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
+
     const $button = $(settingsButton);
     $('.header-bar').prepend($button);
 
@@ -638,7 +1178,7 @@
 
     // If DEBUG is enabled, just add $('.header-bar li').addClass('hovered');
     // if not, have the code bellow
-    console.log('[ CC ] DEBUG:', DEBUG);
+    console.log('🟣 DEBUG:', DEBUG);
     {
       // --- GROUP FANCY ALERT BUTTON AND CHECKBOX AT TOP RIGHT ---
       // Create or find a top-right container for controls
@@ -799,4 +1339,5 @@
       fancyAlert();
     });
   })();
+
 })();

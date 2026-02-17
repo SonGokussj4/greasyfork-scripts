@@ -6,6 +6,82 @@ import htmlContent from './settings-button-content.html';
 import { DEBUG } from './env.js';
 import { bindFancyAlertButton } from './fancy-alert.js';
 import { initializeRatingsLoader } from './ratings-loader.js';
+import { initializeRatingsSync } from './ratings-sync.js';
+import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { getAllFromIndexedDB } from './storage.js';
+
+function getCurrentUserSlug() {
+  const profileEl = document.querySelector('a.profile.initialized');
+  const profileHref = profileEl?.getAttribute('href') || '';
+  const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+  return match ? match[1] : undefined;
+}
+
+function getCurrentUserRatingsUrl() {
+  const profileEl = document.querySelector('a.profile.initialized');
+  const profileHref = profileEl?.getAttribute('href');
+  if (!profileHref) {
+    return undefined;
+  }
+
+  const url = new URL(profileHref, location.origin);
+  const segment = location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
+  url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+  url.search = '';
+  return url.toString();
+}
+
+function parseTotalRatingsFromDocument(doc) {
+  const heading = doc.querySelector('h2')?.textContent || '';
+  const match = heading.match(/\(([^)]+)\)/);
+  if (!match) {
+    return 0;
+  }
+  const parsed = Number.parseInt(match[1].replace(/\s+/g, ''), 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function fetchTotalRatingsForCurrentUser() {
+  const ratingsUrl = getCurrentUserRatingsUrl();
+  if (!ratingsUrl) {
+    return 0;
+  }
+
+  const response = await fetch(ratingsUrl, {
+    credentials: 'include',
+    method: 'GET',
+  });
+  if (!response.ok) {
+    return 0;
+  }
+
+  const html = await response.text();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return parseTotalRatingsFromDocument(doc);
+}
+
+async function refreshRatingsBadges(rootElement) {
+  const redBadge = rootElement.querySelector('#cc-badge-red');
+  const blackBadge = rootElement.querySelector('#cc-badge-black');
+  if (!redBadge || !blackBadge) {
+    return;
+  }
+
+  const userSlug = getCurrentUserSlug();
+  if (!userSlug) {
+    redBadge.textContent = '0 / 0';
+    blackBadge.textContent = '0';
+    return;
+  }
+
+  const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+  const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+  const computedCount = userRecords.filter((record) => record.computed === true).length;
+  const totalRatings = await fetchTotalRatingsForCurrentUser();
+
+  redBadge.textContent = `${userRecords.length} / ${totalRatings}`;
+  blackBadge.textContent = `${computedCount}`;
+}
 
 async function addSettingsButton() {
   ('use strict');
@@ -13,6 +89,18 @@ async function addSettingsButton() {
   settingsButton.classList.add('cc-menu-item');
   settingsButton.innerHTML = htmlContent;
   initializeRatingsLoader(settingsButton);
+  initializeRatingsSync(settingsButton);
+  refreshRatingsBadges(settingsButton).catch((error) => {
+    console.error('[CC] Failed to refresh badges:', error);
+  });
+
+  const handleRatingsUpdated = () => {
+    refreshRatingsBadges(settingsButton).catch((error) => {
+      console.error('[CC] Failed to refresh badges:', error);
+    });
+  };
+  window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
+
   const $button = $(settingsButton);
   $('.header-bar').prepend($button);
 
@@ -21,7 +109,7 @@ async function addSettingsButton() {
 
   // If DEBUG is enabled, just add $('.header-bar li').addClass('hovered');
   // if not, have the code bellow
-  console.log('[ CC ] DEBUG:', DEBUG);
+  console.log('🟣 DEBUG:', DEBUG);
   if (DEBUG) {
     // --- GROUP FANCY ALERT BUTTON AND CHECKBOX AT TOP RIGHT ---
     // Create or find a top-right container for controls

@@ -1,8 +1,8 @@
-import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE } from './config.js';
+import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, RATINGS_STORE_NAME } from './config.js';
 import { saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
 
-const DEFAULT_MAX_PAGES = 4;
+const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
 const REQUEST_DELAY_MIN_MS = 250;
 const REQUEST_DELAY_MAX_MS = 550;
 
@@ -37,12 +37,22 @@ function extractUserSlugFromProfilePath(profilePath) {
 }
 
 function buildRatingsPageUrl(profilePath, pageNumber = 1) {
+  return buildRatingsPageUrlWithMode(profilePath, pageNumber, 'path');
+}
+
+function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
   const ratingsSegment = getRatingsSegment();
   const basePath = profilePath.replace(/\/(prehled|prehlad)\/?$/i, `/${ratingsSegment}/`);
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
   if (pageNumber <= 1) {
     return new URL(normalizedBasePath, location.origin).toString();
+  }
+
+  if (mode === 'query') {
+    const url = new URL(normalizedBasePath, location.origin);
+    url.searchParams.set('page', String(pageNumber));
+    return url.toString();
   }
 
   return new URL(`${normalizedBasePath}strana-${pageNumber}/`, location.origin).toString();
@@ -75,11 +85,11 @@ function parseTotalRatingsFromDocument(doc) {
 }
 
 function parseMaxPaginationPageFromDocument(doc) {
-  const pageLinks = Array.from(doc.querySelectorAll('a[href*="strana-"]'));
+  const pageLinks = Array.from(doc.querySelectorAll('a[href*="strana-"], a[href*="?page="], a[href*="&page="]'));
   const pageNumbers = pageLinks
     .map((link) => {
       const href = link.getAttribute('href') || '';
-      const match = href.match(/strana-(\d+)/);
+      const match = href.match(/(?:strana-|[?&]page=)(\d+)/);
       return match ? Number.parseInt(match[1], 10) : NaN;
     })
     .filter((value) => !Number.isNaN(value));
@@ -90,6 +100,11 @@ function parseMaxPaginationPageFromDocument(doc) {
 
   const totalRatings = parseTotalRatingsFromDocument(doc);
   return totalRatings > 0 ? Math.ceil(totalRatings / NUM_RATINGS_PER_PAGE) : 1;
+}
+
+function detectPaginationModeFromDocument(doc) {
+  const queryPaginationLink = doc.querySelector('a[href*="?page="], a[href*="&page="]');
+  return queryPaginationLink ? 'query' : 'path';
 }
 
 function normalizeType(rawType) {
@@ -147,7 +162,15 @@ function parseRatingRow(row, origin) {
   const yearValue = infoValues.find((value) => /^\d{4}$/.test(value));
   const rawType = infoValues.find((value) => !/^\d{4}$/.test(value));
 
-  const starEl = row.querySelector('td.star-rating-only .star-rating .stars');
+  const starRatingWrapper = row.querySelector('td.star-rating-only .star-rating');
+  const starEl = starRatingWrapper?.querySelector('.stars');
+  const computed = starRatingWrapper?.classList.contains('computed') || false;
+  const computedFromText =
+    row.querySelector('td.star-rating-only [title*="spočten" i]')?.getAttribute('title') ||
+    row.querySelector('td.star-rating-only [title*="spocten" i]')?.getAttribute('title') ||
+    '';
+  const computedCountMatch = computedFromText.match(/(\d+)/);
+  const computedCount = computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN;
   const dateText = row.querySelector('td.date-only')?.textContent?.trim() || '';
   const { id, parentId, parentName } = parseIdsFromUrl(relativeUrl);
 
@@ -165,9 +188,9 @@ function parseRatingRow(row, origin) {
     date: dateText,
     parentId,
     parentName,
-    computed: false,
-    computedCount: NaN,
-    computedFromText: '',
+    computed,
+    computedCount,
+    computedFromText,
     lastUpdate: new Date().toISOString(),
   };
 }
@@ -178,7 +201,7 @@ function parseRatingsFromDocument(doc, origin) {
 }
 
 function getStoreNameForUser() {
-  return 'ratings';
+  return RATINGS_STORE_NAME;
 }
 
 function toStorageRecord(record, userSlug) {
@@ -228,13 +251,18 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
 
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
   const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
-  const targetPages = Math.max(1, maxPages);
+  const paginationMode = detectPaginationModeFromDocument(firstDoc);
+  const targetPages =
+    maxPages === 0 ? Math.max(1, maxDetectedPages) : Math.max(1, Math.min(maxPages, maxDetectedPages));
 
   let totalParsed = 0;
   let loadedPages = 0;
 
   for (let page = 1; page <= targetPages; page++) {
-    const doc = page === 1 ? firstDoc : await fetchRatingsPageDocument(buildRatingsPageUrl(profilePath, page));
+    const doc =
+      page === 1
+        ? firstDoc
+        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode));
     const pageRatings = parseRatingsFromDocument(doc, location.origin);
 
     if (page > 1 && pageRatings.length === 0) {
@@ -290,7 +318,7 @@ export function initializeRatingsLoader(rootElement) {
   loadButton.addEventListener('click', async () => {
     try {
       setButtonState(loadButton, true);
-      updateProgressUI(progress, { label: 'Připravuji načítání…', current: 0, total: 4 });
+      updateProgressUI(progress, { label: 'Připravuji načítání…', current: 0, total: 1 });
 
       const result = await loadRatingsForCurrentUser(DEFAULT_MAX_PAGES, ({ page, totalPages, totalParsed }) => {
         updateProgressUI(progress, {
@@ -303,8 +331,9 @@ export function initializeRatingsLoader(rootElement) {
       updateProgressUI(progress, {
         label: `Hotovo: ${result.totalParsed} hodnocení uloženo (${result.totalPagesLoaded} str., DB: ${result.storeName})`,
         current: result.totalPagesLoaded,
-        total: DEFAULT_MAX_PAGES,
+        total: result.totalPagesLoaded || 1,
       });
+      window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     } catch (error) {
       updateProgressUI(progress, {
         label: `Chyba: ${error.message}`,

@@ -143,3 +143,12 @@
     margin-top: 10px;
     margin-bottom: 10px;
 }
+
+.cc-own-rating {
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.cc-own-rating-computed .stars:before {
+    color: var(--color-grey-dark2, #d2d2d2);
+}

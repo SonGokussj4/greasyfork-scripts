@@ -13,8 +13,8 @@
             <a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare">v6.6.0</a>
         </div>
         <div class="right-head ml-auto">
-            <span class="cc-badge cc-badge-red">21355 / 23352</span>
-            <span class="cc-badge cc-badge-black">0 / 1650</span>
+            <span class="cc-badge cc-badge-red" id="cc-badge-red">0 / 0</span>
+            <span class="cc-badge cc-badge-black" id="cc-badge-black">0</span>
             <a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare" class="button">CC</a>
         </div>
     </div>
@@ -22,6 +22,10 @@
     <div class="flex justify-evenly gap-5 ph-5">
         <button id="cc-load-ratings-btn" class="cc-button cc-button-red grow">Načíst hodnocení</button>
         <button id="cc-load-computed-btn" class="cc-button cc-button-black">Načíst spočtená hodnocení</button>
+    </div>
+
+    <div class="flex justify-end ph-5 pv-5">
+        <button id="cc-sync-cloud-btn" class="cc-button cc-button-black cc-sync-mini">Sync</button>
     </div>
 
     <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>
