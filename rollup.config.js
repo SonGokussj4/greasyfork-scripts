@@ -19,8 +19,9 @@ export default {
     name: 'CsfdCompare',
     assetFileNames: '[name]-[hash][extname]',
     banner: `// ==UserScript==
-// @name         ČSFD Compare DEV
-// @version      0.7.0
+// @name         ČSFD Compare V2
+// @version      0.8.0
+// @date         2026-02-17
 // @namespace    csfd.cz
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
