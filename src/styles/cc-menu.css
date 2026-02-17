@@ -3,27 +3,16 @@
     margin-top: 0;
     right: 8px;
     top: 100%;
-    border-radius: 10px;
-    padding: 8px 0 2px;
+    padding: 0;
 }
 
-.cc-settings-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 0 8px 8px;
-    padding: 8px;
-    border-radius: 8px;
-    background: var(--color-grey-lighter, #f9f9f9);
-}
-
-.cc-head-main {
-    display: flex;
+.dropdown-content.cc-settings .left-head {
+    display: inline-flex;
     align-items: center;
     gap: 6px;
 }
 
-.cc-head-main h2 {
+.dropdown-content.cc-settings .left-head h2 {
     margin: 0;
 }
 
@@ -32,7 +21,7 @@
     opacity: 0.85;
 }
 
-.cc-head-badges {
+.cc-head-right {
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -203,6 +192,72 @@
     gap: 5px;
 }
 
+.cc-settings-section .article-content {
+    padding: 10px;
+}
+
+.cc-settings-section+.cc-settings-section .article-content {
+    border-top: 1px solid #efefef;
+}
+
+.cc-section-title {
+    margin: 0 0 8px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+}
+
+.cc-settings-form {
+    display: grid;
+    gap: 8px;
+}
+
+.cc-form-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #444;
+}
+
+.cc-form-field {
+    display: grid;
+    gap: 4px;
+    font-size: 12px;
+    color: #444;
+}
+
+.cc-form-field input[type="text"] {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d4d4d4;
+    border-radius: 6px;
+    padding: 6px 8px;
+    font-size: 12px;
+    line-height: 1.2;
+}
+
+.cc-maint-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.cc-maint-btn {
+    border: 1px solid #cfcfcf;
+    border-radius: 6px;
+    background: #fff;
+    color: #444;
+    font-size: 11px;
+    line-height: 1;
+    padding: 6px 8px;
+    cursor: pointer;
+}
+
+.cc-maint-btn:hover {
+    border-color: #bcbcbc;
+    background: #f7f7f7;
+}
+
 .cc-settings-actions .cc-button {
     width: 100%;
     min-width: 0;
@@ -325,7 +380,7 @@
 }
 
 .cc-ratings-progress {
-    margin: 4px 8px 10px;
+    margin: 0;
     padding: 8px;
     border: 1px solid #e4e4e4;
     border-radius: 6px;

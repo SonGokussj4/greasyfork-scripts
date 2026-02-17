@@ -46,6 +46,30 @@ function getCurrentUserSlug() {
   return match ? match[1] : undefined;
 }
 
+function getMostFrequentUserSlug(records) {
+  const counts = new Map();
+
+  for (const record of records) {
+    const userSlug = record?.userSlug;
+    if (!userSlug || !Number.isFinite(record?.movieId)) {
+      continue;
+    }
+
+    counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
+  }
+
+  let bestSlug;
+  let bestCount = -1;
+  for (const [slug, count] of counts.entries()) {
+    if (count > bestCount) {
+      bestSlug = slug;
+      bestCount = count;
+    }
+  }
+
+  return bestSlug;
+}
+
 function getCurrentUserRatingsUrl() {
   const profileEl = document.querySelector('a.profile.initialized');
   const profileHref = profileEl?.getAttribute('href');
@@ -100,18 +124,19 @@ async function refreshRatingsBadges(rootElement) {
     return;
   }
 
-  const userSlug = getCurrentUserSlug();
+  const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+  const userSlug = getCurrentUserSlug() || getMostFrequentUserSlug(records);
   if (!userSlug) {
     redBadge.textContent = '0 / 0';
     blackBadge.textContent = '0';
     return;
   }
 
-  const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
   const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
   const computedCount = userRecords.filter((record) => record.computed === true).length;
   const directRatingsCount = userRecords.length - computedCount;
-  const totalRatings = await fetchTotalRatingsForCurrentUser();
+  const fetchedTotalRatings = await fetchTotalRatingsForCurrentUser();
+  const totalRatings = fetchedTotalRatings > 0 ? fetchedTotalRatings : directRatingsCount;
 
   redBadge.textContent = `${directRatingsCount} / ${totalRatings}`;
   blackBadge.textContent = `${computedCount}`;
@@ -761,7 +786,11 @@ function getRatingsTableModal() {
 }
 
 async function openRatingsTableModal(rootElement, scope) {
-  const userSlug = getCurrentUserSlug();
+  let userSlug = getCurrentUserSlug();
+  if (!userSlug) {
+    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+    userSlug = getMostFrequentUserSlug(records);
+  }
   if (!userSlug) {
     return;
   }
@@ -840,7 +869,17 @@ async function addSettingsButton() {
   window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
 
   const $button = $(settingsButton);
-  $('.header-bar').prepend($button);
+  const $headerBar = $('.header-bar').first();
+  const $searchItem = $headerBar.children('li.item-search').first();
+  const $languageItem = $headerBar.children('li.user-language-switch').first();
+
+  if ($searchItem.length) {
+    $searchItem.after($button);
+  } else if ($languageItem.length) {
+    $languageItem.before($button);
+  } else {
+    $headerBar.prepend($button);
+  }
 
   let hoverTimeout;
   let hideTimeout;

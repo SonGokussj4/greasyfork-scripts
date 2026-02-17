@@ -7,12 +7,12 @@
 </a>
 <div class="dropdown-content cc-settings">
 
-    <div class="dropdown-content-head cc-settings-head">
-        <div class="left-head cc-head-main">
+    <div class="dropdown-content-head">
+        <div class="left-head">
             <h2>CSFD-Compare</h2>
             <a href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare" class="cc-version-link">v0.8.0</a>
         </div>
-        <div class="right-head ml-auto cc-head-badges">
+        <div class="right-head ml-auto cc-head-right">
             <span class="cc-badge cc-badge-red" id="cc-badge-red" title="Uloženo / Celkem">0 / 0</span>
             <span class="cc-badge cc-badge-black" id="cc-badge-black" title="Spočtená hodnocení">0</span>
             <div class="cc-head-tools">
@@ -42,68 +42,78 @@
         </div>
     </div>
 
-    <div class="cc-settings-actions ph-5">
-        <button id="cc-load-ratings-btn" class="cc-button cc-button-red grow cc-button-iconed">
-            <span class="cc-button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 4V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                    <path d="M8 10L12 14L16 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round" />
-                    <path d="M5 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                </svg>
-            </span>
-            <span>Načíst moje hodnocení</span>
-        </button>
-        <button id="cc-load-computed-btn" class="cc-button cc-button-black cc-button-iconed">
-            <span class="cc-button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z"
-                        stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                </svg>
-            </span>
-            <span>Dopočítat seriály</span>
-        </button>
-    </div>
-
-    <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>
-        <div class="cc-ratings-progress-head">
-            <span id="cc-ratings-progress-label">Připravuji načítání…</span>
-            <span id="cc-ratings-progress-count">0 / 0</span>
-        </div>
-        <div class="cc-ratings-progress-track">
-            <div id="cc-ratings-progress-bar" class="cc-ratings-progress-bar" style="width: 0%"></div>
-        </div>
-        <div class="cc-ratings-progress-actions">
-            <button id="cc-cancel-ratings-loader-btn" class="cc-ratings-cancel-link" hidden>Zrušit načítání</button>
-        </div>
-    </div>
-
-    <details style="margin-bottom: 16px;">
-        <summary style="cursor: pointer; font-size: 12px; color: #444;">🛠️ Další akce</summary>
-        <div
-            style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;">
-            <button
-                style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Reset</button>
-            <button
-                style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Smazat
-                LC</button>
-            <button
-                style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Smazat
-                DB</button>
-        </div>
-    </details>
-
-    <article class="article">
+    <article class="article cc-settings-section">
         <div class="article-content">
-            <form>
-                <label>
-                    <input type="checkbox" name="option1" /> Option 1
+            <div class="cc-settings-actions">
+                <button id="cc-load-ratings-btn" class="cc-button cc-button-red grow cc-button-iconed">
+                    <span class="cc-button-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 4V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            <path d="M8 10L12 14L16 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <path d="M5 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                        </svg>
+                    </span>
+                    <span>Načíst moje hodnocení</span>
+                </button>
+                <button id="cc-load-computed-btn" class="cc-button cc-button-black cc-button-iconed">
+                    <span class="cc-button-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z"
+                                stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                    <span>Dopočítat seriály</span>
+                </button>
+            </div>
+        </div>
+    </article>
+
+    <article class="article cc-settings-section">
+        <div class="article-content">
+            <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>
+                <div class="cc-ratings-progress-head">
+                    <span id="cc-ratings-progress-label">Připravuji načítání…</span>
+                    <span id="cc-ratings-progress-count">0 / 0</span>
+                </div>
+                <div class="cc-ratings-progress-track">
+                    <div id="cc-ratings-progress-bar" class="cc-ratings-progress-bar" style="width: 0%"></div>
+                </div>
+                <div class="cc-ratings-progress-actions">
+                    <button id="cc-cancel-ratings-loader-btn" class="cc-ratings-cancel-link" hidden>Zrušit
+                        načítání</button>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article class="article cc-settings-section">
+        <div class="article-content">
+            <h3 class="cc-section-title">Konfigurace</h3>
+            <form class="cc-settings-form">
+                <label class="cc-form-check">
+                    <input type="checkbox" name="option1" /> Zobrazit extra badge v přehledu
                 </label>
-                <br />
-                <label>
-                    <input type="checkbox" name="option2" /> Option 2
+                <label class="cc-form-check">
+                    <input type="checkbox" name="option2" /> Povolit automatickou aktualizaci dat
+                </label>
+                <label class="cc-form-field">
+                    <span>Vlastní štítek sekce</span>
+                    <input type="text" name="sectionLabel" placeholder="Např. Můj CSFD Compare" />
                 </label>
             </form>
+        </div>
+    </article>
+
+    <article class="article cc-settings-section">
+        <div class="article-content">
+            <h3 class="cc-section-title">Další akce</h3>
+            <div class="cc-maint-actions">
+                <button type="button" class="cc-maint-btn">Reset</button>
+                <button type="button" class="cc-maint-btn">Smazat LC</button>
+                <button type="button" class="cc-maint-btn">Smazat DB</button>
+            </div>
         </div>
     </article>
 
