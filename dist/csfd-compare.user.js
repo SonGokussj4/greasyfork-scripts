@@ -643,7 +643,7 @@
   var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
   styleInject(css_248z$2);
 
-  var css_248z$1 = ".dropdown-content.cc-settings{border-radius:10px;margin-top:0;padding:8px 0 2px;right:8px;top:100%;width:360px}.cc-settings-head{-webkit-box-pack:justify;-ms-flex-pack:justify;background:#f9f9f9;border-radius:8px;justify-content:space-between;margin:0 8px 8px;padding:8px}.cc-head-main,.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-head-main{gap:6px}.cc-head-main h2{margin:0}.cc-version-link{font-size:12px;opacity:.85}.cc-head-badges,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-head-cc-link{font-weight:700;min-width:26px;text-align:center}.cc-icon-btn{border:0;border-radius:7px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:24px;width:24px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#242424;color:#fff;cursor:pointer;justify-content:center;text-decoration:none;-webkit-transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,transform .12s ease;transition:background-color .16s ease,transform .12s ease,-webkit-transform .12s ease}.cc-icon-btn:hover{background:#111;-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-icon-btn:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-icon-btn-sync.is-enabled{background:#aa2c16}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16}.cc-sync-icon-btn:focus,.cc-sync-icon-btn:focus-visible{background:#f3f3f3;border-color:#b0b0b0;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#fff3f0;border-color:#cf7c6d;color:#aa2c16}.cc-script-link-btn svg{height:14px;width:14px}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}#cc-load-computed-btn{background-color:#242424!important}#cc-load-computed-btn:active,#cc-load-computed-btn:focus,#cc-load-computed-btn:focus-visible,#cc-load-computed-btn:hover{background-color:#000!important}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cc-settings-actions .cc-button{min-width:0;width:100%}.cc-settings-actions .cc-button-iconed span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-settings-sync{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}#cc-sync-cloud-btn{margin-top:0}.cc-sync-mini{font-size:11px;min-width:68px;padding:6px 9px}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:4px 8px 10px;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}#cc-ratings-progress-label{-webkit-box-flex:1;-ms-flex:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cc-ratings-progress-count{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{-moz-appearance:none;appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-ratings-cancel-link:active,.cc-ratings-cancel-link:focus,.cc-ratings-cancel-link:focus-visible{background:rgba(0,0,0,.08);color:#333;outline:none}.header-bar .csfd-compare-menu{position:relative}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}";
+  var css_248z$1 = ".dropdown-content.cc-settings{border-radius:10px;margin-top:0;padding:8px 0 2px;right:8px;top:100%;width:360px}.cc-settings-head{-webkit-box-pack:justify;-ms-flex-pack:justify;background:#f9f9f9;border-radius:8px;justify-content:space-between;margin:0 8px 8px;padding:8px}.cc-head-main,.cc-settings-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-head-main{gap:6px}.cc-head-main h2{margin:0}.cc-version-link{font-size:12px;opacity:.85}.cc-head-badges,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-head-cc-link{font-weight:700;min-width:26px;text-align:center}.cc-icon-btn{border:0;border-radius:7px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:24px;width:24px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#242424;color:#fff;cursor:pointer;justify-content:center;text-decoration:none;-webkit-transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,transform .12s ease;transition:background-color .16s ease,transform .12s ease,-webkit-transform .12s ease}.cc-icon-btn:hover{background:#111;-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-icon-btn:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-icon-btn-sync.is-enabled{background:#aa2c16}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16}.cc-sync-icon-btn:focus,.cc-sync-icon-btn:focus-visible{background:#f3f3f3;border-color:#b0b0b0;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#fff3f0;border-color:#cf7c6d;color:#aa2c16}.cc-script-link-btn svg{height:14px;width:14px}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}#cc-load-computed-btn{background-color:#242424!important}#cc-load-computed-btn:active,#cc-load-computed-btn:focus,#cc-load-computed-btn:focus-visible,#cc-load-computed-btn:hover{background-color:#000!important}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cc-settings-actions .cc-button{min-width:0;width:100%}.cc-settings-actions .cc-button-iconed span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-settings-sync{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}#cc-sync-cloud-btn{margin-top:0}.cc-sync-mini{font-size:11px;min-width:68px;padding:6px 9px}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:4px 8px 10px;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}#cc-ratings-progress-label{-webkit-box-flex:1;-ms-flex:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cc-ratings-progress-count{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{-moz-appearance:none;appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-ratings-cancel-link:active,.cc-ratings-cancel-link:focus,.cc-ratings-cancel-link:focus-visible{background:rgba(0,0,0,.08);color:#333;outline:none}.header-bar .csfd-compare-menu{position:relative}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}.cc-badge[role=button]{cursor:pointer}.cc-ratings-table-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.45);justify-content:center;padding:24px;z-index:10010}.cc-ratings-table-modal,.cc-ratings-table-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-ratings-table-modal{background:#fff;border-radius:12px;-webkit-box-shadow:0 16px 42px rgba(0,0,0,.28);box-shadow:0 16px 42px rgba(0,0,0,.28);max-height:calc(100vh - 48px);overflow:hidden;width:min(1080px,calc(100vw - 40px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-ratings-table-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:14px 16px}.cc-ratings-table-head h3{font-size:15px;margin:0}.cc-ratings-table-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-ratings-table-close:hover{background:#f1f1f1;color:#222}.cc-ratings-table-toolbar{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #f0f0f0;-ms-flex-wrap:wrap;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:10px 16px}.cc-ratings-table-search{border:1px solid #d8d8d8;border-radius:8px;font-size:12px;padding:8px 10px;width:min(440px,100%)}.cc-ratings-table-summary{color:#666;font-size:12px;margin-left:auto;white-space:nowrap}.cc-ratings-table-type-filter{background:#fff;border:1px solid #d8d8d8;border-radius:8px;color:#333;font-size:12px;padding:8px 10px}.cc-ratings-table-wrap{overflow:auto;padding:0 0 4px}.cc-ratings-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-ratings-table td,.cc-ratings-table th{border-bottom:1px solid #f0f0f0;font-size:12px;padding:10px 16px;vertical-align:top}.cc-ratings-table th{background:#fafafa;position:sticky;top:0;z-index:1}.cc-ratings-table th button{background:transparent;border:0;color:#333;cursor:pointer;font:inherit;font-weight:700;gap:6px;padding:0}.cc-ratings-table th button,.cc-sort-indicator{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-sort-indicator{-webkit-box-pack:center;-ms-flex-pack:center;color:#8a8a8a;font-size:10px;justify-content:center;min-width:12px}.cc-ratings-table th button.is-active .cc-sort-indicator{color:#aa2c16}.cc-ratings-table td:first-child{width:52%}.cc-ratings-table-name-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:8px;min-width:0}.cc-ratings-table-name-link{color:#1f4f8f;font-size:13px;font-weight:600;text-decoration:none;word-break:break-word}.cc-ratings-table-name-link:hover{text-decoration:underline}.cc-ratings-table-link-icon{color:#6f6f6f;font-size:13px;line-height:1;text-decoration:none}.cc-ratings-table-link-icon:hover{color:#aa2c16}.cc-ratings-table-date,.cc-ratings-table-rating{white-space:nowrap}.cc-ratings-table-type{color:#444;white-space:nowrap}.cc-ratings-table-rating{color:#202020;font-size:13px;letter-spacing:.8px}.cc-ratings-table-rating.is-odpad{color:#000;font-weight:700;letter-spacing:0}.cc-ratings-table-empty{color:#7a7a7a;padding:18px 16px;text-align:center}body.cc-ratings-modal-open{overflow:hidden}";
   styleInject(css_248z$1);
 
   var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}.cc-own-rating{margin-left:6px;vertical-align:middle}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}";
@@ -2062,12 +2062,356 @@
     blackBadge.textContent = `${computedCount}`;
   }
 
+  function resolveRecordUrl(record) {
+    if (record.fullUrl) {
+      return record.fullUrl;
+    }
+
+    if (record.url) {
+      return new URL(`/film/${record.url}/`, location.origin).toString();
+    }
+
+    return '';
+  }
+
+  function normalizeModalType(rawType) {
+    const normalized = String(rawType || '').toLowerCase();
+    if (normalized.includes('epizoda') || normalized === 'episode') {
+      return { key: 'episode', label: 'Episode' };
+    }
+    if (normalized.includes('seriál') || normalized.includes('serial') || normalized === 'serial') {
+      return { key: 'series', label: 'Series' };
+    }
+    if (normalized.includes('série') || normalized.includes('serie') || normalized === 'series') {
+      return { key: 'season', label: 'Season' };
+    }
+    return { key: 'movie', label: 'Movie' };
+  }
+
+  function formatRatingForModal(ratingValue) {
+    if (!Number.isFinite(ratingValue)) {
+      return { stars: '—', isOdpad: false };
+    }
+
+    if (ratingValue === 0) {
+      return { stars: 'Odpad', isOdpad: true };
+    }
+
+    const clamped = Math.max(0, Math.min(5, Math.trunc(ratingValue)));
+    return {
+      stars: `${'★'.repeat(clamped)}${'☆'.repeat(5 - clamped)}`,
+      isOdpad: false,
+    };
+  }
+
+  function toModalRows(records) {
+    return records.map((record) => {
+      const ratingValue = Number.isFinite(record.rating) ? record.rating : Number.NEGATIVE_INFINITY;
+      const normalizedType = normalizeModalType(record.type);
+      const formattedRating = formatRatingForModal(record.rating);
+
+      return {
+        name: (record.name || '').trim(),
+        url: resolveRecordUrl(record),
+        typeKey: normalizedType.key,
+        typeLabel: normalizedType.label,
+        ratingText: formattedRating.stars,
+        ratingIsOdpad: formattedRating.isOdpad,
+        ratingValue,
+        date: (record.date || '').trim(),
+      };
+    });
+  }
+
+  function normalizeSearchText(value) {
+    return String(value || '').toLowerCase();
+  }
+
+  function sortRows(rows, sortKey, sortDir) {
+    const sorted = [...rows].sort((a, b) => {
+      if (sortKey === 'type') {
+        return a.typeLabel.localeCompare(b.typeLabel, 'en', { sensitivity: 'base' });
+      }
+
+      if (sortKey === 'rating') {
+        return a.ratingValue - b.ratingValue;
+      }
+
+      if (sortKey === 'date') {
+        return a.date.localeCompare(b.date, 'cs', { sensitivity: 'base' });
+      }
+
+      return a.name.localeCompare(b.name, 'cs', { sensitivity: 'base' });
+    });
+
+    return sortDir === 'desc' ? sorted.reverse() : sorted;
+  }
+
+  function filterRows(rows, search) {
+    const query = normalizeSearchText(search).trim();
+    if (!query) {
+      return rows;
+    }
+
+    return rows.filter((row) => {
+      return (
+        normalizeSearchText(row.name).includes(query) ||
+        normalizeSearchText(row.url).includes(query) ||
+        normalizeSearchText(row.typeLabel).includes(query) ||
+        normalizeSearchText(row.ratingText).includes(query) ||
+        normalizeSearchText(row.date).includes(query)
+      );
+    });
+  }
+
+  function filterRowsByType(rows, typeFilter) {
+    if (!typeFilter || typeFilter === 'all') {
+      return rows;
+    }
+    return rows.filter((row) => row.typeKey === typeFilter);
+  }
+
+  function getRatingsTableModal() {
+    let overlay = document.querySelector('#cc-ratings-table-modal-overlay');
+    if (overlay) {
+      return overlay;
+    }
+
+    overlay = document.createElement('div');
+    overlay.id = 'cc-ratings-table-modal-overlay';
+    overlay.className = 'cc-ratings-table-overlay';
+    overlay.innerHTML = `
+    <div class="cc-ratings-table-modal" role="dialog" aria-modal="true" aria-labelledby="cc-ratings-table-title">
+      <div class="cc-ratings-table-head">
+        <h3 id="cc-ratings-table-title">Přehled hodnocení</h3>
+        <button type="button" class="cc-ratings-table-close" aria-label="Zavřít">×</button>
+      </div>
+      <div class="cc-ratings-table-toolbar">
+        <input type="search" class="cc-ratings-table-search" placeholder="Filtrovat (název, URL, hodnocení, datum)…" />
+        <select class="cc-ratings-table-type-filter" aria-label="Filtr typu">
+          <option value="all">All types</option>
+          <option value="movie">Movie</option>
+          <option value="series">Series</option>
+          <option value="season">Season</option>
+          <option value="episode">Episode</option>
+        </select>
+        <span class="cc-ratings-table-summary">0 položek</span>
+      </div>
+      <div class="cc-ratings-table-wrap">
+        <table class="cc-ratings-table" aria-live="polite">
+          <thead>
+            <tr>
+              <th><button type="button" data-sort-key="name"><span class="cc-sort-label">Název</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
+              <th><button type="button" data-sort-key="type"><span class="cc-sort-label">Typ</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
+              <th><button type="button" data-sort-key="rating"><span class="cc-sort-label">Hodnocení</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
+              <th><button type="button" data-sort-key="date"><span class="cc-sort-label">Datum</span><span class="cc-sort-indicator" aria-hidden="true">↕</span></button></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+    const closeBtn = overlay.querySelector('.cc-ratings-table-close');
+    const searchInput = overlay.querySelector('.cc-ratings-table-search');
+    const typeFilter = overlay.querySelector('.cc-ratings-table-type-filter');
+    const summary = overlay.querySelector('.cc-ratings-table-summary');
+    const tbody = overlay.querySelector('tbody');
+    const title = overlay.querySelector('#cc-ratings-table-title');
+    const sortButtons = Array.from(overlay.querySelectorAll('th button[data-sort-key]'));
+
+    const state = {
+      rows: [],
+      search: '',
+      typeFilter: 'all',
+      sortKey: 'name',
+      sortDir: 'asc',
+    };
+
+    const render = () => {
+      const typeFiltered = filterRowsByType(state.rows, state.typeFilter);
+      const filtered = filterRows(typeFiltered, state.search);
+      const sorted = sortRows(filtered, state.sortKey, state.sortDir);
+
+      summary.textContent = `${sorted.length} položek`;
+      tbody.innerHTML = '';
+
+      if (sorted.length === 0) {
+        const emptyRow = document.createElement('tr');
+        emptyRow.innerHTML = '<td colspan="4" class="cc-ratings-table-empty">Žádná data</td>';
+        tbody.appendChild(emptyRow);
+      } else {
+        for (const row of sorted) {
+          const tr = document.createElement('tr');
+          const iconLink = row.url
+            ? `<a class="cc-ratings-table-link-icon" href="${row.url}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">↗</a>`
+            : '';
+          const nameLink = row.url
+            ? `<a class="cc-ratings-table-name-link" href="${row.url}" target="_blank" rel="noopener noreferrer">${row.name || 'Bez názvu'}</a>`
+            : `<span class="cc-ratings-table-name-link">${row.name || 'Bez názvu'}</span>`;
+          tr.innerHTML = `
+          <td>
+            <div class="cc-ratings-table-name-row">
+              ${nameLink}
+              ${iconLink}
+            </div>
+          </td>
+          <td class="cc-ratings-table-type">${row.typeLabel}</td>
+          <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${row.ratingText}</td>
+          <td class="cc-ratings-table-date">${row.date || '—'}</td>
+        `;
+          tbody.appendChild(tr);
+        }
+      }
+
+      for (const button of sortButtons) {
+        const key = button.dataset.sortKey;
+        const active = key === state.sortKey;
+        button.classList.toggle('is-active', active);
+        const indicator = button.querySelector('.cc-sort-indicator');
+        if (indicator) {
+          indicator.textContent = active ? (state.sortDir === 'asc' ? '▲' : '▼') : '↕';
+        }
+      }
+    };
+
+    overlay.openWithData = ({ rows, modalTitle }) => {
+      state.rows = rows;
+      state.search = '';
+      state.typeFilter = 'all';
+      state.sortKey = 'name';
+      state.sortDir = 'asc';
+      title.textContent = modalTitle;
+      searchInput.value = '';
+      typeFilter.value = 'all';
+      render();
+      overlay.classList.add('is-open');
+      document.body.classList.add('cc-ratings-modal-open');
+      searchInput.focus();
+    };
+
+    overlay.closeModal = () => {
+      overlay.classList.remove('is-open');
+      document.body.classList.remove('cc-ratings-modal-open');
+    };
+
+    closeBtn.addEventListener('click', () => overlay.closeModal());
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) {
+        overlay.closeModal();
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && overlay.classList.contains('is-open')) {
+        overlay.closeModal();
+      }
+    });
+
+    searchInput.addEventListener('input', () => {
+      state.search = searchInput.value;
+      render();
+    });
+
+    typeFilter.addEventListener('change', () => {
+      state.typeFilter = typeFilter.value;
+      render();
+    });
+
+    for (const button of sortButtons) {
+      button.addEventListener('click', () => {
+        const key = button.dataset.sortKey;
+        if (!key) {
+          return;
+        }
+
+        if (state.sortKey === key) {
+          state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.sortKey = key;
+          state.sortDir = 'asc';
+        }
+        render();
+      });
+    }
+
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+
+  async function openRatingsTableModal(rootElement, scope) {
+    const userSlug = getCurrentUserSlug();
+    if (!userSlug) {
+      return;
+    }
+
+    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+    const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+    const scopedRecords =
+      scope === 'computed'
+        ? userRecords.filter((record) => record.computed === true)
+        : userRecords.filter((record) => record.computed !== true);
+
+    const rows = toModalRows(scopedRecords);
+    const modal = getRatingsTableModal();
+    modal.openWithData({
+      rows,
+      modalTitle: scope === 'computed' ? 'Spočtená hodnocení' : 'Načtená hodnocení',
+    });
+
+    const redBadge = rootElement.querySelector('#cc-badge-red');
+    const blackBadge = rootElement.querySelector('#cc-badge-black');
+    redBadge?.blur();
+    blackBadge?.blur();
+  }
+
   async function addSettingsButton() {
     const settingsButton = document.createElement('li');
     settingsButton.classList.add('cc-menu-item');
     settingsButton.innerHTML = htmlContent;
     initializeRatingsLoader(settingsButton);
     initializeRatingsSync(settingsButton);
+
+    const redBadge = settingsButton.querySelector('#cc-badge-red');
+    const blackBadge = settingsButton.querySelector('#cc-badge-black');
+    if (redBadge) {
+      redBadge.setAttribute('role', 'button');
+      redBadge.setAttribute('tabindex', '0');
+      redBadge.title = 'Zobrazit načtená hodnocení';
+      redBadge.addEventListener('click', () => {
+        openRatingsTableModal(settingsButton, 'direct').catch((error) => {
+          console.error('[CC] Failed to open direct ratings table:', error);
+        });
+      });
+      redBadge.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openRatingsTableModal(settingsButton, 'direct').catch((error) => {
+            console.error('[CC] Failed to open direct ratings table:', error);
+          });
+        }
+      });
+    }
+
+    if (blackBadge) {
+      blackBadge.setAttribute('role', 'button');
+      blackBadge.setAttribute('tabindex', '0');
+      blackBadge.title = 'Zobrazit spočtená hodnocení';
+      blackBadge.addEventListener('click', () => {
+        openRatingsTableModal(settingsButton, 'computed').catch((error) => {
+          console.error('[CC] Failed to open computed ratings table:', error);
+        });
+      });
+      blackBadge.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openRatingsTableModal(settingsButton, 'computed').catch((error) => {
+            console.error('[CC] Failed to open computed ratings table:', error);
+          });
+        }
+      });
+    }
+
     refreshRatingsBadges(settingsButton).catch((error) => {
       console.error('[CC] Failed to refresh badges:', error);
     });
