@@ -19,7 +19,7 @@ function readScriptVersion() {
 
 function injectScriptVersion() {
   const token = '__CC_VERSION__';
-  const versionAnchorPattern = /(class=\\?"cc-version-link\\?"[^>]*>)v[^<"]*(<\/?a>)/g;
+  const versionValuePattern = /(id=\\?"cc-version-value\\?"[^>]*>)v[^<"]*(<\\?\/[^>]+>)/g;
   const metadataVersionPattern = /(^\/\/\s*@version\s+).*/m;
   const packageJsonPath = new URL('./package.json', import.meta.url);
   const packageJsonFsPath = fileURLToPath(packageJsonPath);
@@ -31,7 +31,7 @@ function injectScriptVersion() {
       nextContent = nextContent.replaceAll(token, version);
     }
 
-    nextContent = nextContent.replace(versionAnchorPattern, `$1v${version}$2`);
+    nextContent = nextContent.replace(versionValuePattern, `$1v${version}$2`);
     nextContent = nextContent.replace(metadataVersionPattern, `$1${version}`);
     return nextContent;
   }

@@ -1,9 +1,13 @@
 {
   "type": "module",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "scripts": {
+    "sync-version": "node scripts/sync-version.mjs",
+    "prebuild": "npm run sync-version",
     "build": "rollup -c",
+    "prewatch": "npm run sync-version",
     "watch": "rollup -c -w",
+    "predev": "npm run sync-version",
     "dev": "rollup -c -w"
   },
   "devDependencies": {

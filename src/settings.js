@@ -516,16 +516,49 @@ function getCurrentUserRatingsUrl() {
 }
 
 function parseTotalRatingsFromDocument(doc) {
-  const heading = doc.querySelector('h2')?.textContent || '';
-  const match = heading.match(/\(([^)]+)\)/);
-  if (!match) {
+  const extractCount = (text) => {
+    const normalized = String(text || '').replace(/\u00a0/g, ' ');
+    const match = normalized.match(/\(([^)]+)\)/);
+    if (!match) {
+      return 0;
+    }
+
+    const parsed = Number.parseInt(match[1].replace(/\s+/g, ''), 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const preferredSelectors = ['#snippet--ratings h2', '#snippet--ratings .box-header h2', 'h2.page-header', 'h2'];
+  for (const selector of preferredSelectors) {
+    const heading = doc.querySelector(selector)?.textContent || '';
+    const value = extractCount(heading);
+    if (value > 0) {
+      return value;
+    }
+  }
+
+  const headingWithRatingsWord = Array.from(doc.querySelectorAll('h2, h3')).find((heading) => {
+    const text = String(heading?.textContent || '');
+    return /hodnocen|hodnoten/i.test(text) && /\(\s*[\d\s\u00a0]+\s*\)/.test(text);
+  });
+
+  return extractCount(headingWithRatingsWord?.textContent || '');
+}
+
+function getTotalRatingsFromCurrentPageForCurrentUser() {
+  const path = location.pathname || '';
+  if (!/\/uzivatel\//.test(path) || !/\/(hodnoceni|hodnotenia)\/?$/i.test(path)) {
     return 0;
   }
-  const parsed = Number.parseInt(match[1].replace(/\s+/g, ''), 10);
-  return Number.isFinite(parsed) ? parsed : 0;
+
+  return parseTotalRatingsFromDocument(document);
 }
 
 async function fetchTotalRatingsForCurrentUser() {
+  const currentPageTotal = getTotalRatingsFromCurrentPageForCurrentUser();
+  if (currentPageTotal > 0) {
+    return currentPageTotal;
+  }
+
   const ratingsUrl = getCurrentUserRatingsUrl();
   if (!ratingsUrl) {
     return 0;
@@ -557,12 +590,14 @@ async function refreshRatingsBadges(rootElement) {
     redBadge.title = 'Pro načtení hodnocení se přihlaste.';
     blackBadge.title = 'Pro načtení hodnocení se přihlaste.';
     redBadge.classList.add('cc-badge-disabled');
+    redBadge.classList.remove('cc-badge-warning');
     blackBadge.classList.add('cc-badge-disabled');
     updateSyncButtonAuthState(rootElement);
     return;
   }
 
   redBadge.classList.remove('cc-badge-disabled');
+  redBadge.classList.remove('cc-badge-warning');
   blackBadge.classList.remove('cc-badge-disabled');
   redBadge.title = 'Zobrazit načtená hodnocení';
   blackBadge.title = 'Zobrazit spočtená hodnocení';
@@ -583,6 +618,10 @@ async function refreshRatingsBadges(rootElement) {
   const totalRatings = fetchedTotalRatings > 0 ? fetchedTotalRatings : directRatingsCount;
 
   redBadge.textContent = `${directRatingsCount} / ${totalRatings}`;
+  if (directRatingsCount < totalRatings) {
+    redBadge.classList.add('cc-badge-warning');
+    redBadge.title = `Nenačtená hodnocení: ${totalRatings - directRatingsCount}. Klikněte na načtení.`;
+  }
   blackBadge.textContent = `${computedCount}`;
 }
 

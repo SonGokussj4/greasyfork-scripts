@@ -230,6 +230,25 @@ function toStorageRecord(record, userSlug) {
   };
 }
 
+function createRecordFingerprint(record) {
+  const computedCount = Number.isFinite(record?.computedCount) ? String(record.computedCount) : '';
+  return [
+    Number.isFinite(record?.rating) ? String(record.rating) : '',
+    record?.date || '',
+    record?.computed === true ? '1' : '0',
+    computedCount,
+    record?.computedFromText || '',
+  ].join('|');
+}
+
+function hasRecordChanged(existingRecord, nextRecord) {
+  if (!existingRecord) {
+    return true;
+  }
+
+  return createRecordFingerprint(existingRecord) !== createRecordFingerprint(nextRecord);
+}
+
 function updateProgressUI(progress, state) {
   const container = progress.container;
   const label = progress.label;
@@ -668,7 +687,13 @@ async function loadComputedParentRatingsForCurrentUser({
   };
 }
 
-async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgress = () => {}, resumeState = undefined) {
+async function loadRatingsForCurrentUser(
+  maxPages = DEFAULT_MAX_PAGES,
+  onProgress = () => {},
+  resumeState = undefined,
+  options = {},
+) {
+  const incremental = options.incremental !== false;
   const profilePath = getCurrentProfilePath();
   if (!profilePath) {
     throw new Error('Profil uživatele nebyl nalezen.');
@@ -685,6 +710,14 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
   const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
   const paginationMode = detectPaginationModeFromDocument(firstDoc);
+
+  const allExistingRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+  const userExistingRecords = allExistingRecords.filter(
+    (record) => record.userSlug === userSlug && Number.isFinite(record.movieId),
+  );
+  const existingRecordsById = new Map(userExistingRecords.map((record) => [record.id, record]));
+  let directRatingsCount = userExistingRecords.filter((record) => record.computed !== true).length;
+
   const detectedTargetPages =
     maxPages === 0 ? Math.max(1, maxDetectedPages) : Math.max(1, Math.min(maxPages, maxDetectedPages));
 
@@ -692,6 +725,9 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
   const targetPages = Math.max(startPage, Number.parseInt(resumeState?.targetPages || detectedTargetPages, 10));
   let totalParsed = Number.parseInt(resumeState?.totalParsed || '0', 10);
   let loadedPages = Number.parseInt(resumeState?.loadedPages || '0', 10);
+  let totalUpserted = Number.parseInt(resumeState?.totalUpserted || '0', 10);
+  let consecutiveStablePages = Number.parseInt(resumeState?.consecutiveStablePages || '0', 10);
+  let stoppedEarly = false;
 
   setPersistedLoaderState({
     status: 'running',
@@ -705,6 +741,10 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
     nextPage: startPage,
     loadedPages,
     totalParsed,
+    totalUpserted,
+    directRatingsCount,
+    consecutiveStablePages,
+    incremental,
   });
 
   for (let page = startPage; page <= targetPages; page++) {
@@ -722,6 +762,10 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
         nextPage: page,
         loadedPages,
         totalParsed,
+        totalUpserted,
+        directRatingsCount,
+        consecutiveStablePages,
+        incremental,
       });
 
       return {
@@ -748,7 +792,39 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
     }
 
     const storageRecords = pageRatings.map((record) => toStorageRecord(record, userSlug));
-    await saveToIndexedDB(INDEXED_DB_NAME, getStoreNameForUser(), storageRecords);
+    const changedRecords = [];
+
+    for (const record of storageRecords) {
+      const existing = existingRecordsById.get(record.id);
+      const recordChanged = hasRecordChanged(existing, record);
+      if (!recordChanged) {
+        continue;
+      }
+
+      changedRecords.push(record);
+
+      if (!existing && record.computed !== true) {
+        directRatingsCount += 1;
+      } else if (existing) {
+        const existingIsDirect = existing.computed !== true;
+        const nextIsDirect = record.computed !== true;
+        if (existingIsDirect && !nextIsDirect) {
+          directRatingsCount = Math.max(0, directRatingsCount - 1);
+        } else if (!existingIsDirect && nextIsDirect) {
+          directRatingsCount += 1;
+        }
+      }
+
+      existingRecordsById.set(record.id, record);
+    }
+
+    if (changedRecords.length > 0) {
+      await saveToIndexedDB(INDEXED_DB_NAME, getStoreNameForUser(), changedRecords);
+      totalUpserted += changedRecords.length;
+      consecutiveStablePages = 0;
+    } else {
+      consecutiveStablePages += 1;
+    }
 
     totalParsed += pageRatings.length;
     loadedPages += 1;
@@ -765,6 +841,10 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
       nextPage: page + 1,
       loadedPages,
       totalParsed,
+      totalUpserted,
+      directRatingsCount,
+      consecutiveStablePages,
+      incremental,
     });
 
     onProgress({
@@ -772,7 +852,19 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
       totalPages: targetPages,
       totalParsed,
       totalRatings,
+      changedOnPage: changedRecords.length,
+      totalUpserted,
+      directRatingsCount,
+      incremental,
     });
+
+    const shouldStopEarly =
+      incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1;
+
+    if (shouldStopEarly) {
+      stoppedEarly = true;
+      break;
+    }
 
     if (page < targetPages) {
       await delay(randomDelay());
@@ -784,11 +876,15 @@ async function loadRatingsForCurrentUser(maxPages = DEFAULT_MAX_PAGES, onProgres
     totalPagesLoaded: loadedPages,
     totalPagesDetected: maxDetectedPages,
     totalParsed,
+    totalUpserted,
     totalRatings,
+    directRatingsCount,
     storeName: getStoreNameForUser(),
     paused: false,
-    nextPage: targetPages + 1,
+    nextPage: stoppedEarly ? loadedPages + 1 : targetPages + 1,
     targetPages,
+    stoppedEarly,
+    incremental,
   };
 }
 
@@ -867,9 +963,18 @@ export function initializeRatingsLoader(rootElement) {
 
       const result = await loadRatingsForCurrentUser(
         resumeState?.maxPages ?? DEFAULT_MAX_PAGES,
-        ({ page, totalPages, totalParsed }) => {
+        ({
+          page,
+          totalPages,
+          totalParsed,
+          changedOnPage = 0,
+          totalUpserted = 0,
+          incremental: isIncremental = true,
+        }) => {
           updateProgressUI(progress, {
-            label: `Načítám stránku ${page}/${totalPages}… (${totalParsed} položek)`,
+            label: isIncremental
+              ? `Kontroluji stránku ${page}/${totalPages}… (${changedOnPage} změn, celkem ${totalUpserted})`
+              : `Načítám stránku ${page}/${totalPages}… (${totalParsed} položek)`,
             current: page,
             total: totalPages,
           });
@@ -879,6 +984,9 @@ export function initializeRatingsLoader(rootElement) {
           }
         },
         resumeState,
+        {
+          incremental: resumeState?.incremental !== false,
+        },
       );
 
       if (result.paused) {
@@ -891,7 +999,9 @@ export function initializeRatingsLoader(rootElement) {
       } else {
         clearPersistedLoaderState();
         updateProgressUI(progress, {
-          label: `Hotovo: ${result.totalParsed} hodnocení uloženo (${result.totalPagesLoaded} str., DB: ${result.storeName})`,
+          label: result.incremental
+            ? `Hotovo: ${result.totalUpserted} nových/změněných (${result.totalPagesLoaded} str.)`
+            : `Hotovo: ${result.totalParsed} hodnocení zpracováno (${result.totalPagesLoaded} str.)`,
           current: result.totalPagesLoaded,
           total: result.totalPagesLoaded || 1,
         });
@@ -1058,7 +1168,9 @@ export function initializeRatingsLoader(rootElement) {
     });
   }
 
-  loadButton.addEventListener('click', async () => {
+  loadButton.title = 'Klik: rychlé doplnění chybějících/změněných, Shift+klik: plné načtení';
+
+  loadButton.addEventListener('click', async (event) => {
     if (computedLoaderController.isRunning) {
       return;
     }
@@ -1071,8 +1183,19 @@ export function initializeRatingsLoader(rootElement) {
     }
 
     const state = getPersistedLoaderState();
+    const forceFullLoad = event.shiftKey === true;
+    const resumeState = state?.status === 'paused' ? state : undefined;
+
+    if (forceFullLoad && resumeState) {
+      resumeState.incremental = false;
+    }
+
     await runLoad({
-      resumeState: state?.status === 'paused' ? state : undefined,
+      resumeState: resumeState
+        ? resumeState
+        : {
+            incremental: !forceFullLoad,
+          },
       autoResume: false,
     });
   });
