@@ -12,3 +12,4 @@ coverage/
 
 # TEMP
 csfd-compare-new.js
+test-results/*

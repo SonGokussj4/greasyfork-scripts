@@ -2794,48 +2794,8 @@
     blackBadge.textContent = `${computedCount}`;
   }
 
-  // addSettingsButton function that will create element 'li' as a 'let button'
-
-
   const MODAL_RENDER_SYNC_THRESHOLD = 700;
   const MODAL_RENDER_CHUNK_SIZE = 450;
-  let infoToastTimeoutId;
-
-  function isGalleryImageLinksEnabled() {
-    const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  function showSettingsInfoToast(message) {
-    let toastEl = document.querySelector('#cc-settings-info-toast');
-    if (!toastEl) {
-      toastEl = document.createElement('div');
-      toastEl.id = 'cc-settings-info-toast';
-      toastEl.style.position = 'fixed';
-      toastEl.style.left = '50%';
-      toastEl.style.top = '70px';
-      toastEl.style.transform = 'translateX(-50%)';
-      toastEl.style.zIndex = '10020';
-      toastEl.style.padding = '8px 12px';
-      toastEl.style.borderRadius = '8px';
-      toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
-      toastEl.style.color = '#fff';
-      toastEl.style.fontSize = '12px';
-      toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
-      toastEl.style.display = 'none';
-      document.body.appendChild(toastEl);
-    }
-
-    toastEl.textContent = message;
-    toastEl.style.display = 'block';
-
-    if (infoToastTimeoutId) {
-      clearTimeout(infoToastTimeoutId);
-    }
-    infoToastTimeoutId = window.setTimeout(() => {
-      toastEl.style.display = 'none';
-    }, 1800);
-  }
 
   const ratingsModalCache = {
     userSlug: '',
@@ -2846,15 +2806,6 @@
     },
   };
 
-  function invalidateRatingsModalCache() {
-    ratingsModalCache.userSlug = '';
-    ratingsModalCache.userRecords = null;
-    ratingsModalCache.rowsByScope = {
-      direct: null,
-      computed: null,
-    };
-  }
-
   function escapeHtml(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
@@ -2862,41 +2813,6 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  }
-
-  function getCurrentUserSlug() {
-    const profileEl = document.querySelector('a.profile.initialized');
-    const profileHref = profileEl?.getAttribute('href') || '';
-    const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-    return match ? match[1] : undefined;
-  }
-
-  function isUserLoggedIn() {
-    return Boolean(document.querySelector('a.profile.initialized'));
-  }
-
-  function getMostFrequentUserSlug(records) {
-    const counts = new Map();
-
-    for (const record of records) {
-      const userSlug = record?.userSlug;
-      if (!userSlug || !Number.isFinite(record?.movieId)) {
-        continue;
-      }
-
-      counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
-    }
-
-    let bestSlug;
-    let bestCount = -1;
-    for (const [slug, count] of counts.entries()) {
-      if (count > bestCount) {
-        bestSlug = slug;
-        bestCount = count;
-      }
-    }
-
-    return bestSlug;
   }
 
   async function getCachedUserRecords(userSlug) {
@@ -3542,11 +3458,23 @@
     return overlay;
   }
 
-  async function openRatingsTableModal(rootElement, scope) {
-    let userSlug = getCurrentUserSlug();
+  function invalidateRatingsModalCache() {
+    ratingsModalCache.userSlug = '';
+    ratingsModalCache.userRecords = null;
+    ratingsModalCache.rowsByScope = {
+      direct: null,
+      computed: null,
+    };
+  }
+
+  async function openRatingsTableModal(rootElement, scope, options) {
+    const getCurrentUserSlug = options?.getCurrentUserSlug;
+    const getMostFrequentUserSlug = options?.getMostFrequentUserSlug;
+
+    let userSlug = getCurrentUserSlug?.();
     if (!userSlug) {
       const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-      userSlug = getMostFrequentUserSlug(records);
+      userSlug = getMostFrequentUserSlug?.(records);
     }
     if (!userSlug) {
       return;
@@ -3563,6 +3491,82 @@
     const blackBadge = rootElement.querySelector('#cc-badge-black');
     redBadge?.blur();
     blackBadge?.blur();
+  }
+
+  // addSettingsButton function that will create element 'li' as a 'let button'
+
+
+  let infoToastTimeoutId;
+
+  function isGalleryImageLinksEnabled() {
+    const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+    return persistedValue === null ? true : persistedValue === 'true';
+  }
+
+  function showSettingsInfoToast(message) {
+    let toastEl = document.querySelector('#cc-settings-info-toast');
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.id = 'cc-settings-info-toast';
+      toastEl.style.position = 'fixed';
+      toastEl.style.left = '50%';
+      toastEl.style.top = '70px';
+      toastEl.style.transform = 'translateX(-50%)';
+      toastEl.style.zIndex = '10020';
+      toastEl.style.padding = '8px 12px';
+      toastEl.style.borderRadius = '8px';
+      toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
+      toastEl.style.color = '#fff';
+      toastEl.style.fontSize = '12px';
+      toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
+      toastEl.style.display = 'none';
+      document.body.appendChild(toastEl);
+    }
+
+    toastEl.textContent = message;
+    toastEl.style.display = 'block';
+
+    if (infoToastTimeoutId) {
+      clearTimeout(infoToastTimeoutId);
+    }
+    infoToastTimeoutId = window.setTimeout(() => {
+      toastEl.style.display = 'none';
+    }, 1800);
+  }
+
+  function getCurrentUserSlug() {
+    const profileEl = document.querySelector('a.profile.initialized');
+    const profileHref = profileEl?.getAttribute('href') || '';
+    const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+    return match ? match[1] : undefined;
+  }
+
+  function isUserLoggedIn() {
+    return Boolean(document.querySelector('a.profile.initialized'));
+  }
+
+  function getMostFrequentUserSlug(records) {
+    const counts = new Map();
+
+    for (const record of records) {
+      const userSlug = record?.userSlug;
+      if (!userSlug || !Number.isFinite(record?.movieId)) {
+        continue;
+      }
+
+      counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
+    }
+
+    let bestSlug;
+    let bestCount = -1;
+    for (const [slug, count] of counts.entries()) {
+      if (count > bestCount) {
+        bestSlug = slug;
+        bestCount = count;
+      }
+    }
+
+    return bestSlug;
   }
 
   async function addSettingsButton() {
@@ -3618,6 +3622,11 @@
 
     const redBadge = settingsButton.querySelector('#cc-badge-red');
     const blackBadge = settingsButton.querySelector('#cc-badge-black');
+    const ratingsModalOptions = {
+      getCurrentUserSlug,
+      getMostFrequentUserSlug,
+    };
+
     if (redBadge) {
       redBadge.setAttribute('role', 'button');
       redBadge.setAttribute('tabindex', '0');
@@ -3627,7 +3636,7 @@
           showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
           return;
         }
-        openRatingsTableModal(settingsButton, 'direct').catch((error) => {
+        openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((error) => {
           console.error('[CC] Failed to open direct ratings table:', error);
         });
       });
@@ -3638,7 +3647,7 @@
             showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
             return;
           }
-          openRatingsTableModal(settingsButton, 'direct').catch((error) => {
+          openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((error) => {
             console.error('[CC] Failed to open direct ratings table:', error);
           });
         }
@@ -3654,7 +3663,7 @@
           showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
           return;
         }
-        openRatingsTableModal(settingsButton, 'computed').catch((error) => {
+        openRatingsTableModal(settingsButton, 'computed', ratingsModalOptions).catch((error) => {
           console.error('[CC] Failed to open computed ratings table:', error);
         });
       });
@@ -3665,7 +3674,7 @@
             showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
             return;
           }
-          openRatingsTableModal(settingsButton, 'computed').catch((error) => {
+          openRatingsTableModal(settingsButton, 'computed', ratingsModalOptions).catch((error) => {
             console.error('[CC] Failed to open computed ratings table:', error);
           });
         }
