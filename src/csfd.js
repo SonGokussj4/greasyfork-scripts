@@ -50,6 +50,7 @@ export class Csfd {
   }
 
   getIsLoggedIn() {
+    console.debug('🟣 Login state:', this.isLoggedIn);
     return this.isLoggedIn;
   }
 
@@ -59,11 +60,10 @@ export class Csfd {
     this.username = await this.getUsername();
     console.debug('🟣 Username:', this.username);
     this.storageKey = `${'CSFD-Compare'}_${this.username}`;
-    this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
-    this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
-    console.debug('🟣 User URL:', this.userUrl);
-    console.debug('🟣 Username:', this.username);
     console.debug('🟣 Storage Key:', this.storageKey);
+    this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
+    console.debug('🟣 User Slug:', this.userSlug);
+    this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
     console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
     const settings = await getSettings(SETTINGSNAME);
     if (settings) {

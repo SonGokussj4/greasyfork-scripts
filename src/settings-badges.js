@@ -1,8 +1,11 @@
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
 import { getAllFromIndexedDB } from './storage.js';
 
+const PROFILE_LINK_SELECTOR =
+  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+
 function getCurrentUserRatingsUrl() {
-  const profileEl = document.querySelector('a.profile.initialized');
+  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
   const profileHref = profileEl?.getAttribute('href');
   if (!profileHref) {
     return undefined;

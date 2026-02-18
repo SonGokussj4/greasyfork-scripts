@@ -11,6 +11,12 @@ import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-r
 import { initializeSettingsMenuHover } from './settings-hover.js';
 
 let infoToastTimeoutId;
+const PROFILE_LINK_SELECTOR =
+  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+
+function getProfileLinkElement() {
+  return document.querySelector(PROFILE_LINK_SELECTOR);
+}
 
 function isGalleryImageLinksEnabled() {
   const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
@@ -49,14 +55,14 @@ function showSettingsInfoToast(message) {
 }
 
 function getCurrentUserSlug() {
-  const profileEl = document.querySelector('a.profile.initialized');
+  const profileEl = getProfileLinkElement();
   const profileHref = profileEl?.getAttribute('href') || '';
   const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
   return match ? match[1] : undefined;
 }
 
 function isUserLoggedIn() {
-  return Boolean(document.querySelector('a.profile.initialized'));
+  return Boolean(getProfileLinkElement());
 }
 
 function getMostFrequentUserSlug(records) {
@@ -202,15 +208,19 @@ async function addSettingsButton() {
     getMostFrequentUserSlug,
   };
 
-  refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
-    console.error('[CC] Failed to refresh badges:', error);
-  });
-
-  const handleRatingsUpdated = () => {
-    invalidateRatingsModalCache();
+  const refreshBadgesSafely = () => {
     refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
       console.error('[CC] Failed to refresh badges:', error);
     });
+  };
+
+  refreshBadgesSafely();
+  window.setTimeout(refreshBadgesSafely, 1200);
+  window.setTimeout(refreshBadgesSafely, 3000);
+
+  const handleRatingsUpdated = () => {
+    invalidateRatingsModalCache();
+    refreshBadgesSafely();
   };
   window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
 

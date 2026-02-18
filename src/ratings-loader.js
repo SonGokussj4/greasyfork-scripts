@@ -7,6 +7,8 @@ const REQUEST_DELAY_MIN_MS = 250;
 const REQUEST_DELAY_MAX_MS = 550;
 const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
 const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
+const PROFILE_LINK_SELECTOR =
+  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 
 const loaderController = {
   isRunning: false,
@@ -34,7 +36,7 @@ function normalizeProfilePath(profileHref) {
 }
 
 function getCurrentProfilePath() {
-  const profileEl = document.querySelector('a.profile.initialized');
+  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
   if (!profileEl) {
     return undefined;
   }
@@ -251,10 +253,14 @@ function hasRecordChanged(existingRecord, nextRecord) {
 
 function updateProgressUI(progress, state) {
   const container = progress.container;
+  const section = progress.section;
   const label = progress.label;
   const count = progress.count;
   const bar = progress.bar;
 
+  if (section) {
+    section.hidden = false;
+  }
   container.hidden = false;
   label.textContent = state.label;
   count.textContent = `${state.current} / ${state.total}`;
@@ -894,6 +900,7 @@ export function initializeRatingsLoader(rootElement) {
   const cancelPausedButton = rootElement.querySelector('#cc-cancel-ratings-loader-btn');
   const progress = {
     container: rootElement.querySelector('#cc-ratings-progress'),
+    section: rootElement.querySelector('#cc-ratings-progress')?.closest('.cc-settings-section'),
     label: rootElement.querySelector('#cc-ratings-progress-label'),
     count: rootElement.querySelector('#cc-ratings-progress-count'),
     bar: rootElement.querySelector('#cc-ratings-progress-bar'),
@@ -901,6 +908,10 @@ export function initializeRatingsLoader(rootElement) {
 
   if (!loadButton || !computedButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
     return;
+  }
+
+  if (progress.section) {
+    progress.section.hidden = true;
   }
 
   const setCancelPausedButtonVisible = (visible, mode = 'ratings') => {

@@ -175,6 +175,7 @@
     }
 
     getIsLoggedIn() {
+      console.debug('🟣 Login state:', this.isLoggedIn);
       return this.isLoggedIn;
     }
 
@@ -184,11 +185,10 @@
       this.username = await this.getUsername();
       console.debug('🟣 Username:', this.username);
       this.storageKey = `${'CSFD-Compare'}_${this.username}`;
-      this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
-      this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
-      console.debug('🟣 User URL:', this.userUrl);
-      console.debug('🟣 Username:', this.username);
       console.debug('🟣 Storage Key:', this.storageKey);
+      this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
+      console.debug('🟣 User Slug:', this.userSlug);
+      this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
       console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
       const settings = await getSettings(SETTINGSNAME);
       if (settings) {
@@ -824,6 +824,8 @@
   const REQUEST_DELAY_MAX_MS = 550;
   const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
   const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
+  const PROFILE_LINK_SELECTOR$2 =
+    'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 
   const loaderController = {
     isRunning: false,
@@ -851,7 +853,7 @@
   }
 
   function getCurrentProfilePath() {
-    const profileEl = document.querySelector('a.profile.initialized');
+    const profileEl = document.querySelector(PROFILE_LINK_SELECTOR$2);
     if (!profileEl) {
       return undefined;
     }
@@ -1068,10 +1070,14 @@
 
   function updateProgressUI(progress, state) {
     const container = progress.container;
+    const section = progress.section;
     const label = progress.label;
     const count = progress.count;
     const bar = progress.bar;
 
+    if (section) {
+      section.hidden = false;
+    }
     container.hidden = false;
     label.textContent = state.label;
     count.textContent = `${state.current} / ${state.total}`;
@@ -1711,6 +1717,7 @@
     const cancelPausedButton = rootElement.querySelector('#cc-cancel-ratings-loader-btn');
     const progress = {
       container: rootElement.querySelector('#cc-ratings-progress'),
+      section: rootElement.querySelector('#cc-ratings-progress')?.closest('.cc-settings-section'),
       label: rootElement.querySelector('#cc-ratings-progress-label'),
       count: rootElement.querySelector('#cc-ratings-progress-count'),
       bar: rootElement.querySelector('#cc-ratings-progress-bar'),
@@ -1718,6 +1725,10 @@
 
     if (!loadButton || !computedButton || !progress.container || !progress.label || !progress.count || !progress.bar) {
       return;
+    }
+
+    if (progress.section) {
+      progress.section.hidden = true;
     }
 
     const setCancelPausedButtonVisible = (visible, mode = 'ratings') => {
@@ -2583,8 +2594,11 @@
     }
   }
 
+  const PROFILE_LINK_SELECTOR$1 =
+    'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+
   function getCurrentUserRatingsUrl() {
-    const profileEl = document.querySelector('a.profile.initialized');
+    const profileEl = document.querySelector(PROFILE_LINK_SELECTOR$1);
     const profileHref = profileEl?.getAttribute('href');
     if (!profileHref) {
       return undefined;
@@ -3653,6 +3667,12 @@
 
 
   let infoToastTimeoutId;
+  const PROFILE_LINK_SELECTOR =
+    'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+
+  function getProfileLinkElement() {
+    return document.querySelector(PROFILE_LINK_SELECTOR);
+  }
 
   function isGalleryImageLinksEnabled() {
     const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
@@ -3691,14 +3711,14 @@
   }
 
   function getCurrentUserSlug() {
-    const profileEl = document.querySelector('a.profile.initialized');
+    const profileEl = getProfileLinkElement();
     const profileHref = profileEl?.getAttribute('href') || '';
     const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
     return match ? match[1] : undefined;
   }
 
   function isUserLoggedIn() {
-    return Boolean(document.querySelector('a.profile.initialized'));
+    return Boolean(getProfileLinkElement());
   }
 
   function getMostFrequentUserSlug(records) {
@@ -3843,15 +3863,19 @@
       getMostFrequentUserSlug,
     };
 
-    refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
-      console.error('[CC] Failed to refresh badges:', error);
-    });
-
-    const handleRatingsUpdated = () => {
-      invalidateRatingsModalCache();
+    const refreshBadgesSafely = () => {
       refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
         console.error('[CC] Failed to refresh badges:', error);
       });
+    };
+
+    refreshBadgesSafely();
+    window.setTimeout(refreshBadgesSafely, 1200);
+    window.setTimeout(refreshBadgesSafely, 3000);
+
+    const handleRatingsUpdated = () => {
+      invalidateRatingsModalCache();
+      refreshBadgesSafely();
     };
     window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
 
