@@ -2272,88 +2272,17 @@
     });
   }
 
-  // addSettingsButton function that will create element 'li' as a 'let button'
-
-
-  const MODAL_RENDER_SYNC_THRESHOLD = 700;
-  const MODAL_RENDER_CHUNK_SIZE = 450;
   const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
   const VERSION_DETAILS_CACHE_KEY = 'cc_version_details_cache_v1';
   const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
-  let infoToastTimeoutId;
 
-  function isGalleryImageLinksEnabled() {
-    const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  function showSettingsInfoToast(message) {
-    let toastEl = document.querySelector('#cc-settings-info-toast');
-    if (!toastEl) {
-      toastEl = document.createElement('div');
-      toastEl.id = 'cc-settings-info-toast';
-      toastEl.style.position = 'fixed';
-      toastEl.style.left = '50%';
-      toastEl.style.top = '70px';
-      toastEl.style.transform = 'translateX(-50%)';
-      toastEl.style.zIndex = '10020';
-      toastEl.style.padding = '8px 12px';
-      toastEl.style.borderRadius = '8px';
-      toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
-      toastEl.style.color = '#fff';
-      toastEl.style.fontSize = '12px';
-      toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
-      toastEl.style.display = 'none';
-      document.body.appendChild(toastEl);
-    }
-
-    toastEl.textContent = message;
-    toastEl.style.display = 'block';
-
-    if (infoToastTimeoutId) {
-      clearTimeout(infoToastTimeoutId);
-    }
-    infoToastTimeoutId = window.setTimeout(() => {
-      toastEl.style.display = 'none';
-    }, 1800);
-  }
-
-  const ratingsModalCache = {
-    userSlug: '',
-    userRecords: null,
-    rowsByScope: {
-      direct: null,
-      computed: null,
-    },
-  };
-
-  function invalidateRatingsModalCache() {
-    ratingsModalCache.userSlug = '';
-    ratingsModalCache.userRecords = null;
-    ratingsModalCache.rowsByScope = {
-      direct: null,
-      computed: null,
-    };
-  }
-
-  function escapeHtml(value) {
+  function escapeHtml$1(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  }
-
-  function getCurrentUserSlug() {
-    const profileEl = document.querySelector('a.profile.initialized');
-    const profileHref = profileEl?.getAttribute('href') || '';
-    const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-    return match ? match[1] : undefined;
-  }
-
-  function isUserLoggedIn() {
-    return Boolean(document.querySelector('a.profile.initialized'));
   }
 
   function parseVersionParts(version) {
@@ -2532,7 +2461,6 @@
       return {
         overlay,
         body: overlay.querySelector('.cc-version-info-body'),
-        close: () => overlay.classList.remove('is-open'),
       };
     }
 
@@ -2570,7 +2498,6 @@
     return {
       overlay,
       body: overlay.querySelector('.cc-version-info-body'),
-      close: () => overlay.classList.remove('is-open'),
     };
   }
 
@@ -2588,7 +2515,7 @@
       bodyElement.innerHTML = `
       <div class="cc-version-info-meta">
         <div class="cc-version-info-key">Nainstalováno</div>
-        <div class="cc-version-info-value">${escapeHtml(normalizeVersionLabel(currentVersion))}</div>
+        <div class="cc-version-info-value">${escapeHtml$1(normalizeVersionLabel(currentVersion))}</div>
       </div>
       <p class="cc-version-info-empty">Nepodařilo se načíst informace z GreasyFork.</p>
     `;
@@ -2602,25 +2529,25 @@
     const changelogItems = Array.isArray(details?.changelogItems) ? details.changelogItems : [];
 
     const changelogHtml = changelogItems.length
-      ? `<ul class="cc-version-info-list">${changelogItems.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+      ? `<ul class="cc-version-info-list">${changelogItems.map((item) => `<li>${escapeHtml$1(item)}</li>`).join('')}</ul>`
       : '<p class="cc-version-info-empty">Changelog není k dispozici.</p>';
 
     bodyElement.innerHTML = `
     <div class="cc-version-info-meta">
       <div class="cc-version-info-key">Nainstalováno</div>
-      <div class="cc-version-info-value">${escapeHtml(normalizeVersionLabel(currentVersion))}</div>
+      <div class="cc-version-info-value">${escapeHtml$1(normalizeVersionLabel(currentVersion))}</div>
 
       <div class="cc-version-info-key">Nejnovější</div>
-      <div class="cc-version-info-value">${escapeHtml(normalizeVersionLabel(latestVersion))}</div>
+      <div class="cc-version-info-value">${escapeHtml$1(normalizeVersionLabel(latestVersion))}</div>
 
       <div class="cc-version-info-key">Poslední aktualizace</div>
-      <div class="cc-version-info-value">${escapeHtml(formatVersionDateTime(details?.datetimeRaw))}</div>
+      <div class="cc-version-info-value">${escapeHtml$1(formatVersionDateTime(details?.datetimeRaw))}</div>
 
       <div class="cc-version-info-key">Stav</div>
       <div class="cc-version-info-value">
         <span class="cc-version-info-status ${statusClass}">
           <span class="cc-version-info-status-dot" aria-hidden="true"></span>
-          ${escapeHtml(statusText)}
+          ${escapeHtml$1(statusText)}
         </span>
       </div>
     </div>
@@ -2722,46 +2649,6 @@
     }
   }
 
-  function updateSyncButtonAuthState(rootElement) {
-    const syncButton = rootElement.querySelector('#cc-sync-cloud-btn');
-    if (!syncButton) {
-      return;
-    }
-
-    if (!isUserLoggedIn()) {
-      syncButton.classList.add('cc-sync-icon-btn-disabled');
-      syncButton.setAttribute('title', 'Cloud sync je dostupný po přihlášení.');
-      syncButton.setAttribute('aria-label', 'Cloud sync je dostupný po přihlášení.');
-      return;
-    }
-
-    syncButton.classList.remove('cc-sync-icon-btn-disabled');
-  }
-
-  function getMostFrequentUserSlug(records) {
-    const counts = new Map();
-
-    for (const record of records) {
-      const userSlug = record?.userSlug;
-      if (!userSlug || !Number.isFinite(record?.movieId)) {
-        continue;
-      }
-
-      counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
-    }
-
-    let bestSlug;
-    let bestCount = -1;
-    for (const [slug, count] of counts.entries()) {
-      if (count > bestCount) {
-        bestSlug = slug;
-        bestCount = count;
-      }
-    }
-
-    return bestSlug;
-  }
-
   function getCurrentUserRatingsUrl() {
     const profileEl = document.querySelector('a.profile.initialized');
     const profileHref = profileEl?.getAttribute('href');
@@ -2842,14 +2729,31 @@
     return parseTotalRatingsFromDocument(doc);
   }
 
-  async function refreshRatingsBadges(rootElement) {
+  function updateSyncButtonAuthState(rootElement, isLoggedIn) {
+    const syncButton = rootElement.querySelector('#cc-sync-cloud-btn');
+    if (!syncButton) {
+      return;
+    }
+
+    if (!isLoggedIn) {
+      syncButton.classList.add('cc-sync-icon-btn-disabled');
+      syncButton.setAttribute('title', 'Cloud sync je dostupný po přihlášení.');
+      syncButton.setAttribute('aria-label', 'Cloud sync je dostupný po přihlášení.');
+      return;
+    }
+
+    syncButton.classList.remove('cc-sync-icon-btn-disabled');
+  }
+
+  async function refreshRatingsBadges(rootElement, options) {
     const redBadge = rootElement.querySelector('#cc-badge-red');
     const blackBadge = rootElement.querySelector('#cc-badge-black');
     if (!redBadge || !blackBadge) {
       return;
     }
 
-    if (!isUserLoggedIn()) {
+    const isLoggedIn = options.isUserLoggedIn();
+    if (!isLoggedIn) {
       redBadge.textContent = '- / -';
       blackBadge.textContent = '-';
       redBadge.title = 'Pro načtení hodnocení se přihlaste.';
@@ -2857,7 +2761,7 @@
       redBadge.classList.add('cc-badge-disabled');
       redBadge.classList.remove('cc-badge-warning');
       blackBadge.classList.add('cc-badge-disabled');
-      updateSyncButtonAuthState(rootElement);
+      updateSyncButtonAuthState(rootElement, false);
       return;
     }
 
@@ -2866,10 +2770,10 @@
     blackBadge.classList.remove('cc-badge-disabled');
     redBadge.title = 'Zobrazit načtená hodnocení';
     blackBadge.title = 'Zobrazit spočtená hodnocení';
-    updateSyncButtonAuthState(rootElement);
+    updateSyncButtonAuthState(rootElement, true);
 
     const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-    const userSlug = getCurrentUserSlug() || getMostFrequentUserSlug(records);
+    const userSlug = options.getCurrentUserSlug() || options.getMostFrequentUserSlug(records);
     if (!userSlug) {
       redBadge.textContent = '0 / 0';
       blackBadge.textContent = '0';
@@ -2888,6 +2792,111 @@
       redBadge.title = `Nenačtená hodnocení: ${totalRatings - directRatingsCount}. Klikněte na načtení.`;
     }
     blackBadge.textContent = `${computedCount}`;
+  }
+
+  // addSettingsButton function that will create element 'li' as a 'let button'
+
+
+  const MODAL_RENDER_SYNC_THRESHOLD = 700;
+  const MODAL_RENDER_CHUNK_SIZE = 450;
+  let infoToastTimeoutId;
+
+  function isGalleryImageLinksEnabled() {
+    const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+    return persistedValue === null ? true : persistedValue === 'true';
+  }
+
+  function showSettingsInfoToast(message) {
+    let toastEl = document.querySelector('#cc-settings-info-toast');
+    if (!toastEl) {
+      toastEl = document.createElement('div');
+      toastEl.id = 'cc-settings-info-toast';
+      toastEl.style.position = 'fixed';
+      toastEl.style.left = '50%';
+      toastEl.style.top = '70px';
+      toastEl.style.transform = 'translateX(-50%)';
+      toastEl.style.zIndex = '10020';
+      toastEl.style.padding = '8px 12px';
+      toastEl.style.borderRadius = '8px';
+      toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
+      toastEl.style.color = '#fff';
+      toastEl.style.fontSize = '12px';
+      toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
+      toastEl.style.display = 'none';
+      document.body.appendChild(toastEl);
+    }
+
+    toastEl.textContent = message;
+    toastEl.style.display = 'block';
+
+    if (infoToastTimeoutId) {
+      clearTimeout(infoToastTimeoutId);
+    }
+    infoToastTimeoutId = window.setTimeout(() => {
+      toastEl.style.display = 'none';
+    }, 1800);
+  }
+
+  const ratingsModalCache = {
+    userSlug: '',
+    userRecords: null,
+    rowsByScope: {
+      direct: null,
+      computed: null,
+    },
+  };
+
+  function invalidateRatingsModalCache() {
+    ratingsModalCache.userSlug = '';
+    ratingsModalCache.userRecords = null;
+    ratingsModalCache.rowsByScope = {
+      direct: null,
+      computed: null,
+    };
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function getCurrentUserSlug() {
+    const profileEl = document.querySelector('a.profile.initialized');
+    const profileHref = profileEl?.getAttribute('href') || '';
+    const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+    return match ? match[1] : undefined;
+  }
+
+  function isUserLoggedIn() {
+    return Boolean(document.querySelector('a.profile.initialized'));
+  }
+
+  function getMostFrequentUserSlug(records) {
+    const counts = new Map();
+
+    for (const record of records) {
+      const userSlug = record?.userSlug;
+      if (!userSlug || !Number.isFinite(record?.movieId)) {
+        continue;
+      }
+
+      counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
+    }
+
+    let bestSlug;
+    let bestCount = -1;
+    for (const [slug, count] of counts.entries()) {
+      if (count > bestCount) {
+        bestSlug = slug;
+        bestCount = count;
+      }
+    }
+
+    return bestSlug;
   }
 
   async function getCachedUserRecords(userSlug) {
@@ -3663,13 +3672,19 @@
       });
     }
 
-    refreshRatingsBadges(settingsButton).catch((error) => {
+    const badgeRefreshOptions = {
+      isUserLoggedIn,
+      getCurrentUserSlug,
+      getMostFrequentUserSlug,
+    };
+
+    refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
       console.error('[CC] Failed to refresh badges:', error);
     });
 
     const handleRatingsUpdated = () => {
       invalidateRatingsModalCache();
-      refreshRatingsBadges(settingsButton).catch((error) => {
+      refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
         console.error('[CC] Failed to refresh badges:', error);
       });
     };
