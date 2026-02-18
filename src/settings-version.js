@@ -3,6 +3,7 @@ import { GREASYFORK_URL } from './config.js';
 const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
 const VERSION_DETAILS_CACHE_KEY = 'cc_version_details_cache_v1';
 const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
+const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
 
 function escapeHtml(value) {
   return String(value || '')
@@ -71,8 +72,7 @@ function setCachedUpdateInfo(latestVersion) {
 }
 
 async function fetchLatestScriptVersion() {
-  const apiUrl = 'https://greasyfork.org/scripts/425054.json';
-  const response = await fetch(apiUrl, { method: 'GET' });
+  const response = await fetch(GREASYFORK_SCRIPT_API_URL, { method: 'GET' });
   if (!response.ok) {
     throw new Error(`Update check failed: ${response.status}`);
   }
@@ -284,9 +284,9 @@ function renderVersionInfoContent(bodyElement, currentVersion, details, state) {
   `;
 }
 
-export async function openVersionInfoModal(rootElement) {
+export async function openVersionInfoModal(menuRootElement) {
   const modal = getVersionInfoModal();
-  const versionTextEl = rootElement.querySelector('#cc-version-value');
+  const versionTextEl = menuRootElement.querySelector('#cc-version-value');
   const currentVersion = parseCurrentVersionFromText(versionTextEl?.textContent || '');
 
   renderVersionInfoContent(modal.body, currentVersion, null, 'loading');
@@ -345,14 +345,14 @@ function setVersionStatus(versionStatusEl, state, latestVersion) {
   versionStatusEl.title = 'Aktualizaci se nepodařilo ověřit.';
 }
 
-export async function initializeVersionUi(rootElement) {
-  const versionLinkEl = rootElement.querySelector('#cc-version-value');
-  const versionStatusEl = rootElement.querySelector('#cc-version-status');
-  if (!versionLinkEl || !versionStatusEl) {
+export async function initializeVersionUi(menuRootElement) {
+  const versionValueEl = menuRootElement.querySelector('#cc-version-value');
+  const versionStatusEl = menuRootElement.querySelector('#cc-version-status');
+  if (!versionValueEl || !versionStatusEl) {
     return;
   }
 
-  const currentVersion = parseCurrentVersionFromText(versionLinkEl.textContent);
+  const currentVersion = parseCurrentVersionFromText(versionValueEl.textContent);
   if (!currentVersion) {
     setVersionStatus(versionStatusEl, 'hidden');
     return;

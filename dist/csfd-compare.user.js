@@ -819,72 +819,6 @@
 
   var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.2</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <form class=\"cc-settings-form\">\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" name=\"cc-enable-gallery-image-links\" />\r\n                    Zobrazovat formáty obrázků v galerii\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" name=\"option2\" /> Povolit automatickou aktualizaci dat\r\n                </label>\r\n                <label class=\"cc-form-field\">\r\n                    <span>Vlastní štítek sekce</span>\r\n                    <input type=\"text\" name=\"sectionLabel\" placeholder=\"Např. Můj CSFD Compare\" />\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-maint-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\">Smazat DB</button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
 
-  const DEBUG = true;
-
-  let isFancyAlertOpen = false;
-
-  async function fancyAlert() {
-    if (isFancyAlertOpen) {
-      return;
-    }
-    isFancyAlertOpen = true;
-
-    console.log('fancyAlert called');
-
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-
-    const alert = document.createElement('div');
-    alert.className = 'fancy-alert';
-    alert.innerHTML = `
-    <div class="alert-content">
-      <button class="close-btn">&times;</button>
-      <h2 class="alert-title">Welcome!</h2>
-      <p class="alert-message">This is a fancy modal alert with modern styling and animations.</p>
-      <button class="alert-button">Got it!</button>
-    </div>
-  `;
-
-    overlay.appendChild(alert);
-    document.body.appendChild(overlay);
-
-    requestAnimationFrame(() => {
-      overlay.classList.add('visible');
-    });
-
-    let isClosing = false;
-    const closeModal = () => {
-      if (isClosing) {
-        return;
-      }
-      isClosing = true;
-      overlay.classList.remove('visible');
-      setTimeout(() => {
-        overlay.remove();
-        isFancyAlertOpen = false;
-        isClosing = false;
-      }, 300);
-    };
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeModal();
-    });
-
-    alert.querySelector('.close-btn').addEventListener('click', closeModal);
-    alert.querySelector('.alert-button').addEventListener('click', closeModal);
-  }
-
-  function bindFancyAlertButton(alertButton) {
-    if (!alertButton || alertButton.dataset.fancyAlertBound === 'true') {
-      return;
-    }
-
-    alertButton.addEventListener('click', () => {
-      fancyAlert();
-    });
-    alertButton.dataset.fancyAlertBound = 'true';
-  }
-
   const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
   const REQUEST_DELAY_MIN_MS = 250;
   const REQUEST_DELAY_MAX_MS = 550;
@@ -2275,6 +2209,7 @@
   const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
   const VERSION_DETAILS_CACHE_KEY = 'cc_version_details_cache_v1';
   const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
+  const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
 
   function escapeHtml$1(value) {
     return String(value || '')
@@ -2343,8 +2278,7 @@
   }
 
   async function fetchLatestScriptVersion() {
-    const apiUrl = 'https://greasyfork.org/scripts/425054.json';
-    const response = await fetch(apiUrl, { method: 'GET' });
+    const response = await fetch(GREASYFORK_SCRIPT_API_URL, { method: 'GET' });
     if (!response.ok) {
       throw new Error(`Update check failed: ${response.status}`);
     }
@@ -2556,9 +2490,9 @@
   `;
   }
 
-  async function openVersionInfoModal(rootElement) {
+  async function openVersionInfoModal(menuRootElement) {
     const modal = getVersionInfoModal();
-    const versionTextEl = rootElement.querySelector('#cc-version-value');
+    const versionTextEl = menuRootElement.querySelector('#cc-version-value');
     const currentVersion = parseCurrentVersionFromText(versionTextEl?.textContent || '');
 
     renderVersionInfoContent(modal.body, currentVersion, null, 'loading');
@@ -2617,14 +2551,14 @@
     versionStatusEl.title = 'Aktualizaci se nepodařilo ověřit.';
   }
 
-  async function initializeVersionUi(rootElement) {
-    const versionLinkEl = rootElement.querySelector('#cc-version-value');
-    const versionStatusEl = rootElement.querySelector('#cc-version-status');
-    if (!versionLinkEl || !versionStatusEl) {
+  async function initializeVersionUi(menuRootElement) {
+    const versionValueEl = menuRootElement.querySelector('#cc-version-value');
+    const versionStatusEl = menuRootElement.querySelector('#cc-version-status');
+    if (!versionValueEl || !versionStatusEl) {
       return;
     }
 
-    const currentVersion = parseCurrentVersionFromText(versionLinkEl.textContent);
+    const currentVersion = parseCurrentVersionFromText(versionValueEl.textContent);
     if (!currentVersion) {
       setVersionStatus(versionStatusEl, 'hidden');
       return;
@@ -2794,18 +2728,6 @@
     blackBadge.textContent = `${computedCount}`;
   }
 
-  const MODAL_RENDER_SYNC_THRESHOLD = 700;
-  const MODAL_RENDER_CHUNK_SIZE = 450;
-
-  const ratingsModalCache = {
-    userSlug: '',
-    userRecords: null,
-    rowsByScope: {
-      direct: null,
-      computed: null,
-    },
-  };
-
   function escapeHtml(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
@@ -2813,42 +2735,6 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
-  }
-
-  async function getCachedUserRecords(userSlug) {
-    if (
-      ratingsModalCache.userSlug === userSlug &&
-      Array.isArray(ratingsModalCache.userRecords) &&
-      ratingsModalCache.userRecords.length >= 0
-    ) {
-      return ratingsModalCache.userRecords;
-    }
-
-    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-    const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
-
-    ratingsModalCache.userSlug = userSlug;
-    ratingsModalCache.userRecords = userRecords;
-    ratingsModalCache.rowsByScope.direct = null;
-    ratingsModalCache.rowsByScope.computed = null;
-
-    return userRecords;
-  }
-
-  async function getCachedRowsForScope(userSlug, scope) {
-    if (ratingsModalCache.userSlug === userSlug && Array.isArray(ratingsModalCache.rowsByScope[scope])) {
-      return ratingsModalCache.rowsByScope[scope];
-    }
-
-    const userRecords = await getCachedUserRecords(userSlug);
-    const scopedRecords =
-      scope === 'computed'
-        ? userRecords.filter((record) => record.computed === true)
-        : userRecords.filter((record) => record.computed !== true);
-
-    const rows = toModalRows(scopedRecords);
-    ratingsModalCache.rowsByScope[scope] = rows;
-    return rows;
   }
 
   function resolveRecordUrl(record) {
@@ -3037,6 +2923,105 @@
     return rows.filter((row) => typeFilters.has(row.typeKey));
   }
 
+  function createRatingDetailsController() {
+    const detailsOverlay = document.createElement('div');
+    detailsOverlay.className = 'cc-rating-detail-overlay';
+    detailsOverlay.innerHTML = `
+    <div class="cc-rating-detail-card" role="dialog" aria-modal="true" aria-labelledby="cc-rating-detail-title">
+      <div class="cc-rating-detail-head">
+        <h4 id="cc-rating-detail-title">Detail záznamu</h4>
+        <button type="button" class="cc-rating-detail-close" aria-label="Zavřít">×</button>
+      </div>
+      <div class="cc-rating-detail-body"></div>
+    </div>
+  `;
+
+    const detailsBody = detailsOverlay.querySelector('.cc-rating-detail-body');
+    const detailsTitle = detailsOverlay.querySelector('#cc-rating-detail-title');
+    const closeDetailsBtn = detailsOverlay.querySelector('.cc-rating-detail-close');
+
+    const orderedKeys = [
+      'id',
+      'userSlug',
+      'movieId',
+      'name',
+      'url',
+      'fullUrl',
+      'type',
+      'year',
+      'rating',
+      'date',
+      'parentId',
+      'parentName',
+      'computed',
+      'computedCount',
+      'computedFromText',
+      'lastUpdate',
+    ];
+
+    const open = (row) => {
+      const record = row?.rawRecord || {};
+      const extraKeys = Object.keys(record)
+        .filter((key) => !orderedKeys.includes(key))
+        .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
+      const keys = [...orderedKeys.filter((key) => key in record), ...extraKeys];
+
+      detailsTitle.textContent = row?.name ? `Detail: ${row.name}` : 'Detail záznamu';
+      detailsBody.innerHTML = '';
+
+      for (const key of keys) {
+        const value = record[key];
+        const rowEl = document.createElement('div');
+        rowEl.className = 'cc-rating-detail-row';
+
+        const keyEl = document.createElement('div');
+        keyEl.className = 'cc-rating-detail-key';
+        keyEl.textContent = key;
+
+        const valueEl = document.createElement('div');
+        valueEl.className = 'cc-rating-detail-value';
+        if (value === null) {
+          valueEl.textContent = 'null';
+        } else if (typeof value === 'undefined') {
+          valueEl.textContent = 'undefined';
+        } else if (typeof value === 'object') {
+          valueEl.textContent = JSON.stringify(value);
+        } else if (typeof value === 'number' && Number.isNaN(value)) {
+          valueEl.textContent = 'NaN';
+        } else {
+          valueEl.textContent = String(value);
+        }
+
+        rowEl.appendChild(keyEl);
+        rowEl.appendChild(valueEl);
+        detailsBody.appendChild(rowEl);
+      }
+
+      detailsOverlay.classList.add('is-open');
+    };
+
+    const close = () => {
+      detailsOverlay.classList.remove('is-open');
+    };
+
+    closeDetailsBtn.addEventListener('click', close);
+    detailsOverlay.addEventListener('click', (event) => {
+      if (event.target === detailsOverlay) {
+        close();
+      }
+    });
+
+    return {
+      overlay: detailsOverlay,
+      open,
+      close,
+      isOpen: () => detailsOverlay.classList.contains('is-open'),
+    };
+  }
+
+  const MODAL_RENDER_SYNC_THRESHOLD = 700;
+  const MODAL_RENDER_CHUNK_SIZE = 450;
+
   function getRatingsTableModal() {
     let overlay = document.querySelector('#cc-ratings-table-modal-overlay');
     if (overlay) {
@@ -3104,90 +3089,7 @@
       renderToken: 0,
     };
 
-    const detailsOverlay = document.createElement('div');
-    detailsOverlay.className = 'cc-rating-detail-overlay';
-    detailsOverlay.innerHTML = `
-    <div class="cc-rating-detail-card" role="dialog" aria-modal="true" aria-labelledby="cc-rating-detail-title">
-      <div class="cc-rating-detail-head">
-        <h4 id="cc-rating-detail-title">Detail záznamu</h4>
-        <button type="button" class="cc-rating-detail-close" aria-label="Zavřít">×</button>
-      </div>
-      <div class="cc-rating-detail-body"></div>
-    </div>
-  `;
-    const detailsBody = detailsOverlay.querySelector('.cc-rating-detail-body');
-    const detailsTitle = detailsOverlay.querySelector('#cc-rating-detail-title');
-    const closeDetailsBtn = detailsOverlay.querySelector('.cc-rating-detail-close');
-
-    const openDetailsModal = (row) => {
-      const record = row?.rawRecord || {};
-      const orderedKeys = [
-        'id',
-        'userSlug',
-        'movieId',
-        'name',
-        'url',
-        'fullUrl',
-        'type',
-        'year',
-        'rating',
-        'date',
-        'parentId',
-        'parentName',
-        'computed',
-        'computedCount',
-        'computedFromText',
-        'lastUpdate',
-      ];
-      const extraKeys = Object.keys(record)
-        .filter((key) => !orderedKeys.includes(key))
-        .sort((a, b) => a.localeCompare(b, 'en', { sensitivity: 'base' }));
-      const keys = [...orderedKeys.filter((key) => key in record), ...extraKeys];
-
-      detailsTitle.textContent = row?.name ? `Detail: ${row.name}` : 'Detail záznamu';
-      detailsBody.innerHTML = '';
-
-      for (const key of keys) {
-        const value = record[key];
-        const rowEl = document.createElement('div');
-        rowEl.className = 'cc-rating-detail-row';
-
-        const keyEl = document.createElement('div');
-        keyEl.className = 'cc-rating-detail-key';
-        keyEl.textContent = key;
-
-        const valueEl = document.createElement('div');
-        valueEl.className = 'cc-rating-detail-value';
-        if (value === null) {
-          valueEl.textContent = 'null';
-        } else if (typeof value === 'undefined') {
-          valueEl.textContent = 'undefined';
-        } else if (typeof value === 'object') {
-          valueEl.textContent = JSON.stringify(value);
-        } else if (typeof value === 'number' && Number.isNaN(value)) {
-          valueEl.textContent = 'NaN';
-        } else {
-          valueEl.textContent = String(value);
-        }
-
-        rowEl.appendChild(keyEl);
-        rowEl.appendChild(valueEl);
-        detailsBody.appendChild(rowEl);
-      }
-
-      detailsOverlay.classList.add('is-open');
-    };
-
-    const closeDetailsModal = () => {
-      detailsOverlay.classList.remove('is-open');
-    };
-
-    closeDetailsBtn.addEventListener('click', closeDetailsModal);
-    detailsOverlay.addEventListener('click', (event) => {
-      if (event.target === detailsOverlay) {
-        closeDetailsModal();
-      }
-    });
+    const detailsController = createRatingDetailsController();
 
     const updateTypeToggleText = () => {
       if (state.typeFilters.has('all') || state.typeFilters.size === 0) {
@@ -3340,7 +3242,7 @@
 
     overlay.closeModal = () => {
       overlay.classList.remove('is-open');
-      closeDetailsModal();
+      detailsController.close();
       document.body.classList.remove('cc-ratings-modal-open');
     };
 
@@ -3350,13 +3252,14 @@
         overlay.closeModal();
       }
     });
+
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') {
         return;
       }
 
-      if (detailsOverlay.classList.contains('is-open')) {
-        closeDetailsModal();
+      if (detailsController.isOpen()) {
+        detailsController.close();
         return;
       }
 
@@ -3376,7 +3279,7 @@
         return;
       }
 
-      openDetailsModal(state.visibleRows[rowIndex]);
+      detailsController.open(state.visibleRows[rowIndex]);
     });
 
     searchInput.addEventListener('input', () => {
@@ -3454,8 +3357,63 @@
     syncTypeCheckboxes();
 
     document.body.appendChild(overlay);
-    document.body.appendChild(detailsOverlay);
+    document.body.appendChild(detailsController.overlay);
     return overlay;
+  }
+
+  function openRatingsTableView({ rows, modalTitle }) {
+    const modal = getRatingsTableModal();
+    modal.openWithData({ rows, modalTitle });
+  }
+
+  const MODAL_TITLE_BY_SCOPE = {
+    direct: 'Načtená hodnocení',
+    computed: 'Spočtená hodnocení',
+  };
+
+  const ratingsModalCache = {
+    userSlug: '',
+    userRecords: null,
+    rowsByScope: {
+      direct: null,
+      computed: null,
+    },
+  };
+
+  async function getCachedUserRecords(userSlug) {
+    if (
+      ratingsModalCache.userSlug === userSlug &&
+      Array.isArray(ratingsModalCache.userRecords) &&
+      ratingsModalCache.userRecords.length >= 0
+    ) {
+      return ratingsModalCache.userRecords;
+    }
+
+    const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+    const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+
+    ratingsModalCache.userSlug = userSlug;
+    ratingsModalCache.userRecords = userRecords;
+    ratingsModalCache.rowsByScope.direct = null;
+    ratingsModalCache.rowsByScope.computed = null;
+
+    return userRecords;
+  }
+
+  async function getCachedRowsForScope(userSlug, scope) {
+    if (ratingsModalCache.userSlug === userSlug && Array.isArray(ratingsModalCache.rowsByScope[scope])) {
+      return ratingsModalCache.rowsByScope[scope];
+    }
+
+    const userRecords = await getCachedUserRecords(userSlug);
+    const scopedRecords =
+      scope === 'computed'
+        ? userRecords.filter((record) => record.computed === true)
+        : userRecords.filter((record) => record.computed !== true);
+
+    const rows = toModalRows(scopedRecords);
+    ratingsModalCache.rowsByScope[scope] = rows;
+    return rows;
   }
 
   function invalidateRatingsModalCache() {
@@ -3467,9 +3425,13 @@
     };
   }
 
-  async function openRatingsTableModal(rootElement, scope, options) {
-    const getCurrentUserSlug = options?.getCurrentUserSlug;
-    const getMostFrequentUserSlug = options?.getMostFrequentUserSlug;
+  function getModalTitleForScope(scope) {
+    return MODAL_TITLE_BY_SCOPE[scope] || MODAL_TITLE_BY_SCOPE.direct;
+  }
+
+  async function openRatingsTableModal(rootElement, scope, callbacks) {
+    const getCurrentUserSlug = callbacks?.getCurrentUserSlug;
+    const getMostFrequentUserSlug = callbacks?.getMostFrequentUserSlug;
 
     let userSlug = getCurrentUserSlug?.();
     if (!userSlug) {
@@ -3481,16 +3443,210 @@
     }
 
     const rows = await getCachedRowsForScope(userSlug, scope);
-    const modal = getRatingsTableModal();
-    modal.openWithData({
+    openRatingsTableView({
       rows,
-      modalTitle: scope === 'computed' ? 'Spočtená hodnocení' : 'Načtená hodnocení',
+      modalTitle: getModalTitleForScope(scope),
     });
 
     const redBadge = rootElement.querySelector('#cc-badge-red');
     const blackBadge = rootElement.querySelector('#cc-badge-black');
     redBadge?.blur();
     blackBadge?.blur();
+  }
+
+  const DEBUG = true;
+
+  let isFancyAlertOpen = false;
+
+  async function fancyAlert() {
+    if (isFancyAlertOpen) {
+      return;
+    }
+    isFancyAlertOpen = true;
+
+    console.log('fancyAlert called');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay';
+
+    const alert = document.createElement('div');
+    alert.className = 'fancy-alert';
+    alert.innerHTML = `
+    <div class="alert-content">
+      <button class="close-btn">&times;</button>
+      <h2 class="alert-title">Welcome!</h2>
+      <p class="alert-message">This is a fancy modal alert with modern styling and animations.</p>
+      <button class="alert-button">Got it!</button>
+    </div>
+  `;
+
+    overlay.appendChild(alert);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+      overlay.classList.add('visible');
+    });
+
+    let isClosing = false;
+    const closeModal = () => {
+      if (isClosing) {
+        return;
+      }
+      isClosing = true;
+      overlay.classList.remove('visible');
+      setTimeout(() => {
+        overlay.remove();
+        isFancyAlertOpen = false;
+        isClosing = false;
+      }, 300);
+    };
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    alert.querySelector('.close-btn').addEventListener('click', closeModal);
+    alert.querySelector('.alert-button').addEventListener('click', closeModal);
+  }
+
+  function bindFancyAlertButton(alertButton) {
+    if (!alertButton || alertButton.dataset.fancyAlertBound === 'true') {
+      return;
+    }
+
+    alertButton.addEventListener('click', () => {
+      fancyAlert();
+    });
+    alertButton.dataset.fancyAlertBound = 'true';
+  }
+
+  const HEADER_HOVER_STORAGE_KEY = 'headerBarHovered';
+  const HOVER_TOGGLE_DELAY_MS = 200;
+
+  function bindHoverHandlers($menuButton, timeoutState) {
+    $menuButton.add($menuButton.find('.dropdown-content')).hover(
+      function () {
+        clearTimeout(timeoutState.hideTimeout);
+        timeoutState.hoverTimeout = setTimeout(() => {
+          $('.header-bar li').addClass('hovered');
+          $menuButton.addClass('active');
+        }, HOVER_TOGGLE_DELAY_MS);
+      },
+      function () {
+        clearTimeout(timeoutState.hoverTimeout);
+        timeoutState.hideTimeout = setTimeout(() => {
+          $('.header-bar li').removeClass('hovered');
+          $menuButton.removeClass('active');
+        }, HOVER_TOGGLE_DELAY_MS);
+      },
+    );
+  }
+
+  function initializeSettingsMenuHover($menuButton) {
+    let hoverTimeout;
+    let hideTimeout;
+
+    console.log('🟣 DEBUG:', DEBUG);
+    {
+      let controlsContainer = document.querySelector('.fancy-alert-controls');
+      if (!controlsContainer) {
+        controlsContainer = document.createElement('div');
+        controlsContainer.className = 'fancy-alert-controls';
+        controlsContainer.style.position = 'fixed';
+        controlsContainer.style.top = '4px';
+        controlsContainer.style.right = '150px';
+        controlsContainer.style.zIndex = '9999';
+        controlsContainer.style.display = 'flex';
+        controlsContainer.style.alignItems = 'center';
+        controlsContainer.style.background = 'rgba(255,255,255,0.95)';
+        controlsContainer.style.borderRadius = '8px';
+        controlsContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
+        controlsContainer.style.padding = '8px 16px';
+        document.body.appendChild(controlsContainer);
+      }
+
+      controlsContainer.innerHTML = '';
+
+      const checkboxLabel = document.createElement('label');
+      checkboxLabel.style.display = 'inline-flex';
+      checkboxLabel.style.alignItems = 'center';
+      checkboxLabel.style.marginRight = '10px';
+      checkboxLabel.style.cursor = 'pointer';
+      checkboxLabel.textContent = 'Hovered';
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.style.marginRight = '5px';
+      checkbox.checked = localStorage.getItem(HEADER_HOVER_STORAGE_KEY) === 'true';
+      checkboxLabel.prepend(checkbox);
+      controlsContainer.appendChild(checkboxLabel);
+
+      let alertButton = document.querySelector('.fancy-alert-button');
+      if (!alertButton) {
+        alertButton = document.createElement('button');
+        alertButton.textContent = 'Show Fancy Alert';
+        alertButton.className = 'fancy-alert-button';
+      } else if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
+        alertButton.parentNode.removeChild(alertButton);
+      }
+      bindFancyAlertButton(alertButton);
+      controlsContainer.appendChild(alertButton);
+
+      function enableDebugHover() {
+        $('.header-bar li').addClass('hovered');
+        $menuButton.addClass('active');
+        $menuButton
+          .find('.csfd-compare-menu')
+          .off('click.debug')
+          .on('click.debug', function (e) {
+            e.stopPropagation();
+            if ($menuButton.hasClass('active')) {
+              $menuButton.removeClass('active');
+              $('.header-bar li').removeClass('hovered');
+            } else {
+              $menuButton.addClass('active');
+              $('.header-bar li').addClass('hovered');
+            }
+          });
+        $menuButton.add($menuButton.find('.dropdown-content')).off('mouseenter mouseleave');
+      }
+
+      function enableNormalHover() {
+        $('.header-bar li').removeClass('hovered');
+        $menuButton.removeClass('active');
+        $menuButton.find('.csfd-compare-menu').off('click.debug');
+        $menuButton.add($menuButton.find('.dropdown-content')).off('mouseenter mouseleave');
+        bindHoverHandlers($menuButton, {
+          get hoverTimeout() {
+            return hoverTimeout;
+          },
+          set hoverTimeout(value) {
+            hoverTimeout = value;
+          },
+          get hideTimeout() {
+            return hideTimeout;
+          },
+          set hideTimeout(value) {
+            hideTimeout = value;
+          },
+        });
+      }
+
+      if (checkbox.checked) {
+        enableDebugHover();
+      } else {
+        enableNormalHover();
+      }
+
+      checkbox.addEventListener('change', function () {
+        if (checkbox.checked) {
+          localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'true');
+          enableDebugHover();
+        } else {
+          localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'false');
+          enableNormalHover();
+        }
+      });
+    }
   }
 
   // addSettingsButton function that will create element 'li' as a 'let button'
@@ -3712,126 +3868,7 @@
       $headerBar.prepend($button);
     }
 
-    let hoverTimeout;
-    let hideTimeout;
-
-    // If DEBUG is enabled, just add $('.header-bar li').addClass('hovered');
-    // if not, have the code bellow
-    console.log('🟣 DEBUG:', DEBUG);
-    {
-      // --- GROUP FANCY ALERT BUTTON AND CHECKBOX AT TOP RIGHT ---
-      // Create or find a top-right container for controls
-      let controlsContainer = document.querySelector('.fancy-alert-controls');
-      if (!controlsContainer) {
-        controlsContainer = document.createElement('div');
-        controlsContainer.className = 'fancy-alert-controls';
-        controlsContainer.style.position = 'fixed';
-        controlsContainer.style.top = '4px';
-        controlsContainer.style.right = '150px';
-        controlsContainer.style.zIndex = '9999';
-        controlsContainer.style.display = 'flex';
-        controlsContainer.style.alignItems = 'center';
-        controlsContainer.style.background = 'rgba(255,255,255,0.95)';
-        controlsContainer.style.borderRadius = '8px';
-        controlsContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-        controlsContainer.style.padding = '8px 16px';
-        document.body.appendChild(controlsContainer);
-      }
-
-      // Remove any previous checkbox/buttons from the container to avoid duplicates
-      controlsContainer.innerHTML = '';
-
-      // Add checkbox for toggling hovered state to the left of the alert button
-      const checkboxLabel = document.createElement('label');
-      checkboxLabel.style.display = 'inline-flex';
-      checkboxLabel.style.alignItems = 'center';
-      checkboxLabel.style.marginRight = '10px';
-      checkboxLabel.style.cursor = 'pointer';
-      checkboxLabel.textContent = 'Hovered';
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.style.marginRight = '5px';
-      checkbox.checked = localStorage.getItem('headerBarHovered') === 'true';
-      checkboxLabel.prepend(checkbox);
-      controlsContainer.appendChild(checkboxLabel);
-
-      // Create or find the fancy alert button
-      let alertButton = document.querySelector('.fancy-alert-button');
-      if (!alertButton) {
-        alertButton = document.createElement('button');
-        alertButton.textContent = 'Show Fancy Alert';
-        alertButton.className = 'fancy-alert-button';
-      } else {
-        // Remove from previous parent if needed
-        if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
-          alertButton.parentNode.removeChild(alertButton);
-        }
-      }
-      bindFancyAlertButton(alertButton);
-      controlsContainer.appendChild(alertButton);
-
-      // If checked, use DEBUG behaviour, else use non-DEBUG behaviour
-      function enableDebugHover() {
-        $('.header-bar li').addClass('hovered');
-        $button.addClass('active');
-        $button
-          .find('.csfd-compare-menu')
-          .off('click.debug')
-          .on('click.debug', function (e) {
-            e.stopPropagation();
-            if ($button.hasClass('active')) {
-              $button.removeClass('active');
-              $('.header-bar li').removeClass('hovered');
-            } else {
-              $button.addClass('active');
-              $('.header-bar li').addClass('hovered');
-            }
-          });
-        $button.add($button.find('.dropdown-content')).off('mouseenter mouseleave');
-      }
-
-      function enableNormalHover() {
-        $('.header-bar li').removeClass('hovered');
-        $button.removeClass('active');
-        $button.find('.csfd-compare-menu').off('click.debug');
-        $button
-          .add($button.find('.dropdown-content'))
-          .off('mouseenter mouseleave')
-          .hover(
-            function () {
-              clearTimeout(hideTimeout);
-              hoverTimeout = setTimeout(() => {
-                $('.header-bar li').addClass('hovered');
-                $button.addClass('active');
-              }, 200);
-            },
-            function () {
-              clearTimeout(hoverTimeout);
-              hideTimeout = setTimeout(() => {
-                $('.header-bar li').removeClass('hovered');
-                $button.removeClass('active');
-              }, 200);
-            },
-          );
-      }
-
-      // Set initial state from localStorage
-      if (checkbox.checked) {
-        enableDebugHover();
-      } else {
-        enableNormalHover();
-      }
-
-      checkbox.addEventListener('change', function () {
-        if (checkbox.checked) {
-          localStorage.setItem('headerBarHovered', 'true');
-          enableDebugHover();
-        } else {
-          localStorage.setItem('headerBarHovered', 'false');
-          enableNormalHover();
-        }
-      });
-    }
+    initializeSettingsMenuHover($button);
   }
 
   // Utility to enable/disable controls by IDs based on login state
