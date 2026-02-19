@@ -419,7 +419,8 @@
     }
 
     getCandidateFilmLinks() {
-      return Array.from(document.querySelectorAll('a[href*="/film/"]')).filter((link) => {
+      const searchRoot = this.csfdPage || document;
+      return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
         const href = link.getAttribute('href') || '';
         if (!/\/\d+-/.test(href)) {
           return false;
@@ -438,6 +439,14 @@
         }
 
         if (link.closest('.film-header-name, .film-header-name-control')) {
+          return false;
+        }
+
+        if (
+          link.closest(
+            '#cc-ratings-table-modal-overlay, .cc-ratings-table-overlay, .cc-ratings-table-modal, .cc-rating-detail-overlay',
+          )
+        ) {
           return false;
         }
 
@@ -3962,7 +3971,26 @@
     // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
     // etc.).  Re-run addStars once the page is fully loaded and once more a bit
     // later to catch any sections that arrive after the load event.
-    const rerunStars = () => csfd.addStars().catch((err) => console.error('[CC] addStars rerun failed:', err));
+    let addStarsRunning = false;
+    let addStarsQueued = false;
+    const rerunStars = () => {
+      if (addStarsRunning) {
+        addStarsQueued = true;
+        return;
+      }
+
+      addStarsRunning = true;
+      csfd
+        .addStars()
+        .catch((err) => console.error('[CC] addStars rerun failed:', err))
+        .finally(() => {
+          addStarsRunning = false;
+          if (addStarsQueued) {
+            addStarsQueued = false;
+            window.setTimeout(rerunStars, 0);
+          }
+        });
+    };
     if (document.readyState === 'complete') {
       rerunStars();
     } else {
@@ -3975,7 +4003,31 @@
     // Debounced so that the star elements addStars() itself inserts don't trigger
     // an infinite loop of observer → addStars → insert → observer → ...
     let starObserverTimer = null;
-    const starObserver = new MutationObserver(() => {
+    const mutationContainsFilmLink = (mutationList) => {
+      for (const mutation of mutationList) {
+        if (!mutation.addedNodes || mutation.addedNodes.length === 0) {
+          continue;
+        }
+
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof Element)) {
+            continue;
+          }
+
+          if (node.matches?.('a[href*="/film/"]') || node.querySelector?.('a[href*="/film/"]')) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    };
+
+    const starObserver = new MutationObserver((mutationList) => {
+      if (!mutationContainsFilmLink(mutationList)) {
+        return;
+      }
+
       if (starObserverTimer !== null) return;
       starObserverTimer = window.setTimeout(() => {
         starObserverTimer = null;

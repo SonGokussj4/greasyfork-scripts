@@ -294,7 +294,8 @@ export class Csfd {
   }
 
   getCandidateFilmLinks() {
-    return Array.from(document.querySelectorAll('a[href*="/film/"]')).filter((link) => {
+    const searchRoot = this.csfdPage || document;
+    return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
       const href = link.getAttribute('href') || '';
       if (!/\/\d+-/.test(href)) {
         return false;
@@ -313,6 +314,14 @@ export class Csfd {
       }
 
       if (link.closest('.film-header-name, .film-header-name-control')) {
+        return false;
+      }
+
+      if (
+        link.closest(
+          '#cc-ratings-table-modal-overlay, .cc-ratings-table-overlay, .cc-ratings-table-modal, .cc-rating-detail-overlay',
+        )
+      ) {
         return false;
       }
 
