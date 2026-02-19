@@ -22,6 +22,11 @@ function getCurrentUserRatingsUrl() {
   return url.toString();
 }
 
+// Cache the last fetched total so multiple refreshRatingsBadges calls within the same
+// page load don't each trigger a separate network request to /hodnoceni/.
+let _cachedRatingsUrl = null;
+let _cachedRatingsTotal = null;
+
 function parseTotalRatingsFromDocument(doc) {
   const extractCount = (text) => {
     const normalized = String(text || '').replace(/\u00a0/g, ' ');
@@ -71,6 +76,12 @@ async function fetchTotalRatingsForCurrentUser() {
     return 0;
   }
 
+  // Return cached value for this URL so repeated badge refreshes within the same
+  // page load don't each fire a redundant network request.
+  if (_cachedRatingsUrl === ratingsUrl && _cachedRatingsTotal !== null) {
+    return _cachedRatingsTotal;
+  }
+
   const response = await fetch(ratingsUrl, {
     credentials: 'include',
     method: 'GET',
@@ -81,7 +92,12 @@ async function fetchTotalRatingsForCurrentUser() {
 
   const html = await response.text();
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return parseTotalRatingsFromDocument(doc);
+  const total = parseTotalRatingsFromDocument(doc);
+
+  _cachedRatingsUrl = ratingsUrl;
+  _cachedRatingsTotal = total;
+
+  return total;
 }
 
 function updateSyncButtonAuthState(rootElement, isLoggedIn) {

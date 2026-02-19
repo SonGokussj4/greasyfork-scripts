@@ -94,6 +94,22 @@ async function addSettingsButton() {
   const settingsButton = document.createElement('li');
   settingsButton.classList.add('cc-menu-item');
   settingsButton.innerHTML = htmlContent;
+
+  // Insert into the header bar immediately so the button appears as fast as possible.
+  // All async/event-listener setup below runs after the element is already visible.
+  const $button = $(settingsButton);
+  const $headerBar = $('.header-bar').first();
+  const $searchItem = $headerBar.children('li.item-search').first();
+  const $languageItem = $headerBar.children('li.user-language-switch').first();
+
+  if ($searchItem.length) {
+    $searchItem.after($button);
+  } else if ($languageItem.length) {
+    $languageItem.before($button);
+  } else {
+    $headerBar.prepend($button);
+  }
+
   initializeVersionUi(settingsButton).catch(() => undefined);
   initializeRatingsLoader(settingsButton);
   initializeRatingsSync(settingsButton);
@@ -215,27 +231,14 @@ async function addSettingsButton() {
   };
 
   refreshBadgesSafely();
+  // Single delayed retry in case the profile link wasn't initialised yet on first run.
   window.setTimeout(refreshBadgesSafely, 1200);
-  window.setTimeout(refreshBadgesSafely, 3000);
 
   const handleRatingsUpdated = () => {
     invalidateRatingsModalCache();
     refreshBadgesSafely();
   };
   window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
-
-  const $button = $(settingsButton);
-  const $headerBar = $('.header-bar').first();
-  const $searchItem = $headerBar.children('li.item-search').first();
-  const $languageItem = $headerBar.children('li.user-language-switch').first();
-
-  if ($searchItem.length) {
-    $searchItem.after($button);
-  } else if ($languageItem.length) {
-    $languageItem.before($button);
-  } else {
-    $headerBar.prepend($button);
-  }
 
   initializeSettingsMenuHover($button);
 }

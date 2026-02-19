@@ -12,15 +12,43 @@ import { fancyAlert } from './fancy-alert.js';
   'use strict';
   console.debug('🟣 Script started');
   await delay(20);
-  console.debug('🟣 Adding main button');
-  await addSettingsButton();
 
+  // Initialise the CSFD helper and add the settings button in parallel so neither
+  // blocks the other — the button DOM insertion now happens immediately inside
+  // addSettingsButton(), so it appears as soon as jQuery can find the header bar.
   const csfd = new Csfd(document.querySelector('div.page-content'));
-  console.debug('🟣 Initializing CSFD-Compare');
-  await csfd.initialize();
-  console.debug('🟣 Adding stars');
+  console.debug('🟣 Adding main button + initialising CSFD-Compare in parallel');
+  await Promise.all([addSettingsButton(), csfd.initialize()]);
+
+  console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();
+
+  // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
+  // etc.).  Re-run addStars once the page is fully loaded and once more a bit
+  // later to catch any sections that arrive after the load event.
+  const rerunStars = () => csfd.addStars().catch((err) => console.error('[CC] addStars rerun failed:', err));
+  if (document.readyState === 'complete') {
+    rerunStars();
+  } else {
+    window.addEventListener('load', rerunStars, { once: true });
+  }
+  window.setTimeout(rerunStars, 1500);
+
+  // Watch for content injected into the DOM after initial load (e.g. pagination
+  // clicks, lazy-loaded boxes) and add stars to any new film links.
+  // Debounced so that the star elements addStars() itself inserts don't trigger
+  // an infinite loop of observer → addStars → insert → observer → ...
+  let starObserverTimer = null;
+  const starObserver = new MutationObserver(() => {
+    if (starObserverTimer !== null) return;
+    starObserverTimer = window.setTimeout(() => {
+      starObserverTimer = null;
+      rerunStars();
+    }, 200);
+  });
+  const pageContent = document.querySelector('div.page-content') || document.body;
+  starObserver.observe(pageContent, { childList: true, subtree: true });
 
   window.addEventListener('cc-gallery-image-links-toggled', () => {
     csfd.addGalleryImageFormatLinks().catch((error) => {

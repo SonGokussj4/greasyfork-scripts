@@ -2,6 +2,9 @@ import { SETTINGSNAME, INDEXED_DB_NAME, RATINGS_STORE_NAME, GALLERY_IMAGE_LINKS_
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
 
+const PROFILE_LINK_SELECTOR =
+  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+
 export class Csfd {
   constructor(pageContent) {
     this.csfdPage = pageContent;
@@ -20,7 +23,7 @@ export class Csfd {
    * @description - This function retrieves the current user's URL from the CSFD page and sets isLoggedIn.
    */
   async getCurrentUser() {
-    const userEl = document.querySelector('.profile.initialized');
+    const userEl = document.querySelector(PROFILE_LINK_SELECTOR);
     if (userEl) {
       this.isLoggedIn = true;
       return userEl.getAttribute('href');
@@ -35,7 +38,7 @@ export class Csfd {
    * @description - This function retrieves the current user's username from the CSFD page.
    */
   async getUsername() {
-    const userHref = await this.getCurrentUser();
+    const userHref = this.userUrl || (await this.getCurrentUser());
     if (!userHref) {
       console.debug('🟣 User URL not found');
       return undefined;
@@ -59,11 +62,13 @@ export class Csfd {
     console.debug('🟣 User URL:', this.userUrl);
     this.username = await this.getUsername();
     console.debug('🟣 Username:', this.username);
-    this.storageKey = `${'CSFD-Compare'}_${this.username}`;
+    this.storageKey = `${'CSFD-Compare'}_${this.username || 'guest'}`;
     console.debug('🟣 Storage Key:', this.storageKey);
     this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
     console.debug('🟣 User Slug:', this.userSlug);
-    this.userRatingsUrl = this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni');
+    this.userRatingsUrl = this.userUrl
+      ? this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni')
+      : undefined;
     console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
     const settings = await getSettings(SETTINGSNAME);
     if (settings) {
@@ -470,7 +475,15 @@ export class Csfd {
       const starElement = this.createStarElement(ratingValue, isComputed);
       if (!starElement) continue;
 
-      link.insertAdjacentElement('afterend', starElement);
+      const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
+      const titleInfo = headingAncestor?.querySelector('.film-title-info');
+
+      if (titleInfo) {
+        titleInfo.appendChild(starElement);
+      } else {
+        const insertAnchor = headingAncestor || link;
+        insertAnchor.insertAdjacentElement('afterend', starElement);
+      }
       link.dataset.ccStarAdded = 'true';
     }
   }
