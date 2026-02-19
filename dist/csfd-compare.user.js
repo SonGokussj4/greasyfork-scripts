@@ -450,6 +450,10 @@
           return false;
         }
 
+        if (this.shouldSkipProfileSectionLink(link)) {
+          return false;
+        }
+
         if (link.querySelector('img')) {
           return false;
         }
@@ -469,6 +473,66 @@
       }
 
       return path.includes('/hodnoceni/') || path.includes('/hodnotenia/');
+    }
+
+    isOnUserOverviewPage() {
+      const path = location.pathname || '';
+      return /^\/uzivatel\/\d+-[^/]+\/(prehled|prehlad)(\/|$)/i.test(path);
+    }
+
+    isOnUserReviewsPage() {
+      const path = location.pathname || '';
+      return /^\/uzivatel\/\d+-[^/]+\/(recenze|recenzie)(\/|$)/i.test(path);
+    }
+
+    shouldSkipProfileSectionLink(link) {
+      if (!this.isOnUserOverviewPage()) {
+        return false;
+      }
+
+      const explicitReviewOrRatingContainer = link.closest(
+        '[id*="review" i], [id*="recenz" i], [id*="rating" i], [id*="hodnoc" i], [id*="hodnoten" i], [class*="review" i], [class*="recenz" i], [class*="rating" i], [class*="hodnoc" i], [class*="hodnoten" i]',
+      );
+      const explicitDiaryContainer = link.closest(
+        '[id*="diar" i], [id*="denik" i], [id*="denic" i], [class*="diar" i], [class*="denik" i], [class*="denic" i]',
+      );
+
+      if (explicitReviewOrRatingContainer && !explicitDiaryContainer) {
+        return true;
+      }
+
+      const searchRoot = this.csfdPage || document.body;
+      let sectionNode = link;
+      while (sectionNode && sectionNode !== searchRoot && sectionNode !== document.body) {
+        if (!(sectionNode instanceof HTMLElement)) {
+          sectionNode = sectionNode.parentElement;
+          continue;
+        }
+
+        const titleEl = sectionNode.querySelector(
+          ':scope > .box-header h2, :scope > .box-header h3, :scope > header h2, :scope > header h3, :scope > h2, :scope > h3',
+        );
+        const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+
+        if (sectionTitle) {
+          if (
+            sectionTitle.includes('poslední recenze') ||
+            sectionTitle.includes('posledne recenzie') ||
+            sectionTitle.includes('poslední hodnocení') ||
+            sectionTitle.includes('posledné hodnotenia')
+          ) {
+            return true;
+          }
+
+          if (sectionTitle.includes('poslední deníček') || sectionTitle.includes('posledny dennik')) {
+            return false;
+          }
+        }
+
+        sectionNode = sectionNode.parentElement;
+      }
+
+      return false;
     }
 
     getRatingsPageSlug() {
@@ -585,6 +649,10 @@
     }
 
     async addStars() {
+      if (this.isOnUserReviewsPage()) {
+        return;
+      }
+
       if (this.isOnOwnRatingsPage()) {
         return;
       }
