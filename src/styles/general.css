@@ -145,16 +145,35 @@
 }
 
 .cc-own-rating {
-    margin-left: 6px;
+    margin-left: 8px;
     vertical-align: middle;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
 }
 
 .cc-own-rating-foreign-profile {
-    border: 1px solid #000;
-    border-radius: 5px;
-    padding: 0 5px;
-    display: inline-flex;
-    align-items: center;
+    border: 1px solid var(--color-red, #ba0305);
+    border-radius: 999px;
+    padding: 0 7px 0 5px;
+    background-color: rgba(186, 3, 5, 0.08);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    position: relative;
+    top: -4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.cc-own-rating-foreign-profile::before {
+    content: '🤍';
+    display: inline-block;
+    margin-right: 5px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-red, #ba0305);
+    opacity: 0.85;
 }
 
 .cc-own-rating-computed .stars:before {
@@ -162,9 +181,20 @@
 }
 
 .cc-own-rating-computed-count {
-    font-size: 13px;
+    font-size: 11px;
     color: var(--color-grey-light2, #7b7b7b);
-    margin-left: 2px;
+    margin-left: 3px;
+    line-height: 1;
+    vertical-align: super;
+}
+
+h3.film-title-inline .cc-own-rating,
+h3.film-title-nooverflow .cc-own-rating {
+    transform: translateY(-1px);
+}
+
+.article-header {
+    padding-top: 2px;
 }
 
 .cc-my-rating-col {

@@ -301,7 +301,24 @@ export class Csfd {
         return false;
       }
 
+      if (this.isOnCreatorPage() && link.closest('.creator-filmography')) {
+        return false;
+      }
+
+      if (link.matches('.edit-review, [class*="edit-review"]') || link.querySelector('.icon-edit-square')) {
+        return false;
+      }
+
+      const isInRelatedBox = Boolean(link.closest('section.box-related, div.box-related, .box-related'));
+      if (isInRelatedBox) {
+        return link.matches('a.film-title-name[href*="/film/"]');
+      }
+
       if (/[?&]page=\d+/i.test(href)) {
+        return false;
+      }
+
+      if (/[?&]comment=\d+/i.test(href)) {
         return false;
       }
 
@@ -369,6 +386,11 @@ export class Csfd {
     }
 
     return path.includes('/hodnoceni/') || path.includes('/hodnotenia/');
+  }
+
+  isOnCreatorPage() {
+    const path = location.pathname || '';
+    return /^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(path);
   }
 
   isOnUserProfilePage() {
@@ -609,13 +631,11 @@ export class Csfd {
       if (!starElement) continue;
 
       const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-      const titleInfo = headingAncestor?.querySelector('.film-title-info');
 
-      if (titleInfo) {
-        titleInfo.appendChild(starElement);
+      if (headingAncestor) {
+        headingAncestor.appendChild(starElement);
       } else {
-        const insertAnchor = headingAncestor || link;
-        insertAnchor.insertAdjacentElement('afterend', starElement);
+        link.insertAdjacentElement('afterend', starElement);
       }
       link.dataset.ccStarAdded = 'true';
     }

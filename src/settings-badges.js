@@ -4,6 +4,18 @@ import { getAllFromIndexedDB } from './storage.js';
 const PROFILE_LINK_SELECTOR =
   'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 
+function getCurrentUserSlugFromProfile() {
+  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
+  const profileHref = profileEl?.getAttribute('href') || '';
+  const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//i);
+  return match ? match[1] : undefined;
+}
+
+function getUserSlugFromPath(pathname) {
+  const match = String(pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\//i);
+  return match ? match[1] : undefined;
+}
+
 function getCurrentUserRatingsUrl() {
   const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
   const profileHref = profileEl?.getAttribute('href');
@@ -59,6 +71,12 @@ function parseTotalRatingsFromDocument(doc) {
 function getTotalRatingsFromCurrentPageForCurrentUser() {
   const path = location.pathname || '';
   if (!/\/uzivatel\//.test(path) || !/\/(hodnoceni|hodnotenia)\/?$/i.test(path)) {
+    return 0;
+  }
+
+  const currentUserSlug = getCurrentUserSlugFromProfile();
+  const pageUserSlug = getUserSlugFromPath(path);
+  if (!currentUserSlug || !pageUserSlug || currentUserSlug !== pageUserSlug) {
     return 0;
   }
 
