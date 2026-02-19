@@ -301,11 +301,19 @@ export class Csfd {
         return false;
       }
 
+      if (/[?&]page=\d+/i.test(href)) {
+        return false;
+      }
+
       if (/\/(galerie|videa?|tvurci|obsahy?)\//.test(href)) {
         return false;
       }
 
       if (link.closest('.film-posters, .box-video, .gallery, .aside-movie-profile')) {
+        return false;
+      }
+
+      if (link.closest('.box-more-bar, .pagination, .paginator, .box-pagination, .page-navigation, .pages')) {
         return false;
       }
 
@@ -329,6 +337,19 @@ export class Csfd {
         return false;
       }
 
+      const linkText = link.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+      if (linkText === 'více' || linkText === 'viac') {
+        return false;
+      }
+
+      if (link.closest('.span-more-small, .more, .article-more')) {
+        return false;
+      }
+
+      if (this.isOnUserReviewsPage() && !link.matches('a.film-title-name')) {
+        return false;
+      }
+
       if (link.querySelector('img')) {
         return false;
       }
@@ -348,6 +369,21 @@ export class Csfd {
     }
 
     return path.includes('/hodnoceni/') || path.includes('/hodnotenia/');
+  }
+
+  isOnUserProfilePage() {
+    const path = location.pathname || '';
+    const match = path.match(/^\/uzivatel\/(\d+-[^/]+)\//i);
+    return match ? match[1] : undefined;
+  }
+
+  isOnOtherUserProfilePage() {
+    const pageUserSlug = this.isOnUserProfilePage();
+    if (!pageUserSlug || !this.userSlug) {
+      return false;
+    }
+
+    return pageUserSlug !== this.userSlug;
   }
 
   isOnUserOverviewPage() {
@@ -486,7 +522,8 @@ export class Csfd {
         if (ratingRecord) {
           const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
           const isComputed = typeof ratingRecord === 'object' && ratingRecord?.computed === true;
-          const starElement = this.createStarElement(ratingValue, isComputed);
+          const computedCount = typeof ratingRecord === 'object' ? ratingRecord?.computedCount : NaN;
+          const starElement = this.createStarElement(ratingValue, isComputed, computedCount);
           if (starElement) {
             starElement.classList.remove('cc-own-rating');
             myRatingCell.appendChild(starElement);
@@ -498,13 +535,18 @@ export class Csfd {
     }
   }
 
-  createStarElement(ratingValue, isComputed = false) {
+  createStarElement(ratingValue, isComputed = false, computedCount = NaN, outlined = false) {
     if (!Number.isFinite(ratingValue)) {
       return undefined;
     }
 
     const starRating = document.createElement('span');
     starRating.className = 'star-rating cc-own-rating';
+
+    if (outlined) {
+      starRating.classList.add('cc-own-rating-foreign-profile');
+    }
+
     if (isComputed) {
       starRating.classList.add('computed', 'cc-own-rating-computed');
     }
@@ -520,11 +562,23 @@ export class Csfd {
     }
 
     starRating.appendChild(stars);
+
+    if (isComputed && Number.isFinite(computedCount) && computedCount > 0) {
+      const sup = document.createElement('sup');
+      sup.className = 'cc-own-rating-computed-count';
+      sup.textContent = ` (${computedCount})`;
+      starRating.appendChild(sup);
+    }
+
     return starRating;
   }
 
   async addStars() {
-    if (this.isOnUserReviewsPage()) {
+    if (location.href.includes('/zebricky/') || location.href.includes('/rebricky/')) {
+      return;
+    }
+
+    if (this.isOnUserReviewsPage() && !this.isOnOtherUserProfilePage()) {
       return;
     }
 
@@ -538,6 +592,7 @@ export class Csfd {
     }
 
     const links = this.getCandidateFilmLinks();
+    const outlinedOnThisPage = this.isOnOtherUserProfilePage();
     for (let link of links) {
       if (link.dataset.ccStarAdded === 'true') {
         continue;
@@ -549,7 +604,8 @@ export class Csfd {
 
       const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
       const isComputed = typeof ratingRecord === 'object' && ratingRecord?.computed === true;
-      const starElement = this.createStarElement(ratingValue, isComputed);
+      const computedCount = typeof ratingRecord === 'object' ? ratingRecord?.computedCount : NaN;
+      const starElement = this.createStarElement(ratingValue, isComputed, computedCount, outlinedOnThisPage);
       if (!starElement) continue;
 
       const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');

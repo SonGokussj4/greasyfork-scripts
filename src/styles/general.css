@@ -149,8 +149,22 @@
     vertical-align: middle;
 }
 
+.cc-own-rating-foreign-profile {
+    border: 1px solid #000;
+    border-radius: 5px;
+    padding: 0 5px;
+    display: inline-flex;
+    align-items: center;
+}
+
 .cc-own-rating-computed .stars:before {
     color: var(--color-grey-dark2, #d2d2d2);
+}
+
+.cc-own-rating-computed-count {
+    font-size: 13px;
+    color: var(--color-grey-light2, #7b7b7b);
+    margin-left: 2px;
 }
 
 .cc-my-rating-col {

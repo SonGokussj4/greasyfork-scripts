@@ -29,8 +29,10 @@ const INDEXED_DB_NAME = 'CC-Ratings';
 
 const DEBUG_MAX_PAGES_LOAD = 0; // 0 = no limit
 
-window.indexedDB = window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB;
-window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction;
+window.indexedDB =
+  window.indexedDB || window.webkitIndexedDB || window.mozIndexedDB || window.OIndexedDB || window.msIndexedDB;
+window.IDBTransaction =
+  window.IDBTransaction || window.webkitIDBTransaction || window.OIDBTransaction || window.msIDBTransaction;
 
 const DEV_PANEL_ALWAYS_VISIBLE = false;
 const DEV_PERFORMANCE_METRICS = false;
@@ -103,7 +105,8 @@ function profileMethod(obj, methodName) {
 
     profilingData[methodName].calledNumber += 1;
     profilingData[methodName].completeTime_ms += Math.floor((end - start) * 10000) / 10000;
-    profilingData[methodName].averagePerCall_ms = profilingData[methodName].completeTime_ms / profilingData[methodName].calledNumber;
+    profilingData[methodName].averagePerCall_ms =
+      profilingData[methodName].completeTime_ms / profilingData[methodName].calledNumber;
 
     return result;
   };
@@ -995,7 +998,8 @@ class Csfd {
    * @returns {int} Current movie computed rating
    */
   async getCurrentFilmComputedCount(content = null) {
-    const $curUserRating = content === null ? this.csfdPage.find('li.current-user-rating') : $(content).find('li.current-user-rating');
+    const $curUserRating =
+      content === null ? this.csfdPage.find('li.current-user-rating') : $(content).find('li.current-user-rating');
 
     const countedText = $($curUserRating).find('span[title]').attr('title');
     // split by :
@@ -1347,7 +1351,10 @@ class Csfd {
   }
 
   async onPageOtherUserHodnoceni() {
-    if ((location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) && location.href.includes('/uzivatel/')) {
+    if (
+      (location.href.includes('/hodnoceni') || location.href.includes('/hodnotenia')) &&
+      location.href.includes('/uzivatel/')
+    ) {
       if (!location.href.includes(this.userUrl)) {
         return true;
       }
@@ -1583,7 +1590,7 @@ class Csfd {
       if (forceUpdate === true) {
         if (
           !confirm(
-            `Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`
+            `Pro jistotu bych obnovil VŠECHNA hodnocení... Důvod: počet tvých je [${ratingsInLS}], ale v databázi je uloženo více: [${curUserRatings}]. Souhlasíš?`,
           )
         ) {
           forceUpdate = false;
@@ -1683,17 +1690,25 @@ class Csfd {
   async parseMoviePage(page) {
     // const start = performance.now();
 
-    const [fullUrl, currentFilmDateAdded, computedCount, url, year, type, { rating, computedFrom, computed }, lastUpdate] =
-      await Promise.all([
-        this.getCurrentFilmFullUrl(page),
-        this.getCurrentFilmDateAdded(page),
-        this.getCurrentFilmComputedCount(page),
-        this.getCurrentFilmUrl(page),
-        this.getCurrentFilmYear(page),
-        this.getCurrentFilmType(page),
-        this.getCurrentFilmRating(page),
-        this.getCurrentDateTime(),
-      ]);
+    const [
+      fullUrl,
+      currentFilmDateAdded,
+      computedCount,
+      url,
+      year,
+      type,
+      { rating, computedFrom, computed },
+      lastUpdate,
+    ] = await Promise.all([
+      this.getCurrentFilmFullUrl(page),
+      this.getCurrentFilmDateAdded(page),
+      this.getCurrentFilmComputedCount(page),
+      this.getCurrentFilmUrl(page),
+      this.getCurrentFilmYear(page),
+      this.getCurrentFilmType(page),
+      this.getCurrentFilmRating(page),
+      this.getCurrentDateTime(),
+    ]);
 
     // // const start01 = performance.now();
     // const fullUrl = await this.getCurrentFilmFullUrl(page)
@@ -2195,7 +2210,9 @@ class Csfd {
     const allUrls = [];
     maxPageNum = DEBUG_MAX_PAGES_LOAD != 0 ? DEBUG_MAX_PAGES_LOAD : maxPageNum; // DEBUG PURPOSES
     for (let idx = 1; idx <= maxPageNum; idx++) {
-      const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
+      const url = location.origin.endsWith('sk')
+        ? `${this.userUrl}hodnotenia/?page=${idx}`
+        : `${this.userUrl}hodnoceni/?page=${idx}`;
       allUrls.push(url);
     }
 
@@ -2216,7 +2233,9 @@ class Csfd {
         console.log(`Načítám hodnocení ${idx}/${maxPageNum} stránek`);
         Glob.popup(`Načítám hodnocení ${idx}/${maxPageNum} stránek`, 1, 200, 0);
 
-        const url = location.origin.endsWith('sk') ? `${this.userUrl}hodnotenia/?page=${idx}` : `${this.userUrl}hodnoceni/?page=${idx}`;
+        const url = location.origin.endsWith('sk')
+          ? `${this.userUrl}hodnotenia/?page=${idx}`
+          : `${this.userUrl}hodnoceni/?page=${idx}`;
         const res = await this.doSomethingNew(url);
 
         ls.push(res);
@@ -2243,7 +2262,12 @@ class Csfd {
     let chunkDone = 0;
     // for (const chunk of limitedChunks) {  // TODO: Debug
     for (const chunk of chunks) {
-      Glob.popup(`Načítám hodnocení... ${chunkDone + chunk.length * NUM_RATINGS_PER_PAGE}/${this.userRatingsCount}`, 5, 200, 0);
+      Glob.popup(
+        `Načítám hodnocení... ${chunkDone + chunk.length * NUM_RATINGS_PER_PAGE}/${this.userRatingsCount}`,
+        5,
+        200,
+        0,
+      );
       const content = await Promise.all(chunk.map((url) => $.get(url)));
       contents.push(content);
       chunkDone += chunk.length * NUM_RATINGS_PER_PAGE;
@@ -2734,7 +2758,8 @@ class Csfd {
 
     let button = document.createElement('li');
     // button.classList.add('active');  // TODO: Debug - Nonstop zobrazení CC Menu
-    let resetLabelStyle = '-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;';
+    let resetLabelStyle =
+      '-webkit-transition: initial; transition: initial; font-weight: initial; display: initial !important;';
 
     // Add box-id attribute to .box-header(s)
     $('.box-header').each(async function (index, value) {
@@ -2811,7 +2836,7 @@ class Csfd {
                                 <label for="chkClickableHeaderBoxes" style="${resetLabelStyle}">Boxy s tlačítkem "VÍCE" jsou klikatelné celé</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/8AwhbGK.png',
-                                  "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'"
+                                  "Boxy s tlačítkem 'VÍCE' jsou klikatelné celé, ne pouze na tlačítko 'VÍCE'",
                                 )}
                             </div>
                             <div class="article-content">
@@ -2819,7 +2844,7 @@ class Csfd {
                                 <label for="chkClickableMessages" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Klikatelné zprávy (bez tlačítka "více...")</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/ettGHsH.png',
-                                  "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'"
+                                  "Zprávy lze otevřít kliknutím kamkoli na zprávu, ne pouze na 'více...'",
                                 )}
                             </div>
                             <div class="article-content">
@@ -2827,7 +2852,7 @@ class Csfd {
                                 <label for="chkAddStars" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Přidat hvězdičky hodnocení u viděných filmů/seriálů</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/aTrSU2X.png',
-                                  'Přidá hvězdy hodnocení u viděných filmů/seriálů'
+                                  'Přidá hvězdy hodnocení u viděných filmů/seriálů',
                                 )}
                             </div>
                         </section>
@@ -2846,7 +2871,7 @@ class Csfd {
                                 <label for="chkCompareUserRatings" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Porovnat uživatelská hodnocení s mými</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/cDX0JaX.png',
-                                  'Přidá sloupec pro porovnání hodnocení s mými hodnoceními'
+                                  'Přidá sloupec pro porovnání hodnocení s mými hodnoceními',
                                 )}
                             </div>
                             <div class="article-content">
@@ -2854,7 +2879,7 @@ class Csfd {
                                 <label for="chkHideUserControlPanel" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Skrýt ovládací panel</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/KLzFqxM.png',
-                                  'Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže'
+                                  'Skryje ovládací panel uživatele, další funkce lze poté zobrazit pomocí nastavení níže',
                                 )}
                             </div>
                             <div class="article-content">
@@ -2867,7 +2892,7 @@ class Csfd {
                                 <label for="chkDisplayFavoriteButton" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}> ↳ Přidat tlačítko přidat/odebrat z oblíbených</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/vbnFpEU.png',
-                                  'Zobrazení tlačítka pro přidání/odebrání z oblíbených'
+                                  'Zobrazení tlačítka pro přidání/odebrání z oblíbených',
                                 )}
                             </div>
                         </section>
@@ -2881,7 +2906,7 @@ class Csfd {
                                 <label for="chkShowLinkToImage" style="${resetLabelStyle}"}>Zobrazit odkazy na obrázcích</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/a2Av3AK.png',
-                                  'Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici'
+                                  'Přidá vpravo odkazy na všechny možné velikosti, které jsou k dispozici',
                                 )}
                             </div>
                             <div class="article-content">
@@ -2889,7 +2914,7 @@ class Csfd {
                                 <label for="chkRatingsEstimate" style="${resetLabelStyle}">Vypočtení % při počtu hodnocení pod 10</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/qGAhXog.png',
-                                  'Ukáže % hodnocení i u filmů s méně než 10 hodnoceními'
+                                  'Ukáže % hodnocení i u filmů s méně než 10 hodnoceními',
                                 )}
                             </div>
                             <div class="article-content">
@@ -2897,7 +2922,7 @@ class Csfd {
                                 <label for="chkRatingsFromFavorites" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit hodnocení z průměru oblíbených</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/ol88F6z.png',
-                                  'Zobrazí % hodnocení od přidaných oblíbených uživatelů'
+                                  'Zobrazí % hodnocení od přidaných oblíbených uživatelů',
                                 )}
                                 </div>
                                 <div class="article-content">
@@ -2905,7 +2930,7 @@ class Csfd {
                                 <label for="chkAddRatingsComputedCount" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit spočteno ze sérií</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/KtpT81X.png',
-                                  "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'"
+                                  "Pokud je hodnocení 'vypočteno', zobrazí 'spočteno ze sérií/episod'",
                                 )}
                             </div>
                             <div class="article-content">
@@ -2913,7 +2938,7 @@ class Csfd {
                                 <label for="chkAddRatingsDate" style="${resetLabelStyle} ${needToLoginStyle}" ${needToLoginTooltip}>Zobrazit datum hodnocení</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/CHpBDxK.png',
-                                  'Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté'
+                                  'Zobrazí datum hodnocení <br>!!! Pozor !!! pere se s pluginem ČSFD Extended - v tomto případě ponechte vypnuté',
                                 )}
                             </div>
                             <div class="article-content">
@@ -2921,7 +2946,7 @@ class Csfd {
                                 <label for="chkHideSelectedUserReviews" style="${resetLabelStyle}">Skrýt recenze lidí</label>
                                 ${this.helpImageComponent(
                                   'https://i.imgur.com/k6GGE9K.png',
-                                  'Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR'
+                                  'Skryje recenze zvolených uživatelů oddělených čárkou: POMO, kOCOUR',
                                 )}
                                 <div>
                                     <input type="textbox" id="txtHideSelectedUserReviews" name="hide-selected-user-reviews-list">
@@ -2958,7 +2983,7 @@ class Csfd {
                                 <label for="chkHideSelectedVisitors" style="${resetLabelStyle}">Skrýt uživatele v návštěvnících</label>
                                 <!--${this.helpImageComponent(
                                   'https://i.imgur.com/k6GGE9K.png',
-                                  "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR"
+                                  "Skryje zvolené uživatele v 'návštěvnících' a 'kdo mě má v oblíbených'. Oddělte čárkou: POMO, kOCOUR",
                                 )}-->
                                 <div>
                                     <input type="textbox" id="txtHideSelectedVisitors" name="hide-selected-visitors">
@@ -3200,7 +3225,9 @@ class Csfd {
 
     const d = new Date();
     const dateFormat =
-      [d.getDate(), d.getMonth() + 1, d.getFullYear()].join('.') + ' ' + [d.getHours(), d.getMinutes(), d.getSeconds()].join(':');
+      [d.getDate(), d.getMonth() + 1, d.getFullYear()].join('.') +
+      ' ' +
+      [d.getHours(), d.getMinutes(), d.getSeconds()].join(':');
     return dateFormat;
   }
 
@@ -3225,7 +3252,7 @@ class Csfd {
       const $article = $content.closest('article');
       $content.hover(
         () => $article.css('background-color', '#e1e0e0'),
-        () => $article.css('background-color', 'initial')
+        () => $article.css('background-color', 'initial'),
       );
 
       const href = $($span).find('a').attr('href');
@@ -3625,7 +3652,10 @@ class Csfd {
     doesIndexedDBExist = profileAsyncFunction(doesIndexedDBExist, 'doesIndexedDBExist');
     getAllFromIndexedDB = profileAsyncFunction(getAllFromIndexedDB, 'getAllFromIndexedDB');
     getIndexedDBLength = profileAsyncFunction(getIndexedDBLength, 'getIndexedDBLength');
-    getItemsByPropertyFromIndexedDB = profileAsyncFunction(getItemsByPropertyFromIndexedDB, 'getItemsByPropertyFromIndexedDB');
+    getItemsByPropertyFromIndexedDB = profileAsyncFunction(
+      getItemsByPropertyFromIndexedDB,
+      'getItemsByPropertyFromIndexedDB',
+    );
     getItemsFromIndexedDB = profileAsyncFunction(getItemsFromIndexedDB, 'getItemsFromIndexedDB');
     mergeDict = profileAsyncFunction(mergeDict, 'mergeDict');
     refreshTooltips = profileAsyncFunction(refreshTooltips, 'refreshTooltips');

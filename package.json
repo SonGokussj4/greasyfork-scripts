@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "0.8.4",
+  "version": "0.8.5",
   "scripts": {
     "sync-version": "node scripts/sync-version.mjs",
     "prebuild": "npm run sync-version",
