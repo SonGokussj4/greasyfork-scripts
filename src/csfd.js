@@ -80,6 +80,90 @@ export class Csfd {
 
     await this.loadStarsFromIndexedDb();
     await this.syncCurrentPageRatingWithIndexedDb();
+    // Apply show-all-creator-tabs setting if enabled
+    try {
+      const enabled = localStorage.getItem('cc_show_all_creator_tabs') === 'true';
+      if (enabled) {
+        this.showAllCreatorTabs();
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  showAllCreatorTabs() {
+    try {
+      const selectors = ['.creator-about nav.tab-nav', '.creator-profile nav.tab-nav', '.creator nav.tab-nav'];
+      const navs = document.querySelectorAll(selectors.join(','));
+      if (!navs || navs.length === 0) return;
+
+      navs.forEach((nav) => {
+        const mainList = nav.querySelector('.tab-nav-list');
+        if (!mainList) return;
+
+        // Clone items from the dropdown into the main list (remove duplicates visually)
+        const dropdown = nav.querySelector('.tab-nav-more .dropdown-content, .tab-nav-more > .dropdown-content');
+        if (dropdown) {
+          // Remove any previously inserted clones first
+          mainList.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
+
+          const dropdownItems = Array.from(dropdown.querySelectorAll('.tab-nav-item'));
+          for (const item of dropdownItems) {
+            const link = item.querySelector('a.tab-link');
+            const href = link?.getAttribute('href') || '';
+            // Skip if main list already contains a tab with same href
+            const exists = Array.from(mainList.querySelectorAll('a.tab-link')).some(
+              (a) => a.getAttribute('href') === href,
+            );
+            if (!exists) {
+              // Clone item into main list so original dropdown remains intact
+              const clone = item.cloneNode(true);
+              clone.dataset.ccClone = '1';
+              clone.classList.remove('hidden');
+              clone.style.display = '';
+              mainList.appendChild(clone);
+            }
+          }
+
+          // Hide the "more" control but leave it in DOM so we can restore it later
+          const more = nav.querySelector('.tab-nav-more');
+          if (more) {
+            more.style.display = 'none';
+          }
+        }
+
+        // Add helper class so CSS can allow wrap / two-line layout
+        nav.classList.add('cc-show-all-tabs');
+
+        // Replace Galerie text with a compact icon where present (placeholder for future)
+        nav.querySelectorAll('a.tab-link').forEach((a) => {
+          const txt = a.textContent?.trim();
+          if (!txt) return;
+        });
+      });
+    } catch (err) {
+      console.error('[CC] showAllCreatorTabs failed', err);
+    }
+  }
+
+  restoreCreatorTabs() {
+    try {
+      const selectors = ['.creator-about nav.tab-nav', '.creator-profile nav.tab-nav', '.creator nav.tab-nav'];
+      const navs = document.querySelectorAll(selectors.join(','));
+      if (!navs || navs.length === 0) return;
+
+      navs.forEach((nav) => {
+        // remove clones we inserted
+        nav.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
+        // restore more control visibility
+        const more = nav.querySelector('.tab-nav-more');
+        if (more) more.style.display = '';
+        // remove helper class
+        nav.classList.remove('cc-show-all-tabs');
+      });
+    } catch (err) {
+      console.error('[CC] restoreCreatorTabs failed', err);
+    }
   }
 
   getCurrentItemUrlAndIds() {

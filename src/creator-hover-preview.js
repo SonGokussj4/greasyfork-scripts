@@ -932,6 +932,14 @@ function handlePointerOut(event) {
 export function initializeCreatorHoverPreview() {
   ensurePreviewElements();
 
+  // Disable preview on creator detail pages (we don't want popups when hovering the tabs there)
+  const onCreatorPage = /^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(location.pathname || '');
+  if (onCreatorPage) {
+    // Ensure preview is hidden and don't bind global handlers on creator pages
+    hidePreview();
+    return;
+  }
+
   document.addEventListener('mousemove', handlePointerMove, true);
   document.addEventListener('mouseover', handlePointerOver, true);
   document.addEventListener('mouseout', handlePointerOut, true);

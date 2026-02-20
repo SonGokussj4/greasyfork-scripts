@@ -22,3 +22,4 @@ export const CREATOR_PREVIEW_ENABLED_KEY = 'cc_creator_preview_enabled';
 export const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
 export const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
 export const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
+export const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';

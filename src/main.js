@@ -21,6 +21,26 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   console.debug('🟣 Adding main button + initialising CSFD-Compare in parallel');
   await Promise.all([addSettingsButton(), csfd.initialize()]);
 
+  // Apply show-all-creator-tabs immediately
+  try {
+    csfd.showAllCreatorTabs();
+  } catch (e) {
+    console.warn('[CC] Failed to show all creator tabs initially:', e);
+  } // Handle toggling
+
+  window.addEventListener('cc-show-all-creator-tabs-toggled', (ev) => {
+    try {
+      const enabled = !!ev?.detail?.enabled;
+      if (enabled) {
+        csfd.showAllCreatorTabs();
+      } else {
+        csfd.restoreCreatorTabs();
+      }
+    } catch (err) {
+      console.error('[CC] show-all-creator-tabs toggle handler failed:', err);
+    }
+  });
+
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();

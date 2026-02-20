@@ -432,3 +432,38 @@ h3.film-title-nooverflow .cc-own-rating {
 .cc-creator-preview-meta-line+.cc-creator-preview-meta-line {
     margin-top: 2px;
 }
+
+nav.tab-nav.cc-show-all-tabs {
+    padding-right: 0px !important;
+}
+
+nav.tab-nav.cc-show-all-tabs .tab-nav-list {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item {
+    flex: 1 1 auto;
+    min-width: 0;
+    top: -4px;
+}
+
+nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active {
+    flex: 1 1 auto;
+    min-width: 0;
+    top: 0px;
+}
+
+nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link {
+    display: block;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 0px 5px;
+}

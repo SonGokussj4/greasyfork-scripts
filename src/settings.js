@@ -11,6 +11,7 @@ import {
   CREATOR_PREVIEW_SHOW_BIRTH_KEY,
   CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  SHOW_ALL_CREATOR_TABS_KEY,
   INDEXED_DB_NAME,
   SETTINGSNAME,
 } from './config.js';
@@ -36,6 +37,11 @@ function isGalleryImageLinksEnabled() {
 function isCreatorPreviewEnabled() {
   const persistedValue = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY);
   return persistedValue === null ? true : persistedValue === 'true';
+}
+
+function isShowAllCreatorTabsEnabled() {
+  const persistedValue = localStorage.getItem(SHOW_ALL_CREATOR_TABS_KEY);
+  return persistedValue === null ? false : persistedValue === 'true';
 }
 
 function isCreatorPreviewBirthVisible() {
@@ -188,6 +194,7 @@ async function addSettingsButton() {
   initializeRatingsSync(settingsButton);
 
   const galleryImageLinksToggle = settingsButton.querySelector('#cc-enable-gallery-image-links');
+  const showAllCreatorTabsToggle = settingsButton.querySelector('#cc-show-all-creator-tabs');
   if (galleryImageLinksToggle) {
     galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
     galleryImageLinksToggle.addEventListener('change', () => {
@@ -200,6 +207,20 @@ async function addSettingsButton() {
       );
 
       showSettingsInfoToast(enabled ? 'Formáty obrázků v galerii zapnuty.' : 'Formáty obrázků v galerii vypnuty.');
+    });
+  }
+
+  if (showAllCreatorTabsToggle) {
+    showAllCreatorTabsToggle.checked = isShowAllCreatorTabsEnabled();
+    showAllCreatorTabsToggle.addEventListener('change', () => {
+      const enabled = showAllCreatorTabsToggle.checked;
+      localStorage.setItem(SHOW_ALL_CREATOR_TABS_KEY, String(enabled));
+      window.dispatchEvent(
+        new CustomEvent('cc-show-all-creator-tabs-toggled', {
+          detail: { enabled },
+        }),
+      );
+      showSettingsInfoToast(enabled ? 'Všechny záložky tvůrce zobrazeny.' : 'Záložky tvůrce skryty.');
     });
   }
 
@@ -300,6 +321,9 @@ async function addSettingsButton() {
   const syncSettingsControlsFromStorage = () => {
     if (galleryImageLinksToggle) {
       galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
+    }
+    if (showAllCreatorTabsToggle) {
+      showAllCreatorTabsToggle.checked = isShowAllCreatorTabsEnabled();
     }
     if (creatorPreviewToggle) {
       creatorPreviewToggle.checked = isCreatorPreviewEnabled();
