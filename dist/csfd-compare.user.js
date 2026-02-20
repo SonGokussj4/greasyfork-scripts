@@ -992,7 +992,7 @@
   var css_248z$1 = ".dropdown-content.cc-settings{-webkit-box-sizing:border-box;box-sizing:border-box;margin-top:0;overflow:hidden;padding:0;right:0;top:100%;width:360px}header.page-header.user-not-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings{margin-top:-4px;right:-140px}header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings{margin-top:-4px;right:-170px}.cc-badge.cc-badge-disabled{cursor:not-allowed;opacity:.7}.cc-badge.cc-badge-warning{-webkit-box-shadow:inset 0 0 0 1px #f3c24f;box-shadow:inset 0 0 0 1px #f3c24f;position:relative}.cc-badge.cc-badge-warning:after{background:#f3c24f;border-radius:999px;color:#3b2a04;content:\"!\";font-size:9px;font-weight:800;height:12px;line-height:12px;position:absolute;right:-5px;text-align:center;top:-5px;width:12px}.dropdown-content.cc-settings .article,.dropdown-content.cc-settings .dropdown-content-head{-webkit-box-sizing:border-box;box-sizing:border-box;margin:0;width:100%}.dropdown-content.cc-settings .left-head{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:start;-ms-flex-align:start;align-items:flex-start;gap:2px}.dropdown-content.cc-settings .left-head h2{line-height:1.1;margin:0}.cc-version-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:6px}.cc-version-link{color:#555;font-size:11px;line-height:1;opacity:.9;text-decoration:none}.cc-version-link:hover{color:#aa2c16;text-decoration:underline}.cc-version-status{background:#b8b8b8;border-radius:999px;display:inline-block;height:8px;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;width:8px}.cc-version-status.is-visible{opacity:1}.cc-version-status.is-checking{background:#9ca3af}.cc-version-status.is-ok{background:#8f8f8f}.cc-version-status.is-update{background:#aa2c16;border-radius:999px;color:#fff;font-size:10px;font-weight:700;height:auto;line-height:1.3;padding:1px 6px;width:auto}.cc-version-status.is-error{background:#9b9b9b}.cc-head-right,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-version-info-btn{font-weight:700}.cc-version-info-btn svg{height:15px;width:15px}.cc-head-cc-link{font-weight:700;min-width:26px;text-align:center}.cc-icon-btn{border:0;border-radius:7px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:24px;width:24px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#242424;color:#fff;cursor:pointer;justify-content:center;text-decoration:none;-webkit-transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,-webkit-transform .12s ease;transition:background-color .16s ease,transform .12s ease;transition:background-color .16s ease,transform .12s ease,-webkit-transform .12s ease}.cc-icon-btn:hover{background:#111;-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-icon-btn:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-icon-btn-sync.is-enabled{background:#aa2c16}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16}.cc-sync-icon-btn:focus,.cc-sync-icon-btn:focus-visible{background:#f3f3f3;border-color:#b0b0b0;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#fff3f0;border-color:#cf7c6d;color:#aa2c16}.cc-sync-icon-btn.cc-sync-icon-btn-disabled{color:#8b8b8b;cursor:not-allowed;opacity:.6}.cc-script-link-btn svg{height:14px;width:14px}.cc-version-info-overlay{background:rgba(0,0,0,.36);display:none;inset:0;position:fixed;z-index:10030;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;-webkit-box-sizing:border-box;box-sizing:border-box;justify-content:center;padding:16px}.cc-version-info-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-version-info-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 20px 45px rgba(0,0,0,.25);box-shadow:0 20px 45px rgba(0,0,0,.25);color:#222;display:grid;grid-template-rows:auto minmax(0,1fr);max-height:80vh;overflow:hidden;width:min(560px,100%)}.cc-version-info-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:12px 14px}.cc-version-info-head h3{font-size:14px;font-weight:700;margin:0}.cc-version-info-close{background:transparent;border:0;border-radius:7px;color:#666;cursor:pointer;font-size:20px;height:28px;line-height:1;width:28px}.cc-version-info-close:hover{background:#f1f1f1;color:#222}.cc-version-info-body{font-size:12px;line-height:1.5;overflow:auto;padding:12px 14px}.cc-version-info-meta{display:grid;gap:4px 10px;grid-template-columns:120px minmax(0,1fr);margin-bottom:10px}.cc-version-info-key{color:#666}.cc-version-info-value{color:#202020;font-weight:600}.cc-version-info-status{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:6px}.cc-version-info-status-dot{background:#8f8f8f;border-radius:999px;height:8px;width:8px}.cc-version-info-status.is-update .cc-version-info-status-dot{background:#aa2c16}.cc-version-info-status.is-error .cc-version-info-status-dot{background:#9b9b9b}.cc-version-info-section-title{color:#444;font-size:12px;font-weight:700;margin:0 0 6px}.cc-version-info-list{color:#2a2a2a;margin:0;padding-left:16px}.cc-version-info-empty{color:#666;margin:0}.cc-version-info-loading{color:#666}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-black{background-color:#242424}.cc-button-black:hover{background-color:#000}#cc-load-computed-btn{background-color:#242424!important}#cc-load-computed-btn:active,#cc-load-computed-btn:focus,#cc-load-computed-btn:focus-visible,#cc-load-computed-btn:hover{background-color:#000!important}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cc-settings-section .article-content{-webkit-box-sizing:border-box;box-sizing:border-box;padding:10px;width:100%}.cc-settings-section+.cc-settings-section .article-content{border-top:1px solid #efefef}.cc-section-title{color:#444;font-size:12px;font-weight:700;margin:0 0 8px}.cc-settings-form{display:grid;gap:8px}.cc-form-check{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#444;font-size:12px;gap:6px}.cc-form-field{color:#444;display:grid;font-size:12px;gap:4px}.cc-form-field input[type=text],.cc-form-field select{border:1px solid #d4d4d4;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;line-height:1.2;padding:6px 8px;width:100%}.cc-form-field select{background:#fff}.cc-preview-group{background:-webkit-gradient(linear,left top,left bottom,from(#fcfcfc),to(#f8f8f8));background:linear-gradient(180deg,#fcfcfc,#f8f8f8);border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;padding:0}.cc-preview-group-toggle{-moz-appearance:none;appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:0;display:-webkit-box;display:-ms-flexbox;display:flex;width:100%;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;color:#444;cursor:pointer;justify-content:space-between;padding:8px 9px;position:relative}.cc-preview-group-toggle:before{background:#d2d2d2;border-radius:0 3px 3px 0;bottom:5px;content:\"\";left:0;position:absolute;top:5px;width:4px}.cc-preview-group-toggle,.cc-preview-group-toggle:active,.cc-preview-group-toggle:focus,.cc-preview-group-toggle:focus-visible{background:transparent!important;-webkit-box-shadow:none;box-shadow:none;color:#444!important}.cc-preview-group-toggle:hover{background:rgba(0,0,0,.03)}.cc-preview-group-toggle-left{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:6px;min-width:0}.cc-preview-group-chevron{border-bottom:1.5px solid #666;border-right:1.5px solid #666;height:8px;margin-top:-1px;-webkit-transform:rotate(45deg);transform:rotate(45deg);-webkit-transition:-webkit-transform .16s ease;transition:-webkit-transform .16s ease;transition:transform .16s ease;transition:transform .16s ease,-webkit-transform .16s ease;width:8px}.cc-preview-group-title{color:#575757;font-size:12px;font-weight:700;letter-spacing:.01em}.cc-preview-group-count{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#ececec;border-radius:999px;color:#5d5d5d;font-size:11px;font-weight:700;justify-content:center;line-height:1.2;min-width:36px;padding:2px 6px}.cc-preview-group.is-status-off .cc-preview-group-toggle:before{background:#b8b8b8}.cc-preview-group.is-status-off .cc-preview-group-toggle{background:hsla(0,0%,47%,.05)}.cc-preview-group.is-status-off .cc-preview-group-count{background:#e4e4e4;border:1px solid #cfcfcf;color:#555}.cc-preview-group.is-status-on-minimal .cc-preview-group-toggle:before{background:#63a86a}.cc-preview-group.is-status-on-minimal .cc-preview-group-toggle{background:rgba(88,154,97,.08)}.cc-preview-group.is-status-on-minimal .cc-preview-group-count{background:#d8ead9;border:1px solid #8ac391;color:#265c2e}.cc-preview-group.is-status-on-detailed .cc-preview-group-toggle:before{background:#2f8d3d}.cc-preview-group.is-status-on-detailed .cc-preview-group-toggle{background:rgba(47,141,61,.14)}.cc-preview-group.is-status-on-detailed .cc-preview-group-count{background:#cae8cd;border:1px solid #6bb475;color:#184e21}.cc-preview-group-body{border-top:1px solid #ececec;padding:7px 9px 8px}.cc-preview-group.is-collapsed .cc-preview-group-body{display:none}.cc-preview-group.is-collapsed .cc-preview-group-chevron{-webkit-transform:rotate(-45deg);transform:rotate(-45deg)}.cc-preview-group-main{background:hsla(0,0%,100%,.62);border-radius:6px;margin:0;padding:5px 6px}.cc-preview-group-extra{border-top:1px dashed #e3e3e3;display:grid;gap:6px;margin-top:7px;padding:6px 0 0 18px;-webkit-transition:opacity .15s ease;transition:opacity .15s ease}.cc-preview-group-sub{background:hsla(0,0%,100%,.56);border-radius:6px;color:#5b5b5b;font-size:11px;margin:0;padding:0}.cc-preview-group-extra.is-disabled{opacity:.5}.cc-preview-group-main input[type=checkbox],.cc-preview-group-sub input[type=checkbox]{accent-color:#aa2c16;height:14px;margin:0;width:14px;-webkit-box-flex:0;-ms-flex:0 0 14px;flex:0 0 14px}.cc-maint-actions{display:-webkit-box;display:-ms-flexbox;display:flex;gap:6px}.cc-maint-btn{background:#fff;border:1px solid #cfcfcf;border-radius:6px;color:#444;cursor:pointer;font-size:11px;line-height:1;padding:6px 8px}.cc-maint-btn:hover{background:#f7f7f7;border-color:#bcbcbc}.cc-lc-modal-overlay{display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;z-index:10032;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.42);justify-content:center;opacity:0;padding:14px;-webkit-transition:opacity .16s ease;transition:opacity .16s ease}.cc-lc-modal-overlay.is-open{opacity:1}.cc-lc-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 18px 42px rgba(0,0,0,.28);box-shadow:0 18px 42px rgba(0,0,0,.28);display:grid;gap:8px;grid-template-rows:auto auto minmax(0,1fr) auto;max-height:min(80vh,700px);padding:12px;width:min(720px,calc(100vw - 30px))}.cc-lc-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-lc-modal-head h3{font-size:14px;margin:0}.cc-lc-modal-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-lc-modal-help{color:#666;font-size:11px}.cc-lc-modal-body{border:1px solid #ededed;border-radius:8px;overflow:auto}.cc-lc-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-lc-table td,.cc-lc-table th{border-bottom:1px solid #f1f1f1;font-size:11px;padding:7px 8px;vertical-align:middle}.cc-lc-table th{background:#fafafa;position:sticky;text-align:left;top:0}.cc-lc-table td.cc-lc-key,.cc-lc-table th:first-child{width:33%}.cc-lc-table td.cc-lc-value,.cc-lc-table th:nth-child(2){width:45%}.cc-lc-table td.cc-lc-action,.cc-lc-table th:last-child{width:22%}.cc-lc-key,.cc-lc-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-lc-table-empty{color:#757575;padding:10px;text-align:center}.cc-lc-modal-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:end;-ms-flex-pack:end;gap:6px;justify-content:flex-end}.cc-settings-actions .cc-button{min-width:0;width:100%}.cc-settings-actions .cc-button-iconed span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-settings-sync{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}#cc-sync-cloud-btn{margin-top:0}.cc-sync-mini{font-size:11px;min-width:68px;padding:6px 9px}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-button:disabled{cursor:wait;opacity:.75}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:0;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}#cc-ratings-progress-label{-webkit-box-flex:1;-ms-flex:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cc-ratings-progress-count{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{-moz-appearance:none;appearance:none;-webkit-appearance:none;background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-ratings-cancel-link:active,.cc-ratings-cancel-link:focus,.cc-ratings-cancel-link:focus-visible{background:rgba(0,0,0,.08);color:#333;outline:none}.header-bar .csfd-compare-menu{position:relative}.header-bar>li.cc-menu-item{position:relative;z-index:8;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;min-width:42px}.header-bar>li.cc-menu-item.active{z-index:14}.header-bar>li.cc-menu-item .dropdown-content.cc-settings{z-index:15}.header-bar .csfd-compare-menu .cc-menu-icon{display:block;height:24px;inset:0;margin:auto;position:absolute;width:24px}.cc-badge[role=button]{cursor:pointer}.cc-ratings-table-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.45);justify-content:center;padding:24px;z-index:10010}.cc-ratings-table-modal,.cc-ratings-table-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-ratings-table-modal{background:#fff;border-radius:12px;-webkit-box-shadow:0 16px 42px rgba(0,0,0,.28);box-shadow:0 16px 42px rgba(0,0,0,.28);max-height:calc(100vh - 48px);overflow:hidden;width:min(1080px,calc(100vw - 40px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-ratings-table-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:14px 16px}.cc-ratings-table-head h3{font-size:15px;margin:0}.cc-ratings-table-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-ratings-table-close:hover{background:#f1f1f1;color:#222}.cc-ratings-table-toolbar{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #f0f0f0;-ms-flex-wrap:wrap;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:10px 16px}.cc-ratings-table-search{border:1px solid #d8d8d8;border-radius:8px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;height:34px;line-height:34px;margin:0!important;padding:0 10px;width:min(440px,100%)}.cc-ratings-table-summary{color:#666;font-size:12px;margin-left:auto;white-space:nowrap}.cc-ratings-type-multiselect{position:relative;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-ratings-type-toggle{background:#fff;border:1px solid #d8d8d8;border-radius:8px;-webkit-box-sizing:border-box;box-sizing:border-box;color:#333;cursor:pointer;font-size:12px;height:34px;line-height:34px;max-width:280px;min-width:186px;overflow:hidden;padding:0 32px 0 10px;position:relative;text-align:left;text-overflow:ellipsis;text-transform:none!important;white-space:nowrap}.cc-ratings-type-toggle:after{color:#777;content:\"▼\";font-size:10px;position:absolute;right:10px;top:50%;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.cc-ratings-type-menu{background:#fff;border:1px solid #ddd;border-radius:8px;-webkit-box-shadow:0 8px 22px rgba(0,0,0,.12);box-shadow:0 8px 22px rgba(0,0,0,.12);left:0;max-height:220px;min-width:180px;overflow:auto;padding:6px;position:absolute;top:calc(100% + 6px);z-index:3}.cc-ratings-type-menu label{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;border-radius:6px;cursor:pointer;font-size:12px;gap:7px;padding:6px 8px}.cc-ratings-type-menu label:hover{background:#f5f5f5}.cc-ratings-table-wrap{overflow:auto;padding:0 0 4px}.cc-ratings-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-ratings-table td,.cc-ratings-table th{border-bottom:1px solid #f0f0f0;font-size:12px;padding:10px 16px;vertical-align:top}.cc-ratings-table th{background:#fafafa;position:sticky;top:0;z-index:1}.cc-ratings-table th button{background:transparent;border:0;color:#333;cursor:pointer;font:inherit;font-weight:700;gap:6px;padding:0}.cc-ratings-table th button,.cc-sort-indicator{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-sort-indicator{-webkit-box-pack:center;-ms-flex-pack:center;color:#8a8a8a;font-size:10px;justify-content:center;min-width:12px}.cc-ratings-table th button.is-active .cc-sort-indicator{color:#aa2c16}.cc-ratings-table td:first-child,.cc-ratings-table th:first-child{width:40%}.cc-ratings-table td:nth-child(2),.cc-ratings-table th:nth-child(2){width:18%}.cc-ratings-table td:nth-child(3),.cc-ratings-table th:nth-child(3){width:10%}.cc-ratings-table td:nth-child(4),.cc-ratings-table th:nth-child(4){width:12%}.cc-ratings-table td:nth-child(5),.cc-ratings-table th:nth-child(5){width:20%}.cc-ratings-table-name-row{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;gap:8px;justify-content:space-between;width:100%}.cc-ratings-table-name-link{color:#1f4f8f;font-size:13px;font-weight:600;text-decoration:none;word-break:break-word;-webkit-box-flex:1;-ms-flex:1;flex:1}.cc-ratings-table-name-link:hover{text-decoration:underline}.cc-ratings-table-details-btn,.cc-ratings-table-link-icon{border:1px solid #cfcfcf;border-radius:6px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:22px;width:22px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#7b7b7b;justify-content:center;text-decoration:none;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;opacity:.88}.cc-ratings-table-details-btn{-moz-appearance:none;appearance:none;-webkit-appearance:none;cursor:pointer;padding:0}.cc-ratings-table-details-btn:hover,.cc-ratings-table-link-icon:hover{background:#f3f3f3;border-color:#bcbcbc;color:#aa2c16;opacity:1}.cc-ratings-table-date,.cc-ratings-table-rating,.cc-ratings-table-year{white-space:nowrap}.cc-ratings-table-type{color:#444;white-space:nowrap}.cc-ratings-table-rating{color:#b8321d;font-size:13px;font-weight:700;letter-spacing:.2px}.cc-ratings-table-rating.is-odpad{color:#000;font-weight:700;letter-spacing:0}.cc-ratings-square{border-radius:2px;height:11px;width:11px;-webkit-box-flex:0;-ms-flex:0 0 11px;flex:0 0 11px;margin-right:2px}.cc-ratings-square.is-1{background:#465982}.cc-ratings-square.is-2{background:#5c6f96}.cc-ratings-square.is-3{background:#9a3d2b}.cc-ratings-square.is-4,.cc-ratings-square.is-5{background:#b8321d}.cc-ratings-square.is-unknown{background:#9a9a9a}.cc-ratings-table-empty{color:#7a7a7a;padding:18px 16px;text-align:center}body.cc-ratings-modal-open{overflow:hidden}.cc-rating-detail-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.32);justify-content:center;padding:20px;z-index:10011}.cc-rating-detail-card,.cc-rating-detail-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-rating-detail-card{background:#fff;border-radius:12px;-webkit-box-shadow:0 14px 38px rgba(0,0,0,.24);box-shadow:0 14px 38px rgba(0,0,0,.24);max-height:calc(100vh - 60px);overflow:hidden;width:min(760px,calc(100vw - 32px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-rating-detail-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:12px 14px}.cc-rating-detail-head h4{font-size:14px;font-weight:700;margin:0}.cc-rating-detail-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-rating-detail-close:hover{background:#f1f1f1;color:#222}.cc-rating-detail-body{overflow:auto;padding:8px 14px 12px}.cc-rating-detail-row{border-bottom:1px solid #f1f1f1;display:grid;gap:10px;grid-template-columns:180px 1fr;padding:8px 0}.cc-rating-detail-key{color:#666;font-size:12px;font-weight:600}.cc-rating-detail-value{color:#222;font-size:12px;white-space:pre-wrap;word-break:break-word}";
   styleInject(css_248z$1);
 
-  var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:rgba(186,3,5,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.article-header{padding-top:2px}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:148px}.cc-creator-preview-image{background:#ececec;display:block;height:164px;-o-object-fit:cover;object-fit:cover;-o-object-position:center top;object-position:center top;width:100%}.cc-creator-preview.is-no-image .cc-creator-preview-image{background:linear-gradient(160deg,#f2f2f2,#e3e3e3);opacity:0}.cc-creator-preview.is-no-image .cc-creator-preview-card:before{color:#777;content:\"Bez fotky\";font-size:12px;font-weight:600;left:50%;letter-spacing:.02em;position:absolute;top:82px;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);z-index:1}.cc-creator-preview-name{color:#303030;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:6px 8px 7px;text-align:center;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 8px}.cc-creator-preview-meta-line{color:#535353;font-size:10px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo{display:-webkit-box;white-space:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:clip}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}";
+  var css_248z = ".flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.flex,.justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.justify-around{-ms-flex-pack:distribute;justify-content:space-around}.grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.align-center{text-align:center}.align-left{text-align:left}.align-right{text-align:right}.flex-column{-webkit-box-orient:vertical;-ms-flex-direction:column;flex-direction:column}.flex-column,.flex-row{-webkit-box-direction:normal}.flex-row{-ms-flex-direction:row;flex-direction:row}.flex-row,.flex-row-reverse{-webkit-box-orient:horizontal}.flex-row-reverse{-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.gap-5{gap:5px}.gap-10{gap:10px}.gap-30{gap:30px}.ml-auto{margin-left:auto}.mr-auto{margin-right:auto}.ph-5{padding-left:5px;padding-right:5px}.ph-10{padding-left:10px;padding-right:10px}.pv-5{padding-bottom:5px;padding-top:5px}.pv-10{padding-bottom:10px;padding-top:10px}.mh-5{margin-left:5px;margin-right:5px}.mh-10{margin-left:10px;margin-right:10px}.mv-5{margin-bottom:5px;margin-top:5px}.mv-10{margin-bottom:10px;margin-top:10px}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:hsla(0,34%,69%,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.article-header{padding-top:2px}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:176px}.cc-creator-preview-image{background:#ececec;display:block;height:200px;-o-object-fit:contain;object-fit:contain;-o-object-position:center center;object-position:center center;width:100%}.cc-creator-preview.is-no-image .cc-creator-preview-image{background:linear-gradient(160deg,#f2f2f2,#e3e3e3);opacity:0}.cc-creator-preview.is-no-image .cc-creator-preview-card:before{color:#777;content:\"Bez fotky\";font-size:12px;font-weight:600;left:50%;letter-spacing:.02em;position:absolute;top:82px;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);z-index:1}.cc-creator-preview-name{color:#303030;display:-webkit-box;display:-ms-flexbox;display:flex;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:7px 8px 8px;text-align:center;text-overflow:ellipsis;white-space:nowrap;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;gap:4px;justify-content:center}.cc-creator-preview-name-flag{height:auto;width:14px;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 9px}.cc-creator-preview-meta-line{color:#434343;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-birth{color:#2f2f2f;font-size:12px;font-weight:600;line-height:1.4;white-space:normal}.cc-creator-preview-meta-birth-age-inline{color:#666;font-size:11px;font-weight:500}.cc-creator-preview-meta-age{color:#595959;font-size:11px;font-weight:600;text-align:center}.cc-creator-preview-meta-photo{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:baseline;-ms-flex-align:baseline;align-items:baseline;color:#505050;font-weight:600;gap:6px;min-width:0;white-space:nowrap}.cc-creator-preview-meta-photo:before{content:\"🎬\";line-height:1;margin-right:2px}.cc-creator-preview-meta-photo.is-copyright:before{content:\"©\";font-weight:700}.cc-creator-preview-meta-photo-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo-year{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-creator-preview-meta-photo.is-movie{color:#ba0305}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-year{font-weight:700}.cc-creator-preview-meta-photo.is-copyright{color:#4c4c4c}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-year{display:none}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-source{display:-webkit-box;overflow:hidden;text-overflow:clip;white-space:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source{line-height:1;white-space:nowrap}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}";
   styleInject(css_248z);
 
   var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.6</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <form class=\"cc-settings-form\">\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" name=\"cc-enable-gallery-image-links\" />\r\n                    Zobrazovat formáty obrázků v galerii\r\n                </label>\r\n                <div class=\"cc-preview-group\" id=\"cc-creator-preview-group\">\r\n                    <button type=\"button\" class=\"cc-preview-group-toggle\" id=\"cc-creator-preview-group-toggle\"\r\n                        aria-expanded=\"false\" aria-controls=\"cc-creator-preview-group-body\">\r\n                        <span class=\"cc-preview-group-toggle-left\">\r\n                            <span class=\"cc-preview-group-chevron\" aria-hidden=\"true\"></span>\r\n                            <span class=\"cc-preview-group-title\">Náhledy fotek tvůrců</span>\r\n                        </span>\r\n                        <span class=\"cc-preview-group-count\" id=\"cc-creator-preview-count\">0/2</span>\r\n                    </button>\r\n                    <div class=\"cc-preview-group-body\" id=\"cc-creator-preview-group-body\">\r\n                        <label class=\"cc-form-check cc-preview-group-main\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" name=\"cc-enable-creator-preview\" />\r\n                            Zobrazovat náhled fotky tvůrce při najetí\r\n                        </label>\r\n                        <div class=\"cc-preview-group-extra\" id=\"cc-creator-preview-settings-extra\">\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\"\r\n                                    name=\"cc-creator-preview-show-birth\" />\r\n                                Zobrazovat datum narození\r\n                            </label>\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\"\r\n                                    name=\"cc-creator-preview-show-photo-from\" />\r\n                                Zobrazovat „Photo from“\r\n                            </label>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" name=\"option2\" /> Povolit automatickou aktualizaci dat\r\n                </label>\r\n                <label class=\"cc-form-field\">\r\n                    <span>Vlastní štítek sekce</span>\r\n                    <input type=\"text\" name=\"sectionLabel\" placeholder=\"Např. Můj CSFD Compare\" />\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-reset-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-lc-btn\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-db-btn\">Smazat DB</button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
@@ -4516,50 +4516,101 @@
     });
   }
 
+  // ==========================================
+  // 1. DATA STRUCTURES (TYPES)
+  // ==========================================
+
+  /**
+   * @typedef {Object} CreatorPreviewData
+   * @property {string|undefined} imageUrl - Normalized URL of the best available photo.
+   * @property {string|undefined} birthInfo - Extracted birth date and location text.
+   * @property {string|undefined} deathAgeInfo - Age at death, if applicable.
+   * @property {string|undefined} birthFlagUrl - URL to the country flag image.
+   * @property {string|undefined} birthFlagAlt - Alt text for the country flag.
+   * @property {string|undefined} photoFromInfo - Source/copyright info for the photo.
+   * @property {'movie'|'copyright'|undefined} photoFromKind - Type of photo source.
+   * @property {string|undefined} photoFromYear - Year the photo was taken (if from a movie).
+   */
+
+  // ==========================================
+  // 2. CONFIGURATION & STATE
+  // ==========================================
+
   const CREATOR_LINK_SELECTOR = 'a[href*="/tvurce/"], a[href*="/tvorca/"]';
   const MAX_CREATORS_IN_CACHE = 24;
   const MAX_IMAGE_CANDIDATES = 6;
   const PREVIEW_OFFSET_X = 18;
   const PREVIEW_OFFSET_Y = 18;
 
+  // DOM Elements
   let previewRoot;
   let previewImage;
   let previewName;
+  let previewNameText;
+  let previewNameFlag;
   let previewMeta;
   let previewMetaBirth;
+  let previewMetaBirthText;
+  let previewMetaBirthAgeInline;
+  let previewMetaAge;
   let previewMetaPhotoFrom;
+  let previewMetaPhotoSource;
+  let previewMetaPhotoYear;
+
+  // Interaction State
   let activeAnchor;
   let pointerX = 0;
   let pointerY = 0;
-  let hoverToken = 0;
+  let hoverToken = 0; // Used to prevent race conditions when hovering multiple links quickly
 
+  // Network & Data Caches
   const creatorPreviewCache = new Map();
   const creatorCacheOrder = [];
   const creatorFetchPromises = new Map();
   const failedImageUrls = new Set();
   const imageProbeResultCache = new Map();
 
+  // ==========================================
+  // 3. UTILITIES & PREFERENCES
+  // ==========================================
+
+  /** @returns {boolean} Whether the preview feature is enabled in local storage. */
   function isCreatorPreviewEnabled() {
     const persistedValue = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY);
     return persistedValue === null ? true : persistedValue === 'true';
   }
 
+  /** @returns {boolean} Whether birth information should be shown. */
   function isCreatorPreviewBirthVisible() {
     const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
     return persistedValue === null ? true : persistedValue === 'true';
   }
 
+  /** @returns {boolean} Whether photo source information should be shown. */
   function isCreatorPreviewPhotoFromVisible() {
     const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
     return persistedValue === null ? true : persistedValue === 'true';
   }
 
+  /**
+   * Collapses multiple spaces into a single space and trims the string.
+   * @param {string|null|undefined} value
+   * @returns {string}
+   */
   function normalizeText(value) {
     return String(value || '')
       .replace(/\s+/g, ' ')
       .trim();
   }
 
+  // ==========================================
+  // 4. DOM MANAGEMENT & UI
+  // ==========================================
+
+  /**
+   * Bootstraps the DOM elements required for the preview card.
+   * Only runs once; exits early if the root element already exists.
+   */
   function ensurePreviewElements() {
     if (previewRoot) {
       return;
@@ -4580,16 +4631,46 @@
     previewName = document.createElement('div');
     previewName.className = 'cc-creator-preview-name';
 
+    previewNameText = document.createElement('span');
+
+    previewNameFlag = document.createElement('img');
+    previewNameFlag.className = 'cc-creator-preview-name-flag';
+    previewNameFlag.alt = '';
+    previewNameFlag.hidden = true;
+
+    previewName.appendChild(previewNameText);
+    previewName.appendChild(previewNameFlag);
+
     previewMeta = document.createElement('div');
     previewMeta.className = 'cc-creator-preview-meta';
 
     previewMetaBirth = document.createElement('div');
     previewMetaBirth.className = 'cc-creator-preview-meta-line cc-creator-preview-meta-birth';
 
+    previewMetaBirthText = document.createElement('span');
+    previewMetaBirthAgeInline = document.createElement('span');
+    previewMetaBirthAgeInline.className = 'cc-creator-preview-meta-birth-age-inline';
+
+    previewMetaBirth.appendChild(previewMetaBirthText);
+    previewMetaBirth.appendChild(previewMetaBirthAgeInline);
+
+    previewMetaAge = document.createElement('div');
+    previewMetaAge.className = 'cc-creator-preview-meta-line cc-creator-preview-meta-age';
+
     previewMetaPhotoFrom = document.createElement('div');
     previewMetaPhotoFrom.className = 'cc-creator-preview-meta-line cc-creator-preview-meta-photo';
 
+    previewMetaPhotoSource = document.createElement('span');
+    previewMetaPhotoSource.className = 'cc-creator-preview-meta-photo-source';
+
+    previewMetaPhotoYear = document.createElement('span');
+    previewMetaPhotoYear.className = 'cc-creator-preview-meta-photo-year';
+
+    previewMetaPhotoFrom.appendChild(previewMetaPhotoSource);
+    previewMetaPhotoFrom.appendChild(previewMetaPhotoYear);
+
     previewMeta.appendChild(previewMetaBirth);
+    previewMeta.appendChild(previewMetaAge);
     previewMeta.appendChild(previewMetaPhotoFrom);
 
     card.appendChild(previewImage);
@@ -4599,6 +4680,7 @@
     document.body.appendChild(previewRoot);
   }
 
+  /** Hides the preview card and cleans up state classes. */
   function hidePreview() {
     if (!previewRoot) {
       return;
@@ -4609,12 +4691,16 @@
     previewRoot.classList.remove('is-no-image');
   }
 
+  /**
+   * Calculates and applies the X/Y position of the preview card relative to the cursor.
+   * Keeps the card bounded within the viewport margins.
+   */
   function positionPreview() {
     if (!previewRoot || previewRoot.hidden) {
       return;
     }
 
-    const margin = 10;
+    const margin = 10; // Distance from the edge of the viewport
     const rect = previewRoot.getBoundingClientRect();
     const maxX = Math.max(margin, window.innerWidth - rect.width - margin);
     const maxY = Math.max(margin, window.innerHeight - rect.height - margin);
@@ -4629,6 +4715,16 @@
     previewRoot.style.top = `${y}px`;
   }
 
+  // ==========================================
+  // 5. URL & CACHE MANAGEMENT
+  // ==========================================
+
+  /**
+   * Cleans up creator URLs to point to their overview page for consistent fetching.
+   * Accounts for both CZ (.cz/prehled/) and SK (.sk/prehlad/) domains.
+   * @param {string|null} href
+   * @returns {string|undefined} Normalized URL
+   */
   function normalizeCreatorUrl(href) {
     if (!href) {
       return undefined;
@@ -4638,6 +4734,7 @@
       const url = new URL(href, location.origin);
       url.search = '';
       url.hash = '';
+      // Matches patterns like /tvurce/123-john-doe/
       const pathname = url.pathname.match(/^\/(tvurce|tvorca)\/\d+-[^/]+\//i);
       if (!pathname) {
         return undefined;
@@ -4651,11 +4748,21 @@
     }
   }
 
+  /**
+   * Extracts the unique ID/slug from a normalized creator URL.
+   * @param {string} url
+   * @returns {string|undefined}
+   */
   function getCreatorSlugFromUrl(url) {
     const match = String(url || '').match(/\/(tvurce|tvorca)\/(\d+-[^/]+)\//i);
     return match ? match[2] : undefined;
   }
 
+  /**
+   * Saves fetched creator data to an LRU (Least Recently Used) cache.
+   * @param {string} slug
+   * @param {CreatorPreviewData} data
+   */
   function upsertCreatorCache(slug, data) {
     if (!slug || !data) {
       return;
@@ -4664,9 +4771,15 @@
     creatorPreviewCache.set(slug, {
       imageUrl: data.imageUrl,
       birthInfo: data.birthInfo,
+      deathAgeInfo: data.deathAgeInfo,
+      birthFlagUrl: data.birthFlagUrl,
+      birthFlagAlt: data.birthFlagAlt,
       photoFromInfo: data.photoFromInfo,
+      photoFromKind: data.photoFromKind,
+      photoFromYear: data.photoFromYear,
     });
 
+    // LRU Eviction logic
     const existingIndex = creatorCacheOrder.indexOf(slug);
     if (existingIndex >= 0) {
       creatorCacheOrder.splice(existingIndex, 1);
@@ -4681,6 +4794,11 @@
     }
   }
 
+  /**
+   * Parses a standard HTML srcset attribute into an array of individual URLs.
+   * @param {string|null} srcset
+   * @returns {string[]}
+   */
   function extractUrlsFromSrcset(srcset) {
     if (!srcset) {
       return [];
@@ -4692,6 +4810,10 @@
       .filter(Boolean);
   }
 
+  /**
+   * @param {string} rawUrl
+   * @returns {string|undefined}
+   */
   function normalizeImageUrl(rawUrl) {
     if (!rawUrl) {
       return undefined;
@@ -4704,11 +4826,22 @@
     }
   }
 
+  // ==========================================
+  // 6. HTML PARSING & SCRAPING
+  // ==========================================
+
+  /**
+   * Scores an image URL based on its dimensions, preferring sizes closest to 100x132.
+   * Lower score is better.
+   * @param {string} url
+   * @returns {number}
+   */
   function getImageSizeScore(url) {
     if (!url) {
       return 9999;
     }
 
+    // Matches explicitly defined width/height in URL (e.g., /w100h132crop/)
     const preciseMatch = url.match(/\/w(\d+)h(\d+)(?:crop)?\//i);
     if (preciseMatch) {
       const width = Number.parseInt(preciseMatch[1], 10);
@@ -4716,23 +4849,33 @@
       return Math.abs(width - 100) + Math.abs(height - 132);
     }
 
+    // Matches width-only parameters (e.g., /w100/)
     const widthMatch = url.match(/\/w(\d+)(?:h\d+)?\//i);
     if (widthMatch) {
       const width = Number.parseInt(widthMatch[1], 10);
-      return Math.abs(width - 100) + 120;
+      return Math.abs(width - 100) + 120; // +120 penalty for missing height
     }
 
-    return 2000;
+    return 2000; // Base penalty for unrecognizable sizes
   }
 
+  /**
+   * Strips resizing parameters from an image URL to get the full-res original.
+   * @param {string} url
+   * @returns {string|undefined}
+   */
   function toOriginalVariant(url) {
     if (!url) {
       return undefined;
     }
-
     return url.replace(/\/cache\/resized\/w\d+h\d+(?:crop)?\//i, '/').replace(/\/cache\/resized\/w\d+\//i, '/');
   }
 
+  /**
+   * Scrapes the DOM for all potential creator profile images, including fallbacks (OG/Twitter).
+   * @param {Document} doc - The parsed HTML document of the creator's page.
+   * @returns {string[]} Sorted array of image candidates.
+   */
   function pickCreatorImageCandidates(doc) {
     const candidates = [];
     const seen = new Set();
@@ -4773,73 +4916,194 @@
     pushCandidate(doc.querySelector('meta[name="twitter:image"]')?.getAttribute('content'));
 
     return candidates
-      .filter((url) => /\/creator\//i.test(url))
+      .filter((url) => /\/creator\//i.test(url)) // Ensure it's actually a creator image
       .sort((a, b) => getImageSizeScore(a) - getImageSizeScore(b))
       .slice(0, MAX_IMAGE_CANDIDATES);
   }
 
-  function extractBirthInfo(doc) {
-    const detailsParagraph = doc.querySelector('.creator-profile-details p');
-    if (!detailsParagraph) {
+  /**
+   * Removes whitespace from a date string (e.g., "1. 1. 2000" -> "1.1.2000").
+   * @param {string} value
+   * @returns {string}
+   */
+  function normalizeDateToken(value) {
+    return normalizeText(value).replace(/\s*/g, '');
+  }
+
+  /**
+   * Attempts to locate and parse a standard European date format from a text node.
+   * @param {Element|undefined} paragraph
+   * @returns {string|undefined}
+   */
+  function extractDateFromParagraph(paragraph) {
+    if (!paragraph) {
       return undefined;
     }
 
-    const clone = detailsParagraph.cloneNode(true);
-    clone.querySelector('.info-place')?.remove();
-    const line = normalizeText(clone.textContent);
-
+    const line = normalizeText(paragraph.textContent || '');
     if (!line) {
       return undefined;
     }
 
-    if (/\bnar\.|\bnaroden|\bborn\b/i.test(line)) {
-      return line;
+    // Matches formats like "1.1.2000" or "01. 12. 1995"
+    const dateMatch = line.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})/);
+    if (dateMatch) {
+      return normalizeDateToken(dateMatch[1]);
     }
 
     return undefined;
   }
 
-  function extractPhotoFromInfo(doc) {
-    const containers = [
-      ...doc.querySelectorAll(
-        '.creator-profile-footer, .creator-profile-content, .creator-profile-details, .creator-profile',
-      ),
-    ];
+  /**
+   * Computes a person's current age based on their birth date.
+   * @param {string} birthInfo
+   * @returns {string|undefined} Age string (e.g., "45 let")
+   */
+  function calculateCurrentAgeFromBirthInfo(birthInfo) {
+    const line = normalizeText(birthInfo || '');
+    const match = line.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+    if (!match) {
+      return undefined;
+    }
 
-    let movieAnchor;
-    let sourceContainer;
-    for (const container of containers) {
-      const candidateAnchor = container.querySelector('a.item-movie');
-      if (candidateAnchor) {
-        movieAnchor = candidateAnchor;
-        sourceContainer = candidateAnchor.closest('.creator-profile-footer') || container;
-        break;
+    const day = Number.parseInt(match[1], 10);
+    const month = Number.parseInt(match[2], 10);
+    const year = Number.parseInt(match[3], 10);
+    if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
+      return undefined;
+    }
+
+    const now = new Date();
+    let age = now.getFullYear() - year;
+    const hadBirthdayThisYear = now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day);
+    if (!hadBirthdayThisYear) {
+      age -= 1;
+    }
+
+    return age >= 0 ? `${age} let` : undefined;
+  }
+
+  /**
+   * Scrapes birth date, death date, and nationality flag from the creator's profile page.
+   * @param {Document} doc
+   * @returns {Partial<CreatorPreviewData>}
+   */
+  function extractLifeInfo(doc) {
+    const detailsParagraphs = Array.from(doc.querySelectorAll('.creator-profile-details p'));
+    if (detailsParagraphs.length === 0) {
+      return {
+        birthInfo: undefined,
+        deathAgeInfo: undefined,
+        birthFlagUrl: undefined,
+        birthFlagAlt: undefined,
+      };
+    }
+
+    // Look for language-specific keywords for birth and death
+    const birthParagraph =
+      detailsParagraphs.find((paragraph) => /\bnar\.|\bnaroden|\bborn\b/i.test(normalizeText(paragraph.textContent))) ||
+      detailsParagraphs[0];
+
+    const deathParagraph = detailsParagraphs.find((paragraph) =>
+      /\bzem\.|\bzomr|\bdied\b/i.test(normalizeText(paragraph.textContent)),
+    );
+
+    const birthDate = extractDateFromParagraph(birthParagraph);
+    const deathDate = extractDateFromParagraph(deathParagraph);
+    const deathAge = normalizeText(deathParagraph?.querySelector('.info')?.textContent || '').replace(/^\((.*)\)$/, '$1');
+
+    let birthInfo;
+    if (birthDate && deathDate) {
+      birthInfo = `${birthDate} → ${deathDate}`;
+    } else if (birthDate) {
+      birthInfo = `nar. ${birthDate}`;
+    } else {
+      // Fallback: Clone the node and remove the location tag to just get the text
+      const birthClone = birthParagraph?.cloneNode(true);
+      if (birthClone) {
+        birthClone.querySelector('.info-place')?.remove();
+        birthInfo = normalizeText(birthClone.textContent || '');
       }
     }
 
-    if (!movieAnchor || !sourceContainer) {
-      return undefined;
-    }
+    const flagImage =
+      birthParagraph?.querySelector('.info-place img.flag') ||
+      detailsParagraphs[0]?.querySelector('.info-place img.flag') ||
+      doc.querySelector('.creator-profile-details .info-place img.flag');
 
-    const movieTitle = normalizeText(movieAnchor.textContent);
-    if (!movieTitle) {
-      return undefined;
-    }
-
-    const rawLabel = normalizeText(sourceContainer.querySelector('.item-text')?.textContent || '');
-    const prefix = /photo\s*from|foto\s*z|foto\s*z\s*filmu/i.test(rawLabel) ? rawLabel : 'Photo from';
-
-    const siblingYear =
-      movieAnchor.nextElementSibling instanceof Element && movieAnchor.nextElementSibling.matches('.item-movie-rest')
-        ? movieAnchor.nextElementSibling
-        : undefined;
-    const movieYear = normalizeText(
-      sourceContainer.querySelector('.item-movie-rest')?.textContent || siblingYear?.textContent || '',
-    );
-
-    return movieYear ? `${prefix} ${movieTitle} ${movieYear}` : `${prefix} ${movieTitle}`;
+    return {
+      birthInfo,
+      deathAgeInfo: deathAge || undefined,
+      birthFlagUrl: normalizeImageUrl(flagImage?.getAttribute('src')),
+      birthFlagAlt: normalizeText(flagImage?.getAttribute('title') || flagImage?.getAttribute('alt') || ''),
+    };
   }
 
+  /**
+   * Scrapes metadata about where the profile photo came from (e.g., copyright or movie still).
+   * @param {Document} doc
+   * @returns {Partial<CreatorPreviewData>}
+   */
+  function extractPhotoFromInfo(doc) {
+    const footer = doc.querySelector('.creator-profile-footer');
+    if (!footer) {
+      return {
+        photoFromInfo: undefined,
+        photoFromKind: undefined,
+        photoFromYear: undefined,
+      };
+    }
+
+    const movieAnchor = footer.querySelector('a.item-movie');
+    if (movieAnchor) {
+      const movieTitle = normalizeText(movieAnchor.textContent);
+      const siblingYear =
+        movieAnchor.nextElementSibling instanceof Element && movieAnchor.nextElementSibling.matches('.item-movie-rest')
+          ? movieAnchor.nextElementSibling
+          : undefined;
+      const movieYear = normalizeText(
+        footer.querySelector('.item-movie-rest')?.textContent || siblingYear?.textContent || '',
+      );
+
+      if (movieTitle) {
+        return {
+          photoFromInfo: movieTitle,
+          photoFromKind: 'movie',
+          photoFromYear: movieYear,
+        };
+      }
+    }
+
+    const sourceText = normalizeText(footer.querySelector('.item-text')?.textContent || '');
+    if (!sourceText) {
+      return {
+        photoFromInfo: undefined,
+        photoFromKind: undefined,
+        photoFromYear: undefined,
+      };
+    }
+
+    // Clean up typical copyright text noise
+    let normalizedSource = sourceText.replace(/^(photo|foto)\s*/i, '').trim() || sourceText;
+    normalizedSource = normalizedSource.replace(/^([©Ⓒ]|\(c\)|copyright)\s*/i, '').trim() || normalizedSource;
+    return {
+      photoFromInfo: normalizedSource,
+      photoFromKind: 'copyright',
+      photoFromYear: undefined,
+    };
+  }
+
+  // ==========================================
+  // 7. NETWORK & IMAGE VALIDATION
+  // ==========================================
+
+  /**
+   * Pre-loads an image to verify it actually resolves and has valid dimensions.
+   * Prevents rendering 1x1 tracking pixels or broken images.
+   * @param {string} url
+   * @param {number} timeoutMs
+   * @returns {Promise<boolean>}
+   */
   function probeImageUrl(url, timeoutMs = 5000) {
     if (!url) {
       return Promise.resolve(false);
@@ -4874,6 +5138,7 @@
       probe.onload = () => {
         window.clearTimeout(timeout);
         const validDimensions = Number.isFinite(probe.naturalWidth) && Number.isFinite(probe.naturalHeight);
+        // Reject images that are smaller than 8x8 (likely tracking pixels)
         finish(validDimensions && probe.naturalWidth > 8 && probe.naturalHeight > 8);
       };
 
@@ -4886,6 +5151,11 @@
     });
   }
 
+  /**
+   * Fetches the target creator page in the background and parses it for preview data.
+   * @param {string} creatorUrl
+   * @returns {Promise<CreatorPreviewData>}
+   */
   async function fetchCreatorPreviewDataFromUrl(creatorUrl) {
     const response = await fetch(creatorUrl, {
       credentials: 'include',
@@ -4896,7 +5166,12 @@
       return {
         imageUrl: undefined,
         birthInfo: undefined,
+        deathAgeInfo: undefined,
+        birthFlagUrl: undefined,
+        birthFlagAlt: undefined,
         photoFromInfo: undefined,
+        photoFromKind: undefined,
+        photoFromYear: undefined,
       };
     }
 
@@ -4905,6 +5180,7 @@
     const imageCandidates = pickCreatorImageCandidates(doc);
 
     let validImageUrl;
+    // Test candidate images one by one until a valid one is found
     for (const candidateUrl of imageCandidates) {
       const isValid = await probeImageUrl(candidateUrl);
       if (isValid) {
@@ -4917,11 +5193,16 @@
 
     return {
       imageUrl: validImageUrl,
-      birthInfo: extractBirthInfo(doc),
-      photoFromInfo: extractPhotoFromInfo(doc),
+      ...extractLifeInfo(doc),
+      ...extractPhotoFromInfo(doc),
     };
   }
 
+  /**
+   * Orchestrates the data fetching, checking the cache and resolving inflight requests.
+   * @param {Element} anchorEl
+   * @returns {Promise<CreatorPreviewData|undefined>}
+   */
   async function getCreatorPreviewDataForLink(anchorEl) {
     const creatorUrl = normalizeCreatorUrl(anchorEl.getAttribute('href'));
     if (!creatorUrl) {
@@ -4937,12 +5218,18 @@
       return creatorPreviewCache.get(creatorSlug);
     }
 
+    // Prevent duplicate network requests if user hovers multiple times before resolution
     if (!creatorFetchPromises.has(creatorSlug)) {
       const fetchPromise = fetchCreatorPreviewDataFromUrl(creatorUrl)
         .catch(() => ({
           imageUrl: undefined,
           birthInfo: undefined,
+          deathAgeInfo: undefined,
+          birthFlagUrl: undefined,
+          birthFlagAlt: undefined,
           photoFromInfo: undefined,
+          photoFromKind: undefined,
+          photoFromYear: undefined,
         }))
         .then((data) => {
           upsertCreatorCache(creatorSlug, data);
@@ -4959,34 +5246,99 @@
     return inFlight ? await inFlight : undefined;
   }
 
+  // ==========================================
+  // 8. RENDER CONTROLLERS
+  // ==========================================
+
+  /**
+   * Updates the DOM elements for the text-based metadata (birth, age, photo source).
+   * @param {CreatorPreviewData} data
+   */
   function renderPreviewMeta(data) {
-    if (!previewMeta || !previewMetaBirth || !previewMetaPhotoFrom) {
+    if (
+      !previewMeta ||
+      !previewMetaBirth ||
+      !previewMetaBirthText ||
+      !previewMetaBirthAgeInline ||
+      !previewMetaAge ||
+      !previewMetaPhotoFrom ||
+      !previewMetaPhotoSource ||
+      !previewMetaPhotoYear
+    ) {
       return;
     }
 
     const showBirth = isCreatorPreviewBirthVisible() && Boolean(data?.birthInfo);
+    const liveAgeInfo = showBirth && !data?.deathAgeInfo ? calculateCurrentAgeFromBirthInfo(data?.birthInfo) : undefined;
+    const deceasedAgeInfo = showBirth ? data?.deathAgeInfo : undefined;
+    const showAgeLine = Boolean(deceasedAgeInfo);
     const showPhotoFrom = isCreatorPreviewPhotoFromVisible() && Boolean(data?.photoFromInfo);
 
-    previewMetaBirth.textContent = showBirth ? data.birthInfo : '';
+    if (showBirth) {
+      previewMetaBirthText.textContent = data.birthInfo;
+      previewMetaBirthAgeInline.textContent = liveAgeInfo ? ` (${liveAgeInfo})` : '';
+      previewMetaBirthAgeInline.hidden = !liveAgeInfo;
+    } else {
+      previewMetaBirthText.textContent = '';
+      previewMetaBirthAgeInline.textContent = '';
+      previewMetaBirthAgeInline.hidden = true;
+    }
     previewMetaBirth.hidden = !showBirth;
 
-    previewMetaPhotoFrom.textContent = showPhotoFrom ? data.photoFromInfo : '';
+    previewMetaAge.textContent = showAgeLine ? `(${deceasedAgeInfo})` : '';
+    previewMetaAge.hidden = !showAgeLine;
+
+    previewMetaPhotoFrom.classList.remove('is-movie', 'is-copyright');
+    if (showPhotoFrom) {
+      const kind = data?.photoFromKind === 'movie' ? 'movie' : 'copyright';
+      previewMetaPhotoFrom.classList.add(kind === 'movie' ? 'is-movie' : 'is-copyright');
+      previewMetaPhotoSource.textContent = data.photoFromInfo || '';
+      previewMetaPhotoYear.textContent = kind === 'movie' ? normalizeText(data?.photoFromYear || '') : '';
+      previewMetaPhotoYear.hidden = !(kind === 'movie' && Boolean(previewMetaPhotoYear.textContent));
+    } else {
+      previewMetaPhotoSource.textContent = '';
+      previewMetaPhotoYear.textContent = '';
+      previewMetaPhotoYear.hidden = true;
+    }
     previewMetaPhotoFrom.hidden = !showPhotoFrom;
 
-    previewMeta.hidden = !showBirth && !showPhotoFrom;
+    previewMeta.hidden = !showBirth && !showPhotoFrom && !showAgeLine;
   }
 
+  /**
+   * Handles the fallback state when a creator has a profile but no valid photo.
+   * @param {string} label
+   * @param {CreatorPreviewData} data
+   */
   function showNoImagePreview(label, data) {
     ensurePreviewElements();
     previewImage.removeAttribute('src');
     previewImage.alt = 'Bez fotografie';
-    previewName.textContent = label;
+    previewNameText.textContent = label;
+
+    if (data?.birthFlagUrl) {
+      previewNameFlag.src = data.birthFlagUrl;
+      previewNameFlag.alt = data.birthFlagAlt || '';
+      previewNameFlag.title = data.birthFlagAlt || '';
+      previewNameFlag.hidden = false;
+    } else {
+      previewNameFlag.removeAttribute('src');
+      previewNameFlag.alt = '';
+      previewNameFlag.title = '';
+      previewNameFlag.hidden = true;
+    }
+
     renderPreviewMeta(data);
     previewRoot.hidden = false;
     previewRoot.classList.add('is-visible', 'is-no-image');
     positionPreview();
   }
 
+  /**
+   * Master rendering function. Fetches data and updates the full DOM tree for the preview.
+   * @param {Element} anchorEl
+   * @param {number} token - Validates that the user hasn't hovered away during the fetch.
+   */
   async function showPreviewForAnchor(anchorEl, token) {
     ensurePreviewElements();
 
@@ -4997,6 +5349,8 @@
 
     const anchorText = anchorEl.textContent?.replace(/\s+/g, ' ').trim() || 'Tvůrce';
     const previewData = await getCreatorPreviewDataForLink(anchorEl);
+
+    // Abort if the user moved on to another link while we were fetching
     if (token !== hoverToken || activeAnchor !== anchorEl) {
       return;
     }
@@ -5008,13 +5362,30 @@
 
     previewImage.src = previewData.imageUrl;
     previewImage.alt = anchorText;
-    previewName.textContent = anchorText;
+    previewNameText.textContent = anchorText;
+
+    if (previewData?.birthFlagUrl) {
+      previewNameFlag.src = previewData.birthFlagUrl;
+      previewNameFlag.alt = previewData.birthFlagAlt || '';
+      previewNameFlag.title = previewData.birthFlagAlt || '';
+      previewNameFlag.hidden = false;
+    } else {
+      previewNameFlag.removeAttribute('src');
+      previewNameFlag.alt = '';
+      previewNameFlag.title = '';
+      previewNameFlag.hidden = true;
+    }
+
     renderPreviewMeta(previewData);
     previewRoot.hidden = false;
     previewRoot.classList.remove('is-no-image');
     previewRoot.classList.add('is-visible');
     positionPreview();
   }
+
+  // ==========================================
+  // 9. EVENT HANDLERS & INITIALIZATION
+  // ==========================================
 
   function handlePointerMove(event) {
     pointerX = event.clientX;
@@ -5050,6 +5421,7 @@
       return;
     }
 
+    // Don't hide if moving between nested elements inside the anchor
     const related = event.relatedTarget;
     if (related instanceof Element && activeAnchor.contains(related)) {
       return;
@@ -5066,6 +5438,9 @@
     hidePreview();
   }
 
+  /**
+   * Call this function once on page load to bind global event listeners.
+   */
   function initializeCreatorHoverPreview() {
     ensurePreviewElements();
 
@@ -5081,6 +5456,7 @@
       true,
     );
 
+    // Listen for preference changes from the UI
     window.addEventListener('cc-creator-preview-toggled', () => {
       if (!isCreatorPreviewEnabled()) {
         hidePreview();
