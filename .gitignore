@@ -13,3 +13,6 @@ coverage/
 
 # TEMP
 csfd-compare-new.js
+
+node_modules/
+examples/*
