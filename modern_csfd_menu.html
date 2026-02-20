@@ -1,0 +1,198 @@
+<html>
+
+<head>
+  <title>CSFD-Compare</title>
+  <style>
+    .csfd-section {
+      margin-bottom: 20px;
+      border-top: 1px solid #eee;
+      padding-top: 8px;
+    }
+
+    .csfd-section label {
+      display: block;
+      margin-bottom: 4px;
+      position: relative;
+    }
+
+    .csfd-section label input {
+      margin-right: 6px;
+    }
+
+    .csfd-section label:hover::after {
+      content: attr(title);
+      position: absolute;
+      left: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #333;
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      white-space: nowrap;
+      margin-left: 10px;
+      z-index: 10;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- MENU START -->
+  <div id="csfd-compare-menu"
+    style="font-family: 'Segoe UI', sans-serif; width: 280px; background: #fff; border: 1px solid #c00; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 12px; font-size: 13px; color: #222;">
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 6px; margin-bottom: 16px;">
+      <strong style="color: #c00;">CSFD-Compare</strong>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <button id="rating-indicator"
+          style="background: #c00; color: white; border: none; border-radius: 12px; font-weight: bold; padding: 2px 10px; font-size: 11px; cursor: pointer;">2355
+          / 2352</button>
+        <button
+          style="background: #333; color: white; border: none; border-radius: 12px; font-weight: bold; padding: 2px 8px; font-size: 11px;">0
+          / 15</button>
+      </div>
+    </div>
+
+
+
+    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;">
+      <button
+        style="background: #c00; color: white; border: none; border-radius: 4px; padding: 6px; cursor: pointer; font-size: 12px;">Načíst
+        hodnocení</button>
+      <button
+        style="background: #444; color: white; border: none; border-radius: 4px; padding: 6px; cursor: pointer; font-size: 12px;">Přinášet
+        hodnocení</button>
+    </div>
+
+    <details style="margin-bottom: 16px;">
+      <summary style="cursor: pointer; font-size: 12px; color: #444;">🛠️ Další akce</summary>
+      <div
+        style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 1px solid #eee; margin-top: 6px;">
+        <button
+          style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Reset</button>
+        <button
+          style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Smazat
+          LC</button>
+        <button
+          style="background: #f0f0f0; border: 1px solid #ccc; border-radius: 3px; padding: 4px 6px; font-size: 11px; cursor: pointer;">Smazat
+          DB</button>
+      </div>
+    </details>
+
+    <details open class="csfd-section">
+      <summary style="cursor: pointer; font-weight: 600; color: #c00;">🌐 Globální</summary>
+      <div style="padding-left: 12px; margin-top: 6px;">
+        <label title="Zpřístupní klikací boxy s tlačítkem VÍCE."><input type="checkbox" checked> Klikatelné
+          panely</label>
+        <label title="Zobrazí hodnocení uživatelů v přehledu filmů."><input type="checkbox" checked> Hodnocení v
+          seznamech</label>
+      </div>
+    </details>
+
+    <details open class="csfd-section">
+      <summary style="cursor: pointer; font-weight: 600; color: #c00;">👤 Uživatelé</summary>
+      <div style="padding-left: 12px; margin-top: 6px;">
+        <label title="Zobrazí ovládací panel, když najedete myší."><input type="checkbox" checked> Otevřít panel
+          přejetím</label>
+        <label title="Porovná vaše hodnocení s jinými uživateli."><input type="checkbox" checked> Porovnat
+          hodnocení</label>
+        <label title="Skrývá ovládací panel úplně."><input type="checkbox"> Skrytý ovládací panel</label>
+      </div>
+    </details>
+
+    <details open class="csfd-section">
+      <summary style="cursor: pointer; font-weight: 600; color: #c00;">🎬 Film/Seriál</summary>
+      <div style="padding-left: 12px; margin-top: 6px;">
+        <label title="Přidá odkazy i na obrázky filmů."><input type="checkbox" checked> Odkazy na obrázcích</label>
+        <label title="Vypočítá percentil 1 z hodnocení."><input type="checkbox" checked> Výpočet P1 z hodnocení</label>
+        <label title="Zobrazí hodnocení na základě oblíbených filmů."><input type="checkbox"> Průměr oblíbených</label>
+      </div>
+    </details>
+
+    <details class="csfd-section">
+      <summary style="cursor: pointer; font-weight: 600; color: #c00;">👥 Herci</summary>
+      <div style="padding-left: 12px; margin-top: 6px;">
+        <label title="Zobrazí filmy s hercem na jednom řádku."><input type="checkbox"> Filmy na jednom řádku</label>
+      </div>
+    </details>
+
+    <details class="csfd-section">
+      <summary style="cursor: pointer; font-weight: 600; color: #c00;">⚙️ Experimentální</summary>
+      <div style="padding-left: 12px; margin-top: 6px;">
+        <label title="Zobrazí výpočtené hodnocení jako test."><input type="checkbox"> Výpočtené hodnocení</label>
+        <label title="Umožní odpovídat na příspěvky v diskuzi."><input type="checkbox"> Možnost odpovědi</label>
+        <label title="Skrývá jména návštěvníků."><input type="checkbox"> Skrýt uživatele návštěvníků</label>
+      </div>
+    </details>
+  </div>
+  <!-- MENU END -->
+
+  <!-- MODAL START -->
+  <div id="ratings-modal-overlay"
+    style="display:none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 9998; justify-content: center; align-items: center;">
+    <div id="ratings-modal"
+      style="width: 70vw; height: 70vh; background: #fff; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); display: flex; flex-direction: column; padding: 20px; position: relative;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="margin: 0; font-size: 16px; color: #c00;">Načtená hodnocení</h3>
+        <button onclick="closeRatingsModal()"
+          style="background: none; border: none; font-size: 20px; font-weight: bold; cursor: pointer;">✖</button>
+      </div>
+      <div style="flex: 1; overflow-y: auto; font-size: 12px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background: #f9f9f9; text-align: left;">
+              <th style="padding: 6px; border-bottom: 1px solid #ccc;">Název</th>
+              <th style="padding: 6px; border-bottom: 1px solid #ccc;">Rok</th>
+              <th style="padding: 6px; border-bottom: 1px solid #ccc;">Hodnocení</th>
+              <th style="padding: 6px; border-bottom: 1px solid #ccc;">Datum</th>
+            </tr>
+          </thead>
+          <tbody id="ratings-table-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- MODAL END -->
+
+
+
+  <script>
+    const ratings = {
+      "songokussj": [
+        { "fullUrl": "https://www.csfd.cz/film/4-zhave-vystrely/", "rating": 4, "date": "05.02.2011", "year": 1991, "id": 4 },
+        { "fullUrl": "https://www.csfd.cz/film/5-zhave-vystrely-2/", "rating": 4, "date": "05.02.2011", "year": 1993, "id": 5 },
+        { "fullUrl": "https://www.csfd.cz/film/150-mortal-kombat-boj-na-zivot-a-na-smrt/", "rating": 3, "date": "22.01.2012", "year": 1995, "id": 150 }
+      ]
+    };
+
+    const tableBody = document.getElementById('ratings-table-body');
+    ratings["songokussj"].forEach(entry => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+      <td style="padding: 6px; border-bottom: 1px solid #eee;"><a href="${entry.fullUrl}" target="_blank">Film #${entry.id}</a></td>
+      <td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.year}</td>
+      <td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.rating}★</td>
+      <td style="padding: 6px; border-bottom: 1px solid #eee;">${entry.date}</td>
+    `;
+      tableBody.appendChild(row);
+    });
+
+    document.getElementById("rating-indicator").addEventListener("click", () => {
+      document.getElementById("ratings-modal-overlay").style.display = "flex";
+    });
+
+    function closeRatingsModal() {
+      document.getElementById("ratings-modal-overlay").style.display = "none";
+    }
+
+    document.getElementById("ratings-modal-overlay").addEventListener("click", (e) => {
+      if (e.target.id === "ratings-modal-overlay") {
+        closeRatingsModal();
+      }
+    });
+  </script>
+</body>
+
+</html>

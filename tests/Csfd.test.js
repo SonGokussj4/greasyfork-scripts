@@ -8,28 +8,24 @@ if (typeof TextDecoder === "undefined") {
     global.TextDecoder = TextDecoder;
 }
 
-const { JSDOM } = require("jsdom");
+// const { JSDOM } = require("jsdom");
 const chai = require("chai");
 const expect = chai.expect;
-const Csfd = require("../csfd-compare.js");
+// const { Csfd } = require("../csfd-compare.js");
 
+const { Csfd, initIndexedDB } = require("../csfd-compare.js");
+// import { Csfd, initIndexedDB } from "../csfd-compare.js";
+
+
+let csfd;
 beforeAll(() => {
     const fs = require("fs");
     const path = require("path");
-    const htmlContent = fs.readFileSync(path.resolve(__dirname, "mainPage.html"), "utf8");
-    const csfd = new Csfd(htmlContent);
-    return csfd;
+    const htmlContent = fs.readFileSync(path.resolve(__dirname, "pages/mainPage.html"), "utf8");
+    csfd = new Csfd(htmlContent);
 });
 
 describe("csfd.getParentNameFromUrl method", () => {
-
-    // Load htmlContent variable from file: 'mainPage.html'
-    // const fs = require("fs");
-    // const path = require("path");
-    // const htmlContent = fs.readFileSync(path.resolve(__dirname, "mainPage.html"), "utf8");
-
-    const csfd = new Csfd("");
-
     const cases = [
         ["/film/12345-nejaky-film/prehled/", ""],
         ["/film/12345-parent/321-child/prehled/", "12345-parent"],
@@ -40,20 +36,6 @@ describe("csfd.getParentNameFromUrl method", () => {
         ["/film/12345-parent", ""],
     ];
 
-    // test("getParentNameFromUrl function", async () => {
-    //     const url = "/film/12345-nejaky-film/prehled/";
-    //     const expected = "";
-    //     const result = await csfd.getParentNameFromUrl(url);
-    //     expect(result).to.equal(expected);
-    // });
-
-    // test("getParentNameFromUrl function", async () => {
-    //     const url = "/film/12345-parent/321-child/prehled/";
-    //     const expected = "12345-parent";
-    //     const result = await csfd.getParentNameFromUrl(url);
-    //     expect(result).to.equal(expected);
-    // });
-
     test.each(cases)(
         "Url: %p --> %p",
         async (url, expectedResult) => {
@@ -63,11 +45,9 @@ describe("csfd.getParentNameFromUrl method", () => {
     );
 });
 
-describe("csfd.getMovieIdFromHref method", () => {
-    const csfd = new Csfd("");
-
+describe("csfd.getMovieIdFromUrl method", () => {
     const cases = [
-        ["", null],
+        ["", NaN],
         ["/774319-zhoubne-zlo/prehled/", 774319],
         ["/film/1058697-devadesatky/1121972-epizoda-6/", 1121972],
         ["/film/774319-zhoubne-zlo/", 774319],
@@ -76,22 +56,21 @@ describe("csfd.getMovieIdFromHref method", () => {
         ["1058697-devadesatky", 1058697],
         ["774319-zhoubne-zlo/", 774319],
         ["774319-zhoubne-zlo/prehled/", 774319],
-        ["ssdd-zhoubne-zlo/prehled/", null],
-        [null, null],
+        ["ssdd-zhoubne-zlo/prehled/", NaN],
+        [null, NaN],
     ];
 
     test.each(cases)(
         "Url: %p --> %p",
         async (url, expectedResult) => {
-            const result = await csfd.getMovieIdFromHref(url);
-            expect(result).to.equal(expectedResult);
+            const result = await csfd.getMovieIdFromUrl(url);
+            expect(result).to.deep.equal(expectedResult);
+            // expect(Object.is(result, expectedResult)).toBeTruthy();
         }
     );
 });
 
 describe("csfd.getMovieIdParentIdFromUrl method", () => {
-    const csfd = new Csfd("");
-
     const cases = [
         ["/film/", [NaN, NaN]],
         ["/film/697624-love-death-robots", [697624, NaN]],
@@ -108,9 +87,7 @@ describe("csfd.getMovieIdParentIdFromUrl method", () => {
     );
 });
 
-describe("csfd.getFilmNameFromHref method", () => {
-    const csfd = new Csfd("");
-
+describe("csfd.getFilmNameFromFullUrl method", () => {
     const cases = [
         ["https://www.csfd.cz/film/1032817-naomi/1032819-don-t-believe-everything-you-think/recenze/", "/film/1032817-naomi/"],
         ["https://www.csfd.cz/film/1032817-naomi/recenze/", "/film/1032817-naomi/"],
@@ -123,7 +100,7 @@ describe("csfd.getFilmNameFromHref method", () => {
     test.each(cases)(
         "Url: %p --> %p",
         async (url, expectedResult) => {
-            const result = await csfd.getFilmNameFromHref(url);
+            const result = await csfd.getFilmNameFromFullUrl(url);
             expect(result).to.equal(expectedResult);
         }
     );

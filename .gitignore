@@ -3,7 +3,6 @@ csfd-MoviePreview.js
 csfd-StarNames.js
 
 package-lock.json
-package.json
 .jshintrc
 
 node_modules/
@@ -13,6 +12,4 @@ coverage/
 
 # TEMP
 csfd-compare-new.js
-
-node_modules/
-examples/*
+test-results/*

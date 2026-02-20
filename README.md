@@ -5,7 +5,46 @@
 - Login into github with VSCode
 - Then: [https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
 
+## Supabase sync (minimal setup)
+
+Script now supports cloud sync of ratings (PC1 <-> PC2) via Supabase.
+
+### 1) Create table in Supabase SQL editor
+
+```sql
+create table if not exists public.cc_ratings (
+    id text primary key,
+    user_slug text not null,
+    movie_id bigint null,
+    updated_at timestamptz not null default now(),
+    payload jsonb not null
+);
+
+create index if not exists cc_ratings_user_slug_idx on public.cc_ratings (user_slug);
+```
+
+### 2) Set RLS policy (simple owner-like by user_slug value)
+
+For minimal setup you can start with permissive policy for authenticated/anon key usage in your own project and tighten later.
+
+### 3) Configure each browser/PC once
+
+Run in browser console (on csfd page):
+
+```js
+localStorage.setItem('cc_supabase_url', 'https://YOUR_PROJECT.supabase.co');
+localStorage.setItem('cc_supabase_anon_key', 'YOUR_SUPABASE_ANON_KEY');
+```
+
+Then open CC menu and use `Sync cloud (Supabase)` button.
+
 ## Changelog
+
+> **v0.6.0.3** _(2025-03-29)_
+
+### FIX
+
+- Upraven design tlačítek, rozšířen panel  
 
 > **v0.6.0.2** _(2022-12-28)_
 
@@ -25,47 +64,47 @@
 "Menší" vánoční update :-)
 
 - NEW
-  - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
-  - Přidána tlačítka pro `reset nastavení` a `reset přidaných filmů` ([#16](../../issues/16))
-  - V CC menu jsou nyní obrázkové nápovědy v sekci `Film/Seriál`, `Uživatelé` a `Herci` ([#4](../../issues/4))
-  - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
-    - ! OMEZENÍ:
+    - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
+    - Přidána tlačítka pro `reset nastavení` a `reset přidaných filmů` ([#16](../../issues/16))
+    - V CC menu jsou nyní obrázkové nápovědy v sekci `Film/Seriál`, `Uživatelé` a `Herci` ([#4](../../issues/4))
+    - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
+        - ! OMEZENÍ:
       1) nelze pak reagovat na první příspěvek
       2) nelze reagovat na více "svých" příspěvků najednou
-  - CC menu je trochu přepracováno, aby šetřilo místo:
-    - Snížen padding, je to více na sobě
-    - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
-    - Počet načtených filmů je nyní zobrazeno v titulku
-  - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
-  - Přidáno nové načítání filmů, je to "experimentální", dělá to víc stránek naráz
-    - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
-  - Při ohodnocení nebo odstranění hodnocení se nyní CC menu aktualizuje okamžitě, netřeba refreshovat stránku
-  - Dočasná vánoční výzdoba
+    - CC menu je trochu přepracováno, aby šetřilo místo:
+        - Snížen padding, je to více na sobě
+        - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
+        - Počet načtených filmů je nyní zobrazeno v titulku
+    - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
+    - Přidáno nové načítání filmů, je to "experimentální", dělá to víc stránek naráz
+        - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+    - Při ohodnocení nebo odstranění hodnocení se nyní CC menu aktualizuje okamžitě, netřeba refreshovat stránku
+    - Dočasná vánoční výzdoba
 - FIX
-  - Ukládání filmů by mělo být stabilnější
-  - Opraveno pár okrajových případů, kdy script celý spadl
-  - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
-  - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
-  - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
-  - Zobrazování prvků v CC menu pro nepřihlášené uživatele
-  - Opraven update dopočítaných hodnocení ([#3](../../issues/3))
+    - Ukládání filmů by mělo být stabilnější
+    - Opraveno pár okrajových případů, kdy script celý spadl
+    - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
+    - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
+    - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
+    - Zobrazování prvků v CC menu pro nepřihlášené uživatele
+    - Opraven update dopočítaných hodnocení ([#3](../../issues/3))
 
 > **v0.5.12** _(2022-10-xx)_  
 
 - NEW
-  - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
-  - Přidána kapota nových informací do individuálně uložených dat v Local Storage
+    - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
+    - Přidána kapota nových informací do individuálně uložených dat v Local Storage
 - FIX
-  - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
-  - Opraveno zobrazování srovnání hodnocení u jiného uživatele
+    - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
+    - Opraveno zobrazování srovnání hodnocení u jiného uživatele
 
 > **v0.5.12** _(2022-10-01)_  
 
 - FIX
-  - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
-  - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  
-  - Hodnocení: znovu ukazuje % hodnocení i když hodnotilo méně jak 10 lidí  
-  - Hodnocení: znovu ukazuje dodatečné hodnocení jako průměr od oblíbených uživatelů  
+    - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
+    - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  
+    - Hodnocení: znovu ukazuje % hodnocení i když hodnotilo méně jak 10 lidí  
+    - Hodnocení: znovu ukazuje dodatečné hodnocení jako průměr od oblíbených uživatelů  
 
 > **v0.5.11.1** _(2021-11-24)_  
 
