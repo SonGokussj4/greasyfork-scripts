@@ -240,16 +240,29 @@ async function addSettingsButton() {
       return;
     }
 
-    const total = 2;
-    if (!creatorPreviewToggle?.checked) {
-      creatorPreviewCount.textContent = `0/${total}`;
-      return;
-    }
-
+    const total = Math.max(1, creatorPreviewSettingsExtra?.querySelectorAll('input[type="checkbox"]').length || 2);
+    const enabled = Boolean(creatorPreviewToggle?.checked);
     const used =
       Number(Boolean(creatorPreviewShowBirthToggle?.checked)) +
       Number(Boolean(creatorPreviewShowPhotoFromToggle?.checked));
-    creatorPreviewCount.textContent = `${used}/${total}`;
+
+    creatorPreviewCount.textContent = enabled ? `${used}/${total}` : `-/${total}`;
+
+    if (!creatorPreviewGroup) {
+      return;
+    }
+
+    creatorPreviewGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
+    if (!enabled) {
+      creatorPreviewGroup.classList.add('is-status-off');
+      return;
+    }
+
+    if (used > 0) {
+      creatorPreviewGroup.classList.add('is-status-on-detailed');
+    } else {
+      creatorPreviewGroup.classList.add('is-status-on-minimal');
+    }
   };
 
   const setCreatorPreviewCollapsedState = (collapsed) => {
