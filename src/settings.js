@@ -4,7 +4,16 @@
 import htmlContent from './settings-button-content.html';
 import { initializeRatingsLoader } from './ratings-loader.js';
 import { initializeRatingsSync } from './ratings-sync.js';
-import { GALLERY_IMAGE_LINKS_ENABLED_KEY } from './config.js';
+import { deleteIndexedDB } from './storage.js';
+import {
+  CREATOR_PREVIEW_ENABLED_KEY,
+  CREATOR_PREVIEW_SECTION_COLLAPSED_KEY,
+  CREATOR_PREVIEW_SHOW_BIRTH_KEY,
+  CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
+  GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  INDEXED_DB_NAME,
+  SETTINGSNAME,
+} from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
 import { refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
@@ -13,6 +22,7 @@ import { initializeSettingsMenuHover } from './settings-hover.js';
 let infoToastTimeoutId;
 const PROFILE_LINK_SELECTOR =
   'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+const MANAGED_LOCAL_STORAGE_PREFIXES = ['cc_', 'CSFD-Compare'];
 
 function getProfileLinkElement() {
   return document.querySelector(PROFILE_LINK_SELECTOR);
@@ -20,6 +30,26 @@ function getProfileLinkElement() {
 
 function isGalleryImageLinksEnabled() {
   const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+  return persistedValue === null ? true : persistedValue === 'true';
+}
+
+function isCreatorPreviewEnabled() {
+  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY);
+  return persistedValue === null ? true : persistedValue === 'true';
+}
+
+function isCreatorPreviewBirthVisible() {
+  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
+  return persistedValue === null ? true : persistedValue === 'true';
+}
+
+function isCreatorPreviewPhotoFromVisible() {
+  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
+  return persistedValue === null ? true : persistedValue === 'true';
+}
+
+function isCreatorPreviewSectionCollapsed() {
+  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
   return persistedValue === null ? true : persistedValue === 'true';
 }
 
@@ -89,6 +119,49 @@ function getMostFrequentUserSlug(records) {
   return bestSlug;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function getManagedLocalStorageEntries() {
+  const entries = [];
+
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index);
+    if (!key) {
+      continue;
+    }
+
+    if (
+      key === SETTINGSNAME ||
+      MANAGED_LOCAL_STORAGE_PREFIXES.some((prefix) => key.toLowerCase().startsWith(prefix.toLowerCase()))
+    ) {
+      entries.push({
+        key,
+        value: localStorage.getItem(key) ?? '',
+      });
+    }
+  }
+
+  return entries.sort((a, b) => a.key.localeCompare(b.key));
+}
+
+function formatLocalStorageValue(value, maxLength = 120) {
+  const normalized = String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, maxLength - 1)}…`;
+}
+
 async function addSettingsButton() {
   ('use strict');
   const settingsButton = document.createElement('li');
@@ -127,6 +200,318 @@ async function addSettingsButton() {
       );
 
       showSettingsInfoToast(enabled ? 'Formáty obrázků v galerii zapnuty.' : 'Formáty obrázků v galerii vypnuty.');
+    });
+  }
+
+  const creatorPreviewToggle = settingsButton.querySelector('#cc-enable-creator-preview');
+  const creatorPreviewGroup = settingsButton.querySelector('#cc-creator-preview-group');
+  const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
+  const creatorPreviewCount = settingsButton.querySelector('#cc-creator-preview-count');
+  const creatorPreviewGroupBody = settingsButton.querySelector('#cc-creator-preview-group-body');
+  const creatorPreviewShowBirthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
+  const creatorPreviewShowPhotoFromToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
+  const creatorPreviewSettingsExtra = settingsButton.querySelector('#cc-creator-preview-settings-extra');
+  const resetSettingsButton = settingsButton.querySelector('#cc-maint-reset-btn');
+  const clearLocalStorageButton = settingsButton.querySelector('#cc-maint-clear-lc-btn');
+  const clearDatabaseButton = settingsButton.querySelector('#cc-maint-clear-db-btn');
+
+  const dispatchCreatorPreviewSettingsChanged = () => {
+    window.dispatchEvent(
+      new CustomEvent('cc-creator-preview-toggled', {
+        detail: {
+          enabled: isCreatorPreviewEnabled(),
+          showBirth: isCreatorPreviewBirthVisible(),
+          showPhotoFrom: isCreatorPreviewPhotoFromVisible(),
+        },
+      }),
+    );
+  };
+
+  const dispatchGalleryPreviewSettingsChanged = () => {
+    window.dispatchEvent(
+      new CustomEvent('cc-gallery-image-links-toggled', {
+        detail: { enabled: isGalleryImageLinksEnabled() },
+      }),
+    );
+  };
+
+  const syncCreatorPreviewUsageCount = () => {
+    if (!creatorPreviewCount) {
+      return;
+    }
+
+    const total = 2;
+    if (!creatorPreviewToggle?.checked) {
+      creatorPreviewCount.textContent = `0/${total}`;
+      return;
+    }
+
+    const used =
+      Number(Boolean(creatorPreviewShowBirthToggle?.checked)) +
+      Number(Boolean(creatorPreviewShowPhotoFromToggle?.checked));
+    creatorPreviewCount.textContent = `${used}/${total}`;
+  };
+
+  const setCreatorPreviewCollapsedState = (collapsed) => {
+    if (creatorPreviewGroup) {
+      creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
+    }
+    if (creatorPreviewGroupToggle) {
+      creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
+    }
+    if (creatorPreviewGroupBody) {
+      creatorPreviewGroupBody.hidden = collapsed;
+    }
+
+    localStorage.setItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY, String(collapsed));
+  };
+
+  const syncCreatorPreviewDependentState = () => {
+    const enabled = creatorPreviewToggle ? creatorPreviewToggle.checked : isCreatorPreviewEnabled();
+
+    if (creatorPreviewShowBirthToggle) {
+      creatorPreviewShowBirthToggle.disabled = !enabled;
+    }
+
+    if (creatorPreviewShowPhotoFromToggle) {
+      creatorPreviewShowPhotoFromToggle.disabled = !enabled;
+    }
+
+    if (creatorPreviewSettingsExtra) {
+      creatorPreviewSettingsExtra.classList.toggle('is-disabled', !enabled);
+    }
+
+    syncCreatorPreviewUsageCount();
+  };
+
+  const syncSettingsControlsFromStorage = () => {
+    if (galleryImageLinksToggle) {
+      galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
+    }
+    if (creatorPreviewToggle) {
+      creatorPreviewToggle.checked = isCreatorPreviewEnabled();
+    }
+    if (creatorPreviewShowBirthToggle) {
+      creatorPreviewShowBirthToggle.checked = isCreatorPreviewBirthVisible();
+    }
+    if (creatorPreviewShowPhotoFromToggle) {
+      creatorPreviewShowPhotoFromToggle.checked = isCreatorPreviewPhotoFromVisible();
+    }
+
+    syncCreatorPreviewDependentState();
+    syncCreatorPreviewUsageCount();
+  };
+
+  let localStorageModal;
+  const ensureLocalStorageModal = () => {
+    if (localStorageModal) {
+      return localStorageModal;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cc-lc-modal-overlay';
+    overlay.hidden = true;
+    overlay.innerHTML = `
+      <div class="cc-lc-modal" role="dialog" aria-modal="true" aria-label="Správa LocalStorage">
+        <div class="cc-lc-modal-head">
+          <h3>Správa LocalStorage</h3>
+          <button type="button" class="cc-lc-modal-close" aria-label="Zavřít">×</button>
+        </div>
+        <div class="cc-lc-modal-help">Klíče používané CSFD-Compare (cc_*, CSFD-Compare*).</div>
+        <div class="cc-lc-modal-body">
+          <table class="cc-lc-table">
+            <thead>
+              <tr>
+                <th>Klíč</th>
+                <th>Hodnota</th>
+                <th>Akce</th>
+              </tr>
+            </thead>
+            <tbody id="cc-lc-table-body"></tbody>
+          </table>
+        </div>
+        <div class="cc-lc-modal-actions">
+          <button type="button" class="cc-maint-btn" id="cc-lc-delete-all-btn">Smazat vše</button>
+          <button type="button" class="cc-maint-btn" id="cc-lc-close-btn">Zavřít</button>
+        </div>
+      </div>
+    `;
+
+    const closeModal = () => {
+      overlay.classList.remove('is-open');
+      overlay.hidden = true;
+    };
+
+    const refreshTable = () => {
+      const tableBody = overlay.querySelector('#cc-lc-table-body');
+      if (!tableBody) {
+        return;
+      }
+
+      const entries = getManagedLocalStorageEntries();
+      if (entries.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="3" class="cc-lc-table-empty">Žádné relevantní položky.</td></tr>';
+        return;
+      }
+
+      tableBody.innerHTML = entries
+        .map(
+          ({ key, value }) => `
+          <tr>
+            <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
+            <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
+            <td class="cc-lc-action">
+              <button type="button" class="cc-maint-btn cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
+            </td>
+          </tr>
+        `,
+        )
+        .join('');
+    };
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) {
+        closeModal();
+      }
+    });
+
+    overlay.querySelector('.cc-lc-modal-close')?.addEventListener('click', closeModal);
+    overlay.querySelector('#cc-lc-close-btn')?.addEventListener('click', closeModal);
+    overlay.querySelector('#cc-lc-delete-all-btn')?.addEventListener('click', () => {
+      const entries = getManagedLocalStorageEntries();
+      for (const entry of entries) {
+        localStorage.removeItem(entry.key);
+      }
+
+      syncSettingsControlsFromStorage();
+      dispatchGalleryPreviewSettingsChanged();
+      dispatchCreatorPreviewSettingsChanged();
+      refreshTable();
+      showSettingsInfoToast('Relevantní LocalStorage klíče byly smazány.');
+    });
+
+    overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const deleteButton = target.closest('.cc-lc-delete-one');
+      if (!(deleteButton instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const storageKey = deleteButton.dataset.key;
+      if (!storageKey) {
+        return;
+      }
+
+      localStorage.removeItem(storageKey);
+      syncSettingsControlsFromStorage();
+      dispatchGalleryPreviewSettingsChanged();
+      dispatchCreatorPreviewSettingsChanged();
+      refreshTable();
+      showSettingsInfoToast(`Smazán klíč: ${storageKey}`);
+    });
+
+    overlay.addEventListener('cc-lc-open', () => {
+      refreshTable();
+      overlay.hidden = false;
+      requestAnimationFrame(() => {
+        overlay.classList.add('is-open');
+      });
+    });
+
+    document.body.appendChild(overlay);
+    localStorageModal = overlay;
+    return overlay;
+  };
+
+  if (creatorPreviewToggle) {
+    creatorPreviewToggle.checked = isCreatorPreviewEnabled();
+    syncCreatorPreviewDependentState();
+    creatorPreviewToggle.addEventListener('change', () => {
+      const enabled = creatorPreviewToggle.checked;
+      localStorage.setItem(CREATOR_PREVIEW_ENABLED_KEY, String(enabled));
+      syncCreatorPreviewDependentState();
+      syncCreatorPreviewUsageCount();
+      dispatchCreatorPreviewSettingsChanged();
+
+      showSettingsInfoToast(enabled ? 'Náhledy tvůrců zapnuty.' : 'Náhledy tvůrců vypnuty.');
+    });
+  }
+
+  if (creatorPreviewShowBirthToggle) {
+    creatorPreviewShowBirthToggle.checked = isCreatorPreviewBirthVisible();
+    creatorPreviewShowBirthToggle.addEventListener('change', () => {
+      localStorage.setItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY, String(creatorPreviewShowBirthToggle.checked));
+      syncCreatorPreviewUsageCount();
+      dispatchCreatorPreviewSettingsChanged();
+      showSettingsInfoToast(
+        creatorPreviewShowBirthToggle.checked
+          ? 'Datum narození v náhledu zapnuto.'
+          : 'Datum narození v náhledu vypnuto.',
+      );
+    });
+  }
+
+  if (creatorPreviewShowPhotoFromToggle) {
+    creatorPreviewShowPhotoFromToggle.checked = isCreatorPreviewPhotoFromVisible();
+    creatorPreviewShowPhotoFromToggle.addEventListener('change', () => {
+      localStorage.setItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, String(creatorPreviewShowPhotoFromToggle.checked));
+      syncCreatorPreviewUsageCount();
+      dispatchCreatorPreviewSettingsChanged();
+      showSettingsInfoToast(
+        creatorPreviewShowPhotoFromToggle.checked
+          ? '„Photo from“ v náhledu zapnuto.'
+          : '„Photo from“ v náhledu vypnuto.',
+      );
+    });
+  }
+
+  if (creatorPreviewGroupToggle) {
+    setCreatorPreviewCollapsedState(isCreatorPreviewSectionCollapsed());
+    creatorPreviewGroupToggle.addEventListener('click', () => {
+      const collapsed = creatorPreviewGroup?.classList.contains('is-collapsed') ?? true;
+      setCreatorPreviewCollapsedState(!collapsed);
+    });
+  }
+
+  syncCreatorPreviewUsageCount();
+
+  if (resetSettingsButton) {
+    resetSettingsButton.addEventListener('click', () => {
+      localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+      localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
+      localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
+      localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
+
+      syncSettingsControlsFromStorage();
+      dispatchGalleryPreviewSettingsChanged();
+      dispatchCreatorPreviewSettingsChanged();
+
+      showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
+    });
+  }
+
+  if (clearLocalStorageButton) {
+    clearLocalStorageButton.addEventListener('click', () => {
+      const modal = ensureLocalStorageModal();
+      modal.dispatchEvent(new CustomEvent('cc-lc-open'));
+    });
+  }
+
+  if (clearDatabaseButton) {
+    clearDatabaseButton.addEventListener('click', async () => {
+      try {
+        await deleteIndexedDB(INDEXED_DB_NAME);
+        invalidateRatingsModalCache();
+        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+        showSettingsInfoToast('IndexedDB byla smazána.');
+      } catch (error) {
+        console.error('[CC] Failed to delete IndexedDB:', error);
+        showSettingsInfoToast('Smazání DB selhalo.');
+      }
     });
   }
 

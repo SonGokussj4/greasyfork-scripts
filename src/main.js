@@ -7,6 +7,7 @@ import './styles/general.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { fancyAlert } from './fancy-alert.js';
+import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
 
 (async () => {
   'use strict';
@@ -23,6 +24,7 @@ import { fancyAlert } from './fancy-alert.js';
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();
+  initializeCreatorHoverPreview();
 
   // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
   // etc.).  Re-run addStars once the page is fully loaded and once more a bit

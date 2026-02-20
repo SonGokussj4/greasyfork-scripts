@@ -254,3 +254,96 @@ h3.film-title-nooverflow .cc-own-rating {
 .cc-gallery-size-link:hover {
     text-decoration: underline;
 }
+
+.cc-creator-preview {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10030;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.cc-creator-preview.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.cc-creator-preview-card {
+    width: 148px;
+    border-radius: 10px;
+    border: 1px solid rgba(128, 128, 128, 0.35);
+    background: rgba(252, 252, 252, 0.96);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    position: relative;
+}
+
+.cc-creator-preview-image {
+    display: block;
+    width: 100%;
+    height: 164px;
+    object-fit: cover;
+    object-position: center top;
+    background: #ececec;
+}
+
+.cc-creator-preview.is-no-image .cc-creator-preview-image {
+    background: linear-gradient(160deg, #f2f2f2, #e3e3e3);
+    opacity: 0;
+}
+
+.cc-creator-preview.is-no-image .cc-creator-preview-card::before {
+    content: 'Bez fotky';
+    position: absolute;
+    left: 50%;
+    top: 82px;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    font-weight: 600;
+    color: #777;
+    letter-spacing: 0.02em;
+    z-index: 1;
+}
+
+.cc-creator-preview-name {
+    padding: 6px 8px 7px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    color: #303030;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-creator-preview-meta {
+    padding: 0 8px 8px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(250, 250, 250, 0.92);
+}
+
+.cc-creator-preview-meta-line {
+    font-size: 10px;
+    line-height: 1.25;
+    color: #535353;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-creator-preview-meta-photo {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: initial;
+}
+
+.cc-creator-preview-meta-line+.cc-creator-preview-meta-line {
+    margin-top: 2px;
+}

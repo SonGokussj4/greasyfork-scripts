@@ -18,3 +18,7 @@ export const SUPABASE_ANON_KEY_STORAGE_KEY = 'cc_supabase_anon_key';
 export const DEV_PANEL_ALWAYS_VISIBLE = false;
 export const DEV_PERFORMANCE_METRICS = false;
 export const GALLERY_IMAGE_LINKS_ENABLED_KEY = 'cc_gallery_image_links_enabled';
+export const CREATOR_PREVIEW_ENABLED_KEY = 'cc_creator_preview_enabled';
+export const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
+export const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
+export const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';

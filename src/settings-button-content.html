@@ -96,6 +96,34 @@
                     <input type="checkbox" id="cc-enable-gallery-image-links" name="cc-enable-gallery-image-links" />
                     Zobrazovat formáty obrázků v galerii
                 </label>
+                <div class="cc-preview-group" id="cc-creator-preview-group">
+                    <button type="button" class="cc-preview-group-toggle" id="cc-creator-preview-group-toggle"
+                        aria-expanded="false" aria-controls="cc-creator-preview-group-body">
+                        <span class="cc-preview-group-toggle-left">
+                            <span class="cc-preview-group-chevron" aria-hidden="true"></span>
+                            <span class="cc-preview-group-title">Náhledy fotek tvůrců</span>
+                        </span>
+                        <span class="cc-preview-group-count" id="cc-creator-preview-count">0/2</span>
+                    </button>
+                    <div class="cc-preview-group-body" id="cc-creator-preview-group-body">
+                        <label class="cc-form-check cc-preview-group-main">
+                            <input type="checkbox" id="cc-enable-creator-preview" name="cc-enable-creator-preview" />
+                            Zobrazovat náhled fotky tvůrce při najetí
+                        </label>
+                        <div class="cc-preview-group-extra" id="cc-creator-preview-settings-extra">
+                            <label class="cc-form-check cc-preview-group-sub">
+                                <input type="checkbox" id="cc-creator-preview-show-birth"
+                                    name="cc-creator-preview-show-birth" />
+                                Zobrazovat datum narození
+                            </label>
+                            <label class="cc-form-check cc-preview-group-sub">
+                                <input type="checkbox" id="cc-creator-preview-show-photo-from"
+                                    name="cc-creator-preview-show-photo-from" />
+                                Zobrazovat „Photo from“
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <label class="cc-form-check">
                     <input type="checkbox" name="option2" /> Povolit automatickou aktualizaci dat
                 </label>
@@ -111,9 +139,9 @@
         <div class="article-content">
             <h3 class="cc-section-title">Další akce</h3>
             <div class="cc-maint-actions">
-                <button type="button" class="cc-maint-btn">Reset</button>
-                <button type="button" class="cc-maint-btn">Smazat LC</button>
-                <button type="button" class="cc-maint-btn">Smazat DB</button>
+                <button type="button" class="cc-maint-btn" id="cc-maint-reset-btn">Reset</button>
+                <button type="button" class="cc-maint-btn" id="cc-maint-clear-lc-btn">Smazat LC</button>
+                <button type="button" class="cc-maint-btn" id="cc-maint-clear-db-btn">Smazat DB</button>
             </div>
         </div>
     </article>
