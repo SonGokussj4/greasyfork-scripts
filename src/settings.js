@@ -1,6 +1,3 @@
-// addSettingsButton function that will create element 'li' as a 'let button'
-
-// Import html content from settings-button-content.html
 import htmlContent from './settings-button-content.html';
 import { initializeRatingsLoader } from './ratings-loader.js';
 import { initializeRatingsSync } from './ratings-sync.js';
@@ -25,38 +22,46 @@ const PROFILE_LINK_SELECTOR =
   'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 const MANAGED_LOCAL_STORAGE_PREFIXES = ['cc_', 'CSFD-Compare'];
 
+// ==========================================
+// UTILITY FUNCTIONS
+// ==========================================
+
+function getBoolSetting(key, defaultValue = true) {
+  const value = localStorage.getItem(key);
+  return value === null ? defaultValue : value === 'true';
+}
+
 function getProfileLinkElement() {
   return document.querySelector(PROFILE_LINK_SELECTOR);
 }
 
-function isGalleryImageLinksEnabled() {
-  const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-  return persistedValue === null ? true : persistedValue === 'true';
+function isUserLoggedIn() {
+  return Boolean(getProfileLinkElement());
 }
 
-function isCreatorPreviewEnabled() {
-  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY);
-  return persistedValue === null ? true : persistedValue === 'true';
+function getCurrentUserSlug() {
+  const match = getProfileLinkElement()
+    ?.getAttribute('href')
+    ?.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+  return match ? match[1] : undefined;
 }
 
-function isShowAllCreatorTabsEnabled() {
-  const persistedValue = localStorage.getItem(SHOW_ALL_CREATOR_TABS_KEY);
-  return persistedValue === null ? false : persistedValue === 'true';
-}
+function getMostFrequentUserSlug(records) {
+  const counts = new Map();
+  for (const record of records) {
+    if (!record?.userSlug || !Number.isFinite(record?.movieId)) continue;
+    counts.set(record.userSlug, (counts.get(record.userSlug) || 0) + 1);
+  }
 
-function isCreatorPreviewBirthVisible() {
-  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-  return persistedValue === null ? true : persistedValue === 'true';
-}
-
-function isCreatorPreviewPhotoFromVisible() {
-  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
-  return persistedValue === null ? true : persistedValue === 'true';
-}
-
-function isCreatorPreviewSectionCollapsed() {
-  const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
-  return persistedValue === null ? true : persistedValue === 'true';
+  let bestSlug,
+    bestCount = -1;
+  for (const [slug, count] of counts.entries()) {
+    if (count > bestCount) {
+      bestSlug = slug;
+      bestCount = count;
+    }
+  }
+  return bestSlug;
 }
 
 function showSettingsInfoToast(message) {
@@ -64,65 +69,30 @@ function showSettingsInfoToast(message) {
   if (!toastEl) {
     toastEl = document.createElement('div');
     toastEl.id = 'cc-settings-info-toast';
-    toastEl.style.position = 'fixed';
-    toastEl.style.left = '50%';
-    toastEl.style.top = '70px';
-    toastEl.style.transform = 'translateX(-50%)';
-    toastEl.style.zIndex = '10020';
-    toastEl.style.padding = '8px 12px';
-    toastEl.style.borderRadius = '8px';
-    toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
-    toastEl.style.color = '#fff';
-    toastEl.style.fontSize = '12px';
-    toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
-    toastEl.style.display = 'none';
+    Object.assign(toastEl.style, {
+      position: 'fixed',
+      left: '50%',
+      top: '70px',
+      transform: 'translateX(-50%)',
+      zIndex: '10020',
+      padding: '8px 12px',
+      borderRadius: '8px',
+      background: 'rgba(40, 40, 40, 0.94)',
+      color: '#fff',
+      fontSize: '12px',
+      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.28)',
+      display: 'none',
+    });
     document.body.appendChild(toastEl);
   }
 
   toastEl.textContent = message;
   toastEl.style.display = 'block';
 
-  if (infoToastTimeoutId) {
-    clearTimeout(infoToastTimeoutId);
-  }
+  clearTimeout(infoToastTimeoutId);
   infoToastTimeoutId = window.setTimeout(() => {
     toastEl.style.display = 'none';
   }, 1800);
-}
-
-function getCurrentUserSlug() {
-  const profileEl = getProfileLinkElement();
-  const profileHref = profileEl?.getAttribute('href') || '';
-  const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-  return match ? match[1] : undefined;
-}
-
-function isUserLoggedIn() {
-  return Boolean(getProfileLinkElement());
-}
-
-function getMostFrequentUserSlug(records) {
-  const counts = new Map();
-
-  for (const record of records) {
-    const userSlug = record?.userSlug;
-    if (!userSlug || !Number.isFinite(record?.movieId)) {
-      continue;
-    }
-
-    counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
-  }
-
-  let bestSlug;
-  let bestCount = -1;
-  for (const [slug, count] of counts.entries()) {
-    if (count > bestCount) {
-      bestSlug = slug;
-      bestCount = count;
-    }
-  }
-
-  return bestSlug;
 }
 
 function escapeHtml(value) {
@@ -136,24 +106,16 @@ function escapeHtml(value) {
 
 function getManagedLocalStorageEntries() {
   const entries = [];
-
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const key = localStorage.key(index);
-    if (!key) {
-      continue;
-    }
-
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (!key) continue;
     if (
       key === SETTINGSNAME ||
       MANAGED_LOCAL_STORAGE_PREFIXES.some((prefix) => key.toLowerCase().startsWith(prefix.toLowerCase()))
     ) {
-      entries.push({
-        key,
-        value: localStorage.getItem(key) ?? '',
-      });
+      entries.push({ key, value: localStorage.getItem(key) ?? '' });
     }
   }
-
   return entries.sort((a, b) => a.key.localeCompare(b.key));
 }
 
@@ -161,189 +123,184 @@ function formatLocalStorageValue(value, maxLength = 120) {
   const normalized = String(value ?? '')
     .replace(/\s+/g, ' ')
     .trim();
-  if (normalized.length <= maxLength) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, maxLength - 1)}…`;
+  return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 1)}…`;
 }
 
+// ==========================================
+// MAIN INITIALIZATION
+// ==========================================
+
 async function addSettingsButton() {
-  ('use strict');
+  'use strict';
+
+  // 1. Create and Insert Button (Vanilla JS)
   const settingsButton = document.createElement('li');
-  settingsButton.classList.add('cc-menu-item');
+  settingsButton.className = 'cc-menu-item';
   settingsButton.innerHTML = htmlContent;
 
-  // Insert into the header bar immediately so the button appears as fast as possible.
-  // All async/event-listener setup below runs after the element is already visible.
-  const $button = $(settingsButton);
-  const $headerBar = $('.header-bar').first();
-  const $searchItem = $headerBar.children('li.item-search').first();
-  const $languageItem = $headerBar.children('li.user-language-switch').first();
-
-  if ($searchItem.length) {
-    $searchItem.after($button);
-  } else if ($languageItem.length) {
-    $languageItem.before($button);
-  } else {
-    $headerBar.prepend($button);
+  const headerBar = document.querySelector('.header-bar');
+  if (headerBar) {
+    const searchItem = headerBar.querySelector('li.item-search');
+    const languageItem = headerBar.querySelector('li.user-language-switch');
+    if (searchItem) searchItem.after(settingsButton);
+    else if (languageItem) languageItem.before(settingsButton);
+    else headerBar.prepend(settingsButton);
   }
 
+  // 2. Initialize Sub-Components
   initializeVersionUi(settingsButton).catch(() => undefined);
   initializeRatingsLoader(settingsButton);
   initializeRatingsSync(settingsButton);
 
-  const galleryImageLinksToggle = settingsButton.querySelector('#cc-enable-gallery-image-links');
-  const showAllCreatorTabsToggle = settingsButton.querySelector('#cc-show-all-creator-tabs');
-  if (galleryImageLinksToggle) {
-    galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
-    galleryImageLinksToggle.addEventListener('change', () => {
-      const enabled = galleryImageLinksToggle.checked;
-      localStorage.setItem(GALLERY_IMAGE_LINKS_ENABLED_KEY, String(enabled));
-      window.dispatchEvent(
-        new CustomEvent('cc-gallery-image-links-toggled', {
-          detail: { enabled },
-        }),
-      );
-
-      showSettingsInfoToast(enabled ? 'Formáty obrázků v galerii zapnuty.' : 'Formáty obrázků v galerii vypnuty.');
-    });
-  }
-
-  if (showAllCreatorTabsToggle) {
-    showAllCreatorTabsToggle.checked = isShowAllCreatorTabsEnabled();
-    showAllCreatorTabsToggle.addEventListener('change', () => {
-      const enabled = showAllCreatorTabsToggle.checked;
-      localStorage.setItem(SHOW_ALL_CREATOR_TABS_KEY, String(enabled));
-      window.dispatchEvent(
-        new CustomEvent('cc-show-all-creator-tabs-toggled', {
-          detail: { enabled },
-        }),
-      );
-      showSettingsInfoToast(enabled ? 'Všechny záložky tvůrce zobrazeny.' : 'Záložky tvůrce skryty.');
-    });
-  }
-
-  const creatorPreviewToggle = settingsButton.querySelector('#cc-enable-creator-preview');
+  // 3. Setup Toggles & DOM Elements
   const creatorPreviewGroup = settingsButton.querySelector('#cc-creator-preview-group');
-  const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
   const creatorPreviewCount = settingsButton.querySelector('#cc-creator-preview-count');
   const creatorPreviewGroupBody = settingsButton.querySelector('#cc-creator-preview-group-body');
-  const creatorPreviewShowBirthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
-  const creatorPreviewShowPhotoFromToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
-  const creatorPreviewSettingsExtra = settingsButton.querySelector('#cc-creator-preview-settings-extra');
-  const resetSettingsButton = settingsButton.querySelector('#cc-maint-reset-btn');
-  const clearLocalStorageButton = settingsButton.querySelector('#cc-maint-clear-lc-btn');
-  const clearDatabaseButton = settingsButton.querySelector('#cc-maint-clear-db-btn');
+  const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
+  const creatorSettingsExtra = settingsButton.querySelector('#cc-creator-preview-settings-extra');
 
-  const dispatchCreatorPreviewSettingsChanged = () => {
-    window.dispatchEvent(
-      new CustomEvent('cc-creator-preview-toggled', {
-        detail: {
-          enabled: isCreatorPreviewEnabled(),
-          showBirth: isCreatorPreviewBirthVisible(),
-          showPhotoFrom: isCreatorPreviewPhotoFromVisible(),
-        },
-      }),
-    );
-  };
+  // Generic Toggle Binder
+  const toggles = [];
+  function bindToggle(selector, storageKey, defaultValue, eventName, toastOn, toastOff, callback = null) {
+    const element = settingsButton.querySelector(selector);
+    if (!element) return;
 
-  const dispatchGalleryPreviewSettingsChanged = () => {
-    window.dispatchEvent(
-      new CustomEvent('cc-gallery-image-links-toggled', {
-        detail: { enabled: isGalleryImageLinksEnabled() },
-      }),
-    );
-  };
+    element.checked = getBoolSetting(storageKey, defaultValue);
+    toggles.push({ element, storageKey, defaultValue }); // Store for reset logic
 
-  const syncCreatorPreviewUsageCount = () => {
-    if (!creatorPreviewCount) {
-      return;
-    }
+    element.addEventListener('change', () => {
+      localStorage.setItem(storageKey, String(element.checked));
+      if (eventName) window.dispatchEvent(new CustomEvent(eventName, { detail: { enabled: element.checked } }));
+      if (toastOn && toastOff) showSettingsInfoToast(element.checked ? toastOn : toastOff);
+      if (callback) callback();
+    });
+    return element;
+  }
 
-    const total = Math.max(1, creatorPreviewSettingsExtra?.querySelectorAll('input[type="checkbox"]').length || 2);
-    const enabled = Boolean(creatorPreviewToggle?.checked);
-    const used =
-      Number(Boolean(creatorPreviewShowBirthToggle?.checked)) +
-      Number(Boolean(creatorPreviewShowPhotoFromToggle?.checked));
+  // UI Syncer for Creator Previews
+  const updateCreatorPreviewUI = () => {
+    const enabled = getBoolSetting(CREATOR_PREVIEW_ENABLED_KEY, true);
+    const showBirth = getBoolSetting(CREATOR_PREVIEW_SHOW_BIRTH_KEY, true);
+    const showPhoto = getBoolSetting(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, true);
+    const used = Number(showBirth) + Number(showPhoto);
 
-    creatorPreviewCount.textContent = enabled ? `${used}/${total}` : `-/${total}`;
+    const birthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
+    const photoToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
 
-    if (!creatorPreviewGroup) {
-      return;
-    }
+    if (birthToggle) birthToggle.disabled = !enabled;
+    if (photoToggle) photoToggle.disabled = !enabled;
+    if (creatorSettingsExtra) creatorSettingsExtra.classList.toggle('is-disabled', !enabled);
+    if (creatorPreviewCount) creatorPreviewCount.textContent = enabled ? `${used}/2` : `-/2`;
 
-    creatorPreviewGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
-    if (!enabled) {
-      creatorPreviewGroup.classList.add('is-status-off');
-      return;
-    }
-
-    if (used > 0) {
-      creatorPreviewGroup.classList.add('is-status-on-detailed');
-    } else {
-      creatorPreviewGroup.classList.add('is-status-on-minimal');
-    }
-  };
-
-  const setCreatorPreviewCollapsedState = (collapsed) => {
     if (creatorPreviewGroup) {
-      creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
-    }
-    if (creatorPreviewGroupToggle) {
-      creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
-    }
-    if (creatorPreviewGroupBody) {
-      creatorPreviewGroupBody.hidden = collapsed;
+      creatorPreviewGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
+      creatorPreviewGroup.classList.add(
+        !enabled ? 'is-status-off' : used > 0 ? 'is-status-on-detailed' : 'is-status-on-minimal',
+      );
     }
 
+    window.dispatchEvent(
+      new CustomEvent('cc-creator-preview-toggled', { detail: { enabled, showBirth, showPhotoFrom: showPhoto } }),
+    );
+  };
+
+  // Bind All Toggles
+  bindToggle(
+    '#cc-enable-gallery-image-links',
+    GALLERY_IMAGE_LINKS_ENABLED_KEY,
+    true,
+    'cc-gallery-image-links-toggled',
+    'Formáty obrázků v galerii zapnuty.',
+    'Formáty obrázků v galerii vypnuty.',
+  );
+  bindToggle(
+    '#cc-show-all-creator-tabs',
+    SHOW_ALL_CREATOR_TABS_KEY,
+    false,
+    'cc-show-all-creator-tabs-toggled',
+    'Všechny záložky tvůrce zobrazeny.',
+    'Záložky tvůrce skryty.',
+  );
+  bindToggle(
+    '#cc-enable-creator-preview',
+    CREATOR_PREVIEW_ENABLED_KEY,
+    true,
+    null,
+    'Náhledy tvůrců zapnuty.',
+    'Náhledy tvůrců vypnuty.',
+    updateCreatorPreviewUI,
+  );
+  bindToggle(
+    '#cc-creator-preview-show-birth',
+    CREATOR_PREVIEW_SHOW_BIRTH_KEY,
+    true,
+    null,
+    'Datum narození v náhledu zapnuto.',
+    'Datum narození v náhledu vypnuto.',
+    updateCreatorPreviewUI,
+  );
+  bindToggle(
+    '#cc-creator-preview-show-photo-from',
+    CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
+    true,
+    null,
+    '„Photo from“ v náhledu zapnuto.',
+    '„Photo from“ v náhledu vypnuto.',
+    updateCreatorPreviewUI,
+  );
+
+  // Initialize UI State
+  updateCreatorPreviewUI();
+
+  // Collapsible Preview Section
+  const setPreviewCollapsedState = (collapsed) => {
+    if (creatorPreviewGroup) creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
+    if (creatorPreviewGroupToggle) creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
+    if (creatorPreviewGroupBody) creatorPreviewGroupBody.hidden = collapsed;
     localStorage.setItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY, String(collapsed));
   };
 
-  const syncCreatorPreviewDependentState = () => {
-    const enabled = creatorPreviewToggle ? creatorPreviewToggle.checked : isCreatorPreviewEnabled();
+  if (creatorPreviewGroupToggle) {
+    setPreviewCollapsedState(getBoolSetting(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY, true));
+    creatorPreviewGroupToggle.addEventListener('click', () => {
+      // invert current state rather than re-applying it
+      const currentlyCollapsed = creatorPreviewGroup?.classList.contains('is-collapsed') ?? true;
+      setPreviewCollapsedState(!currentlyCollapsed);
+    });
+  }
 
-    if (creatorPreviewShowBirthToggle) {
-      creatorPreviewShowBirthToggle.disabled = !enabled;
-    }
-
-    if (creatorPreviewShowPhotoFromToggle) {
-      creatorPreviewShowPhotoFromToggle.disabled = !enabled;
-    }
-
-    if (creatorPreviewSettingsExtra) {
-      creatorPreviewSettingsExtra.classList.toggle('is-disabled', !enabled);
-    }
-
-    syncCreatorPreviewUsageCount();
+  // 4. Maintenance Buttons Logic
+  const syncControlsFromStorage = () => {
+    toggles.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
+    updateCreatorPreviewUI();
   };
 
-  const syncSettingsControlsFromStorage = () => {
-    if (galleryImageLinksToggle) {
-      galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
-    }
-    if (showAllCreatorTabsToggle) {
-      showAllCreatorTabsToggle.checked = isShowAllCreatorTabsEnabled();
-    }
-    if (creatorPreviewToggle) {
-      creatorPreviewToggle.checked = isCreatorPreviewEnabled();
-    }
-    if (creatorPreviewShowBirthToggle) {
-      creatorPreviewShowBirthToggle.checked = isCreatorPreviewBirthVisible();
-    }
-    if (creatorPreviewShowPhotoFromToggle) {
-      creatorPreviewShowPhotoFromToggle.checked = isCreatorPreviewPhotoFromVisible();
-    }
+  settingsButton.querySelector('#cc-maint-reset-btn')?.addEventListener('click', () => {
+    localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+    localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
+    localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
+    localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
+    syncControlsFromStorage();
+    window.dispatchEvent(new CustomEvent('cc-gallery-image-links-toggled', { detail: { enabled: true } }));
+    showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
+  });
 
-    syncCreatorPreviewDependentState();
-    syncCreatorPreviewUsageCount();
-  };
+  settingsButton.querySelector('#cc-maint-clear-db-btn')?.addEventListener('click', async () => {
+    try {
+      await deleteIndexedDB(INDEXED_DB_NAME);
+      invalidateRatingsModalCache();
+      window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+      showSettingsInfoToast('IndexedDB byla smazána.');
+    } catch (error) {
+      console.error('[CC] Failed to delete IndexedDB:', error);
+      showSettingsInfoToast('Smazání DB selhalo.');
+    }
+  });
 
+  // Local Storage Modal Logic
   let localStorageModal;
   const ensureLocalStorageModal = () => {
-    if (localStorageModal) {
-      return localStorageModal;
-    }
+    if (localStorageModal) return localStorageModal;
 
     const overlay = document.createElement('div');
     overlay.className = 'cc-lc-modal-overlay';
@@ -357,13 +314,7 @@ async function addSettingsButton() {
         <div class="cc-lc-modal-help">Klíče používané CSFD-Compare (cc_*, CSFD-Compare*).</div>
         <div class="cc-lc-modal-body">
           <table class="cc-lc-table">
-            <thead>
-              <tr>
-                <th>Klíč</th>
-                <th>Hodnota</th>
-                <th>Akce</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Klíč</th><th>Hodnota</th><th>Akce</th></tr></thead>
             <tbody id="cc-lc-table-body"></tbody>
           </table>
         </div>
@@ -371,298 +322,139 @@ async function addSettingsButton() {
           <button type="button" class="cc-maint-btn" id="cc-lc-delete-all-btn">Smazat vše</button>
           <button type="button" class="cc-maint-btn" id="cc-lc-close-btn">Zavřít</button>
         </div>
-      </div>
-    `;
+      </div>`;
 
     const closeModal = () => {
       overlay.classList.remove('is-open');
       overlay.hidden = true;
     };
-
     const refreshTable = () => {
       const tableBody = overlay.querySelector('#cc-lc-table-body');
-      if (!tableBody) {
-        return;
-      }
-
+      if (!tableBody) return;
       const entries = getManagedLocalStorageEntries();
-      if (entries.length === 0) {
+      if (!entries.length) {
         tableBody.innerHTML = '<tr><td colspan="3" class="cc-lc-table-empty">Žádné relevantní položky.</td></tr>';
         return;
       }
-
       tableBody.innerHTML = entries
         .map(
           ({ key, value }) => `
-          <tr>
-            <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
-            <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
-            <td class="cc-lc-action">
-              <button type="button" class="cc-maint-btn cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
-            </td>
-          </tr>
-        `,
+        <tr>
+          <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
+          <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
+          <td class="cc-lc-action"><button type="button" class="cc-maint-btn cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button></td>
+        </tr>`,
         )
         .join('');
     };
 
-    overlay.addEventListener('click', (event) => {
-      if (event.target === overlay) {
-        closeModal();
-      }
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
     });
-
     overlay.querySelector('.cc-lc-modal-close')?.addEventListener('click', closeModal);
     overlay.querySelector('#cc-lc-close-btn')?.addEventListener('click', closeModal);
-    overlay.querySelector('#cc-lc-delete-all-btn')?.addEventListener('click', () => {
-      const entries = getManagedLocalStorageEntries();
-      for (const entry of entries) {
-        localStorage.removeItem(entry.key);
-      }
 
-      syncSettingsControlsFromStorage();
-      dispatchGalleryPreviewSettingsChanged();
-      dispatchCreatorPreviewSettingsChanged();
+    overlay.querySelector('#cc-lc-delete-all-btn')?.addEventListener('click', () => {
+      getManagedLocalStorageEntries().forEach((entry) => localStorage.removeItem(entry.key));
+      syncControlsFromStorage();
+      window.dispatchEvent(
+        new CustomEvent('cc-gallery-image-links-toggled', {
+          detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+        }),
+      );
       refreshTable();
       showSettingsInfoToast('Relevantní LocalStorage klíče byly smazány.');
     });
 
-    overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-
-      const deleteButton = target.closest('.cc-lc-delete-one');
-      if (!(deleteButton instanceof HTMLButtonElement)) {
-        return;
-      }
-
-      const storageKey = deleteButton.dataset.key;
-      if (!storageKey) {
-        return;
-      }
-
-      localStorage.removeItem(storageKey);
-      syncSettingsControlsFromStorage();
-      dispatchGalleryPreviewSettingsChanged();
-      dispatchCreatorPreviewSettingsChanged();
+    overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('.cc-lc-delete-one');
+      if (!deleteBtn || !deleteBtn.dataset.key) return;
+      localStorage.removeItem(deleteBtn.dataset.key);
+      syncControlsFromStorage();
+      window.dispatchEvent(
+        new CustomEvent('cc-gallery-image-links-toggled', {
+          detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+        }),
+      );
       refreshTable();
-      showSettingsInfoToast(`Smazán klíč: ${storageKey}`);
+      showSettingsInfoToast(`Smazán klíč: ${deleteBtn.dataset.key}`);
     });
 
     overlay.addEventListener('cc-lc-open', () => {
       refreshTable();
       overlay.hidden = false;
-      requestAnimationFrame(() => {
-        overlay.classList.add('is-open');
-      });
+      requestAnimationFrame(() => overlay.classList.add('is-open'));
     });
 
     document.body.appendChild(overlay);
-    localStorageModal = overlay;
-    return overlay;
+    return (localStorageModal = overlay);
   };
 
-  if (creatorPreviewToggle) {
-    creatorPreviewToggle.checked = isCreatorPreviewEnabled();
-    syncCreatorPreviewDependentState();
-    creatorPreviewToggle.addEventListener('change', () => {
-      const enabled = creatorPreviewToggle.checked;
-      localStorage.setItem(CREATOR_PREVIEW_ENABLED_KEY, String(enabled));
-      syncCreatorPreviewDependentState();
-      syncCreatorPreviewUsageCount();
-      dispatchCreatorPreviewSettingsChanged();
+  settingsButton.querySelector('#cc-maint-clear-lc-btn')?.addEventListener('click', () => {
+    ensureLocalStorageModal().dispatchEvent(new CustomEvent('cc-lc-open'));
+  });
 
-      showSettingsInfoToast(enabled ? 'Náhledy tvůrců zapnuty.' : 'Náhledy tvůrců vypnuty.');
-    });
-  }
+  // 5. Header Bar Actions (Sync, Info, Badges)
+  settingsButton.querySelector('#cc-sync-cloud-btn')?.addEventListener(
+    'click',
+    (e) => {
+      if (isUserLoggedIn()) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      showSettingsInfoToast('Cloud sync je dostupný až po přihlášení.');
+    },
+    true,
+  );
 
-  if (creatorPreviewShowBirthToggle) {
-    creatorPreviewShowBirthToggle.checked = isCreatorPreviewBirthVisible();
-    creatorPreviewShowBirthToggle.addEventListener('change', () => {
-      localStorage.setItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY, String(creatorPreviewShowBirthToggle.checked));
-      syncCreatorPreviewUsageCount();
-      dispatchCreatorPreviewSettingsChanged();
-      showSettingsInfoToast(
-        creatorPreviewShowBirthToggle.checked
-          ? 'Datum narození v náhledu zapnuto.'
-          : 'Datum narození v náhledu vypnuto.',
-      );
-    });
-  }
+  settingsButton.querySelector('#cc-version-info-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openVersionInfoModal(settingsButton).catch((err) => console.error('[CC] Failed to open version info modal:', err));
+  });
 
-  if (creatorPreviewShowPhotoFromToggle) {
-    creatorPreviewShowPhotoFromToggle.checked = isCreatorPreviewPhotoFromVisible();
-    creatorPreviewShowPhotoFromToggle.addEventListener('change', () => {
-      localStorage.setItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, String(creatorPreviewShowPhotoFromToggle.checked));
-      syncCreatorPreviewUsageCount();
-      dispatchCreatorPreviewSettingsChanged();
-      showSettingsInfoToast(
-        creatorPreviewShowPhotoFromToggle.checked
-          ? '„Photo from“ v náhledu zapnuto.'
-          : '„Photo from“ v náhledu vypnuto.',
-      );
-    });
-  }
+  const ratingsModalOptions = { getCurrentUserSlug, getMostFrequentUserSlug };
+  const setupBadge = (id, type) => {
+    const badge = settingsButton.querySelector(id);
+    if (!badge) return;
+    badge.setAttribute('role', 'button');
+    badge.setAttribute('tabindex', '0');
 
-  if (creatorPreviewGroupToggle) {
-    setCreatorPreviewCollapsedState(isCreatorPreviewSectionCollapsed());
-    creatorPreviewGroupToggle.addEventListener('click', () => {
-      const collapsed = creatorPreviewGroup?.classList.contains('is-collapsed') ?? true;
-      setCreatorPreviewCollapsedState(!collapsed);
-    });
-  }
+    const handler = (e) => {
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
 
-  syncCreatorPreviewUsageCount();
-
-  if (resetSettingsButton) {
-    resetSettingsButton.addEventListener('click', () => {
-      localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-      localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
-      localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-      localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
-
-      syncSettingsControlsFromStorage();
-      dispatchGalleryPreviewSettingsChanged();
-      dispatchCreatorPreviewSettingsChanged();
-
-      showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
-    });
-  }
-
-  if (clearLocalStorageButton) {
-    clearLocalStorageButton.addEventListener('click', () => {
-      const modal = ensureLocalStorageModal();
-      modal.dispatchEvent(new CustomEvent('cc-lc-open'));
-    });
-  }
-
-  if (clearDatabaseButton) {
-    clearDatabaseButton.addEventListener('click', async () => {
-      try {
-        await deleteIndexedDB(INDEXED_DB_NAME);
-        invalidateRatingsModalCache();
-        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
-        showSettingsInfoToast('IndexedDB byla smazána.');
-      } catch (error) {
-        console.error('[CC] Failed to delete IndexedDB:', error);
-        showSettingsInfoToast('Smazání DB selhalo.');
+      if (!isUserLoggedIn()) {
+        showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
+        return;
       }
-    });
-  }
+      openRatingsTableModal(settingsButton, type, ratingsModalOptions).catch((err) =>
+        console.error(`[CC] Failed to open ${type} ratings table:`, err),
+      );
+    };
 
-  const syncButton = settingsButton.querySelector('#cc-sync-cloud-btn');
-  if (syncButton) {
-    syncButton.addEventListener(
-      'click',
-      (event) => {
-        if (isUserLoggedIn()) {
-          return;
-        }
+    badge.addEventListener('click', handler);
+    badge.addEventListener('keydown', handler);
+  };
 
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        showSettingsInfoToast('Cloud sync je dostupný až po přihlášení.');
-      },
-      true,
+  setupBadge('#cc-badge-red', 'direct');
+  setupBadge('#cc-badge-black', 'computed');
+
+  // Badges Refresh Logic
+  const badgeRefreshOptions = { isUserLoggedIn, getCurrentUserSlug, getMostFrequentUserSlug };
+  const refreshBadgesSafely = () =>
+    refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((err) =>
+      console.error('[CC] Failed to refresh badges:', err),
     );
-  }
-
-  const versionInfoButton = settingsButton.querySelector('#cc-version-info-btn');
-  if (versionInfoButton) {
-    versionInfoButton.addEventListener('click', (event) => {
-      event.preventDefault();
-      openVersionInfoModal(settingsButton).catch((error) => {
-        console.error('[CC] Failed to open version info modal:', error);
-      });
-    });
-  }
-
-  const redBadge = settingsButton.querySelector('#cc-badge-red');
-  const blackBadge = settingsButton.querySelector('#cc-badge-black');
-  const ratingsModalOptions = {
-    getCurrentUserSlug,
-    getMostFrequentUserSlug,
-  };
-
-  if (redBadge) {
-    redBadge.setAttribute('role', 'button');
-    redBadge.setAttribute('tabindex', '0');
-    redBadge.title = 'Zobrazit načtená hodnocení';
-    redBadge.addEventListener('click', () => {
-      if (!isUserLoggedIn()) {
-        showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-        return;
-      }
-      openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((error) => {
-        console.error('[CC] Failed to open direct ratings table:', error);
-      });
-    });
-    redBadge.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        if (!isUserLoggedIn()) {
-          showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-          return;
-        }
-        openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((error) => {
-          console.error('[CC] Failed to open direct ratings table:', error);
-        });
-      }
-    });
-  }
-
-  if (blackBadge) {
-    blackBadge.setAttribute('role', 'button');
-    blackBadge.setAttribute('tabindex', '0');
-    blackBadge.title = 'Zobrazit spočtená hodnocení';
-    blackBadge.addEventListener('click', () => {
-      if (!isUserLoggedIn()) {
-        showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-        return;
-      }
-      openRatingsTableModal(settingsButton, 'computed', ratingsModalOptions).catch((error) => {
-        console.error('[CC] Failed to open computed ratings table:', error);
-      });
-    });
-    blackBadge.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        if (!isUserLoggedIn()) {
-          showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-          return;
-        }
-        openRatingsTableModal(settingsButton, 'computed', ratingsModalOptions).catch((error) => {
-          console.error('[CC] Failed to open computed ratings table:', error);
-        });
-      }
-    });
-  }
-
-  const badgeRefreshOptions = {
-    isUserLoggedIn,
-    getCurrentUserSlug,
-    getMostFrequentUserSlug,
-  };
-
-  const refreshBadgesSafely = () => {
-    refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
-      console.error('[CC] Failed to refresh badges:', error);
-    });
-  };
 
   refreshBadgesSafely();
-  // Single delayed retry in case the profile link wasn't initialised yet on first run.
   window.setTimeout(refreshBadgesSafely, 1200);
 
-  const handleRatingsUpdated = () => {
+  window.addEventListener('cc-ratings-updated', () => {
     invalidateRatingsModalCache();
     refreshBadgesSafely();
-  };
-  window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
+  });
 
-  initializeSettingsMenuHover($button);
+  // use the raw DOM element; helper no longer depends on jQuery
+  initializeSettingsMenuHover(settingsButton);
 }
 
 export { addSettingsButton };

@@ -49,35 +49,6 @@ function formatRatingForModal(ratingValue) {
   };
 }
 
-function extractSeriesInfoToken(record, typeKey) {
-  const candidates = [record?.url, record?.fullUrl, record?.name]
-    .filter(Boolean)
-    .map((value) => String(value).toLowerCase());
-
-  for (const source of candidates) {
-    const seasonEpisodeMatch = source.match(/s(\d{1,2})e(\d{1,2})/i);
-    if (seasonEpisodeMatch) {
-      const season = seasonEpisodeMatch[1].padStart(2, '0');
-      const episode = seasonEpisodeMatch[2].padStart(2, '0');
-      return `S${season}E${episode}`;
-    }
-
-    const seasonOnlyMatch = source.match(/(?:season|série|serie|seri[áa]l)[\s\-\(]*s?(\d{1,2})/i);
-    if (seasonOnlyMatch) {
-      const season = seasonOnlyMatch[1].padStart(2, '0');
-      return `S${season}`;
-    }
-
-    const episodeOnlyMatch = source.match(/(?:episode|epizoda|ep\.?)[\s\-\(]*(\d{1,3})/i);
-    if (episodeOnlyMatch) {
-      const episode = episodeOnlyMatch[1].padStart(2, '0');
-      return `E${episode}`;
-    }
-  }
-
-  return typeKey === 'season' ? 'S??' : typeKey === 'episode' ? 'E??' : '';
-}
-
 function getRatingSquareClass(ratingValue) {
   if (!Number.isFinite(ratingValue)) {
     return 'is-unknown';
@@ -88,6 +59,47 @@ function getRatingSquareClass(ratingValue) {
   if (ratingValue === 3) return 'is-3';
   if (ratingValue === 4) return 'is-4';
   return 'is-5';
+}
+
+export function extractSeriesInfoToken(record, typeKey) {
+  const candidates = [record?.seriesToken, record?.url, record?.fullUrl, record?.name]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase());
+
+  for (const source of candidates) {
+    // season+episode e.g. s01e04
+    const seasonEpisodeMatch = source.match(/s(\d{1,2})e(\d{1,2})/i);
+    if (seasonEpisodeMatch) {
+      const season = seasonEpisodeMatch[1].padStart(2, '0');
+      const episode = seasonEpisodeMatch[2].padStart(2, '0');
+      return `S${season}E${episode}`;
+    }
+
+    // season only e.g. season 2 or série S02
+    const seasonOnlyMatch = source.match(/(?:season|série|serie|seri[áa]l)[\s\-\(]*s?(\d{1,2})/i);
+    if (seasonOnlyMatch) {
+      const season = seasonOnlyMatch[1].padStart(2, '0');
+      return `S${season}`;
+    }
+
+    // episode only token e.g. episode 5
+    const episodeOnlyMatch = source.match(/(?:episode|epizoda|ep\.?)[\s\-\(]*(\d{1,3})/i);
+    if (episodeOnlyMatch) {
+      const episode = episodeOnlyMatch[1].padStart(2, '0');
+      return `E${episode}`;
+    }
+
+    // bare e##
+    const bareE = source.match(/^e(\d{1,2})$/i);
+    if (bareE) {
+      return `E${bareE[1].padStart(2, '0')}`;
+    }
+  }
+
+  // fallback default based on type
+  if (typeKey === 'season') return 'S??';
+  if (typeKey === 'episode') return 'E??';
+  return '';
 }
 
 function parseCzechDateToSortableValue(dateText) {

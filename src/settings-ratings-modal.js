@@ -67,15 +67,19 @@ function getModalTitleForScope(scope) {
 }
 
 export async function openRatingsTableModal(rootElement, scope, callbacks) {
+  console.debug('[CC] openRatingsTableModal called', { scope, callbacks });
   const getCurrentUserSlug = callbacks?.getCurrentUserSlug;
   const getMostFrequentUserSlug = callbacks?.getMostFrequentUserSlug;
 
   let userSlug = getCurrentUserSlug?.();
+  console.debug('[CC] initial userSlug from callback', userSlug);
   if (!userSlug) {
     const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
     userSlug = getMostFrequentUserSlug?.(records);
+    console.debug('[CC] fallback userSlug from records', userSlug);
   }
   if (!userSlug) {
+    console.warn('[CC] openRatingsTableModal aborting, no userSlug');
     return;
   }
 

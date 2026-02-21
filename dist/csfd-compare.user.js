@@ -8,7 +8,6 @@
 // @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
 // @include      *csfd.cz/*
 // @include      *csfd.sk/*
-// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
 // @require      https://greasyfork.org/scripts/449554-csfd-compare-utils/code/csfd-compare-utils.js?version=1100309
 // @grant        GM_addStyle
 // @run-at       document-start
@@ -880,7 +879,7 @@
   var css_248z = ".cc-flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-flex-column{-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-flex-row{-webkit-box-orient:horizontal;-webkit-box-direction:normal;-ms-flex-direction:row;flex-direction:row}.cc-flex-row-reverse{-webkit-box-orient:horizontal;-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.cc-flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.cc-justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.cc-justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.cc-justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-justify-around{-ms-flex-pack:distribute;justify-content:space-around}.cc-align-center{text-align:center}.cc-align-left{text-align:left}.cc-align-right{text-align:right}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.cc-grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.cc-grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.cc-grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.cc-grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.cc-gap-5{gap:5px}.cc-gap-10{gap:10px}.cc-gap-30{gap:30px}.cc-ml-auto{margin-left:auto}.cc-mr-auto{margin-right:auto}.cc-ph-5{padding:0 5px}.cc-ph-10{padding:0 10px}.cc-pv-5{padding:5px 0}.cc-pv-10{padding:10px 0}.cc-mh-5{margin:0 5px}.cc-mh-10{margin:0 10px}.cc-mv-5{margin:5px 0}.cc-mv-10{margin:10px 0}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:hsla(0,34%,69%,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-ratings-table-export{cursor:pointer;font-size:11px;margin-left:auto;padding:5px 7px;text-align:center}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.article-header{padding-top:2px}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:176px}.cc-creator-preview-image{background:#ececec;display:block;height:200px;-o-object-fit:contain;object-fit:contain;-o-object-position:center center;object-position:center center;width:100%}.cc-creator-preview.is-no-image .cc-creator-preview-image{background:linear-gradient(160deg,#f2f2f2,#e3e3e3);opacity:0}.cc-creator-preview.is-no-image .cc-creator-preview-card:before{color:#777;content:\"Bez fotky\";font-size:12px;font-weight:600;left:50%;letter-spacing:.02em;position:absolute;top:82px;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);z-index:1}.cc-creator-preview-name{color:#303030;display:-webkit-box;display:-ms-flexbox;display:flex;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:7px 8px 8px;text-align:center;text-overflow:ellipsis;white-space:nowrap;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;gap:4px;justify-content:center}.cc-creator-preview-name-flag{height:auto;width:14px;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 9px}.cc-creator-preview-meta-line{color:#434343;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}.cc-creator-preview-meta-birth{color:#2f2f2f;font-size:12px;font-weight:600;line-height:1.4;white-space:normal}.cc-creator-preview-meta-birth-age-inline{color:#666;font-size:11px;font-weight:500}.cc-creator-preview-meta-age{color:#595959;font-size:11px;font-weight:600;text-align:center}.cc-creator-preview-meta-photo{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:baseline;-ms-flex-align:baseline;align-items:baseline;color:#505050;font-weight:600;gap:6px;min-width:0;white-space:nowrap}.cc-creator-preview-meta-photo:before{content:\"🎬\";line-height:1;margin-right:2px}.cc-creator-preview-meta-photo.is-copyright:before{content:\"©\";font-weight:700}.cc-creator-preview-meta-photo-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo-year{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-creator-preview-meta-photo.is-movie{color:#ba0305}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-year{font-weight:700}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source{line-height:1;white-space:nowrap}.cc-creator-preview-meta-photo.is-copyright{color:#4c4c4c}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-year{display:none}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-source{display:-webkit-box;overflow:hidden;text-overflow:clip;white-space:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical}nav.tab-nav.cc-show-all-tabs{padding-right:0!important}nav.tab-nav.cc-show-all-tabs .tab-nav-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;list-style:none;margin:0;padding:0;width:100%}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item{-webkit-box-flex:1;-ms-flex:1 1 auto;flex:1 1 auto;min-width:0;top:-4px}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active{top:0}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link{display:block;overflow:hidden;padding:0 5px;text-align:center;text-overflow:ellipsis;white-space:nowrap}";
   styleInject(css_248z);
 
-  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.6</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <form class=\"cc-settings-form\">\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" name=\"cc-enable-gallery-image-links\" />\r\n                    Zobrazovat formáty obrázků v galerii\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-show-all-creator-tabs\" name=\"cc-show-all-creator-tabs\" />\r\n                    Zobrazit všechny záložky tvůrce\r\n                </label>\r\n                <div class=\"cc-preview-group\" id=\"cc-creator-preview-group\">\r\n                    <button type=\"button\" class=\"cc-preview-group-toggle\" id=\"cc-creator-preview-group-toggle\"\r\n                        aria-expanded=\"false\" aria-controls=\"cc-creator-preview-group-body\">\r\n                        <span class=\"cc-preview-group-toggle-left\">\r\n                            <span class=\"cc-preview-group-chevron\" aria-hidden=\"true\"></span>\r\n                            <span class=\"cc-preview-group-title\">Náhledy fotek tvůrců</span>\r\n                        </span>\r\n                        <span class=\"cc-preview-group-count\" id=\"cc-creator-preview-count\">0/2</span>\r\n                    </button>\r\n                    <div class=\"cc-preview-group-body\" id=\"cc-creator-preview-group-body\">\r\n                        <label class=\"cc-form-check cc-preview-group-main\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" name=\"cc-enable-creator-preview\" />\r\n                            Zobrazovat náhled fotky tvůrce při najetí\r\n                        </label>\r\n                        <div class=\"cc-preview-group-extra\" id=\"cc-creator-preview-settings-extra\">\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\"\r\n                                    name=\"cc-creator-preview-show-birth\" />\r\n                                Zobrazovat datum narození\r\n                            </label>\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\"\r\n                                    name=\"cc-creator-preview-show-photo-from\" />\r\n                                Zobrazovat „Photo from“\r\n                            </label>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" name=\"option2\" /> Povolit automatickou aktualizaci dat\r\n                </label>\r\n                <label class=\"cc-form-field\">\r\n                    <span>Vlastní štítek sekce</span>\r\n                    <input type=\"text\" name=\"sectionLabel\" placeholder=\"Např. Můj CSFD Compare\" />\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-reset-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-lc-btn\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-db-btn\">Smazat DB</button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
+  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.6</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <form class=\"cc-settings-form\">\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" name=\"cc-enable-gallery-image-links\" />\r\n                    Zobrazovat formáty obrázků v galerii\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-show-all-creator-tabs\" name=\"cc-show-all-creator-tabs\" />\r\n                    Zobrazit všechny záložky tvůrce\r\n                </label>\r\n                <div class=\"cc-preview-group\" id=\"cc-creator-preview-group\">\r\n                    <button type=\"button\" class=\"cc-preview-group-toggle\" id=\"cc-creator-preview-group-toggle\"\r\n                        aria-expanded=\"false\" aria-controls=\"cc-creator-preview-group-body\">\r\n                        <span class=\"cc-preview-group-toggle-left\">\r\n                            <span class=\"cc-preview-group-chevron\" aria-hidden=\"true\"></span>\r\n                            <span class=\"cc-preview-group-title\">Náhledy fotek tvůrců</span>\r\n                        </span>\r\n                        <span class=\"cc-preview-group-count\" id=\"cc-creator-preview-count\">0/2</span>\r\n                    </button>\r\n                    <div class=\"cc-preview-group-body\" id=\"cc-creator-preview-group-body\">\r\n                        <label class=\"cc-form-check cc-preview-group-main\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" name=\"cc-enable-creator-preview\" />\r\n                            Zobrazovat náhled fotky tvůrce při najetí\r\n                        </label>\r\n                        <div class=\"cc-preview-group-extra\" id=\"cc-creator-preview-settings-extra\">\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\"\r\n                                    name=\"cc-creator-preview-show-birth\" />\r\n                                Zobrazovat datum narození\r\n                            </label>\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\"\r\n                                    name=\"cc-creator-preview-show-photo-from\" />\r\n                                Zobrazovat „Photo from“\r\n                            </label>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" name=\"option2\" /> Povolit automatickou aktualizaci dat\r\n                </label>\r\n                <label class=\"cc-form-field\">\r\n                    <span>Vlastní štítek sekce</span>\r\n                    <input type=\"text\" data-bwignore=\"true\" name=\"sectionLabel\" placeholder=\"Např. Můj CSFD Compare\" />\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-reset-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-lc-btn\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-db-btn\">Smazat DB</button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
 
   const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
   const REQUEST_DELAY_MIN_MS = 250;
@@ -1056,7 +1055,34 @@
     const infoValues = Array.from(row.querySelectorAll('.film-title-info .info')).map((el) => el.textContent.trim());
 
     const yearValue = infoValues.find((value) => /^\d{4}$/.test(value));
+    // rawType is the first non-year info (e.g. "epizoda" or "seriál").
     const rawType = infoValues.find((value) => !/^\d{4}$/.test(value));
+    // try to pick up a season/episode token such as (S01E04) that appears as a
+    // separate info element; store it without parentheses so downstream code can
+    // display it correctly.
+    const tokenMatch = infoValues.find((value) => /^\(S\d{1,2}(?:E\d{1,2})?\)$/.test(value));
+    let seriesToken = tokenMatch ? tokenMatch.replace(/[()]/g, '') : '';
+    if (!seriesToken) {
+      const nameParen = name.match(/\(S\d{1,2}(?:E\d{1,2})?\)/i);
+      if (nameParen) {
+        seriesToken = nameParen[0].replace(/[()]/g, '');
+      } else {
+        const nameSe = name.match(/S(\d{1,2})E(\d{1,2})/i);
+        if (nameSe) {
+          seriesToken = `S${nameSe[1].padStart(2, '0')}E${nameSe[2].padStart(2, '0')}`;
+        } else {
+          const nameEp = name.match(/Episode\s*(\d{1,3})/i);
+          if (nameEp) {
+            seriesToken = `E${nameEp[1].padStart(2, '0')}`;
+          } else {
+            const nameSeason = name.match(/Season\s*(\d{1,2})/i);
+            if (nameSeason) {
+              seriesToken = `S${nameSeason[1].padStart(2, '0')}`;
+            }
+          }
+        }
+      }
+    }
 
     const starRatingWrapper = row.querySelector('td.star-rating-only .star-rating');
     const starEl = starRatingWrapper?.querySelector('.stars');
@@ -1087,6 +1113,7 @@
       computed,
       computedCount,
       computedFromText,
+      seriesToken,
       lastUpdate: new Date().toISOString(),
     };
   }
@@ -1114,12 +1141,14 @@
 
   function createRecordFingerprint(record) {
     const computedCount = Number.isFinite(record?.computedCount) ? String(record.computedCount) : '';
+    const token = record?.seriesToken || '';
     return [
       Number.isFinite(record?.rating) ? String(record.rating) : '',
       record?.date || '',
       record?.computed === true ? '1' : '0',
       computedCount,
       record?.computedFromText || '',
+      token,
     ].join('|');
   }
 
@@ -1744,8 +1773,18 @@
         incremental,
       });
 
+      // previously we stopped early during incremental runs once the count
+      // reached totalRatings and we saw a stable page.  this was efficient when
+      // we only cared about new entries, but it meant that metadata-only changes
+      // (like adding a seriesToken) on later pages would never be detected.  by
+      // requiring non-incremental mode we ensure full scans when the user explicitly
+      // requests updates, while still allowing non-incremental callers to abort.
       const shouldStopEarly =
-        incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1;
+        !incremental &&
+        page >= 2 &&
+        totalRatings > 0 &&
+        directRatingsCount >= totalRatings &&
+        consecutiveStablePages >= 1;
 
       if (shouldStopEarly) {
         stoppedEarly = true;
@@ -2189,7 +2228,11 @@
     document.querySelector('.cc-sync-modal-overlay')?.remove();
   }
 
-  function createSyncSetupModal() {
+  /**
+   * Creates and displays the Sync Setup modal.
+   * @param {Function} onSaveCallback - Function to run after the user clicks "Uložit" (Save).
+   */
+  function createSyncSetupModal(onSaveCallback) {
     removeSyncModal();
 
     const { enabled, accessKey } = getSyncSetupState();
@@ -2199,30 +2242,44 @@
 
     const modal = document.createElement('div');
     modal.className = 'cc-sync-modal';
+
+    // Updated HTML for a much better User Experience
     modal.innerHTML = `
     <div class="cc-sync-modal-head">
-      <h3>Cloud sync setup (beta)</h3>
-      <button type="button" class="cc-sync-close" aria-label="Close">&times;</button>
+      <h3>Nastavení Cloud Sync <span style="color: #aa2c16; font-size: 11px; vertical-align: middle;">(BETA)</span></h3>
+      <button type="button" class="cc-sync-close" aria-label="Zavřít">&times;</button>
     </div>
-    <p class="cc-sync-help">
-      Nastavte jeden Sync key. Funkční cloud synchronizace bude doplněna v dalším kroku.
-    </p>
-    <label class="cc-sync-toggle-row">
-      <input id="cc-sync-enabled-input" type="checkbox" ${enabled ? 'checked' : ''}>
-      <span>Povolit sync</span>
-    </label>
-    <label class="cc-sync-label" for="cc-sync-key-input">Sync key</label>
-    <input id="cc-sync-key-input" class="cc-sync-input" type="password" placeholder="Vložte váš Sync key" value="${accessKey.replace(/"/g, '&quot;')}">
+
+    <div style="font-size: 12px; color: #444; margin-bottom: 14px; line-height: 1.4;">
+      <p style="margin-top: 0;">
+        Zálohujte svá hodnocení a synchronizujte je napříč zařízeními (např. mezi stolním PC a notebookem).
+      </p>
+      <p style="margin-bottom: 0;">
+        Pro spárování zařízení vložte svůj osobní <strong>Sync Token</strong>.
+        <br>
+        <a href="#" target="_blank" style="color: #aa2c16; text-decoration: none; font-weight: 600;">Jak získám svůj Token?</a> </p>
+    </div>
+
+    <div style="background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 14px;">
+      <label class="cc-sync-toggle-row" style="margin-bottom: 8px; display: flex; cursor: pointer;">
+        <input id="cc-sync-enabled-input" type="checkbox" ${enabled ? 'checked' : ''} style="margin-right: 8px; accent-color: #aa2c16;">
+        <span style="font-weight: 600; color: #222;">Povolit synchronizaci</span>
+      </label>
+
+      <label class="cc-sync-label" for="cc-sync-key-input" style="font-weight: 600; margin-top: 8px;">Váš Sync Token</label>
+      <input id="cc-sync-key-input" class="cc-sync-input" type="password" placeholder="Např. a1b2c3d4-e5f6..." value="${accessKey.replace(/"/g, '&quot;')}" style="margin-top: 4px; border: 1px solid #ccc;">
+    </div>
+
     <div class="cc-sync-actions">
-      <button type="button" class="cc-sync-save cc-button cc-button-red">Uložit</button>
-      <button type="button" class="cc-sync-cancel cc-button cc-button-black">Zavřít</button>
+      <button type="button" class="cc-sync-save cc-button cc-button-red">Uložit nastavení</button>
+      <button type="button" class="cc-sync-cancel cc-button cc-button-black">Zrušit</button>
     </div>
-    <div class="cc-sync-note">Tip: stejný key použijte na obou počítačích.</div>
   `;
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
+    // Trigger CSS transition
     requestAnimationFrame(() => {
       overlay.classList.add('visible');
     });
@@ -2233,13 +2290,12 @@
     };
 
     overlay.addEventListener('click', (event) => {
-      if (event.target === overlay) {
-        closeModal();
-      }
+      if (event.target === overlay) closeModal();
     });
 
     modal.querySelector('.cc-sync-close')?.addEventListener('click', closeModal);
     modal.querySelector('.cc-sync-cancel')?.addEventListener('click', closeModal);
+
     modal.querySelector('.cc-sync-save')?.addEventListener('click', () => {
       const enabledInput = modal.querySelector('#cc-sync-enabled-input');
       const keyInput = modal.querySelector('#cc-sync-key-input');
@@ -2249,25 +2305,30 @@
         accessKey: keyInput?.value || '',
       });
 
+      // Execute the callback to instantly update the button UI
+      if (onSaveCallback) {
+        onSaveCallback();
+      }
+
       closeModal();
     });
   }
 
   function updateSyncButtonLabel(button) {
-    const { enabled } = getSyncSetupState();
-    button.classList.toggle('is-enabled', enabled);
-    button.setAttribute('title', enabled ? 'Cloud sync zapnutý' : 'Cloud sync');
-    button.setAttribute('aria-label', enabled ? 'Cloud sync zapnutý' : 'Cloud sync');
+    const { enabled, accessKey } = getSyncSetupState();
+
+    // Only show as fully enabled if the checkbox is checked AND they actually provided a key
+    const isFullyEnabled = enabled && accessKey.length > 0;
+
+    button.classList.toggle('is-enabled', isFullyEnabled);
+    button.setAttribute('title', isFullyEnabled ? 'Cloud sync je aktivní' : 'Nastavit Cloud sync');
+    button.setAttribute('aria-label', isFullyEnabled ? 'Cloud sync zapnutý' : 'Nastavit Cloud sync');
   }
 
   function initializeRatingsSync(rootElement) {
     const syncButton = rootElement.querySelector('#cc-sync-cloud-btn');
 
-    if (!syncButton) {
-      return;
-    }
-
-    if (syncButton.dataset.ccSyncBound === 'true') {
+    if (!syncButton || syncButton.dataset.ccSyncBound === 'true') {
       return;
     }
 
@@ -2275,8 +2336,10 @@
     updateSyncButtonLabel(syncButton);
 
     syncButton.addEventListener('click', () => {
-      createSyncSetupModal();
-      setTimeout(() => updateSyncButtonLabel(syncButton), 220);
+      // We pass the update logic as a callback so it fires ONLY when the user clicks "Save"
+      createSyncSetupModal(() => {
+        updateSyncButtonLabel(syncButton);
+      });
     });
   }
 
@@ -2890,35 +2953,6 @@
     };
   }
 
-  function extractSeriesInfoToken(record, typeKey) {
-    const candidates = [record?.url, record?.fullUrl, record?.name]
-      .filter(Boolean)
-      .map((value) => String(value).toLowerCase());
-
-    for (const source of candidates) {
-      const seasonEpisodeMatch = source.match(/s(\d{1,2})e(\d{1,2})/i);
-      if (seasonEpisodeMatch) {
-        const season = seasonEpisodeMatch[1].padStart(2, '0');
-        const episode = seasonEpisodeMatch[2].padStart(2, '0');
-        return `S${season}E${episode}`;
-      }
-
-      const seasonOnlyMatch = source.match(/(?:season|série|serie|seri[áa]l)[\s\-\(]*s?(\d{1,2})/i);
-      if (seasonOnlyMatch) {
-        const season = seasonOnlyMatch[1].padStart(2, '0');
-        return `S${season}`;
-      }
-
-      const episodeOnlyMatch = source.match(/(?:episode|epizoda|ep\.?)[\s\-\(]*(\d{1,3})/i);
-      if (episodeOnlyMatch) {
-        const episode = episodeOnlyMatch[1].padStart(2, '0');
-        return `E${episode}`;
-      }
-    }
-
-    return typeKey === 'season' ? 'S??' : typeKey === 'episode' ? 'E??' : '';
-  }
-
   function getRatingSquareClass(ratingValue) {
     if (!Number.isFinite(ratingValue)) {
       return 'is-unknown';
@@ -2929,6 +2963,47 @@
     if (ratingValue === 3) return 'is-3';
     if (ratingValue === 4) return 'is-4';
     return 'is-5';
+  }
+
+  function extractSeriesInfoToken(record, typeKey) {
+    const candidates = [record?.seriesToken, record?.url, record?.fullUrl, record?.name]
+      .filter(Boolean)
+      .map((value) => String(value).toLowerCase());
+
+    for (const source of candidates) {
+      // season+episode e.g. s01e04
+      const seasonEpisodeMatch = source.match(/s(\d{1,2})e(\d{1,2})/i);
+      if (seasonEpisodeMatch) {
+        const season = seasonEpisodeMatch[1].padStart(2, '0');
+        const episode = seasonEpisodeMatch[2].padStart(2, '0');
+        return `S${season}E${episode}`;
+      }
+
+      // season only e.g. season 2 or série S02
+      const seasonOnlyMatch = source.match(/(?:season|série|serie|seri[áa]l)[\s\-\(]*s?(\d{1,2})/i);
+      if (seasonOnlyMatch) {
+        const season = seasonOnlyMatch[1].padStart(2, '0');
+        return `S${season}`;
+      }
+
+      // episode only token e.g. episode 5
+      const episodeOnlyMatch = source.match(/(?:episode|epizoda|ep\.?)[\s\-\(]*(\d{1,3})/i);
+      if (episodeOnlyMatch) {
+        const episode = episodeOnlyMatch[1].padStart(2, '0');
+        return `E${episode}`;
+      }
+
+      // bare e##
+      const bareE = source.match(/^e(\d{1,2})$/i);
+      if (bareE) {
+        return `E${bareE[1].padStart(2, '0')}`;
+      }
+    }
+
+    // fallback default based on type
+    if (typeKey === 'season') return 'S??';
+    if (typeKey === 'episode') return 'E??';
+    return '';
   }
 
   function parseCzechDateToSortableValue(dateText) {
@@ -3337,6 +3412,7 @@
     };
 
     overlay.openWithData = ({ rows, modalTitle }) => {
+      console.debug('[CC] ratings modal opening, rows count', rows.length, modalTitle);
       // update export button availability (always enabled since rows supplied)
       if (exportBtn) exportBtn.disabled = rows.length === 0;
       state.rows = rows;
@@ -3588,15 +3664,19 @@
   }
 
   async function openRatingsTableModal(rootElement, scope, callbacks) {
+    console.debug('[CC] openRatingsTableModal called', { scope, callbacks });
     const getCurrentUserSlug = callbacks?.getCurrentUserSlug;
     const getMostFrequentUserSlug = callbacks?.getMostFrequentUserSlug;
 
     let userSlug = getCurrentUserSlug?.();
+    console.debug('[CC] initial userSlug from callback', userSlug);
     if (!userSlug) {
       const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
       userSlug = getMostFrequentUserSlug?.(records);
+      console.debug('[CC] fallback userSlug from records', userSlug);
     }
     if (!userSlug) {
+      console.warn('[CC] openRatingsTableModal aborting, no userSlug');
       return;
     }
 
@@ -3681,26 +3761,57 @@
   const HEADER_HOVER_STORAGE_KEY = 'headerBarHovered';
   const HOVER_TOGGLE_DELAY_MS = 200;
 
-  function bindHoverHandlers($menuButton, timeoutState) {
-    $menuButton.add($menuButton.find('.dropdown-content')).hover(
-      function () {
-        clearTimeout(timeoutState.hideTimeout);
-        timeoutState.hoverTimeout = setTimeout(() => {
-          $('.header-bar li').addClass('hovered');
-          $menuButton.addClass('active');
-        }, HOVER_TOGGLE_DELAY_MS);
-      },
-      function () {
-        clearTimeout(timeoutState.hoverTimeout);
-        timeoutState.hideTimeout = setTimeout(() => {
-          $('.header-bar li').removeClass('hovered');
-          $menuButton.removeClass('active');
-        }, HOVER_TOGGLE_DELAY_MS);
-      },
-    );
+  let normalListeners = [];
+
+  function addHoveredClass() {
+    document.querySelectorAll('.header-bar li').forEach((li) => li.classList.add('hovered'));
   }
 
-  function initializeSettingsMenuHover($menuButton) {
+  function removeHoveredClass() {
+    document.querySelectorAll('.header-bar li').forEach((li) => li.classList.remove('hovered'));
+  }
+
+  function clearNormalListeners() {
+    normalListeners.forEach(({ el, type, handler }) => el.removeEventListener(type, handler));
+    normalListeners = [];
+  }
+
+  function bindHoverHandlers(menuButton, timeoutState) {
+    clearNormalListeners();
+    const dropdown = menuButton.querySelector('.dropdown-content');
+    const targets = [menuButton];
+    if (dropdown) targets.push(dropdown);
+
+    targets.forEach((el) => {
+      const onEnter = () => {
+        clearTimeout(timeoutState.hideTimeout);
+        timeoutState.hoverTimeout = setTimeout(() => {
+          addHoveredClass();
+          menuButton.classList.add('active');
+        }, HOVER_TOGGLE_DELAY_MS);
+      };
+      const onLeave = () => {
+        clearTimeout(timeoutState.hoverTimeout);
+        timeoutState.hideTimeout = setTimeout(() => {
+          removeHoveredClass();
+          menuButton.classList.remove('active');
+        }, HOVER_TOGGLE_DELAY_MS);
+      };
+      el.addEventListener('mouseenter', onEnter);
+      el.addEventListener('mouseleave', onLeave);
+      normalListeners.push({ el, type: 'mouseenter', handler: onEnter });
+      normalListeners.push({ el, type: 'mouseleave', handler: onLeave });
+    });
+  }
+
+  function initializeSettingsMenuHover(menuButton) {
+    if (typeof menuButton === 'string') {
+      menuButton = document.querySelector(menuButton);
+    }
+    if (!(menuButton instanceof Element) && menuButton && menuButton.jquery) {
+      menuButton = menuButton[0];
+    }
+
     let hoverTimeout;
     let hideTimeout;
 
@@ -3710,16 +3821,18 @@
       if (!controlsContainer) {
         controlsContainer = document.createElement('div');
         controlsContainer.className = 'fancy-alert-controls';
-        controlsContainer.style.position = 'fixed';
-        controlsContainer.style.top = '4px';
-        controlsContainer.style.right = '150px';
-        controlsContainer.style.zIndex = '9999';
-        controlsContainer.style.display = 'cc-flex';
-        controlsContainer.style.alignItems = 'center';
-        controlsContainer.style.background = 'rgba(255,255,255,0.95)';
-        controlsContainer.style.borderRadius = '8px';
-        controlsContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-        controlsContainer.style.padding = '8px 16px';
+        Object.assign(controlsContainer.style, {
+          position: 'fixed',
+          top: '4px',
+          right: '150px',
+          zIndex: '9999',
+          display: 'cc-flex',
+          alignItems: 'center',
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          padding: '8px 16px',
+        });
         document.body.appendChild(controlsContainer);
       }
 
@@ -3749,31 +3862,35 @@
       bindFancyAlertButton(alertButton);
       controlsContainer.appendChild(alertButton);
 
+      const menuLink = menuButton.querySelector('.csfd-compare-menu');
+
+      function debugClickHandler(e) {
+        e.stopPropagation();
+        if (menuButton.classList.contains('active')) {
+          menuButton.classList.remove('active');
+          removeHoveredClass();
+        } else {
+          menuButton.classList.add('active');
+          addHoveredClass();
+        }
+      }
+
       function enableDebugHover() {
-        $('.header-bar li').addClass('hovered');
-        $menuButton.addClass('active');
-        $menuButton
-          .find('.csfd-compare-menu')
-          .off('click.debug')
-          .on('click.debug', function (e) {
-            e.stopPropagation();
-            if ($menuButton.hasClass('active')) {
-              $menuButton.removeClass('active');
-              $('.header-bar li').removeClass('hovered');
-            } else {
-              $menuButton.addClass('active');
-              $('.header-bar li').addClass('hovered');
-            }
-          });
-        $menuButton.add($menuButton.find('.dropdown-content')).off('mouseenter mouseleave');
+        clearNormalListeners();
+        addHoveredClass();
+        menuButton.classList.add('active');
+        if (menuLink) {
+          menuLink.addEventListener('click', debugClickHandler);
+        }
       }
 
       function enableNormalHover() {
-        $('.header-bar li').removeClass('hovered');
-        $menuButton.removeClass('active');
-        $menuButton.find('.csfd-compare-menu').off('click.debug');
-        $menuButton.add($menuButton.find('.dropdown-content')).off('mouseenter mouseleave');
-        bindHoverHandlers($menuButton, {
+        if (menuLink) {
+          menuLink.removeEventListener('click', debugClickHandler);
+        }
+        removeHoveredClass();
+        menuButton.classList.remove('active');
+        bindHoverHandlers(menuButton, {
           get hoverTimeout() {
             return hoverTimeout;
           },
@@ -3807,46 +3924,51 @@
     }
   }
 
-  // addSettingsButton function that will create element 'li' as a 'let button'
-
-
   let infoToastTimeoutId;
   const PROFILE_LINK_SELECTOR =
     'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
   const MANAGED_LOCAL_STORAGE_PREFIXES = ['cc_', 'CSFD-Compare'];
 
+  // ==========================================
+  // UTILITY FUNCTIONS
+  // ==========================================
+
+  function getBoolSetting(key, defaultValue = true) {
+    const value = localStorage.getItem(key);
+    return value === null ? defaultValue : value === 'true';
+  }
+
   function getProfileLinkElement() {
     return document.querySelector(PROFILE_LINK_SELECTOR);
   }
 
-  function isGalleryImageLinksEnabled() {
-    const persistedValue = localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
+  function isUserLoggedIn() {
+    return Boolean(getProfileLinkElement());
   }
 
-  function isCreatorPreviewEnabled$1() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
+  function getCurrentUserSlug() {
+    const match = getProfileLinkElement()
+      ?.getAttribute('href')
+      ?.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+    return match ? match[1] : undefined;
   }
 
-  function isShowAllCreatorTabsEnabled() {
-    const persistedValue = localStorage.getItem(SHOW_ALL_CREATOR_TABS_KEY);
-    return persistedValue === null ? false : persistedValue === 'true';
-  }
+  function getMostFrequentUserSlug(records) {
+    const counts = new Map();
+    for (const record of records) {
+      if (!record?.userSlug || !Number.isFinite(record?.movieId)) continue;
+      counts.set(record.userSlug, (counts.get(record.userSlug) || 0) + 1);
+    }
 
-  function isCreatorPreviewBirthVisible$1() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  function isCreatorPreviewPhotoFromVisible$1() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  function isCreatorPreviewSectionCollapsed() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
+    let bestSlug,
+      bestCount = -1;
+    for (const [slug, count] of counts.entries()) {
+      if (count > bestCount) {
+        bestSlug = slug;
+        bestCount = count;
+      }
+    }
+    return bestSlug;
   }
 
   function showSettingsInfoToast(message) {
@@ -3854,65 +3976,30 @@
     if (!toastEl) {
       toastEl = document.createElement('div');
       toastEl.id = 'cc-settings-info-toast';
-      toastEl.style.position = 'fixed';
-      toastEl.style.left = '50%';
-      toastEl.style.top = '70px';
-      toastEl.style.transform = 'translateX(-50%)';
-      toastEl.style.zIndex = '10020';
-      toastEl.style.padding = '8px 12px';
-      toastEl.style.borderRadius = '8px';
-      toastEl.style.background = 'rgba(40, 40, 40, 0.94)';
-      toastEl.style.color = '#fff';
-      toastEl.style.fontSize = '12px';
-      toastEl.style.boxShadow = '0 8px 20px rgba(0, 0, 0, 0.28)';
-      toastEl.style.display = 'none';
+      Object.assign(toastEl.style, {
+        position: 'fixed',
+        left: '50%',
+        top: '70px',
+        transform: 'translateX(-50%)',
+        zIndex: '10020',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        background: 'rgba(40, 40, 40, 0.94)',
+        color: '#fff',
+        fontSize: '12px',
+        boxShadow: '0 8px 20px rgba(0, 0, 0, 0.28)',
+        display: 'none',
+      });
       document.body.appendChild(toastEl);
     }
 
     toastEl.textContent = message;
     toastEl.style.display = 'block';
 
-    if (infoToastTimeoutId) {
-      clearTimeout(infoToastTimeoutId);
-    }
+    clearTimeout(infoToastTimeoutId);
     infoToastTimeoutId = window.setTimeout(() => {
       toastEl.style.display = 'none';
     }, 1800);
-  }
-
-  function getCurrentUserSlug() {
-    const profileEl = getProfileLinkElement();
-    const profileHref = profileEl?.getAttribute('href') || '';
-    const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-    return match ? match[1] : undefined;
-  }
-
-  function isUserLoggedIn() {
-    return Boolean(getProfileLinkElement());
-  }
-
-  function getMostFrequentUserSlug(records) {
-    const counts = new Map();
-
-    for (const record of records) {
-      const userSlug = record?.userSlug;
-      if (!userSlug || !Number.isFinite(record?.movieId)) {
-        continue;
-      }
-
-      counts.set(userSlug, (counts.get(userSlug) || 0) + 1);
-    }
-
-    let bestSlug;
-    let bestCount = -1;
-    for (const [slug, count] of counts.entries()) {
-      if (count > bestCount) {
-        bestSlug = slug;
-        bestCount = count;
-      }
-    }
-
-    return bestSlug;
   }
 
   function escapeHtml(value) {
@@ -3926,24 +4013,16 @@
 
   function getManagedLocalStorageEntries() {
     const entries = [];
-
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
-      if (!key) {
-        continue;
-      }
-
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
       if (
         key === SETTINGSNAME ||
         MANAGED_LOCAL_STORAGE_PREFIXES.some((prefix) => key.toLowerCase().startsWith(prefix.toLowerCase()))
       ) {
-        entries.push({
-          key,
-          value: localStorage.getItem(key) ?? '',
-        });
+        entries.push({ key, value: localStorage.getItem(key) ?? '' });
       }
     }
-
     return entries.sort((a, b) => a.key.localeCompare(b.key));
   }
 
@@ -3951,188 +4030,183 @@
     const normalized = String(value ?? '')
       .replace(/\s+/g, ' ')
       .trim();
-    if (normalized.length <= maxLength) {
-      return normalized;
-    }
-
-    return `${normalized.slice(0, maxLength - 1)}…`;
+    return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 1)}…`;
   }
 
+  // ==========================================
+  // MAIN INITIALIZATION
+  // ==========================================
+
   async function addSettingsButton() {
+
+    // 1. Create and Insert Button (Vanilla JS)
     const settingsButton = document.createElement('li');
-    settingsButton.classList.add('cc-menu-item');
+    settingsButton.className = 'cc-menu-item';
     settingsButton.innerHTML = htmlContent;
 
-    // Insert into the header bar immediately so the button appears as fast as possible.
-    // All async/event-listener setup below runs after the element is already visible.
-    const $button = $(settingsButton);
-    const $headerBar = $('.header-bar').first();
-    const $searchItem = $headerBar.children('li.item-search').first();
-    const $languageItem = $headerBar.children('li.user-language-switch').first();
-
-    if ($searchItem.length) {
-      $searchItem.after($button);
-    } else if ($languageItem.length) {
-      $languageItem.before($button);
-    } else {
-      $headerBar.prepend($button);
+    const headerBar = document.querySelector('.header-bar');
+    if (headerBar) {
+      const searchItem = headerBar.querySelector('li.item-search');
+      const languageItem = headerBar.querySelector('li.user-language-switch');
+      if (searchItem) searchItem.after(settingsButton);
+      else if (languageItem) languageItem.before(settingsButton);
+      else headerBar.prepend(settingsButton);
     }
 
+    // 2. Initialize Sub-Components
     initializeVersionUi(settingsButton).catch(() => undefined);
     initializeRatingsLoader(settingsButton);
     initializeRatingsSync(settingsButton);
 
-    const galleryImageLinksToggle = settingsButton.querySelector('#cc-enable-gallery-image-links');
-    const showAllCreatorTabsToggle = settingsButton.querySelector('#cc-show-all-creator-tabs');
-    if (galleryImageLinksToggle) {
-      galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
-      galleryImageLinksToggle.addEventListener('change', () => {
-        const enabled = galleryImageLinksToggle.checked;
-        localStorage.setItem(GALLERY_IMAGE_LINKS_ENABLED_KEY, String(enabled));
-        window.dispatchEvent(
-          new CustomEvent('cc-gallery-image-links-toggled', {
-            detail: { enabled },
-          }),
-        );
-
-        showSettingsInfoToast(enabled ? 'Formáty obrázků v galerii zapnuty.' : 'Formáty obrázků v galerii vypnuty.');
-      });
-    }
-
-    if (showAllCreatorTabsToggle) {
-      showAllCreatorTabsToggle.checked = isShowAllCreatorTabsEnabled();
-      showAllCreatorTabsToggle.addEventListener('change', () => {
-        const enabled = showAllCreatorTabsToggle.checked;
-        localStorage.setItem(SHOW_ALL_CREATOR_TABS_KEY, String(enabled));
-        window.dispatchEvent(
-          new CustomEvent('cc-show-all-creator-tabs-toggled', {
-            detail: { enabled },
-          }),
-        );
-        showSettingsInfoToast(enabled ? 'Všechny záložky tvůrce zobrazeny.' : 'Záložky tvůrce skryty.');
-      });
-    }
-
-    const creatorPreviewToggle = settingsButton.querySelector('#cc-enable-creator-preview');
+    // 3. Setup Toggles & DOM Elements
     const creatorPreviewGroup = settingsButton.querySelector('#cc-creator-preview-group');
-    const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
     const creatorPreviewCount = settingsButton.querySelector('#cc-creator-preview-count');
     const creatorPreviewGroupBody = settingsButton.querySelector('#cc-creator-preview-group-body');
-    const creatorPreviewShowBirthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
-    const creatorPreviewShowPhotoFromToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
-    const creatorPreviewSettingsExtra = settingsButton.querySelector('#cc-creator-preview-settings-extra');
-    const resetSettingsButton = settingsButton.querySelector('#cc-maint-reset-btn');
-    const clearLocalStorageButton = settingsButton.querySelector('#cc-maint-clear-lc-btn');
-    const clearDatabaseButton = settingsButton.querySelector('#cc-maint-clear-db-btn');
+    const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
+    const creatorSettingsExtra = settingsButton.querySelector('#cc-creator-preview-settings-extra');
 
-    const dispatchCreatorPreviewSettingsChanged = () => {
-      window.dispatchEvent(
-        new CustomEvent('cc-creator-preview-toggled', {
-          detail: {
-            enabled: isCreatorPreviewEnabled$1(),
-            showBirth: isCreatorPreviewBirthVisible$1(),
-            showPhotoFrom: isCreatorPreviewPhotoFromVisible$1(),
-          },
-        }),
-      );
-    };
+    // Generic Toggle Binder
+    const toggles = [];
+    function bindToggle(selector, storageKey, defaultValue, eventName, toastOn, toastOff, callback = null) {
+      const element = settingsButton.querySelector(selector);
+      if (!element) return;
 
-    const dispatchGalleryPreviewSettingsChanged = () => {
-      window.dispatchEvent(
-        new CustomEvent('cc-gallery-image-links-toggled', {
-          detail: { enabled: isGalleryImageLinksEnabled() },
-        }),
-      );
-    };
+      element.checked = getBoolSetting(storageKey, defaultValue);
+      toggles.push({ element, storageKey, defaultValue }); // Store for reset logic
 
-    const syncCreatorPreviewUsageCount = () => {
-      if (!creatorPreviewCount) {
-        return;
-      }
+      element.addEventListener('change', () => {
+        localStorage.setItem(storageKey, String(element.checked));
+        if (eventName) window.dispatchEvent(new CustomEvent(eventName, { detail: { enabled: element.checked } }));
+        if (toastOn && toastOff) showSettingsInfoToast(element.checked ? toastOn : toastOff);
+        if (callback) callback();
+      });
+      return element;
+    }
 
-      const total = Math.max(1, creatorPreviewSettingsExtra?.querySelectorAll('input[type="checkbox"]').length || 2);
-      const enabled = Boolean(creatorPreviewToggle?.checked);
-      const used =
-        Number(Boolean(creatorPreviewShowBirthToggle?.checked)) +
-        Number(Boolean(creatorPreviewShowPhotoFromToggle?.checked));
+    // UI Syncer for Creator Previews
+    const updateCreatorPreviewUI = () => {
+      const enabled = getBoolSetting(CREATOR_PREVIEW_ENABLED_KEY, true);
+      const showBirth = getBoolSetting(CREATOR_PREVIEW_SHOW_BIRTH_KEY, true);
+      const showPhoto = getBoolSetting(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, true);
+      const used = Number(showBirth) + Number(showPhoto);
 
-      creatorPreviewCount.textContent = enabled ? `${used}/${total}` : `-/${total}`;
+      const birthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
+      const photoToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
 
-      if (!creatorPreviewGroup) {
-        return;
-      }
+      if (birthToggle) birthToggle.disabled = !enabled;
+      if (photoToggle) photoToggle.disabled = !enabled;
+      if (creatorSettingsExtra) creatorSettingsExtra.classList.toggle('is-disabled', !enabled);
+      if (creatorPreviewCount) creatorPreviewCount.textContent = enabled ? `${used}/2` : `-/2`;
 
-      creatorPreviewGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
-      if (!enabled) {
-        creatorPreviewGroup.classList.add('is-status-off');
-        return;
-      }
-
-      if (used > 0) {
-        creatorPreviewGroup.classList.add('is-status-on-detailed');
-      } else {
-        creatorPreviewGroup.classList.add('is-status-on-minimal');
-      }
-    };
-
-    const setCreatorPreviewCollapsedState = (collapsed) => {
       if (creatorPreviewGroup) {
-        creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
-      }
-      if (creatorPreviewGroupToggle) {
-        creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
-      }
-      if (creatorPreviewGroupBody) {
-        creatorPreviewGroupBody.hidden = collapsed;
+        creatorPreviewGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
+        creatorPreviewGroup.classList.add(
+          !enabled ? 'is-status-off' : used > 0 ? 'is-status-on-detailed' : 'is-status-on-minimal',
+        );
       }
 
+      window.dispatchEvent(
+        new CustomEvent('cc-creator-preview-toggled', { detail: { enabled, showBirth, showPhotoFrom: showPhoto } }),
+      );
+    };
+
+    // Bind All Toggles
+    bindToggle(
+      '#cc-enable-gallery-image-links',
+      GALLERY_IMAGE_LINKS_ENABLED_KEY,
+      true,
+      'cc-gallery-image-links-toggled',
+      'Formáty obrázků v galerii zapnuty.',
+      'Formáty obrázků v galerii vypnuty.',
+    );
+    bindToggle(
+      '#cc-show-all-creator-tabs',
+      SHOW_ALL_CREATOR_TABS_KEY,
+      false,
+      'cc-show-all-creator-tabs-toggled',
+      'Všechny záložky tvůrce zobrazeny.',
+      'Záložky tvůrce skryty.',
+    );
+    bindToggle(
+      '#cc-enable-creator-preview',
+      CREATOR_PREVIEW_ENABLED_KEY,
+      true,
+      null,
+      'Náhledy tvůrců zapnuty.',
+      'Náhledy tvůrců vypnuty.',
+      updateCreatorPreviewUI,
+    );
+    bindToggle(
+      '#cc-creator-preview-show-birth',
+      CREATOR_PREVIEW_SHOW_BIRTH_KEY,
+      true,
+      null,
+      'Datum narození v náhledu zapnuto.',
+      'Datum narození v náhledu vypnuto.',
+      updateCreatorPreviewUI,
+    );
+    bindToggle(
+      '#cc-creator-preview-show-photo-from',
+      CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
+      true,
+      null,
+      '„Photo from“ v náhledu zapnuto.',
+      '„Photo from“ v náhledu vypnuto.',
+      updateCreatorPreviewUI,
+    );
+
+    // Initialize UI State
+    updateCreatorPreviewUI();
+
+    // Collapsible Preview Section
+    const setPreviewCollapsedState = (collapsed) => {
+      if (creatorPreviewGroup) creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
+      if (creatorPreviewGroupToggle) creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
+      if (creatorPreviewGroupBody) creatorPreviewGroupBody.hidden = collapsed;
       localStorage.setItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY, String(collapsed));
     };
 
-    const syncCreatorPreviewDependentState = () => {
-      const enabled = creatorPreviewToggle ? creatorPreviewToggle.checked : isCreatorPreviewEnabled$1();
+    if (creatorPreviewGroupToggle) {
+      setPreviewCollapsedState(getBoolSetting(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY, true));
+      creatorPreviewGroupToggle.addEventListener('click', () => {
+        // invert current state rather than re-applying it
+        const currentlyCollapsed = creatorPreviewGroup?.classList.contains('is-collapsed') ?? true;
+        setPreviewCollapsedState(!currentlyCollapsed);
+      });
+    }
 
-      if (creatorPreviewShowBirthToggle) {
-        creatorPreviewShowBirthToggle.disabled = !enabled;
-      }
-
-      if (creatorPreviewShowPhotoFromToggle) {
-        creatorPreviewShowPhotoFromToggle.disabled = !enabled;
-      }
-
-      if (creatorPreviewSettingsExtra) {
-        creatorPreviewSettingsExtra.classList.toggle('is-disabled', !enabled);
-      }
-
-      syncCreatorPreviewUsageCount();
+    // 4. Maintenance Buttons Logic
+    const syncControlsFromStorage = () => {
+      toggles.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
+      updateCreatorPreviewUI();
     };
 
-    const syncSettingsControlsFromStorage = () => {
-      if (galleryImageLinksToggle) {
-        galleryImageLinksToggle.checked = isGalleryImageLinksEnabled();
-      }
-      if (showAllCreatorTabsToggle) {
-        showAllCreatorTabsToggle.checked = isShowAllCreatorTabsEnabled();
-      }
-      if (creatorPreviewToggle) {
-        creatorPreviewToggle.checked = isCreatorPreviewEnabled$1();
-      }
-      if (creatorPreviewShowBirthToggle) {
-        creatorPreviewShowBirthToggle.checked = isCreatorPreviewBirthVisible$1();
-      }
-      if (creatorPreviewShowPhotoFromToggle) {
-        creatorPreviewShowPhotoFromToggle.checked = isCreatorPreviewPhotoFromVisible$1();
-      }
+    settingsButton.querySelector('#cc-maint-reset-btn')?.addEventListener('click', () => {
+      localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+      localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
+      localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
+      localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
+      syncControlsFromStorage();
+      window.dispatchEvent(new CustomEvent('cc-gallery-image-links-toggled', { detail: { enabled: true } }));
+      showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
+    });
 
-      syncCreatorPreviewDependentState();
-      syncCreatorPreviewUsageCount();
-    };
+    settingsButton.querySelector('#cc-maint-clear-db-btn')?.addEventListener('click', async () => {
+      try {
+        await deleteIndexedDB(INDEXED_DB_NAME);
+        invalidateRatingsModalCache();
+        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+        showSettingsInfoToast('IndexedDB byla smazána.');
+      } catch (error) {
+        console.error('[CC] Failed to delete IndexedDB:', error);
+        showSettingsInfoToast('Smazání DB selhalo.');
+      }
+    });
 
+    // Local Storage Modal Logic
     let localStorageModal;
     const ensureLocalStorageModal = () => {
-      if (localStorageModal) {
-        return localStorageModal;
-      }
+      if (localStorageModal) return localStorageModal;
 
       const overlay = document.createElement('div');
       overlay.className = 'cc-lc-modal-overlay';
@@ -4146,13 +4220,7 @@
         <div class="cc-lc-modal-help">Klíče používané CSFD-Compare (cc_*, CSFD-Compare*).</div>
         <div class="cc-lc-modal-body">
           <table class="cc-lc-table">
-            <thead>
-              <tr>
-                <th>Klíč</th>
-                <th>Hodnota</th>
-                <th>Akce</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Klíč</th><th>Hodnota</th><th>Akce</th></tr></thead>
             <tbody id="cc-lc-table-body"></tbody>
           </table>
         </div>
@@ -4160,298 +4228,139 @@
           <button type="button" class="cc-maint-btn" id="cc-lc-delete-all-btn">Smazat vše</button>
           <button type="button" class="cc-maint-btn" id="cc-lc-close-btn">Zavřít</button>
         </div>
-      </div>
-    `;
+      </div>`;
 
       const closeModal = () => {
         overlay.classList.remove('is-open');
         overlay.hidden = true;
       };
-
       const refreshTable = () => {
         const tableBody = overlay.querySelector('#cc-lc-table-body');
-        if (!tableBody) {
-          return;
-        }
-
+        if (!tableBody) return;
         const entries = getManagedLocalStorageEntries();
-        if (entries.length === 0) {
+        if (!entries.length) {
           tableBody.innerHTML = '<tr><td colspan="3" class="cc-lc-table-empty">Žádné relevantní položky.</td></tr>';
           return;
         }
-
         tableBody.innerHTML = entries
           .map(
             ({ key, value }) => `
-          <tr>
-            <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
-            <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
-            <td class="cc-lc-action">
-              <button type="button" class="cc-maint-btn cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
-            </td>
-          </tr>
-        `,
+        <tr>
+          <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
+          <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
+          <td class="cc-lc-action"><button type="button" class="cc-maint-btn cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button></td>
+        </tr>`,
           )
           .join('');
       };
 
-      overlay.addEventListener('click', (event) => {
-        if (event.target === overlay) {
-          closeModal();
-        }
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeModal();
       });
-
       overlay.querySelector('.cc-lc-modal-close')?.addEventListener('click', closeModal);
       overlay.querySelector('#cc-lc-close-btn')?.addEventListener('click', closeModal);
-      overlay.querySelector('#cc-lc-delete-all-btn')?.addEventListener('click', () => {
-        const entries = getManagedLocalStorageEntries();
-        for (const entry of entries) {
-          localStorage.removeItem(entry.key);
-        }
 
-        syncSettingsControlsFromStorage();
-        dispatchGalleryPreviewSettingsChanged();
-        dispatchCreatorPreviewSettingsChanged();
+      overlay.querySelector('#cc-lc-delete-all-btn')?.addEventListener('click', () => {
+        getManagedLocalStorageEntries().forEach((entry) => localStorage.removeItem(entry.key));
+        syncControlsFromStorage();
+        window.dispatchEvent(
+          new CustomEvent('cc-gallery-image-links-toggled', {
+            detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+          }),
+        );
         refreshTable();
         showSettingsInfoToast('Relevantní LocalStorage klíče byly smazány.');
       });
 
-      overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (event) => {
-        const target = event.target;
-        if (!(target instanceof Element)) {
-          return;
-        }
-
-        const deleteButton = target.closest('.cc-lc-delete-one');
-        if (!(deleteButton instanceof HTMLButtonElement)) {
-          return;
-        }
-
-        const storageKey = deleteButton.dataset.key;
-        if (!storageKey) {
-          return;
-        }
-
-        localStorage.removeItem(storageKey);
-        syncSettingsControlsFromStorage();
-        dispatchGalleryPreviewSettingsChanged();
-        dispatchCreatorPreviewSettingsChanged();
+      overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (e) => {
+        const deleteBtn = e.target.closest('.cc-lc-delete-one');
+        if (!deleteBtn || !deleteBtn.dataset.key) return;
+        localStorage.removeItem(deleteBtn.dataset.key);
+        syncControlsFromStorage();
+        window.dispatchEvent(
+          new CustomEvent('cc-gallery-image-links-toggled', {
+            detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+          }),
+        );
         refreshTable();
-        showSettingsInfoToast(`Smazán klíč: ${storageKey}`);
+        showSettingsInfoToast(`Smazán klíč: ${deleteBtn.dataset.key}`);
       });
 
       overlay.addEventListener('cc-lc-open', () => {
         refreshTable();
         overlay.hidden = false;
-        requestAnimationFrame(() => {
-          overlay.classList.add('is-open');
-        });
+        requestAnimationFrame(() => overlay.classList.add('is-open'));
       });
 
       document.body.appendChild(overlay);
-      localStorageModal = overlay;
-      return overlay;
+      return (localStorageModal = overlay);
     };
 
-    if (creatorPreviewToggle) {
-      creatorPreviewToggle.checked = isCreatorPreviewEnabled$1();
-      syncCreatorPreviewDependentState();
-      creatorPreviewToggle.addEventListener('change', () => {
-        const enabled = creatorPreviewToggle.checked;
-        localStorage.setItem(CREATOR_PREVIEW_ENABLED_KEY, String(enabled));
-        syncCreatorPreviewDependentState();
-        syncCreatorPreviewUsageCount();
-        dispatchCreatorPreviewSettingsChanged();
+    settingsButton.querySelector('#cc-maint-clear-lc-btn')?.addEventListener('click', () => {
+      ensureLocalStorageModal().dispatchEvent(new CustomEvent('cc-lc-open'));
+    });
 
-        showSettingsInfoToast(enabled ? 'Náhledy tvůrců zapnuty.' : 'Náhledy tvůrců vypnuty.');
-      });
-    }
+    // 5. Header Bar Actions (Sync, Info, Badges)
+    settingsButton.querySelector('#cc-sync-cloud-btn')?.addEventListener(
+      'click',
+      (e) => {
+        if (isUserLoggedIn()) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        showSettingsInfoToast('Cloud sync je dostupný až po přihlášení.');
+      },
+      true,
+    );
 
-    if (creatorPreviewShowBirthToggle) {
-      creatorPreviewShowBirthToggle.checked = isCreatorPreviewBirthVisible$1();
-      creatorPreviewShowBirthToggle.addEventListener('change', () => {
-        localStorage.setItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY, String(creatorPreviewShowBirthToggle.checked));
-        syncCreatorPreviewUsageCount();
-        dispatchCreatorPreviewSettingsChanged();
-        showSettingsInfoToast(
-          creatorPreviewShowBirthToggle.checked
-            ? 'Datum narození v náhledu zapnuto.'
-            : 'Datum narození v náhledu vypnuto.',
-        );
-      });
-    }
+    settingsButton.querySelector('#cc-version-info-btn')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      openVersionInfoModal(settingsButton).catch((err) => console.error('[CC] Failed to open version info modal:', err));
+    });
 
-    if (creatorPreviewShowPhotoFromToggle) {
-      creatorPreviewShowPhotoFromToggle.checked = isCreatorPreviewPhotoFromVisible$1();
-      creatorPreviewShowPhotoFromToggle.addEventListener('change', () => {
-        localStorage.setItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, String(creatorPreviewShowPhotoFromToggle.checked));
-        syncCreatorPreviewUsageCount();
-        dispatchCreatorPreviewSettingsChanged();
-        showSettingsInfoToast(
-          creatorPreviewShowPhotoFromToggle.checked
-            ? '„Photo from“ v náhledu zapnuto.'
-            : '„Photo from“ v náhledu vypnuto.',
-        );
-      });
-    }
+    const ratingsModalOptions = { getCurrentUserSlug, getMostFrequentUserSlug };
+    const setupBadge = (id, type) => {
+      const badge = settingsButton.querySelector(id);
+      if (!badge) return;
+      badge.setAttribute('role', 'button');
+      badge.setAttribute('tabindex', '0');
 
-    if (creatorPreviewGroupToggle) {
-      setCreatorPreviewCollapsedState(isCreatorPreviewSectionCollapsed());
-      creatorPreviewGroupToggle.addEventListener('click', () => {
-        const collapsed = creatorPreviewGroup?.classList.contains('is-collapsed') ?? true;
-        setCreatorPreviewCollapsedState(!collapsed);
-      });
-    }
+      const handler = (e) => {
+        if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+        if (e.type === 'keydown') e.preventDefault();
 
-    syncCreatorPreviewUsageCount();
-
-    if (resetSettingsButton) {
-      resetSettingsButton.addEventListener('click', () => {
-        localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-        localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
-        localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-        localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
-
-        syncSettingsControlsFromStorage();
-        dispatchGalleryPreviewSettingsChanged();
-        dispatchCreatorPreviewSettingsChanged();
-
-        showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
-      });
-    }
-
-    if (clearLocalStorageButton) {
-      clearLocalStorageButton.addEventListener('click', () => {
-        const modal = ensureLocalStorageModal();
-        modal.dispatchEvent(new CustomEvent('cc-lc-open'));
-      });
-    }
-
-    if (clearDatabaseButton) {
-      clearDatabaseButton.addEventListener('click', async () => {
-        try {
-          await deleteIndexedDB(INDEXED_DB_NAME);
-          invalidateRatingsModalCache();
-          window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
-          showSettingsInfoToast('IndexedDB byla smazána.');
-        } catch (error) {
-          console.error('[CC] Failed to delete IndexedDB:', error);
-          showSettingsInfoToast('Smazání DB selhalo.');
+        if (!isUserLoggedIn()) {
+          showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
+          return;
         }
-      });
-    }
+        openRatingsTableModal(settingsButton, type, ratingsModalOptions).catch((err) =>
+          console.error(`[CC] Failed to open ${type} ratings table:`, err),
+        );
+      };
 
-    const syncButton = settingsButton.querySelector('#cc-sync-cloud-btn');
-    if (syncButton) {
-      syncButton.addEventListener(
-        'click',
-        (event) => {
-          if (isUserLoggedIn()) {
-            return;
-          }
+      badge.addEventListener('click', handler);
+      badge.addEventListener('keydown', handler);
+    };
 
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          showSettingsInfoToast('Cloud sync je dostupný až po přihlášení.');
-        },
-        true,
+    setupBadge('#cc-badge-red', 'direct');
+    setupBadge('#cc-badge-black', 'computed');
+
+    // Badges Refresh Logic
+    const badgeRefreshOptions = { isUserLoggedIn, getCurrentUserSlug, getMostFrequentUserSlug };
+    const refreshBadgesSafely = () =>
+      refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((err) =>
+        console.error('[CC] Failed to refresh badges:', err),
       );
-    }
-
-    const versionInfoButton = settingsButton.querySelector('#cc-version-info-btn');
-    if (versionInfoButton) {
-      versionInfoButton.addEventListener('click', (event) => {
-        event.preventDefault();
-        openVersionInfoModal(settingsButton).catch((error) => {
-          console.error('[CC] Failed to open version info modal:', error);
-        });
-      });
-    }
-
-    const redBadge = settingsButton.querySelector('#cc-badge-red');
-    const blackBadge = settingsButton.querySelector('#cc-badge-black');
-    const ratingsModalOptions = {
-      getCurrentUserSlug,
-      getMostFrequentUserSlug,
-    };
-
-    if (redBadge) {
-      redBadge.setAttribute('role', 'button');
-      redBadge.setAttribute('tabindex', '0');
-      redBadge.title = 'Zobrazit načtená hodnocení';
-      redBadge.addEventListener('click', () => {
-        if (!isUserLoggedIn()) {
-          showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-          return;
-        }
-        openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((error) => {
-          console.error('[CC] Failed to open direct ratings table:', error);
-        });
-      });
-      redBadge.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          if (!isUserLoggedIn()) {
-            showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-            return;
-          }
-          openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((error) => {
-            console.error('[CC] Failed to open direct ratings table:', error);
-          });
-        }
-      });
-    }
-
-    if (blackBadge) {
-      blackBadge.setAttribute('role', 'button');
-      blackBadge.setAttribute('tabindex', '0');
-      blackBadge.title = 'Zobrazit spočtená hodnocení';
-      blackBadge.addEventListener('click', () => {
-        if (!isUserLoggedIn()) {
-          showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-          return;
-        }
-        openRatingsTableModal(settingsButton, 'computed', ratingsModalOptions).catch((error) => {
-          console.error('[CC] Failed to open computed ratings table:', error);
-        });
-      });
-      blackBadge.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          if (!isUserLoggedIn()) {
-            showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-            return;
-          }
-          openRatingsTableModal(settingsButton, 'computed', ratingsModalOptions).catch((error) => {
-            console.error('[CC] Failed to open computed ratings table:', error);
-          });
-        }
-      });
-    }
-
-    const badgeRefreshOptions = {
-      isUserLoggedIn,
-      getCurrentUserSlug,
-      getMostFrequentUserSlug,
-    };
-
-    const refreshBadgesSafely = () => {
-      refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((error) => {
-        console.error('[CC] Failed to refresh badges:', error);
-      });
-    };
 
     refreshBadgesSafely();
-    // Single delayed retry in case the profile link wasn't initialised yet on first run.
     window.setTimeout(refreshBadgesSafely, 1200);
 
-    const handleRatingsUpdated = () => {
+    window.addEventListener('cc-ratings-updated', () => {
       invalidateRatingsModalCache();
       refreshBadgesSafely();
-    };
-    window.addEventListener('cc-ratings-updated', handleRatingsUpdated);
+    });
 
-    initializeSettingsMenuHover($button);
+    // use the raw DOM element; helper no longer depends on jQuery
+    initializeSettingsMenuHover(settingsButton);
   }
 
   // Utility to enable/disable controls by IDs based on login state

@@ -4,26 +4,57 @@ import { bindFancyAlertButton } from './fancy-alert.js';
 const HEADER_HOVER_STORAGE_KEY = 'headerBarHovered';
 const HOVER_TOGGLE_DELAY_MS = 200;
 
-function bindHoverHandlers($menuButton, timeoutState) {
-  $menuButton.add($menuButton.find('.dropdown-content')).hover(
-    function () {
-      clearTimeout(timeoutState.hideTimeout);
-      timeoutState.hoverTimeout = setTimeout(() => {
-        $('.header-bar li').addClass('hovered');
-        $menuButton.addClass('active');
-      }, HOVER_TOGGLE_DELAY_MS);
-    },
-    function () {
-      clearTimeout(timeoutState.hoverTimeout);
-      timeoutState.hideTimeout = setTimeout(() => {
-        $('.header-bar li').removeClass('hovered');
-        $menuButton.removeClass('active');
-      }, HOVER_TOGGLE_DELAY_MS);
-    },
-  );
+let normalListeners = [];
+
+function addHoveredClass() {
+  document.querySelectorAll('.header-bar li').forEach((li) => li.classList.add('hovered'));
 }
 
-export function initializeSettingsMenuHover($menuButton) {
+function removeHoveredClass() {
+  document.querySelectorAll('.header-bar li').forEach((li) => li.classList.remove('hovered'));
+}
+
+function clearNormalListeners() {
+  normalListeners.forEach(({ el, type, handler }) => el.removeEventListener(type, handler));
+  normalListeners = [];
+}
+
+function bindHoverHandlers(menuButton, timeoutState) {
+  clearNormalListeners();
+  const dropdown = menuButton.querySelector('.dropdown-content');
+  const targets = [menuButton];
+  if (dropdown) targets.push(dropdown);
+
+  targets.forEach((el) => {
+    const onEnter = () => {
+      clearTimeout(timeoutState.hideTimeout);
+      timeoutState.hoverTimeout = setTimeout(() => {
+        addHoveredClass();
+        menuButton.classList.add('active');
+      }, HOVER_TOGGLE_DELAY_MS);
+    };
+    const onLeave = () => {
+      clearTimeout(timeoutState.hoverTimeout);
+      timeoutState.hideTimeout = setTimeout(() => {
+        removeHoveredClass();
+        menuButton.classList.remove('active');
+      }, HOVER_TOGGLE_DELAY_MS);
+    };
+    el.addEventListener('mouseenter', onEnter);
+    el.addEventListener('mouseleave', onLeave);
+    normalListeners.push({ el, type: 'mouseenter', handler: onEnter });
+    normalListeners.push({ el, type: 'mouseleave', handler: onLeave });
+  });
+}
+
+export function initializeSettingsMenuHover(menuButton) {
+  if (typeof menuButton === 'string') {
+    menuButton = document.querySelector(menuButton);
+  }
+  if (!(menuButton instanceof Element) && menuButton && menuButton.jquery) {
+    menuButton = menuButton[0];
+  }
+
   let hoverTimeout;
   let hideTimeout;
 
@@ -33,16 +64,18 @@ export function initializeSettingsMenuHover($menuButton) {
     if (!controlsContainer) {
       controlsContainer = document.createElement('div');
       controlsContainer.className = 'fancy-alert-controls';
-      controlsContainer.style.position = 'fixed';
-      controlsContainer.style.top = '4px';
-      controlsContainer.style.right = '150px';
-      controlsContainer.style.zIndex = '9999';
-      controlsContainer.style.display = 'cc-flex';
-      controlsContainer.style.alignItems = 'center';
-      controlsContainer.style.background = 'rgba(255,255,255,0.95)';
-      controlsContainer.style.borderRadius = '8px';
-      controlsContainer.style.boxShadow = '0 2px 8px rgba(0,0,0,0.08)';
-      controlsContainer.style.padding = '8px 16px';
+      Object.assign(controlsContainer.style, {
+        position: 'fixed',
+        top: '4px',
+        right: '150px',
+        zIndex: '9999',
+        display: 'cc-flex',
+        alignItems: 'center',
+        background: 'rgba(255,255,255,0.95)',
+        borderRadius: '8px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+        padding: '8px 16px',
+      });
       document.body.appendChild(controlsContainer);
     }
 
@@ -72,31 +105,35 @@ export function initializeSettingsMenuHover($menuButton) {
     bindFancyAlertButton(alertButton);
     controlsContainer.appendChild(alertButton);
 
+    const menuLink = menuButton.querySelector('.csfd-compare-menu');
+
+    function debugClickHandler(e) {
+      e.stopPropagation();
+      if (menuButton.classList.contains('active')) {
+        menuButton.classList.remove('active');
+        removeHoveredClass();
+      } else {
+        menuButton.classList.add('active');
+        addHoveredClass();
+      }
+    }
+
     function enableDebugHover() {
-      $('.header-bar li').addClass('hovered');
-      $menuButton.addClass('active');
-      $menuButton
-        .find('.csfd-compare-menu')
-        .off('click.debug')
-        .on('click.debug', function (e) {
-          e.stopPropagation();
-          if ($menuButton.hasClass('active')) {
-            $menuButton.removeClass('active');
-            $('.header-bar li').removeClass('hovered');
-          } else {
-            $menuButton.addClass('active');
-            $('.header-bar li').addClass('hovered');
-          }
-        });
-      $menuButton.add($menuButton.find('.dropdown-content')).off('mouseenter mouseleave');
+      clearNormalListeners();
+      addHoveredClass();
+      menuButton.classList.add('active');
+      if (menuLink) {
+        menuLink.addEventListener('click', debugClickHandler);
+      }
     }
 
     function enableNormalHover() {
-      $('.header-bar li').removeClass('hovered');
-      $menuButton.removeClass('active');
-      $menuButton.find('.csfd-compare-menu').off('click.debug');
-      $menuButton.add($menuButton.find('.dropdown-content')).off('mouseenter mouseleave');
-      bindHoverHandlers($menuButton, {
+      if (menuLink) {
+        menuLink.removeEventListener('click', debugClickHandler);
+      }
+      removeHoveredClass();
+      menuButton.classList.remove('active');
+      bindHoverHandlers(menuButton, {
         get hoverTimeout() {
           return hoverTimeout;
         },
@@ -128,7 +165,7 @@ export function initializeSettingsMenuHover($menuButton) {
       }
     });
   } else {
-    bindHoverHandlers($menuButton, {
+    bindHoverHandlers(menuButton, {
       get hoverTimeout() {
         return hoverTimeout;
       },

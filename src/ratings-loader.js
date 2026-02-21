@@ -133,6 +133,9 @@ function normalizeType(rawType) {
   return normalized;
 }
 
+// helpers exported for tests
+export { parseRatingsFromDocument, normalizeType, parseRatingRow, createRecordFingerprint, hasRecordChanged };
+
 function parseRating(starElement) {
   if (!starElement) {
     return NaN;
@@ -176,7 +179,34 @@ function parseRatingRow(row, origin) {
   const infoValues = Array.from(row.querySelectorAll('.film-title-info .info')).map((el) => el.textContent.trim());
 
   const yearValue = infoValues.find((value) => /^\d{4}$/.test(value));
+  // rawType is the first non-year info (e.g. "epizoda" or "seriál").
   const rawType = infoValues.find((value) => !/^\d{4}$/.test(value));
+  // try to pick up a season/episode token such as (S01E04) that appears as a
+  // separate info element; store it without parentheses so downstream code can
+  // display it correctly.
+  const tokenMatch = infoValues.find((value) => /^\(S\d{1,2}(?:E\d{1,2})?\)$/.test(value));
+  let seriesToken = tokenMatch ? tokenMatch.replace(/[()]/g, '') : '';
+  if (!seriesToken) {
+    const nameParen = name.match(/\(S\d{1,2}(?:E\d{1,2})?\)/i);
+    if (nameParen) {
+      seriesToken = nameParen[0].replace(/[()]/g, '');
+    } else {
+      const nameSe = name.match(/S(\d{1,2})E(\d{1,2})/i);
+      if (nameSe) {
+        seriesToken = `S${nameSe[1].padStart(2, '0')}E${nameSe[2].padStart(2, '0')}`;
+      } else {
+        const nameEp = name.match(/Episode\s*(\d{1,3})/i);
+        if (nameEp) {
+          seriesToken = `E${nameEp[1].padStart(2, '0')}`;
+        } else {
+          const nameSeason = name.match(/Season\s*(\d{1,2})/i);
+          if (nameSeason) {
+            seriesToken = `S${nameSeason[1].padStart(2, '0')}`;
+          }
+        }
+      }
+    }
+  }
 
   const starRatingWrapper = row.querySelector('td.star-rating-only .star-rating');
   const starEl = starRatingWrapper?.querySelector('.stars');
@@ -207,6 +237,7 @@ function parseRatingRow(row, origin) {
     computed,
     computedCount,
     computedFromText,
+    seriesToken,
     lastUpdate: new Date().toISOString(),
   };
 }
@@ -234,12 +265,14 @@ function toStorageRecord(record, userSlug) {
 
 function createRecordFingerprint(record) {
   const computedCount = Number.isFinite(record?.computedCount) ? String(record.computedCount) : '';
+  const token = record?.seriesToken || '';
   return [
     Number.isFinite(record?.rating) ? String(record.rating) : '',
     record?.date || '',
     record?.computed === true ? '1' : '0',
     computedCount,
     record?.computedFromText || '',
+    token,
   ].join('|');
 }
 
@@ -249,6 +282,19 @@ function hasRecordChanged(existingRecord, nextRecord) {
   }
 
   return createRecordFingerprint(existingRecord) !== createRecordFingerprint(nextRecord);
+}
+
+// expose early-stop predicate for testing
+export function evaluateShouldStopEarly({
+  incremental,
+  page,
+  totalRatings,
+  directRatingsCount,
+  consecutiveStablePages,
+}) {
+  return (
+    !incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1
+  );
 }
 
 function updateProgressUI(progress, state) {
@@ -864,8 +910,18 @@ async function loadRatingsForCurrentUser(
       incremental,
     });
 
+    // previously we stopped early during incremental runs once the count
+    // reached totalRatings and we saw a stable page.  this was efficient when
+    // we only cared about new entries, but it meant that metadata-only changes
+    // (like adding a seriesToken) on later pages would never be detected.  by
+    // requiring non-incremental mode we ensure full scans when the user explicitly
+    // requests updates, while still allowing non-incremental callers to abort.
     const shouldStopEarly =
-      incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1;
+      !incremental &&
+      page >= 2 &&
+      totalRatings > 0 &&
+      directRatingsCount >= totalRatings &&
+      consecutiveStablePages >= 1;
 
     if (shouldStopEarly) {
       stoppedEarly = true;

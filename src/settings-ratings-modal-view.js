@@ -208,6 +208,7 @@ function getRatingsTableModal() {
   };
 
   overlay.openWithData = ({ rows, modalTitle }) => {
+    console.debug('[CC] ratings modal opening, rows count', rows.length, modalTitle);
     // update export button availability (always enabled since rows supplied)
     if (exportBtn) exportBtn.disabled = rows.length === 0;
     state.rows = rows;

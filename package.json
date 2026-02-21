@@ -3,12 +3,9 @@
   "version": "0.8.6",
   "scripts": {
     "sync-version": "node scripts/sync-version.mjs",
-    "prebuild": "npm run sync-version",
-    "build": "rollup -c",
-    "prewatch": "npm run sync-version",
-    "watch": "rollup -c -w",
-    "predev": "npm run sync-version",
-    "dev": "rollup -c -w"
+    "build": "npm run sync-version && rollup -c",
+    "watch": "npm run sync-version && rollup -c -w",
+    "dev": "npm run sync-version && rollup -c -w"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",

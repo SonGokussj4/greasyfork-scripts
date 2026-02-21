@@ -2,6 +2,7 @@
 
 ## Dev
 
+- Script no longer requires jQuery, improving load performance and compatibility.
 - Login into github with VSCode
 - Then: [https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
 
