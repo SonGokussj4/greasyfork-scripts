@@ -118,6 +118,31 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
     });
   });
 
+  // wire up legacy‑style toggles
+  window.addEventListener('cc-clickable-header-boxes-toggled', () => {
+    csfd.clickableHeaderBoxes();
+  });
+  window.addEventListener('cc-ratings-estimate-toggled', () => {
+    csfd.ratingsEstimate();
+  });
+  window.addEventListener('cc-ratings-from-favorites-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.ratingsFromFavorites();
+    } else {
+      csfd.clearRatingsFromFavorites();
+    }
+  });
+  window.addEventListener('cc-add-ratings-date-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.addRatingsDate();
+    } else {
+      csfd.clearRatingsDate();
+    }
+  });
+  window.addEventListener('cc-hide-selected-reviews-updated', () => {
+    csfd.hideSelectedUserReviews();
+  });
+
   // Disable Option 2 if not logged in (now using utility)
   setControlsDisabledByLoginState(csfd.getIsLoggedIn(), ['option2']);
 

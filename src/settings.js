@@ -11,6 +11,13 @@ import {
   SHOW_ALL_CREATOR_TABS_KEY,
   INDEXED_DB_NAME,
   SETTINGSNAME,
+  CLICKABLE_HEADER_BOXES_KEY,
+  RATINGS_ESTIMATE_KEY,
+  RATINGS_FROM_FAVORITES_KEY,
+  ADD_RATINGS_DATE_KEY,
+  HIDE_SELECTED_REVIEWS_KEY,
+  HIDE_SELECTED_REVIEWS_LIST_KEY,
+  HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
 import { refreshRatingsBadges } from './settings-badges.js';
@@ -249,8 +256,143 @@ async function addSettingsButton() {
     updateCreatorPreviewUI,
   );
 
+  // new legacy‑style options
+  bindToggle(
+    '#cc-enable-clickable-header-boxes',
+    CLICKABLE_HEADER_BOXES_KEY,
+    false,
+    'cc-clickable-header-boxes-toggled',
+    'Klientní hlavičky jsou nyní celoplošně klikatelné.',
+    'Klientní hlavičky již nejsou celoplošně klikatelné.',
+  );
+  bindToggle(
+    '#cc-ratings-estimate',
+    RATINGS_ESTIMATE_KEY,
+    false,
+    'cc-ratings-estimate-toggled',
+    'Zobrazení odhadovaného % zapnuto.',
+    'Zobrazení odhadovaného % vypnuto.',
+  );
+  bindToggle(
+    '#cc-ratings-from-favorites',
+    RATINGS_FROM_FAVORITES_KEY,
+    false,
+    'cc-ratings-from-favorites-toggled',
+    'Průměr oblíbených zapnut.',
+    'Průměr oblíbených vypnut.',
+  );
+  // hide reviews group elements
+  const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
+  const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
+  const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
+  const hideCount = settingsButton.querySelector('#cc-hide-reviews-count');
+  const hideCheckbox = settingsButton.querySelector('#cc-hide-selected-reviews');
+  const hideListInput = settingsButton.querySelector('#cc-hide-selected-reviews-list');
+  const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
+
+  // UI updater for hide-reviews group
+  const updateHideReviewsUI = () => {
+    const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
+    let list = [];
+    try {
+      list = JSON.parse(localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]');
+    } catch (e) {
+      list = [];
+    }
+    const count = list.length;
+
+    // checkbox remains enabled so user can toggle back on
+    if (hideListInput) hideListInput.disabled = !enabled;
+    if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
+
+    if (hideCount) {
+      hideCount.textContent = enabled ? String(count) : 'VYPNUTO';
+    }
+
+    if (hideGroup) {
+      hideGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
+      hideGroup.classList.add(
+        !enabled ? 'is-status-off' : count > 0 ? 'is-status-on-detailed' : 'is-status-on-minimal',
+      );
+    }
+  };
+
+  bindToggle(
+    '#cc-add-ratings-date',
+    ADD_RATINGS_DATE_KEY,
+    false,
+    'cc-add-ratings-date-toggled',
+    'Zobrazení data hodnocení zapnuto.',
+    'Zobrazení data hodnocení vypnuto.',
+  );
+  bindToggle(
+    '#cc-hide-selected-reviews',
+    HIDE_SELECTED_REVIEWS_KEY,
+    false,
+    null,
+    'Filtrování recenzí zapnuto.',
+    'Filtrování recenzí vypnuto.',
+    updateHideReviewsUI,
+  );
+
+  // collapse logic for hide reviews group
+  const setHideGroupCollapsedState = (collapsed) => {
+    if (hideGroup) hideGroup.classList.toggle('is-collapsed', collapsed);
+    if (hideGroupToggle) hideGroupToggle.setAttribute('aria-expanded', String(!collapsed));
+    if (hideGroupBody) hideGroupBody.hidden = collapsed;
+    localStorage.setItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY, String(collapsed));
+  };
+  if (hideGroupToggle) {
+    setHideGroupCollapsedState(getBoolSetting(HIDE_REVIEWS_SECTION_COLLAPSED_KEY, true));
+    hideGroupToggle.addEventListener('click', () => {
+      const currently = hideGroup?.classList.contains('is-collapsed');
+      setHideGroupCollapsedState(!currently);
+    });
+  }
+
+  // update count helper
+  const updateHideCount = () => {
+    if (!hideCount || !hideListInput) return;
+    const list = hideListInput.value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    hideCount.textContent = String(list.length);
+  };
+
+  const applyHideList = () => {
+    if (!hideListInput) return;
+    const list = hideListInput.value
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(list));
+    updateHideCount();
+    window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+  };
+
+  if (hideListInput) {
+    try {
+      const saved = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
+      hideListInput.value = saved ? JSON.parse(saved).join(', ') : '';
+    } catch (e) {
+      hideListInput.value = '';
+    }
+    hideListInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyHideList();
+      }
+    });
+    if (hideApplyBtn) hideApplyBtn.addEventListener('click', applyHideList);
+    updateHideCount();
+  }
+
+  // initial visibility of group body is handled by collapse logic only; do not hide when disabled
+
   // Initialize UI State
   updateCreatorPreviewUI();
+  updateHideReviewsUI();
 
   // Collapsible Preview Section
   const setPreviewCollapsedState = (collapsed) => {

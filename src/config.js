@@ -23,3 +23,12 @@ export const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
 export const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
 export const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
 export const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
+
+// feature flags copied from legacy script
+export const CLICKABLE_HEADER_BOXES_KEY = 'cc_clickable_header_boxes';
+export const RATINGS_ESTIMATE_KEY = 'cc_ratings_estimate';
+export const RATINGS_FROM_FAVORITES_KEY = 'cc_ratings_from_favorites';
+export const ADD_RATINGS_DATE_KEY = 'cc_add_ratings_date';
+export const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
+export const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
+export const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';

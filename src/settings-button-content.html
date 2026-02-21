@@ -129,6 +129,47 @@
                     </div>
                 </div>
                 <label class="cc-form-check">
+                    <input type="checkbox" id="cc-enable-clickable-header-boxes"
+                        name="cc-enable-clickable-header-boxes" />
+                    Boxy s tlačítkem "VÍCE" jsou klikatelné celé
+                </label>
+                <label class="cc-form-check">
+                    <input type="checkbox" id="cc-ratings-estimate" name="cc-ratings-estimate" />
+                    Vypočtení % při počtu hodnocení pod 10
+                </label>
+                <label class="cc-form-check">
+                    <input type="checkbox" id="cc-ratings-from-favorites" name="cc-ratings-from-favorites" />
+                    Zobrazit hodnocení z průměru oblíbených
+                </label>
+                <label class="cc-form-check">
+                    <input type="checkbox" id="cc-add-ratings-date" name="cc-add-ratings-date" />
+                    Zobrazit datum hodnocení
+                </label>
+                <div class="cc-preview-group" id="cc-hide-reviews-group">
+                    <button type="button" class="cc-preview-group-toggle" id="cc-hide-reviews-group-toggle"
+                        aria-expanded="false" aria-controls="cc-hide-reviews-group-body">
+                        <span class="cc-preview-group-toggle-left">
+                            <span class="cc-preview-group-chevron" aria-hidden="true"></span>
+                            <span class="cc-preview-group-title">Skrýt recenze lidí</span>
+                        </span>
+                        <span class="cc-preview-group-count" id="cc-hide-reviews-count">0</span>
+                    </button>
+                    <div class="cc-preview-group-body" id="cc-hide-reviews-group-body">
+                        <label class="cc-form-check">
+                            <input type="checkbox" id="cc-hide-selected-reviews" name="cc-hide-selected-reviews" />
+                            Povolit
+                        </label>
+                        <label class="cc-form-field">
+                            <span>Jména (oddělena čárkou)</span>
+                            <input type="text" data-bwignore="true" id="cc-hide-selected-reviews-list"
+                                name="cc-hide-selected-reviews-list" />
+                        </label>
+                        <button type="button" id="cc-hide-reviews-apply"
+                            class="cc-button cc-button-small">Použít</button>
+                        <div class="cc-form-note">Stiskněte Enter nebo klikněte na použít.</div>
+                    </div>
+                </div>
+                <label class="cc-form-check">
                     <input type="checkbox" name="option2" /> Povolit automatickou aktualizaci dat
                 </label>
                 <label class="cc-form-field">

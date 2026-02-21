@@ -1,4 +1,10 @@
-import { SETTINGSNAME, INDEXED_DB_NAME, RATINGS_STORE_NAME, GALLERY_IMAGE_LINKS_ENABLED_KEY } from './config.js';
+import {
+  SETTINGSNAME,
+  INDEXED_DB_NAME,
+  RATINGS_STORE_NAME,
+  GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  HIDE_SELECTED_REVIEWS_LIST_KEY,
+} from './config.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
 
@@ -108,6 +114,21 @@ export class Csfd {
     try {
       if (localStorage.getItem('cc_show_all_creator_tabs') === 'true') {
         this.showAllCreatorTabs();
+      }
+      if (localStorage.getItem('cc_clickable_header_boxes') === 'true') {
+        this.clickableHeaderBoxes();
+      }
+      if (localStorage.getItem('cc_ratings_estimate') === 'true') {
+        this.ratingsEstimate();
+      }
+      if (localStorage.getItem('cc_ratings_from_favorites') === 'true') {
+        this.ratingsFromFavorites();
+      }
+      if (localStorage.getItem('cc_add_ratings_date') === 'true') {
+        this.addRatingsDate();
+      }
+      if (localStorage.getItem('cc_hide_selected_user_reviews') === 'true') {
+        this.hideSelectedUserReviews();
       }
     } catch (e) {
       // ignore silently
@@ -263,6 +284,187 @@ export class Csfd {
       computedFromText: computedTitle,
       computedCount: computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN,
     };
+  }
+
+  // helper used by several legacy features
+  _parseRatingFromStars(starElem) {
+    const clazz = starElem.className || '';
+    const m = clazz.match(/stars-(\d)/);
+    if (m) return parseInt(m[1], 10);
+    if (clazz.includes('trash')) return 0;
+    return NaN;
+  }
+
+  _getRatingColor(percent) {
+    if (percent >= 70) return 'red';
+    if (percent >= 30) return 'blue';
+    return 'black';
+  }
+
+  // legacy features ported from old script
+  clickableHeaderBoxes() {
+    // make a few specific header buttons clickable by clicking anywhere on the box
+    const selectors = ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'];
+    selectors.forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        el.addEventListener('click', () => {
+          const hrefMap = {
+            '.user-link.wantsee': '/chci-videt/',
+            '.user-link.favorites': '/soukrome/oblibene/',
+            '.user-link.messages': '/posta/',
+          };
+          location.href = hrefMap[sel] || hrefMap['.user-link.wantsee'];
+        });
+      }
+    });
+
+    // entire box headers
+    const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header'));
+    headers.forEach((div) => {
+      const btn = div.querySelector('a.button');
+      if (!btn) return;
+      const text = btn.textContent.trim().toLowerCase();
+      if (!['více', 'viac'].includes(text)) return;
+      const href = btn.getAttribute('href');
+      if (!href) return;
+      const wrapper = document.createElement('a');
+      wrapper.setAttribute('href', href);
+      div.parentNode.replaceChild(wrapper, div);
+      wrapper.appendChild(div);
+      // hover styling borrowed from old code
+      const h2 = div.querySelector('h2');
+      const spanCount = h2?.querySelector('span.count');
+      div.addEventListener('mouseenter', () => {
+        div.style.backgroundColor = '#ba0305';
+        if (h2) {
+          h2.style.backgroundColor = '#ba0305';
+          h2.style.color = '#fff';
+        }
+        if (spanCount) spanCount.style.color = '#fff';
+      });
+      div.addEventListener('mouseleave', () => {
+        if (div.classList.contains('dropdown-content-head')) {
+          div.style.backgroundColor = '#ececec';
+        } else {
+          div.style.backgroundColor = '#e3e3e3';
+        }
+        if (h2) {
+          h2.style.backgroundColor = 'initial';
+          h2.style.color = 'initial';
+        }
+        if (spanCount) spanCount.style.color = 'initial';
+      });
+    });
+  }
+
+  ratingsEstimate() {
+    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    if (!avgEl) return;
+    const text = avgEl.textContent.replace(/\s/g, '');
+    if (!text.includes('?%')) return;
+    const userRatings = Array.from(document.querySelectorAll('section.others-rating .star-rating'));
+    if (!userRatings.length) return;
+    const numbers = userRatings
+      .map((ur) => this._parseRatingFromStars(ur.querySelector('.stars')))
+      .map((n) => (Number.isFinite(n) ? n * 20 : NaN))
+      .filter(Number.isFinite);
+    if (!numbers.length) return;
+    const average = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
+    avgEl.textContent = `${average} %`;
+    avgEl.style.color = '#fff';
+    avgEl.style.backgroundColor = this._getRatingColor(average);
+    avgEl.setAttribute('title', `spočteno z hodnocení: ${numbers.length}`);
+  }
+
+  ratingsFromFavorites() {
+    const spans = Array.from(document.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars'));
+    if (!spans.length) return;
+
+    const numbers = spans
+      .map((sp) => this._parseRatingFromStars(sp))
+      .map((n) => (Number.isFinite(n) ? n * 20 : NaN))
+      .filter(Number.isFinite);
+    if (!numbers.length) return;
+
+    const ratingAverage = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
+    const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
+    if (!avgEl) return;
+
+    // remember the unmodified text so we can restore later
+    if (!avgEl.dataset.original) {
+      avgEl.dataset.original = avgEl.textContent.trim();
+    }
+    const baseText = avgEl.dataset.original;
+
+    avgEl.innerHTML = `
+                <span style="position: absolute;">${baseText}</span>
+                <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
+            `;
+  }
+
+  clearRatingsFromFavorites() {
+    const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
+    if (!avgEl) return;
+    if (avgEl.dataset.original) {
+      avgEl.textContent = avgEl.dataset.original;
+      delete avgEl.dataset.original;
+    } else {
+      // fallback: just remove the appended span if it exists
+      const absSpan = avgEl.querySelector('span[style*="position:absolute"]');
+      if (absSpan) {
+        avgEl.textContent = absSpan.textContent.trim();
+      }
+    }
+  }
+
+  clearRatingsDate() {
+    const caption = document.querySelector('.my-rating h3');
+    if (!caption) return;
+    if (caption.dataset.original) {
+      caption.textContent = caption.dataset.original;
+      delete caption.dataset.original;
+    }
+  }
+
+  addRatingsDate() {
+    const caption = document.querySelector('.my-rating h3');
+    if (!caption) return;
+
+    if (!caption.dataset.original) {
+      caption.dataset.original = caption.textContent.trim();
+    }
+
+    let ratingText = document.querySelector('span.stars-rating.initialized')?.getAttribute('title') || '';
+    if (!ratingText) {
+      ratingText = document.querySelector('.mobile-film-rating-detail a span')?.getAttribute('title') || '';
+    }
+    const match = ratingText.match(/(\d{2}\.\d{2}\.\d{4})/);
+    if (match) {
+      const ratingDate = match[1];
+      caption.innerHTML = `${caption.dataset.original}<br>${ratingDate}`;
+    }
+  }
+
+  hideSelectedUserReviews() {
+    let raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
+    let list;
+    try {
+      list = JSON.parse(raw);
+    } catch (e) {
+      list = [];
+    }
+    if (!Array.isArray(list) || list.length === 0) return;
+    const headers = Array.from(document.querySelectorAll('.article-header-review-name'));
+    headers.forEach((el) => {
+      const title = el.querySelector('.user-title-name');
+      if (!title) return;
+      const name = title.textContent.trim();
+      if (list.includes(name)) {
+        const article = el.closest('article');
+        if (article) article.style.display = 'none';
+      }
+    });
   }
 
   createCurrentPageRecord({ movieId, urlSlug, parentId, parentName, fullUrl, rating, existingRecord }) {

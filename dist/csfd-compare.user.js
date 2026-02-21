@@ -31,6 +31,15 @@
   const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
   const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
 
+  // feature flags copied from legacy script
+  const CLICKABLE_HEADER_BOXES_KEY = 'cc_clickable_header_boxes';
+  const RATINGS_ESTIMATE_KEY = 'cc_ratings_estimate';
+  const RATINGS_FROM_FAVORITES_KEY = 'cc_ratings_from_favorites';
+  const ADD_RATINGS_DATE_KEY = 'cc_add_ratings_date';
+  const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
+  const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
+  const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';
+
   async function getSettings(settingsName = 'CSFD-Compare-settings', defaultSettings = {}) {
     if (!localStorage.getItem(settingsName)) {
       localStorage.setItem(settingsName, JSON.stringify(defaultSettings));
@@ -246,6 +255,21 @@
         if (localStorage.getItem('cc_show_all_creator_tabs') === 'true') {
           this.showAllCreatorTabs();
         }
+        if (localStorage.getItem('cc_clickable_header_boxes') === 'true') {
+          this.clickableHeaderBoxes();
+        }
+        if (localStorage.getItem('cc_ratings_estimate') === 'true') {
+          this.ratingsEstimate();
+        }
+        if (localStorage.getItem('cc_ratings_from_favorites') === 'true') {
+          this.ratingsFromFavorites();
+        }
+        if (localStorage.getItem('cc_add_ratings_date') === 'true') {
+          this.addRatingsDate();
+        }
+        if (localStorage.getItem('cc_hide_selected_user_reviews') === 'true') {
+          this.hideSelectedUserReviews();
+        }
       } catch (e) {
         // ignore silently
       }
@@ -400,6 +424,187 @@
         computedFromText: computedTitle,
         computedCount: computedCountMatch ? Number.parseInt(computedCountMatch[1], 10) : NaN,
       };
+    }
+
+    // helper used by several legacy features
+    _parseRatingFromStars(starElem) {
+      const clazz = starElem.className || '';
+      const m = clazz.match(/stars-(\d)/);
+      if (m) return parseInt(m[1], 10);
+      if (clazz.includes('trash')) return 0;
+      return NaN;
+    }
+
+    _getRatingColor(percent) {
+      if (percent >= 70) return 'red';
+      if (percent >= 30) return 'blue';
+      return 'black';
+    }
+
+    // legacy features ported from old script
+    clickableHeaderBoxes() {
+      // make a few specific header buttons clickable by clicking anywhere on the box
+      const selectors = ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'];
+      selectors.forEach((sel) => {
+        const el = document.querySelector(sel);
+        if (el) {
+          el.addEventListener('click', () => {
+            const hrefMap = {
+              '.user-link.wantsee': '/chci-videt/',
+              '.user-link.favorites': '/soukrome/oblibene/',
+              '.user-link.messages': '/posta/',
+            };
+            location.href = hrefMap[sel] || hrefMap['.user-link.wantsee'];
+          });
+        }
+      });
+
+      // entire box headers
+      const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header'));
+      headers.forEach((div) => {
+        const btn = div.querySelector('a.button');
+        if (!btn) return;
+        const text = btn.textContent.trim().toLowerCase();
+        if (!['více', 'viac'].includes(text)) return;
+        const href = btn.getAttribute('href');
+        if (!href) return;
+        const wrapper = document.createElement('a');
+        wrapper.setAttribute('href', href);
+        div.parentNode.replaceChild(wrapper, div);
+        wrapper.appendChild(div);
+        // hover styling borrowed from old code
+        const h2 = div.querySelector('h2');
+        const spanCount = h2?.querySelector('span.count');
+        div.addEventListener('mouseenter', () => {
+          div.style.backgroundColor = '#ba0305';
+          if (h2) {
+            h2.style.backgroundColor = '#ba0305';
+            h2.style.color = '#fff';
+          }
+          if (spanCount) spanCount.style.color = '#fff';
+        });
+        div.addEventListener('mouseleave', () => {
+          if (div.classList.contains('dropdown-content-head')) {
+            div.style.backgroundColor = '#ececec';
+          } else {
+            div.style.backgroundColor = '#e3e3e3';
+          }
+          if (h2) {
+            h2.style.backgroundColor = 'initial';
+            h2.style.color = 'initial';
+          }
+          if (spanCount) spanCount.style.color = 'initial';
+        });
+      });
+    }
+
+    ratingsEstimate() {
+      const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+      if (!avgEl) return;
+      const text = avgEl.textContent.replace(/\s/g, '');
+      if (!text.includes('?%')) return;
+      const userRatings = Array.from(document.querySelectorAll('section.others-rating .star-rating'));
+      if (!userRatings.length) return;
+      const numbers = userRatings
+        .map((ur) => this._parseRatingFromStars(ur.querySelector('.stars')))
+        .map((n) => (Number.isFinite(n) ? n * 20 : NaN))
+        .filter(Number.isFinite);
+      if (!numbers.length) return;
+      const average = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
+      avgEl.textContent = `${average} %`;
+      avgEl.style.color = '#fff';
+      avgEl.style.backgroundColor = this._getRatingColor(average);
+      avgEl.setAttribute('title', `spočteno z hodnocení: ${numbers.length}`);
+    }
+
+    ratingsFromFavorites() {
+      const spans = Array.from(document.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars'));
+      if (!spans.length) return;
+
+      const numbers = spans
+        .map((sp) => this._parseRatingFromStars(sp))
+        .map((n) => (Number.isFinite(n) ? n * 20 : NaN))
+        .filter(Number.isFinite);
+      if (!numbers.length) return;
+
+      const ratingAverage = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
+      const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
+      if (!avgEl) return;
+
+      // remember the unmodified text so we can restore later
+      if (!avgEl.dataset.original) {
+        avgEl.dataset.original = avgEl.textContent.trim();
+      }
+      const baseText = avgEl.dataset.original;
+
+      avgEl.innerHTML = `
+                <span style="position: absolute;">${baseText}</span>
+                <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
+            `;
+    }
+
+    clearRatingsFromFavorites() {
+      const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
+      if (!avgEl) return;
+      if (avgEl.dataset.original) {
+        avgEl.textContent = avgEl.dataset.original;
+        delete avgEl.dataset.original;
+      } else {
+        // fallback: just remove the appended span if it exists
+        const absSpan = avgEl.querySelector('span[style*="position:absolute"]');
+        if (absSpan) {
+          avgEl.textContent = absSpan.textContent.trim();
+        }
+      }
+    }
+
+    clearRatingsDate() {
+      const caption = document.querySelector('.my-rating h3');
+      if (!caption) return;
+      if (caption.dataset.original) {
+        caption.textContent = caption.dataset.original;
+        delete caption.dataset.original;
+      }
+    }
+
+    addRatingsDate() {
+      const caption = document.querySelector('.my-rating h3');
+      if (!caption) return;
+
+      if (!caption.dataset.original) {
+        caption.dataset.original = caption.textContent.trim();
+      }
+
+      let ratingText = document.querySelector('span.stars-rating.initialized')?.getAttribute('title') || '';
+      if (!ratingText) {
+        ratingText = document.querySelector('.mobile-film-rating-detail a span')?.getAttribute('title') || '';
+      }
+      const match = ratingText.match(/(\d{2}\.\d{2}\.\d{4})/);
+      if (match) {
+        const ratingDate = match[1];
+        caption.innerHTML = `${caption.dataset.original}<br>${ratingDate}`;
+      }
+    }
+
+    hideSelectedUserReviews() {
+      let raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
+      let list;
+      try {
+        list = JSON.parse(raw);
+      } catch (e) {
+        list = [];
+      }
+      if (!Array.isArray(list) || list.length === 0) return;
+      const headers = Array.from(document.querySelectorAll('.article-header-review-name'));
+      headers.forEach((el) => {
+        const title = el.querySelector('.user-title-name');
+        if (!title) return;
+        const name = title.textContent.trim();
+        if (list.includes(name)) {
+          const article = el.closest('article');
+          if (article) article.style.display = 'none';
+        }
+      });
     }
 
     createCurrentPageRecord({ movieId, urlSlug, parentId, parentName, fullUrl, rating, existingRecord }) {
@@ -879,7 +1084,7 @@
   var css_248z = ".cc-flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-flex-column{-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-flex-row{-webkit-box-orient:horizontal;-webkit-box-direction:normal;-ms-flex-direction:row;flex-direction:row}.cc-flex-row-reverse{-webkit-box-orient:horizontal;-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.cc-flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.cc-justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.cc-justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.cc-justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-justify-around{-ms-flex-pack:distribute;justify-content:space-around}.cc-align-center{text-align:center}.cc-align-left{text-align:left}.cc-align-right{text-align:right}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.cc-grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.cc-grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.cc-grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.cc-grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.cc-gap-5{gap:5px}.cc-gap-10{gap:10px}.cc-gap-30{gap:30px}.cc-ml-auto{margin-left:auto}.cc-mr-auto{margin-right:auto}.cc-ph-5{padding:0 5px}.cc-ph-10{padding:0 10px}.cc-pv-5{padding:5px 0}.cc-pv-10{padding:10px 0}.cc-mh-5{margin:0 5px}.cc-mh-10{margin:0 10px}.cc-mv-5{margin:5px 0}.cc-mv-10{margin:10px 0}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:hsla(0,34%,69%,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-ratings-table-export{cursor:pointer;font-size:11px;margin-left:auto;padding:5px 7px;text-align:center}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.article-header{padding-top:2px}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:176px}.cc-creator-preview-image{background:#ececec;display:block;height:200px;-o-object-fit:contain;object-fit:contain;-o-object-position:center center;object-position:center center;width:100%}.cc-creator-preview.is-no-image .cc-creator-preview-image{background:linear-gradient(160deg,#f2f2f2,#e3e3e3);opacity:0}.cc-creator-preview.is-no-image .cc-creator-preview-card:before{color:#777;content:\"Bez fotky\";font-size:12px;font-weight:600;left:50%;letter-spacing:.02em;position:absolute;top:82px;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);z-index:1}.cc-creator-preview-name{color:#303030;display:-webkit-box;display:-ms-flexbox;display:flex;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:7px 8px 8px;text-align:center;text-overflow:ellipsis;white-space:nowrap;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;gap:4px;justify-content:center}.cc-creator-preview-name-flag{height:auto;width:14px;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 9px}.cc-creator-preview-meta-line{color:#434343;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}.cc-creator-preview-meta-birth{color:#2f2f2f;font-size:12px;font-weight:600;line-height:1.4;white-space:normal}.cc-creator-preview-meta-birth-age-inline{color:#666;font-size:11px;font-weight:500}.cc-creator-preview-meta-age{color:#595959;font-size:11px;font-weight:600;text-align:center}.cc-creator-preview-meta-photo{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:baseline;-ms-flex-align:baseline;align-items:baseline;color:#505050;font-weight:600;gap:6px;min-width:0;white-space:nowrap}.cc-creator-preview-meta-photo:before{content:\"🎬\";line-height:1;margin-right:2px}.cc-creator-preview-meta-photo.is-copyright:before{content:\"©\";font-weight:700}.cc-creator-preview-meta-photo-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo-year{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-creator-preview-meta-photo.is-movie{color:#ba0305}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-year{font-weight:700}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source{line-height:1;white-space:nowrap}.cc-creator-preview-meta-photo.is-copyright{color:#4c4c4c}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-year{display:none}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-source{display:-webkit-box;overflow:hidden;text-overflow:clip;white-space:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical}nav.tab-nav.cc-show-all-tabs{padding-right:0!important}nav.tab-nav.cc-show-all-tabs .tab-nav-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;list-style:none;margin:0;padding:0;width:100%}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item{-webkit-box-flex:1;-ms-flex:1 1 auto;flex:1 1 auto;min-width:0;top:-4px}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active{top:0}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link{display:block;overflow:hidden;padding:0 5px;text-align:center;text-overflow:ellipsis;white-space:nowrap}";
   styleInject(css_248z);
 
-  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.6</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <form class=\"cc-settings-form\">\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" name=\"cc-enable-gallery-image-links\" />\r\n                    Zobrazovat formáty obrázků v galerii\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-show-all-creator-tabs\" name=\"cc-show-all-creator-tabs\" />\r\n                    Zobrazit všechny záložky tvůrce\r\n                </label>\r\n                <div class=\"cc-preview-group\" id=\"cc-creator-preview-group\">\r\n                    <button type=\"button\" class=\"cc-preview-group-toggle\" id=\"cc-creator-preview-group-toggle\"\r\n                        aria-expanded=\"false\" aria-controls=\"cc-creator-preview-group-body\">\r\n                        <span class=\"cc-preview-group-toggle-left\">\r\n                            <span class=\"cc-preview-group-chevron\" aria-hidden=\"true\"></span>\r\n                            <span class=\"cc-preview-group-title\">Náhledy fotek tvůrců</span>\r\n                        </span>\r\n                        <span class=\"cc-preview-group-count\" id=\"cc-creator-preview-count\">0/2</span>\r\n                    </button>\r\n                    <div class=\"cc-preview-group-body\" id=\"cc-creator-preview-group-body\">\r\n                        <label class=\"cc-form-check cc-preview-group-main\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" name=\"cc-enable-creator-preview\" />\r\n                            Zobrazovat náhled fotky tvůrce při najetí\r\n                        </label>\r\n                        <div class=\"cc-preview-group-extra\" id=\"cc-creator-preview-settings-extra\">\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\"\r\n                                    name=\"cc-creator-preview-show-birth\" />\r\n                                Zobrazovat datum narození\r\n                            </label>\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\"\r\n                                    name=\"cc-creator-preview-show-photo-from\" />\r\n                                Zobrazovat „Photo from“\r\n                            </label>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" name=\"option2\" /> Povolit automatickou aktualizaci dat\r\n                </label>\r\n                <label class=\"cc-form-field\">\r\n                    <span>Vlastní štítek sekce</span>\r\n                    <input type=\"text\" data-bwignore=\"true\" name=\"sectionLabel\" placeholder=\"Např. Můj CSFD Compare\" />\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-reset-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-lc-btn\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-db-btn\">Smazat DB</button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
+  var htmlContent = "<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.6</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <form class=\"cc-settings-form\">\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" name=\"cc-enable-gallery-image-links\" />\r\n                    Zobrazovat formáty obrázků v galerii\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-show-all-creator-tabs\" name=\"cc-show-all-creator-tabs\" />\r\n                    Zobrazit všechny záložky tvůrce\r\n                </label>\r\n                <div class=\"cc-preview-group\" id=\"cc-creator-preview-group\">\r\n                    <button type=\"button\" class=\"cc-preview-group-toggle\" id=\"cc-creator-preview-group-toggle\"\r\n                        aria-expanded=\"false\" aria-controls=\"cc-creator-preview-group-body\">\r\n                        <span class=\"cc-preview-group-toggle-left\">\r\n                            <span class=\"cc-preview-group-chevron\" aria-hidden=\"true\"></span>\r\n                            <span class=\"cc-preview-group-title\">Náhledy fotek tvůrců</span>\r\n                        </span>\r\n                        <span class=\"cc-preview-group-count\" id=\"cc-creator-preview-count\">0/2</span>\r\n                    </button>\r\n                    <div class=\"cc-preview-group-body\" id=\"cc-creator-preview-group-body\">\r\n                        <label class=\"cc-form-check cc-preview-group-main\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" name=\"cc-enable-creator-preview\" />\r\n                            Zobrazovat náhled fotky tvůrce při najetí\r\n                        </label>\r\n                        <div class=\"cc-preview-group-extra\" id=\"cc-creator-preview-settings-extra\">\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\"\r\n                                    name=\"cc-creator-preview-show-birth\" />\r\n                                Zobrazovat datum narození\r\n                            </label>\r\n                            <label class=\"cc-form-check cc-preview-group-sub\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\"\r\n                                    name=\"cc-creator-preview-show-photo-from\" />\r\n                                Zobrazovat „Photo from“\r\n                            </label>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-enable-clickable-header-boxes\"\r\n                        name=\"cc-enable-clickable-header-boxes\" />\r\n                    Boxy s tlačítkem \"VÍCE\" jsou klikatelné celé\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-ratings-estimate\" name=\"cc-ratings-estimate\" />\r\n                    Vypočtení % při počtu hodnocení pod 10\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-ratings-from-favorites\" name=\"cc-ratings-from-favorites\" />\r\n                    Zobrazit hodnocení z průměru oblíbených\r\n                </label>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" id=\"cc-add-ratings-date\" name=\"cc-add-ratings-date\" />\r\n                    Zobrazit datum hodnocení\r\n                </label>\r\n                <div class=\"cc-preview-group\" id=\"cc-hide-reviews-group\">\r\n                    <button type=\"button\" class=\"cc-preview-group-toggle\" id=\"cc-hide-reviews-group-toggle\"\r\n                        aria-expanded=\"false\" aria-controls=\"cc-hide-reviews-group-body\">\r\n                        <span class=\"cc-preview-group-toggle-left\">\r\n                            <span class=\"cc-preview-group-chevron\" aria-hidden=\"true\"></span>\r\n                            <span class=\"cc-preview-group-title\">Skrýt recenze lidí</span>\r\n                        </span>\r\n                        <span class=\"cc-preview-group-count\" id=\"cc-hide-reviews-count\">0</span>\r\n                    </button>\r\n                    <div class=\"cc-preview-group-body\" id=\"cc-hide-reviews-group-body\">\r\n                        <label class=\"cc-form-check\">\r\n                            <input type=\"checkbox\" id=\"cc-hide-selected-reviews\" name=\"cc-hide-selected-reviews\" />\r\n                            Povolit\r\n                        </label>\r\n                        <label class=\"cc-form-field\">\r\n                            <span>Jména (oddělena čárkou)</span>\r\n                            <input type=\"text\" data-bwignore=\"true\" id=\"cc-hide-selected-reviews-list\"\r\n                                name=\"cc-hide-selected-reviews-list\" />\r\n                        </label>\r\n                        <button type=\"button\" id=\"cc-hide-reviews-apply\"\r\n                            class=\"cc-button cc-button-small\">Použít</button>\r\n                        <div class=\"cc-form-note\">Stiskněte Enter nebo klikněte na použít.</div>\r\n                    </div>\r\n                </div>\r\n                <label class=\"cc-form-check\">\r\n                    <input type=\"checkbox\" name=\"option2\" /> Povolit automatickou aktualizaci dat\r\n                </label>\r\n                <label class=\"cc-form-field\">\r\n                    <span>Vlastní štítek sekce</span>\r\n                    <input type=\"text\" data-bwignore=\"true\" name=\"sectionLabel\" placeholder=\"Např. Můj CSFD Compare\" />\r\n                </label>\r\n            </form>\r\n        </div>\r\n    </article>\r\n\r\n    <article class=\"article cc-settings-section\">\r\n        <div class=\"article-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-reset-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-lc-btn\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-maint-btn\" id=\"cc-maint-clear-db-btn\">Smazat DB</button>\r\n            </div>\r\n        </div>\r\n    </article>\r\n\r\n</div>";
 
   const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
   const REQUEST_DELAY_MIN_MS = 250;
@@ -4155,8 +4360,143 @@
       updateCreatorPreviewUI,
     );
 
+    // new legacy‑style options
+    bindToggle(
+      '#cc-enable-clickable-header-boxes',
+      CLICKABLE_HEADER_BOXES_KEY,
+      false,
+      'cc-clickable-header-boxes-toggled',
+      'Klientní hlavičky jsou nyní celoplošně klikatelné.',
+      'Klientní hlavičky již nejsou celoplošně klikatelné.',
+    );
+    bindToggle(
+      '#cc-ratings-estimate',
+      RATINGS_ESTIMATE_KEY,
+      false,
+      'cc-ratings-estimate-toggled',
+      'Zobrazení odhadovaného % zapnuto.',
+      'Zobrazení odhadovaného % vypnuto.',
+    );
+    bindToggle(
+      '#cc-ratings-from-favorites',
+      RATINGS_FROM_FAVORITES_KEY,
+      false,
+      'cc-ratings-from-favorites-toggled',
+      'Průměr oblíbených zapnut.',
+      'Průměr oblíbených vypnut.',
+    );
+    // hide reviews group elements
+    const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
+    const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
+    const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
+    const hideCount = settingsButton.querySelector('#cc-hide-reviews-count');
+    settingsButton.querySelector('#cc-hide-selected-reviews');
+    const hideListInput = settingsButton.querySelector('#cc-hide-selected-reviews-list');
+    const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
+
+    // UI updater for hide-reviews group
+    const updateHideReviewsUI = () => {
+      const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
+      let list = [];
+      try {
+        list = JSON.parse(localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]');
+      } catch (e) {
+        list = [];
+      }
+      const count = list.length;
+
+      // checkbox remains enabled so user can toggle back on
+      if (hideListInput) hideListInput.disabled = !enabled;
+      if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
+
+      if (hideCount) {
+        hideCount.textContent = enabled ? String(count) : 'VYPNUTO';
+      }
+
+      if (hideGroup) {
+        hideGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
+        hideGroup.classList.add(
+          !enabled ? 'is-status-off' : count > 0 ? 'is-status-on-detailed' : 'is-status-on-minimal',
+        );
+      }
+    };
+
+    bindToggle(
+      '#cc-add-ratings-date',
+      ADD_RATINGS_DATE_KEY,
+      false,
+      'cc-add-ratings-date-toggled',
+      'Zobrazení data hodnocení zapnuto.',
+      'Zobrazení data hodnocení vypnuto.',
+    );
+    bindToggle(
+      '#cc-hide-selected-reviews',
+      HIDE_SELECTED_REVIEWS_KEY,
+      false,
+      null,
+      'Filtrování recenzí zapnuto.',
+      'Filtrování recenzí vypnuto.',
+      updateHideReviewsUI,
+    );
+
+    // collapse logic for hide reviews group
+    const setHideGroupCollapsedState = (collapsed) => {
+      if (hideGroup) hideGroup.classList.toggle('is-collapsed', collapsed);
+      if (hideGroupToggle) hideGroupToggle.setAttribute('aria-expanded', String(!collapsed));
+      if (hideGroupBody) hideGroupBody.hidden = collapsed;
+      localStorage.setItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY, String(collapsed));
+    };
+    if (hideGroupToggle) {
+      setHideGroupCollapsedState(getBoolSetting(HIDE_REVIEWS_SECTION_COLLAPSED_KEY, true));
+      hideGroupToggle.addEventListener('click', () => {
+        const currently = hideGroup?.classList.contains('is-collapsed');
+        setHideGroupCollapsedState(!currently);
+      });
+    }
+
+    // update count helper
+    const updateHideCount = () => {
+      if (!hideCount || !hideListInput) return;
+      const list = hideListInput.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      hideCount.textContent = String(list.length);
+    };
+
+    const applyHideList = () => {
+      if (!hideListInput) return;
+      const list = hideListInput.value
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(list));
+      updateHideCount();
+      window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+    };
+
+    if (hideListInput) {
+      try {
+        const saved = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
+        hideListInput.value = saved ? JSON.parse(saved).join(', ') : '';
+      } catch (e) {
+        hideListInput.value = '';
+      }
+      hideListInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          applyHideList();
+        }
+      });
+      if (hideApplyBtn) hideApplyBtn.addEventListener('click', applyHideList);
+      updateHideCount();
+    }
+
+    // initial visibility of group body is handled by collapse logic only; do not hide when disabled
+
     // Initialize UI State
     updateCreatorPreviewUI();
+    updateHideReviewsUI();
 
     // Collapsible Preview Section
     const setPreviewCollapsedState = (collapsed) => {
@@ -5452,6 +5792,31 @@
       csfd.addGalleryImageFormatLinks().catch((error) => {
         console.error('[CC] Failed to toggle gallery image format links:', error);
       });
+    });
+
+    // wire up legacy‑style toggles
+    window.addEventListener('cc-clickable-header-boxes-toggled', () => {
+      csfd.clickableHeaderBoxes();
+    });
+    window.addEventListener('cc-ratings-estimate-toggled', () => {
+      csfd.ratingsEstimate();
+    });
+    window.addEventListener('cc-ratings-from-favorites-toggled', (ev) => {
+      if (ev?.detail?.enabled) {
+        csfd.ratingsFromFavorites();
+      } else {
+        csfd.clearRatingsFromFavorites();
+      }
+    });
+    window.addEventListener('cc-add-ratings-date-toggled', (ev) => {
+      if (ev?.detail?.enabled) {
+        csfd.addRatingsDate();
+      } else {
+        csfd.clearRatingsDate();
+      }
+    });
+    window.addEventListener('cc-hide-selected-reviews-updated', () => {
+      csfd.hideSelectedUserReviews();
     });
 
     // Disable Option 2 if not logged in (now using utility)
