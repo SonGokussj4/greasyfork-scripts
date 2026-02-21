@@ -1,3 +1,18 @@
+<svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="cc-icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+    </symbol>
+    <symbol id="cc-icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+    </symbol>
+</svg>
+
 <a href="javascript:void(0)" rel="dropdownContent" class="user-link csfd-compare-menu initialized">
     <svg class="cc-menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true" focusable="false">
@@ -5,6 +20,7 @@
             font-weight="800" letter-spacing="0.2">CC</text>
     </svg>
 </a>
+
 <div class="dropdown-content cc-settings">
 
     <div class="dropdown-content-head">
@@ -42,18 +58,17 @@
         </div>
     </div>
 
-    <article class="article cc-settings-section">
-        <div class="article-content">
+    <div class="cc-settings-section">
+        <div class="cc-settings-section-content">
             <div class="cc-settings-actions">
                 <button id="cc-load-ratings-btn" class="cc-button cc-button-red cc-grow cc-button-iconed">
-                    <span class="cc-button-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <span class="cc-button-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="14" height="14"
+                            fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 4V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                             <path d="M8 10L12 14L16 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                                 stroke-linejoin="round" />
                             <path d="M5 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                    </span>
+                        </svg></span>
                     <span>Načíst moje hodnocení</span>
                 </button>
                 <button id="cc-load-computed-btn" class="cc-button cc-button-black cc-button-iconed">
@@ -68,10 +83,10 @@
                 </button>
             </div>
         </div>
-    </article>
+    </div>
 
-    <article class="article cc-settings-section">
-        <div class="article-content">
+    <div class="cc-settings-section" hidden>
+        <div class="cc-settings-section-content">
             <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>
                 <div class="cc-ratings-progress-head">
                     <span id="cc-ratings-progress-label">Připravuji načítání…</span>
@@ -86,102 +101,159 @@
                 </div>
             </div>
         </div>
-    </article>
+    </div>
 
-    <article class="article cc-settings-section">
-        <div class="article-content">
+    <div class="cc-settings-section">
+        <div class="cc-settings-section-content">
             <h3 class="cc-section-title">Konfigurace</h3>
-            <form class="cc-settings-form">
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-enable-gallery-image-links" name="cc-enable-gallery-image-links" />
-                    Zobrazovat formáty obrázků v galerii
-                </label>
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-show-all-creator-tabs" name="cc-show-all-creator-tabs" />
-                    Zobrazit všechny záložky tvůrce
-                </label>
-                <div class="cc-preview-group" id="cc-creator-preview-group">
-                    <button type="button" class="cc-preview-group-toggle" id="cc-creator-preview-group-toggle"
-                        aria-expanded="false" aria-controls="cc-creator-preview-group-body">
-                        <span class="cc-preview-group-toggle-left">
-                            <span class="cc-preview-group-chevron" aria-hidden="true"></span>
-                            <span class="cc-preview-group-title">Náhledy fotek tvůrců</span>
-                        </span>
-                        <span class="cc-preview-group-count" id="cc-creator-preview-count">0/2</span>
-                    </button>
-                    <div class="cc-preview-group-body" id="cc-creator-preview-group-body">
-                        <label class="cc-form-check cc-preview-group-main">
-                            <input type="checkbox" id="cc-enable-creator-preview" name="cc-enable-creator-preview" />
-                            Zobrazovat náhled fotky tvůrce při najetí
-                        </label>
-                        <div class="cc-preview-group-extra" id="cc-creator-preview-settings-extra">
-                            <label class="cc-form-check cc-preview-group-sub">
-                                <input type="checkbox" id="cc-creator-preview-show-birth"
-                                    name="cc-creator-preview-show-birth" />
-                                Zobrazovat datum narození
-                            </label>
-                            <label class="cc-form-check cc-preview-group-sub">
-                                <input type="checkbox" id="cc-creator-preview-show-photo-from"
-                                    name="cc-creator-preview-show-photo-from" />
-                                Zobrazovat „Photo from“
-                            </label>
+            <div class="cc-config-list">
+
+                <div class="cc-setting-row">
+                    <label class="cc-switch">
+                        <input type="checkbox" id="cc-enable-gallery-image-links" checked />
+                        <span class="cc-switch-bg"></span>
+                    </label>
+                    <span class="cc-setting-label">Zobrazovat formáty obrázků v galerii</span>
+                </div>
+
+                <div class="cc-setting-row">
+                    <label class="cc-switch">
+                        <input type="checkbox" id="cc-show-all-creator-tabs" checked />
+                        <span class="cc-switch-bg"></span>
+                    </label>
+                    <span class="cc-setting-label">Zobrazit všechny záložky tvůrce</span>
+                    <div class="cc-setting-icons">
+                        <div class="cc-info-icon"
+                            aria-label="Na stránce tvůrce natvrdo zobrazí všechny záložky (Režie, Scénář, Herec atd.), i když v nich má méně než 3 filmy.">
+                            <svg width="14" height="14">
+                                <use href="#cc-icon-info"></use>
+                            </svg>
+                        </div>
+                        <div class="cc-image-icon-btn" role="button" tabindex="0"
+                            data-image-url="https://i.imgur.com/aTrSU2X.png" aria-label="Zobrazit ukázku">
+                            <svg width="14" height="14">
+                                <use href="#cc-icon-image"></use>
+                            </svg>
                         </div>
                     </div>
                 </div>
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-enable-clickable-header-boxes"
-                        name="cc-enable-clickable-header-boxes" />
-                    Boxy s tlačítkem "VÍCE" jsou klikatelné celé
-                </label>
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-ratings-estimate" name="cc-ratings-estimate" />
-                    Vypočtení % při počtu hodnocení pod 10
-                </label>
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-ratings-from-favorites" name="cc-ratings-from-favorites" />
-                    Zobrazit hodnocení z průměru oblíbených
-                </label>
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-add-ratings-date" name="cc-add-ratings-date" />
-                    Zobrazit datum hodnocení
-                </label>
-                <div class="cc-preview-group" id="cc-hide-reviews-group">
-                    <button type="button" class="cc-preview-group-toggle" id="cc-hide-reviews-group-toggle"
-                        aria-expanded="false" aria-controls="cc-hide-reviews-group-body">
-                        <span class="cc-preview-group-toggle-left">
-                            <span class="cc-preview-group-chevron" aria-hidden="true"></span>
-                            <span class="cc-preview-group-title">Skrýt recenze lidí</span>
-                        </span>
-                        <span class="cc-preview-group-count" id="cc-hide-reviews-count">0</span>
-                    </button>
-                    <div class="cc-preview-group-body" id="cc-hide-reviews-group-body">
-                        <label class="cc-form-check">
-                            <input type="checkbox" id="cc-hide-selected-reviews" name="cc-hide-selected-reviews" />
-                            Povolit
+
+                <div class="cc-setting-group" id="cc-creator-preview-group">
+                    <div class="cc-setting-row">
+                        <label class="cc-switch">
+                            <input type="checkbox" id="cc-enable-creator-preview" checked />
+                            <span class="cc-switch-bg"></span>
                         </label>
+                        <div class="cc-setting-collapse-trigger" id="cc-creator-preview-group-toggle"
+                            aria-expanded="true">
+                            <span class="cc-setting-label cc-grow">Náhledy fotek tvůrců</span>
+                            <svg class="cc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="cc-setting-sub" id="cc-creator-preview-group-body">
+                        <div class="cc-setting-row">
+                            <label class="cc-switch">
+                                <input type="checkbox" id="cc-creator-preview-show-birth" checked />
+                                <span class="cc-switch-bg"></span>
+                            </label>
+                            <span class="cc-setting-label">Zobrazovat datum narození</span>
+                        </div>
+                        <div class="cc-setting-row">
+                            <label class="cc-switch">
+                                <input type="checkbox" id="cc-creator-preview-show-photo-from" checked />
+                                <span class="cc-switch-bg"></span>
+                            </label>
+                            <span class="cc-setting-label">Zobrazovat „Photo from“</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cc-setting-row">
+                    <label class="cc-switch">
+                        <input type="checkbox" id="cc-enable-clickable-header-boxes" checked />
+                        <span class="cc-switch-bg"></span>
+                    </label>
+                    <span class="cc-setting-label">Boxy s tlačítkem "VÍCE" jsou klikatelné celé</span>
+                </div>
+
+                <div class="cc-setting-row">
+                    <label class="cc-switch">
+                        <input type="checkbox" id="cc-ratings-estimate" />
+                        <span class="cc-switch-bg"></span>
+                    </label>
+                    <span class="cc-setting-label">Vypočtení % při počtu hodnocení pod 10</span>
+                    <div class="cc-setting-icons">
+                        <div class="cc-info-icon"
+                            aria-label="Když má film méně než 10 hodnocení, CSFD procenta skryje. Tato funkce je matematicky dopočítá a zobrazí.">
+                            <svg width="14" height="14">
+                                <use href="#cc-icon-info"></use>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cc-setting-row">
+                    <label class="cc-switch">
+                        <input type="checkbox" id="cc-ratings-from-favorites" />
+                        <span class="cc-switch-bg"></span>
+                    </label>
+                    <span class="cc-setting-label">Zobrazit hodnocení z průměru oblíbených</span>
+                </div>
+
+                <div class="cc-setting-row">
+                    <label class="cc-switch">
+                        <input type="checkbox" id="cc-add-ratings-date" />
+                        <span class="cc-switch-bg"></span>
+                    </label>
+                    <span class="cc-setting-label">Zobrazit datum hodnocení</span>
+                </div>
+
+                <div class="cc-setting-group" id="cc-hide-reviews-group">
+                    <div class="cc-setting-row">
+                        <label class="cc-switch">
+                            <input type="checkbox" id="cc-hide-selected-reviews" />
+                            <span class="cc-switch-bg"></span>
+                        </label>
+                        <div class="cc-setting-collapse-trigger" id="cc-hide-reviews-group-toggle"
+                            aria-expanded="false">
+                            <span class="cc-setting-label cc-grow">Skrýt recenze lidí</span>
+                            <svg class="cc-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="cc-setting-sub" id="cc-hide-reviews-group-body" hidden>
                         <label class="cc-form-field">
                             <span>Jména (oddělena čárkou)</span>
                             <input type="text" data-bwignore="true" id="cc-hide-selected-reviews-list"
-                                name="cc-hide-selected-reviews-list" />
+                                placeholder="Např. Adrian, Karel" />
                         </label>
-                        <button type="button" id="cc-hide-reviews-apply"
-                            class="cc-button cc-button-small">Použít</button>
-                        <div class="cc-form-note">Stiskněte Enter nebo klikněte na použít.</div>
+                        <div class="cc-sub-actions">
+                            <button type="button" id="cc-hide-reviews-apply"
+                                class="cc-button cc-button-red cc-button-small">Použít</button>
+                            <span class="cc-form-note">Stiskněte Enter pro uložení.</span>
+                        </div>
                     </div>
                 </div>
-                <label class="cc-form-check">
-                    <input type="checkbox" name="option2" /> Povolit automatickou aktualizaci dat
-                </label>
-                <label class="cc-form-field">
-                    <span>Vlastní štítek sekce</span>
-                    <input type="text" data-bwignore="true" name="sectionLabel" placeholder="Např. Můj CSFD Compare" />
-                </label>
-            </form>
-        </div>
-    </article>
 
-    <article class="article cc-settings-section">
-        <div class="article-content">
+                <div class="cc-setting-group" style="padding: 8px;">
+                    <label class="cc-form-field">
+                        <span style="font-weight: 600; color: #444; margin-bottom: 2px;">Vlastní štítek sekce</span>
+                        <input type="text" data-bwignore="true" name="sectionLabel"
+                            placeholder="Např. Můj CSFD Compare" />
+                    </label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="cc-settings-section">
+        <div class="cc-settings-section-content">
             <h3 class="cc-section-title">Další akce</h3>
             <div class="cc-maint-actions">
                 <button type="button" class="cc-maint-btn" id="cc-maint-reset-btn">Reset</button>
@@ -189,6 +261,19 @@
                 <button type="button" class="cc-maint-btn" id="cc-maint-clear-db-btn">Smazat DB</button>
             </div>
         </div>
-    </article>
+    </div>
 
 </div>
+
+<!-- <div class="cc-version-info-overlay" id="cc-image-modal">
+    <div class="cc-version-info-modal" style="width: min(800px, 95vw);">
+        <div class="cc-version-info-head">
+            <h3 id="cc-image-modal-title">Ukázka funkce</h3>
+            <button type="button" class="cc-version-info-close" id="cc-image-modal-close" aria-label="Zavřít">×</button>
+        </div>
+        <div class="cc-version-info-body" style="text-align: center; padding: 16px;">
+            <img id="cc-image-modal-img" src="" alt="Ukázka"
+                style="max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" />
+        </div>
+    </div>
+</div> -->

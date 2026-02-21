@@ -137,6 +137,47 @@ function formatLocalStorageValue(value, maxLength = 120) {
 // MAIN INITIALIZATION
 // ==========================================
 
+// Creates a clone of the Version Info modal specifically for Image Previews
+function getOrCreateImageModal() {
+  let overlay = document.getElementById('cc-image-preview-overlay');
+  if (overlay) return overlay;
+
+  overlay = document.createElement('div');
+  overlay.id = 'cc-image-preview-overlay';
+  overlay.className = 'cc-version-info-overlay'; // Reuse exact CSS from version modal!
+
+  overlay.innerHTML = `
+    <div class="cc-version-info-modal" style="width: min(840px, 95vw); max-height: 90vh;">
+      <div class="cc-version-info-head">
+        <h3 id="cc-image-modal-title">Ukázka funkce</h3>
+        <button type="button" class="cc-version-info-close" id="cc-image-modal-close" aria-label="Zavřít">×</button>
+      </div>
+      <div class="cc-version-info-body" style="text-align: center; padding: 16px; display: flex; justify-content: center; align-items: center; background: #f4f4f4;">
+        <img id="cc-image-modal-img" src="" alt="Ukázka" style="max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" />
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const closeBtn = overlay.querySelector('#cc-image-modal-close');
+  const img = overlay.querySelector('#cc-image-modal-img');
+
+  const close = () => {
+    overlay.classList.remove('is-open');
+    setTimeout(() => {
+      img.src = '';
+    }, 200); // clear image after fade out
+  };
+
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+
+  return overlay;
+}
+
 async function addSettingsButton() {
   'use strict';
 
@@ -144,6 +185,18 @@ async function addSettingsButton() {
   const settingsButton = document.createElement('li');
   settingsButton.className = 'cc-menu-item';
   settingsButton.innerHTML = htmlContent;
+
+  const dropdown = settingsButton.querySelector('.dropdown-content');
+  if (dropdown) {
+    const blockEvent = (e) => e.stopPropagation();
+
+    // By using 'true' as the third argument (Capture Phase), we intercept the mouse
+    // events at the very top level and destroy them BEFORE CSFD's heavy scripts
+    // can see them and trigger the 800ms carousel lag.
+    ['pointermove', 'mousemove', 'mouseover', 'mouseenter', 'wheel', 'touchmove'].forEach((evt) => {
+      dropdown.addEventListener(evt, blockEvent, true);
+    });
+  }
 
   const headerBar = document.querySelector('.header-bar');
   if (headerBar) {
@@ -161,10 +214,8 @@ async function addSettingsButton() {
 
   // 3. Setup Toggles & DOM Elements
   const creatorPreviewGroup = settingsButton.querySelector('#cc-creator-preview-group');
-  const creatorPreviewCount = settingsButton.querySelector('#cc-creator-preview-count');
   const creatorPreviewGroupBody = settingsButton.querySelector('#cc-creator-preview-group-body');
   const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
-  const creatorSettingsExtra = settingsButton.querySelector('#cc-creator-preview-settings-extra');
 
   // Generic Toggle Binder
   const toggles = [];
@@ -189,21 +240,16 @@ async function addSettingsButton() {
     const enabled = getBoolSetting(CREATOR_PREVIEW_ENABLED_KEY, true);
     const showBirth = getBoolSetting(CREATOR_PREVIEW_SHOW_BIRTH_KEY, true);
     const showPhoto = getBoolSetting(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, true);
-    const used = Number(showBirth) + Number(showPhoto);
 
     const birthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
     const photoToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
 
     if (birthToggle) birthToggle.disabled = !enabled;
     if (photoToggle) photoToggle.disabled = !enabled;
-    if (creatorSettingsExtra) creatorSettingsExtra.classList.toggle('is-disabled', !enabled);
-    if (creatorPreviewCount) creatorPreviewCount.textContent = enabled ? `${used}/2` : `-/2`;
 
-    if (creatorPreviewGroup) {
-      creatorPreviewGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
-      creatorPreviewGroup.classList.add(
-        !enabled ? 'is-status-off' : used > 0 ? 'is-status-on-detailed' : 'is-status-on-minimal',
-      );
+    // ADD THIS: Visually disable the sub-menu container
+    if (creatorPreviewGroupBody) {
+      creatorPreviewGroupBody.classList.toggle('is-disabled', !enabled);
     }
 
     window.dispatchEvent(
@@ -256,7 +302,6 @@ async function addSettingsButton() {
     updateCreatorPreviewUI,
   );
 
-  // new legacy‑style options
   bindToggle(
     '#cc-enable-clickable-header-boxes',
     CLICKABLE_HEADER_BOXES_KEY,
@@ -281,39 +326,23 @@ async function addSettingsButton() {
     'Průměr oblíbených zapnut.',
     'Průměr oblíbených vypnut.',
   );
+
   // hide reviews group elements
   const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
   const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
   const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
-  const hideCount = settingsButton.querySelector('#cc-hide-reviews-count');
-  const hideCheckbox = settingsButton.querySelector('#cc-hide-selected-reviews');
   const hideListInput = settingsButton.querySelector('#cc-hide-selected-reviews-list');
   const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
 
   // UI updater for hide-reviews group
   const updateHideReviewsUI = () => {
     const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
-    let list = [];
-    try {
-      list = JSON.parse(localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]');
-    } catch (e) {
-      list = [];
-    }
-    const count = list.length;
-
-    // checkbox remains enabled so user can toggle back on
     if (hideListInput) hideListInput.disabled = !enabled;
     if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
 
-    if (hideCount) {
-      hideCount.textContent = enabled ? String(count) : 'VYPNUTO';
-    }
-
-    if (hideGroup) {
-      hideGroup.classList.remove('is-status-off', 'is-status-on-minimal', 'is-status-on-detailed');
-      hideGroup.classList.add(
-        !enabled ? 'is-status-off' : count > 0 ? 'is-status-on-detailed' : 'is-status-on-minimal',
-      );
+    // ADD THIS: Visually disable the sub-menu container
+    if (hideGroupBody) {
+      hideGroupBody.classList.toggle('is-disabled', !enabled);
     }
   };
 
@@ -342,6 +371,7 @@ async function addSettingsButton() {
     if (hideGroupBody) hideGroupBody.hidden = collapsed;
     localStorage.setItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY, String(collapsed));
   };
+
   if (hideGroupToggle) {
     setHideGroupCollapsedState(getBoolSetting(HIDE_REVIEWS_SECTION_COLLAPSED_KEY, true));
     hideGroupToggle.addEventListener('click', () => {
@@ -350,16 +380,6 @@ async function addSettingsButton() {
     });
   }
 
-  // update count helper
-  const updateHideCount = () => {
-    if (!hideCount || !hideListInput) return;
-    const list = hideListInput.value
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    hideCount.textContent = String(list.length);
-  };
-
   const applyHideList = () => {
     if (!hideListInput) return;
     const list = hideListInput.value
@@ -367,7 +387,6 @@ async function addSettingsButton() {
       .map((s) => s.trim())
       .filter(Boolean);
     localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(list));
-    updateHideCount();
     window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
   };
 
@@ -385,10 +404,7 @@ async function addSettingsButton() {
       }
     });
     if (hideApplyBtn) hideApplyBtn.addEventListener('click', applyHideList);
-    updateHideCount();
   }
-
-  // initial visibility of group body is handled by collapse logic only; do not hide when disabled
 
   // Initialize UI State
   updateCreatorPreviewUI();
@@ -405,7 +421,6 @@ async function addSettingsButton() {
   if (creatorPreviewGroupToggle) {
     setPreviewCollapsedState(getBoolSetting(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY, true));
     creatorPreviewGroupToggle.addEventListener('click', () => {
-      // invert current state rather than re-applying it
       const currentlyCollapsed = creatorPreviewGroup?.classList.contains('is-collapsed') ?? true;
       setPreviewCollapsedState(!currentlyCollapsed);
     });
@@ -595,6 +610,26 @@ async function addSettingsButton() {
     refreshBadgesSafely();
   });
 
+  // --- IMAGE PREVIEW MODAL LOGIC ---
+  settingsButton.querySelectorAll('.cc-image-icon-btn').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // Prevents CSFD search/sliders from reacting
+
+      const url = btn.getAttribute('data-image-url');
+      const titleText =
+        btn.closest('.cc-setting-row')?.querySelector('.cc-setting-label')?.textContent || 'Ukázka funkce';
+
+      if (url) {
+        const modal = getOrCreateImageModal();
+        modal.querySelector('#cc-image-modal-title').textContent = titleText;
+        modal.querySelector('#cc-image-modal-img').src = url;
+
+        // Show the modal
+        modal.classList.add('is-open');
+      }
+    });
+  });
   // use the raw DOM element; helper no longer depends on jQuery
   initializeSettingsMenuHover(settingsButton);
 }

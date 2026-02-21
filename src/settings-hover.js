@@ -6,12 +6,16 @@ const HOVER_TOGGLE_DELAY_MS = 200;
 
 let normalListeners = [];
 
-function addHoveredClass() {
-  document.querySelectorAll('.header-bar li').forEach((li) => li.classList.add('hovered'));
-}
-
-function removeHoveredClass() {
-  document.querySelectorAll('.header-bar li').forEach((li) => li.classList.remove('hovered'));
+// OPTIMIZATION: Only modify the specific menu button, preventing CSFD native scripts
+// from freezing the browser by trying to open all native dropdowns at once.
+function setHoverState(menuButton, isHovered) {
+  if (isHovered) {
+    menuButton.classList.add('hovered', 'active');
+    document.body.classList.add('cc-menu-open');
+  } else {
+    menuButton.classList.remove('hovered', 'active');
+    document.body.classList.remove('cc-menu-open');
+  }
 }
 
 function clearNormalListeners() {
@@ -21,39 +25,39 @@ function clearNormalListeners() {
 
 function bindHoverHandlers(menuButton, timeoutState) {
   clearNormalListeners();
-  const dropdown = menuButton.querySelector('.dropdown-content');
-  const targets = [menuButton];
-  if (dropdown) targets.push(dropdown);
 
-  targets.forEach((el) => {
-    const onEnter = () => {
-      clearTimeout(timeoutState.hideTimeout);
-      timeoutState.hoverTimeout = setTimeout(() => {
-        addHoveredClass();
-        menuButton.classList.add('active');
-      }, HOVER_TOGGLE_DELAY_MS);
-    };
-    const onLeave = () => {
-      clearTimeout(timeoutState.hoverTimeout);
-      timeoutState.hideTimeout = setTimeout(() => {
-        removeHoveredClass();
-        menuButton.classList.remove('active');
-      }, HOVER_TOGGLE_DELAY_MS);
-    };
-    el.addEventListener('mouseenter', onEnter);
-    el.addEventListener('mouseleave', onLeave);
-    normalListeners.push({ el, type: 'mouseenter', handler: onEnter });
-    normalListeners.push({ el, type: 'mouseleave', handler: onLeave });
-  });
+  // OPTIMIZATION: We only need to listen on the parent wrapper.
+  // 'mouseenter' and 'mouseleave' naturally cover child elements like the dropdown.
+  const onEnter = () => {
+    clearTimeout(timeoutState.hideTimeout);
+    timeoutState.hoverTimeout = setTimeout(() => {
+      setHoverState(menuButton, true);
+    }, HOVER_TOGGLE_DELAY_MS);
+  };
+
+  const onLeave = () => {
+    clearTimeout(timeoutState.hoverTimeout);
+    timeoutState.hideTimeout = setTimeout(() => {
+      setHoverState(menuButton, false);
+    }, HOVER_TOGGLE_DELAY_MS);
+  };
+
+  menuButton.addEventListener('mouseenter', onEnter);
+  menuButton.addEventListener('mouseleave', onLeave);
+  normalListeners.push({ el: menuButton, type: 'mouseenter', handler: onEnter });
+  normalListeners.push({ el: menuButton, type: 'mouseleave', handler: onLeave });
 }
 
 export function initializeSettingsMenuHover(menuButton) {
   if (typeof menuButton === 'string') {
     menuButton = document.querySelector(menuButton);
   }
+  // Handle jQuery objects if they accidentally get passed
   if (!(menuButton instanceof Element) && menuButton && menuButton.jquery) {
     menuButton = menuButton[0];
   }
+
+  if (!menuButton) return;
 
   let hoverTimeout;
   let hideTimeout;
@@ -69,7 +73,7 @@ export function initializeSettingsMenuHover(menuButton) {
         top: '4px',
         right: '150px',
         zIndex: '9999',
-        display: 'cc-flex',
+        display: 'flex', // Fixed invalid 'cc-flex'
         alignItems: 'center',
         background: 'rgba(255,255,255,0.95)',
         borderRadius: '8px',
@@ -82,11 +86,14 @@ export function initializeSettingsMenuHover(menuButton) {
     controlsContainer.innerHTML = '';
 
     const checkboxLabel = document.createElement('label');
-    checkboxLabel.style.display = 'inline-flex';
-    checkboxLabel.style.alignItems = 'center';
-    checkboxLabel.style.marginRight = '10px';
-    checkboxLabel.style.cursor = 'pointer';
+    Object.assign(checkboxLabel.style, {
+      display: 'inline-flex',
+      alignItems: 'center',
+      marginRight: '10px',
+      cursor: 'pointer',
+    });
     checkboxLabel.textContent = 'Hovered';
+
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.style.marginRight = '5px';
@@ -109,19 +116,13 @@ export function initializeSettingsMenuHover(menuButton) {
 
     function debugClickHandler(e) {
       e.stopPropagation();
-      if (menuButton.classList.contains('active')) {
-        menuButton.classList.remove('active');
-        removeHoveredClass();
-      } else {
-        menuButton.classList.add('active');
-        addHoveredClass();
-      }
+      const isActive = menuButton.classList.contains('active');
+      setHoverState(menuButton, !isActive);
     }
 
     function enableDebugHover() {
       clearNormalListeners();
-      addHoveredClass();
-      menuButton.classList.add('active');
+      setHoverState(menuButton, true);
       if (menuLink) {
         menuLink.addEventListener('click', debugClickHandler);
       }
@@ -131,8 +132,7 @@ export function initializeSettingsMenuHover(menuButton) {
       if (menuLink) {
         menuLink.removeEventListener('click', debugClickHandler);
       }
-      removeHoveredClass();
-      menuButton.classList.remove('active');
+      setHoverState(menuButton, false);
       bindHoverHandlers(menuButton, {
         get hoverTimeout() {
           return hoverTimeout;
