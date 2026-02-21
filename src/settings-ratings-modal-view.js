@@ -32,6 +32,7 @@ function getRatingsTableModal() {
           </div>
         </div>
         <span class="cc-ratings-table-summary">0 položek</span>
+        <button type="button" class="cc-button cc-button-red cc-button-iconed cc-ratings-table-export">Export CSV</button>
       </div>
       <div class="cc-ratings-table-wrap">
         <table class="cc-ratings-table" aria-live="polite">
@@ -57,6 +58,7 @@ function getRatingsTableModal() {
   const typeMenu = overlay.querySelector('.cc-ratings-type-menu');
   const typeCheckboxes = Array.from(overlay.querySelectorAll('.cc-ratings-type-menu input[type="checkbox"]'));
   const summary = overlay.querySelector('.cc-ratings-table-summary');
+  const exportBtn = overlay.querySelector('.cc-ratings-table-export');
   const tbody = overlay.querySelector('tbody');
   const title = overlay.querySelector('#cc-ratings-table-title');
   const sortButtons = Array.from(overlay.querySelectorAll('th button[data-sort-key]'));
@@ -191,6 +193,7 @@ function getRatingsTableModal() {
     state.visibleRows = sorted;
 
     summary.textContent = `${sorted.length} položek`;
+    if (exportBtn) exportBtn.disabled = sorted.length === 0;
     renderRowsFast(sorted, renderToken);
 
     for (const button of sortButtons) {
@@ -205,6 +208,8 @@ function getRatingsTableModal() {
   };
 
   overlay.openWithData = ({ rows, modalTitle }) => {
+    // update export button availability (always enabled since rows supplied)
+    if (exportBtn) exportBtn.disabled = rows.length === 0;
     state.rows = rows;
     state.search = '';
     state.typeFilters = new Set(['all']);
@@ -268,6 +273,48 @@ function getRatingsTableModal() {
     state.search = searchInput.value;
     render();
   });
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      // generate CSV from currently visible rows
+      const csvLines = [];
+      // include required columns plus fullURL and movieID
+      const header = ['Název', 'Typ', 'Rok', 'Hodnocení', 'Datum hodnocení', 'URL', 'movieID'];
+      csvLines.push(header.map((h) => `"${h.replace(/"/g, '""')}"`).join(','));
+      state.visibleRows.forEach((row) => {
+        // rating numeric: prefer ratingValue (NaN -> empty, 0 -> 0, etc.)
+        let ratingNum = '';
+        if (Number.isFinite(row.ratingValue)) {
+          ratingNum = Math.round(row.ratingValue);
+        } else if (row.ratingText && row.ratingText.toLowerCase().includes('odpad')) {
+          ratingNum = 0;
+        }
+
+        const fields = [
+          row.name,
+          row.typeDisplay,
+          row.yearValue,
+          ratingNum,
+          row.date,
+          row.rawRecord?.fullUrl || '',
+          row.rawRecord?.movieId || '',
+        ];
+        const escaped = fields.map((f) => {
+          const val = f != null ? String(f) : '';
+          return `"${val.replace(/"/g, '""')}"`;
+        });
+        csvLines.push(escaped.join(','));
+      });
+      const blob = new Blob([csvLines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = 'cc-ratings.csv';
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  }
 
   typeToggle.addEventListener('click', () => {
     const isOpen = typeMulti.dataset.open === 'true';
