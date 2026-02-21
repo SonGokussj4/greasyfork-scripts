@@ -37,7 +37,7 @@ export function initializeSettingsMenuHover($menuButton) {
       controlsContainer.style.top = '4px';
       controlsContainer.style.right = '150px';
       controlsContainer.style.zIndex = '9999';
-      controlsContainer.style.display = 'flex';
+      controlsContainer.style.display = 'cc-flex';
       controlsContainer.style.alignItems = 'center';
       controlsContainer.style.background = 'rgba(255,255,255,0.95)';
       controlsContainer.style.borderRadius = '8px';

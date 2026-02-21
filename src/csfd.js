@@ -123,6 +123,8 @@ export class Csfd {
       if (!navs.length) return;
 
       navs.forEach((nav) => {
+        // make sure any inline padding reserved for the dropdown is removed
+        nav.style.paddingRight = '';
         const mainList = nav.querySelector('.tab-nav-list');
         const dropdown = nav.querySelector('.tab-nav-more .dropdown-content, .tab-nav-more > .dropdown-content');
         if (!mainList || !dropdown) return;
@@ -170,7 +172,12 @@ export class Csfd {
         const more = nav.querySelector('.tab-nav-more');
         if (more) more.style.display = '';
         nav.classList.remove('cc-show-all-tabs');
+        // clear inline padding that CSFD may have set, forcing a layout recalculation
+        nav.style.paddingRight = '';
       });
+
+      // fire a resize so the site script recalculates widths immediately
+      window.dispatchEvent(new Event('resize'));
     } catch (err) {
       console.error('[CC] restoreCreatorTabs failed', err);
     }

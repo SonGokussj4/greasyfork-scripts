@@ -21,12 +21,9 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   console.debug('🟣 Adding main button + initialising CSFD-Compare in parallel');
   await Promise.all([addSettingsButton(), csfd.initialize()]);
 
-  // Apply show-all-creator-tabs immediately
-  try {
-    csfd.showAllCreatorTabs();
-  } catch (e) {
-    console.warn('[CC] Failed to show all creator tabs initially:', e);
-  } // Handle toggling
+  // The stored preference is honoured inside csfd.initialize(); no need
+  // to invoke showAllCreatorTabs here unconditionally.  The toggle listener
+  // below will react if the user changes the setting later.
 
   window.addEventListener('cc-show-all-creator-tabs-toggled', (ev) => {
     try {

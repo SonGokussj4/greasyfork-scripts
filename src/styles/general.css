@@ -1,149 +1,152 @@
-.flex {
+/* =========================================
+   UTILITY CLASSES (Safely Namespaced)
+   ========================================= */
+.cc-flex {
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.justify-center {
-    justify-content: center;
-}
-
-.justify-evenly {
-    justify-content: space-evenly;
-}
-
-.justify-start {
-    justify-content: flex-start;
-}
-
-.justify-end {
-    justify-content: flex-end;
-}
-
-.justify-between {
-    justify-content: space-between;
-}
-
-.justify-around {
-    justify-content: space-around;
-}
-
-.grow {
-    flex-grow: 1;
-}
-
-.grow-0 {
-    flex-grow: 0;
-}
-
-.grow-1 {
-    flex-grow: 1;
-}
-
-.grow-2 {
-    flex-grow: 2;
-}
-
-.grow-3 {
-    flex-grow: 3;
-}
-
-.grow-4 {
-    flex-grow: 4;
-}
-
-.grow-5 {
-    flex-grow: 5;
-}
-
-.align-center {
-    text-align: center;
-}
-
-.align-left {
-    text-align: left;
-}
-
-.align-right {
-    text-align: right;
-}
-
-.flex-column {
+.cc-flex-column {
     flex-direction: column;
 }
 
-.flex-row {
+.cc-flex-row {
     flex-direction: row;
 }
 
-.flex-row-reverse {
+.cc-flex-row-reverse {
     flex-direction: row-reverse;
 }
 
-.flex-column-reverse {
+.cc-flex-column-reverse {
     flex-direction: column-reverse;
 }
 
-.gap-5 {
+/* Justify & Align */
+.cc-justify-center {
+    justify-content: center;
+}
+
+.cc-justify-evenly {
+    justify-content: space-evenly;
+}
+
+.cc-justify-start {
+    justify-content: flex-start;
+}
+
+.cc-justify-end {
+    justify-content: flex-end;
+}
+
+.cc-justify-between {
+    justify-content: space-between;
+}
+
+.cc-justify-around {
+    justify-content: space-around;
+}
+
+.cc-align-center {
+    text-align: center;
+}
+
+.cc-align-left {
+    text-align: left;
+}
+
+.cc-align-right {
+    text-align: right;
+}
+
+/* cc-Flex cc-Grow */
+.cc-grow {
+    flex-grow: 1;
+}
+
+.cc-grow-0 {
+    flex-grow: 0;
+}
+
+.cc-grow-1 {
+    flex-grow: 1;
+}
+
+.cc-grow-2 {
+    flex-grow: 2;
+}
+
+.cc-grow-3 {
+    flex-grow: 3;
+}
+
+.cc-grow-4 {
+    flex-grow: 4;
+}
+
+.cc-grow-5 {
+    flex-grow: 5;
+}
+
+/* Spacing (Margins & Padding shorthand) */
+.cc-gap-5 {
     gap: 5px;
 }
 
-.gap-10 {
+.cc-gap-10 {
     gap: 10px;
 }
 
-.gap-30 {
+.cc-gap-30 {
     gap: 30px;
 }
 
-.ml-auto {
+.cc-ml-auto {
     margin-left: auto;
 }
 
-.mr-auto {
+.cc-mr-auto {
     margin-right: auto;
 }
 
-.ph-5 {
-    padding-left: 5px;
-    padding-right: 5px;
+.cc-ph-5 {
+    padding: 0 5px;
 }
 
-.ph-10 {
-    padding-left: 10px;
-    padding-right: 10px;
+.cc-ph-10 {
+    padding: 0 10px;
 }
 
-.pv-5 {
-    padding-top: 5px;
-    padding-bottom: 5px;
+.cc-pv-5 {
+    padding: 5px 0;
 }
 
-.pv-10 {
-    padding-top: 10px;
-    padding-bottom: 10px;
+.cc-pv-10 {
+    padding: 10px 0;
 }
 
-.mh-5 {
-    margin-left: 5px;
-    margin-right: 5px;
+.cc-mh-5 {
+    margin: 0 5px;
 }
 
-.mh-10 {
-    margin-left: 10px;
-    margin-right: 10px;
+.cc-mh-10 {
+    margin: 0 10px;
 }
 
-.mv-5 {
-    margin-top: 5px;
-    margin-bottom: 5px;
+.cc-mv-5 {
+    margin: 5px 0;
 }
 
-.mv-10 {
-    margin-top: 10px;
-    margin-bottom: 10px;
+.cc-mv-10 {
+    margin: 10px 0;
 }
 
+/* =========================================
+   COMPONENT CLASSES
+   ========================================= */
+
+/* Ratings */
 .cc-own-rating {
     margin-left: 8px;
     vertical-align: middle;
@@ -193,18 +196,14 @@ h3.film-title-nooverflow .cc-own-rating {
     transform: translateY(-1px);
 }
 
-.article-header {
-    padding-top: 2px;
-}
-
-.cc-my-rating-col {
+/* Tables & Cells */
+.cc-my-rating-col,
+.cc-my-rating-cell {
     width: 64px;
     text-align: center;
 }
 
 .cc-my-rating-cell {
-    width: 64px;
-    text-align: center;
     white-space: nowrap;
 }
 
@@ -216,6 +215,11 @@ h3.film-title-nooverflow .cc-own-rating {
     width: calc(100% + 24px);
 }
 
+.article-header {
+    padding-top: 2px;
+}
+
+/* Gallery Links */
 .cc-gallery-size-host {
     position: relative;
 }
@@ -255,6 +259,7 @@ h3.film-title-nooverflow .cc-own-rating {
     text-decoration: underline;
 }
 
+/* Creator Preview Card */
 .cc-creator-preview {
     position: fixed;
     left: 0;
@@ -345,6 +350,10 @@ h3.film-title-nooverflow .cc-own-rating {
     text-overflow: ellipsis;
 }
 
+.cc-creator-preview-meta-line+.cc-creator-preview-meta-line {
+    margin-top: 2px;
+}
+
 .cc-creator-preview-meta-birth {
     font-size: 12px;
     font-weight: 600;
@@ -407,6 +416,11 @@ h3.film-title-nooverflow .cc-own-rating {
     font-weight: 700;
 }
 
+.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source {
+    white-space: nowrap;
+    line-height: 1;
+}
+
 .cc-creator-preview-meta-photo.is-copyright {
     color: #4c4c4c;
 }
@@ -424,17 +438,9 @@ h3.film-title-nooverflow .cc-own-rating {
     -webkit-box-orient: vertical;
 }
 
-.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source {
-    white-space: nowrap;
-    line-height: 1;
-}
-
-.cc-creator-preview-meta-line+.cc-creator-preview-meta-line {
-    margin-top: 2px;
-}
-
+/* Tab Navigation Adjustments */
 nav.tab-nav.cc-show-all-tabs {
-    padding-right: 0px !important;
+    padding-right: 0 !important;
 }
 
 nav.tab-nav.cc-show-all-tabs .tab-nav-list {
@@ -454,9 +460,7 @@ nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item {
 }
 
 nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active {
-    flex: 1 1 auto;
-    min-width: 0;
-    top: 0px;
+    top: 0;
 }
 
 nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link {
@@ -465,5 +469,5 @@ nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    padding: 0px 5px;
+    padding: 0 5px;
 }
