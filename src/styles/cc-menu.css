@@ -498,8 +498,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     gap: 6px;
 }
 
-.cc-info-icon,
-.cc-image-icon-btn {
+.cc-info-icon {
     color: #a0a0a0;
     display: inline-flex;
     align-items: center;
@@ -512,18 +511,9 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     position: relative;
 }
 
-.cc-info-icon:hover,
-.cc-image-icon-btn:hover {
+.cc-info-icon:hover {
     color: #aa2c16;
-    background-color: transparent !important;
 }
-
-/* Dark grey for images to avoid repainting glitches */
-.cc-image-icon-btn:focus {
-    outline: none;
-}
-
-/* Removes ugly blue box on click */
 
 /* Hover Bubble */
 .cc-info-icon::after {
@@ -534,15 +524,20 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     transform: translateY(4px);
     background-color: #242424;
     color: #ffffff;
-    padding: 7px 10px;
+    padding: 8px 12px;
     border-radius: 6px;
     font-size: 11px;
     font-weight: 500;
     line-height: 1.4;
-    white-space: normal;
+
+    /* pre-wrap allows the &#10; HTML entity to create actual line breaks! */
+    white-space: pre-wrap;
+
+    /* Left-aligning looks much better for multi-line paragraphs */
+    text-align: left;
+
     width: max-content;
     max-width: 240px;
-    text-align: right;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s ease, transform 0.2s ease;

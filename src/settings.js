@@ -611,12 +611,14 @@ async function addSettingsButton() {
   });
 
   // --- IMAGE PREVIEW MODAL LOGIC ---
-  settingsButton.querySelectorAll('.cc-image-icon-btn').forEach((btn) => {
+  settingsButton.querySelectorAll('.cc-info-icon[data-image-url]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
+      // Prevent default button behavior so CSFD search/forms don't repaint or submit
       e.preventDefault();
-      e.stopPropagation(); // Prevents CSFD search/sliders from reacting
+      e.stopPropagation();
 
       const url = btn.getAttribute('data-image-url');
+      // Optional: you can extract the row label to put it in the modal title!
       const titleText =
         btn.closest('.cc-setting-row')?.querySelector('.cc-setting-label')?.textContent || 'Ukázka funkce';
 
@@ -630,6 +632,7 @@ async function addSettingsButton() {
       }
     });
   });
+
   // use the raw DOM element; helper no longer depends on jQuery
   initializeSettingsMenuHover(settingsButton);
 }
