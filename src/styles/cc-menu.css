@@ -730,7 +730,455 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     line-height: 1.5;
 }
 
-/* ... (Your other existing Ratings Table CSS remains exactly identical here, no changes needed) ... */
+.cc-badge[role="button"] {
+    cursor: pointer;
+}
+
+/* =========================================================
+   6. RATINGS TABLE MODAL (Restored)
+   ========================================================= */
+.cc-ratings-table-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 10010;
+    padding: 24px;
+}
+
+.cc-ratings-table-overlay.is-open {
+    display: flex;
+}
+
+.cc-ratings-table-modal {
+    width: min(1080px, calc(100vw - 40px));
+    max-height: calc(100vh - 48px);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cc-ratings-table-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid #ececec;
+}
+
+.cc-ratings-table-head h3 {
+    margin: 0;
+    font-size: 15px;
+}
+
+.cc-ratings-table-close {
+    border: 0;
+    background: transparent;
+    color: #666;
+    font-size: 24px;
+    line-height: 1;
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+}
+
+.cc-ratings-table-close:hover {
+    background: #f1f1f1;
+    color: #222;
+}
+
+.cc-ratings-table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.cc-ratings-table-search {
+    width: min(440px, 100%);
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    height: 34px;
+    padding: 0 10px;
+    font-size: 12px;
+    line-height: 34px;
+    margin: 0 !important;
+    margin-bottom: 0 !important;
+    box-sizing: border-box;
+}
+
+.cc-ratings-table-summary {
+    font-size: 12px;
+    color: #666;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
+.cc-ratings-type-multiselect {
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.cc-ratings-type-toggle {
+    border: 1px solid #d8d8d8;
+    border-radius: 8px;
+    height: 34px;
+    padding: 0 32px 0 10px;
+    font-size: 12px;
+    background: #fff;
+    color: #333;
+    min-width: 186px;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    box-sizing: border-box;
+    text-align: left;
+    cursor: pointer;
+    position: relative;
+    line-height: 34px;
+    text-transform: none !important;
+}
+
+.cc-ratings-type-toggle::after {
+    content: '▼';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: #777;
+}
+
+.cc-ratings-type-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 180px;
+    max-height: 220px;
+    overflow: auto;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.12);
+    z-index: 3;
+    padding: 6px;
+}
+
+.cc-ratings-type-menu label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.cc-ratings-type-menu label:hover {
+    background: #f5f5f5;
+}
+
+.cc-ratings-table-wrap {
+    overflow: auto;
+    padding: 0 0 4px;
+}
+
+.cc-ratings-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.cc-ratings-table th,
+.cc-ratings-table td {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 10px 16px;
+    font-size: 12px;
+    vertical-align: top;
+}
+
+.cc-ratings-table th {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    z-index: 1;
+}
+
+.cc-ratings-table th button {
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    color: #333;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cc-sort-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 12px;
+    font-size: 10px;
+    color: #8a8a8a;
+}
+
+.cc-ratings-table th button.is-active .cc-sort-indicator {
+    color: #aa2c16;
+}
+
+.cc-ratings-table th:nth-child(1),
+.cc-ratings-table td:nth-child(1) {
+    width: 40%;
+}
+
+.cc-ratings-table th:nth-child(2),
+.cc-ratings-table td:nth-child(2) {
+    width: 18%;
+}
+
+.cc-ratings-table th:nth-child(3),
+.cc-ratings-table td:nth-child(3) {
+    width: 10%;
+}
+
+.cc-ratings-table th:nth-child(4),
+.cc-ratings-table td:nth-child(4) {
+    width: 12%;
+}
+
+.cc-ratings-table th:nth-child(5),
+.cc-ratings-table td:nth-child(5) {
+    width: 20%;
+}
+
+.cc-ratings-table-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+}
+
+.cc-ratings-table-name-link {
+    color: #1f4f8f;
+    text-decoration: none;
+    word-break: break-word;
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+}
+
+.cc-ratings-table-name-link:hover {
+    text-decoration: underline;
+}
+
+.cc-ratings-table-link-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid #cfcfcf;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #7b7b7b;
+    background: #fff;
+    text-decoration: none;
+    flex: 0 0 auto;
+    opacity: 0.88;
+}
+
+.cc-ratings-table-details-btn {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid #cfcfcf;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #7b7b7b;
+    background: #fff;
+    text-decoration: none;
+    flex: 0 0 auto;
+    opacity: 0.88;
+    appearance: none;
+    -webkit-appearance: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.cc-ratings-table-link-icon:hover {
+    color: #aa2c16;
+    border-color: #bcbcbc;
+    background: #f3f3f3;
+    opacity: 1;
+}
+
+.cc-ratings-table-details-btn:hover {
+    color: #aa2c16;
+    border-color: #bcbcbc;
+    background: #f3f3f3;
+    opacity: 1;
+}
+
+.cc-ratings-table-rating,
+.cc-ratings-table-date,
+.cc-ratings-table-year {
+    white-space: nowrap;
+}
+
+.cc-ratings-table-type {
+    white-space: nowrap;
+    color: #444;
+}
+
+.cc-ratings-table-rating {
+    letter-spacing: 0.2px;
+    font-size: 13px;
+    color: #b8321d;
+    font-weight: 700;
+}
+
+.cc-ratings-table-rating.is-odpad {
+    color: #000;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.cc-ratings-square {
+    width: 11px;
+    height: 11px;
+    border-radius: 2px;
+    flex: 0 0 11px;
+    margin-right: 2px;
+}
+
+.cc-ratings-square.is-1 {
+    background: #465982;
+}
+
+.cc-ratings-square.is-2 {
+    background: #5c6f96;
+}
+
+.cc-ratings-square.is-3 {
+    background: #9a3d2b;
+}
+
+.cc-ratings-square.is-4,
+.cc-ratings-square.is-5 {
+    background: #b8321d;
+}
+
+.cc-ratings-square.is-unknown {
+    background: #9a9a9a;
+}
+
+.cc-ratings-table-empty {
+    text-align: center;
+    color: #7a7a7a;
+    padding: 18px 16px;
+}
+
+body.cc-ratings-modal-open {
+    overflow: hidden;
+}
+
+.cc-rating-detail-overlay {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.32);
+    z-index: 10011;
+    padding: 20px;
+}
+
+.cc-rating-detail-overlay.is-open {
+    display: flex;
+}
+
+.cc-rating-detail-card {
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100vh - 60px);
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 14px 38px rgba(0, 0, 0, 0.24);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cc-rating-detail-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid #ececec;
+}
+
+.cc-rating-detail-head h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.cc-rating-detail-close {
+    border: 0;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    color: #666;
+    border-radius: 8px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.cc-rating-detail-close:hover {
+    color: #222;
+    background: #f1f1f1;
+}
+
+.cc-rating-detail-body {
+    padding: 8px 14px 12px;
+    overflow: auto;
+}
+
+.cc-rating-detail-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.cc-rating-detail-key {
+    color: #666;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.cc-rating-detail-value {
+    color: #222;
+    font-size: 12px;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
 
 /* =========================================================
    7. THE LAG KILLER (CSFD SLICK SLIDER SHIELD)
@@ -739,4 +1187,214 @@ body.cc-menu-open .slick-list,
 body.cc-menu-open .slick-slider,
 body.cc-menu-open .box-video {
     pointer-events: none !important;
+}
+
+/* =========================================================
+   8. CLOUD SYNC & LOCAL STORAGE MODALS
+   ========================================================= */
+/* Sync Modal */
+.cc-sync-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10002;
+    opacity: 0;
+    transition: opacity 0.18s ease;
+}
+
+.cc-sync-modal-overlay.visible {
+    opacity: 1;
+}
+
+.cc-sync-modal {
+    width: 340px;
+    max-width: calc(100vw - 30px);
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.cc-sync-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.cc-sync-modal-head h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.cc-sync-close {
+    border: 0;
+    background: transparent;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    color: #666;
+}
+
+.cc-sync-help {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: #444;
+}
+
+.cc-sync-toggle-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+.cc-sync-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+    color: #333;
+}
+
+.cc-sync-input {
+    width: 100%;
+    box-sizing: border-box;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    padding: 7px 8px;
+    font-size: 12px;
+}
+
+.cc-sync-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.cc-sync-note {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #666;
+}
+
+/* Local Storage Modal */
+.cc-lc-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10032;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.42);
+    opacity: 0;
+    transition: opacity 0.16s ease;
+}
+
+.cc-lc-modal-overlay.is-open {
+    opacity: 1;
+}
+
+.cc-lc-modal {
+    width: min(720px, calc(100vw - 30px));
+    max-height: min(80vh, 700px);
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    gap: 8px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+    padding: 12px;
+}
+
+.cc-lc-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cc-lc-modal-head h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.cc-lc-modal-close {
+    border: 0;
+    background: transparent;
+    color: #666;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.cc-lc-modal-help {
+    font-size: 11px;
+    color: #666;
+}
+
+.cc-lc-modal-body {
+    border: 1px solid #ededed;
+    border-radius: 8px;
+    overflow: auto;
+}
+
+.cc-lc-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.cc-lc-table th,
+.cc-lc-table td {
+    padding: 7px 8px;
+    border-bottom: 1px solid #f1f1f1;
+    font-size: 11px;
+    vertical-align: middle;
+}
+
+.cc-lc-table th {
+    position: sticky;
+    top: 0;
+    background: #fafafa;
+    text-align: left;
+}
+
+.cc-lc-table th:first-child,
+.cc-lc-table td.cc-lc-key {
+    width: 33%;
+}
+
+.cc-lc-table th:nth-child(2),
+.cc-lc-table td.cc-lc-value {
+    width: 45%;
+}
+
+.cc-lc-table th:last-child,
+.cc-lc-table td.cc-lc-action {
+    width: 22%;
+}
+
+.cc-lc-key,
+.cc-lc-value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.cc-lc-table-empty {
+    text-align: center;
+    color: #757575;
+    padding: 10px;
+}
+
+.cc-lc-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
 }

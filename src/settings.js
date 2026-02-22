@@ -476,8 +476,8 @@ async function addSettingsButton() {
           </table>
         </div>
         <div class="cc-lc-modal-actions">
-          <button type="button" class="cc-maint-btn" id="cc-lc-delete-all-btn">Smazat vše</button>
-          <button type="button" class="cc-maint-btn" id="cc-lc-close-btn">Zavřít</button>
+          <button type="button" class="cc-button cc-button-red cc-button-small" id="cc-lc-delete-all-btn">Smazat vše</button>
+          <button type="button" class="cc-button cc-button-black cc-button-small" id="cc-lc-close-btn">Zavřít</button>
         </div>
       </div>`;
 
@@ -499,7 +499,9 @@ async function addSettingsButton() {
         <tr>
           <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
           <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
-          <td class="cc-lc-action"><button type="button" class="cc-maint-btn cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button></td>
+          <td class="cc-lc-action">
+             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
+          </td>
         </tr>`,
         )
         .join('');

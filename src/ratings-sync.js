@@ -29,8 +29,9 @@ function createSyncSetupModal(onSaveCallback) {
   const overlay = document.createElement('div');
   overlay.className = 'cc-sync-modal-overlay';
 
-  const modal = document.createElement('div');
+  const modal = document.createElement('form');
   modal.className = 'cc-sync-modal';
+  modal.onsubmit = (e) => e.preventDefault(); // Stops the page from refreshing if the user hits "Enter"
 
   // Updated HTML for a much better User Experience
   modal.innerHTML = `
