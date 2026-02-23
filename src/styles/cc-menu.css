@@ -233,12 +233,18 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-button-black {
-    background-color: #242424;
+    background-color: #242424 !important;
+    color: #ffffff !important;
 }
 
 .cc-button-black:hover,
+.cc-button-black:focus,
+.cc-button-black:active,
 #cc-load-computed-btn:hover {
     background-color: #000000 !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .cc-button-iconed {
