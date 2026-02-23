@@ -32,3 +32,4 @@ export const ADD_RATINGS_DATE_KEY = 'cc_add_ratings_date';
 export const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
 export const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
 export const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';
+export const CREATOR_PREVIEW_CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';

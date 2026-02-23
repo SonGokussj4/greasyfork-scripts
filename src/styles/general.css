@@ -301,25 +301,18 @@ h3.film-title-nooverflow .cc-own-rating {
     height: 200px;
     object-fit: contain;
     object-position: center center;
-    background: #ececec;
+    background-color: #ececec;
+    /* FIXED: Changed from 'background' to 'background-color' so it doesn't wipe the SVG */
 }
 
-.cc-creator-preview.is-no-image .cc-creator-preview-image {
-    background: linear-gradient(160deg, #f2f2f2, #e3e3e3);
-    opacity: 0;
-}
-
-.cc-creator-preview.is-no-image .cc-creator-preview-card::before {
-    content: 'Bez fotky';
-    position: absolute;
-    left: 50%;
-    top: 82px;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
-    font-weight: 600;
-    color: #777;
-    letter-spacing: 0.02em;
-    z-index: 1;
+/* Hooks into CSFD's native silhouette but ensures it scales properly for our 200px box */
+.cc-creator-preview-image.empty-image {
+    background-color: #c4c4c4;
+    /* Exact CSFD dark gray */
+    background-size: 60%;
+    /* Exact CSFD proportion */
+    background-position: center center;
+    background-repeat: no-repeat;
 }
 
 .cc-creator-preview-name {

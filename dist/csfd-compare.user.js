@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         ČSFD Compare V2
-// @version      0.8.6
+// @version      0.8.7
 // @namespace    csfd.cz
 // @description  Show your own ratings on other users ratings list
 // @author       Jan Verner <SonGokussj4@centrum.cz>
@@ -188,10 +188,6 @@
       this.userSlug = undefined;
     }
 
-    /**
-     * @returns {string|undefined} - Returns the user URL or undefined if not found
-     * @description - Retrieves the current user's URL from the CSFD page and sets isLoggedIn.
-     */
     getCurrentUser() {
       const userEl = document.querySelector(PROFILE_LINK_SELECTOR$3);
       if (userEl) {
@@ -203,10 +199,6 @@
       return undefined;
     }
 
-    /**
-     * @returns {string|undefined} - Returns the username or undefined if not found
-     * @description - Retrieves the current user's username from the CSFD page.
-     */
     getUsername() {
       const userHref = this.userUrl || this.getCurrentUser();
       if (!userHref) {
@@ -267,12 +259,15 @@
         if (localStorage.getItem('cc_add_ratings_date') === 'true') {
           this.addRatingsDate();
         }
-        if (localStorage.getItem('cc_hide_selected_user_reviews') === 'true') {
-          this.hideSelectedUserReviews();
-        }
       } catch (e) {
         // ignore silently
       }
+
+      // Dynamic Filter Trigger (runs immediately and whenever the list is updated)
+      this.hideSelectedUserReviews();
+      window.addEventListener('cc-hide-selected-reviews-updated', () => {
+        this.hideSelectedUserReviews();
+      });
     }
 
     showAllCreatorTabs() {
@@ -284,7 +279,6 @@
         if (!navs.length) return;
 
         navs.forEach((nav) => {
-          // make sure any inline padding reserved for the dropdown is removed
           nav.style.paddingRight = '';
           const mainList = nav.querySelector('.tab-nav-list');
           const dropdown = nav.querySelector('.tab-nav-more .dropdown-content, .tab-nav-more > .dropdown-content');
@@ -312,8 +306,6 @@
           if (more) more.style.display = 'none';
 
           nav.classList.add('cc-show-all-tabs');
-
-          // Removed dead code here that just iterated and trimmed text strings
         });
       } catch (err) {
         console.error('[CC] showAllCreatorTabs failed', err);
@@ -333,11 +325,9 @@
           const more = nav.querySelector('.tab-nav-more');
           if (more) more.style.display = '';
           nav.classList.remove('cc-show-all-tabs');
-          // clear inline padding that CSFD may have set, forcing a layout recalculation
           nav.style.paddingRight = '';
         });
 
-        // fire a resize so the site script recalculates widths immediately
         window.dispatchEvent(new Event('resize'));
       } catch (err) {
         console.error('[CC] restoreCreatorTabs failed', err);
@@ -406,7 +396,6 @@
     getCurrentPageComputedInfo() {
       const isStarComputed = document.querySelectorAll('.my-rating .stars-rating a.star.computed').length > 0;
 
-      // Consolidated selectors
       const titleSelectors = [
         '.others-rating .current-user-rating [title*="spočten" i]',
         '.mobile-film-rating-detail [title*="spočten" i]',
@@ -426,7 +415,6 @@
       };
     }
 
-    // helper used by several legacy features
     _parseRatingFromStars(starElem) {
       const clazz = starElem.className || '';
       const m = clazz.match(/stars-(\d)/);
@@ -441,9 +429,7 @@
       return 'black';
     }
 
-    // legacy features ported from old script
     clickableHeaderBoxes() {
-      // make a few specific header buttons clickable by clicking anywhere on the box
       const selectors = ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'];
       selectors.forEach((sel) => {
         const el = document.querySelector(sel);
@@ -459,7 +445,6 @@
         }
       });
 
-      // entire box headers
       const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header'));
       headers.forEach((div) => {
         const btn = div.querySelector('a.button');
@@ -472,7 +457,7 @@
         wrapper.setAttribute('href', href);
         div.parentNode.replaceChild(wrapper, div);
         wrapper.appendChild(div);
-        // hover styling borrowed from old code
+
         const h2 = div.querySelector('h2');
         const spanCount = h2?.querySelector('span.count');
         div.addEventListener('mouseenter', () => {
@@ -531,7 +516,6 @@
       const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
       if (!avgEl) return;
 
-      // remember the unmodified text so we can restore later
       if (!avgEl.dataset.original) {
         avgEl.dataset.original = avgEl.textContent.trim();
       }
@@ -550,7 +534,6 @@
         avgEl.textContent = avgEl.dataset.original;
         delete avgEl.dataset.original;
       } else {
-        // fallback: just remove the appended span if it exists
         const absSpan = avgEl.querySelector('span[style*="position:absolute"]');
         if (absSpan) {
           avgEl.textContent = absSpan.textContent.trim();
@@ -587,22 +570,33 @@
     }
 
     hideSelectedUserReviews() {
-      let raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
-      let list;
-      try {
-        list = JSON.parse(raw);
-      } catch (e) {
-        list = [];
+      const enabled = localStorage.getItem(HIDE_SELECTED_REVIEWS_KEY) === 'true';
+      let list = [];
+
+      if (enabled) {
+        try {
+          const raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
+          // Map to lowercase for case-insensitive matching
+          list = JSON.parse(raw).map((s) => s.toLowerCase());
+        } catch (e) {
+          list = [];
+        }
       }
-      if (!Array.isArray(list) || list.length === 0) return;
+
       const headers = Array.from(document.querySelectorAll('.article-header-review-name'));
       headers.forEach((el) => {
         const title = el.querySelector('.user-title-name');
         if (!title) return;
-        const name = title.textContent.trim();
-        if (list.includes(name)) {
-          const article = el.closest('article');
-          if (article) article.style.display = 'none';
+
+        const name = title.textContent.trim().toLowerCase();
+        const article = el.closest('article');
+
+        if (article) {
+          if (enabled && list.includes(name)) {
+            article.style.display = 'none';
+          } else {
+            article.style.display = ''; // Restore visibility instantly
+          }
         }
       });
     }
@@ -647,8 +641,14 @@
 
       if (pageRating === null) {
         if (existingRecord) {
-          await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, storageId);
-          delete this.stars[pageInfo.movieId];
+          const tombstone = {
+            ...existingRecord,
+            rating: null,
+            deleted: true, // This is the magic flag
+            lastUpdate: new Date().toISOString(),
+          };
+          await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, tombstone);
+          this.stars[pageInfo.movieId] = tombstone;
           window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
         }
         return;
@@ -911,7 +911,7 @@
 
         const movieId = await this.getMovieIdFromUrl(link.getAttribute('href'));
         const ratingRecord = this.stars[movieId];
-        if (!ratingRecord) continue;
+        if (!ratingRecord || ratingRecord.deleted === true) continue; // Skip rendering if deleted
 
         const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
         const isComputed = ratingRecord?.computed === true;
@@ -1078,13 +1078,13 @@
   var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
   styleInject(css_248z$2);
 
-  var css_248z$1 = ".dropdown-content.cc-settings{background-color:#fff!important;-webkit-box-sizing:border-box;box-sizing:border-box;margin-top:0;overflow:hidden;padding:0;right:0;top:100%;width:360px;z-index:10000!important}header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings,header.page-header.user-not-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings{margin-top:-4px;right:8px;z-index:10000!important}.cc-badge.cc-badge-disabled{cursor:not-allowed;opacity:.7}.cc-badge.cc-badge-warning{-webkit-box-shadow:inset 0 0 0 1px #f3c24f;box-shadow:inset 0 0 0 1px #f3c24f;position:relative}.cc-badge.cc-badge-warning:after{background:#f3c24f;border-radius:999px;color:#3b2a04;content:\"!\";font-size:9px;font-weight:800;height:12px;line-height:12px;position:absolute;right:-5px;text-align:center;top:-5px;width:12px}.dropdown-content.cc-settings .cc-settings-section,.dropdown-content.cc-settings .dropdown-content-head{-webkit-box-sizing:border-box;box-sizing:border-box;margin:0;width:100%}.cc-settings-section .cc-settings-section-content{-webkit-box-sizing:border-box;box-sizing:border-box;padding:10px;width:100%}.cc-settings-section+.cc-settings-section .cc-settings-section-content{border-top:1px solid #efefef}.dropdown-content.cc-settings .left-head{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:start;-ms-flex-align:start;align-items:flex-start;gap:2px}.dropdown-content.cc-settings .left-head h2{line-height:1.1;margin:0}.cc-version-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:6px}.cc-version-link{color:#555;font-size:11px;line-height:1;opacity:.9;text-decoration:none}.cc-version-link:hover{color:#aa2c16;text-decoration:underline}.cc-version-status{background:#b8b8b8;border-radius:999px;display:inline-block;height:8px;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;width:8px}.cc-version-status.is-visible{opacity:1}.cc-version-status.is-checking{background:#9ca3af}.cc-version-status.is-ok{background:#8f8f8f}.cc-version-status.is-error{background:#9b9b9b}.cc-version-status.is-update{background:#aa2c16;color:#fff;font-size:10px;font-weight:700;height:auto;line-height:1.3;padding:1px 6px;width:auto}.cc-head-right,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-version-info-btn{font-weight:700}.cc-version-info-btn svg{height:15px;width:15px}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:focus-visible,.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#fff3f0;border-color:#cf7c6d;color:#aa2c16}.cc-sync-icon-btn.cc-sync-icon-btn-disabled{color:#8b8b8b;cursor:not-allowed;opacity:.6}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-red:hover{background-color:#8b2414}.cc-button-red:active{background-color:#7a1f12}.cc-button-black{background-color:#242424}#cc-load-computed-btn:hover,.cc-button-black:hover{background-color:#000!important}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cc-settings-actions .cc-button{min-width:0;width:100%}.cc-settings-actions .cc-button-iconed span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-section-title{color:#444;font-size:12px;font-weight:700;margin:0 0 8px}.cc-config-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;gap:5px}.cc-config-list>.cc-setting-row{padding-left:9px;padding-right:9px}.cc-setting-row{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-backface-visibility:hidden;backface-visibility:hidden;background-color:#fff;border-radius:4px;contain:layout;gap:8px;padding:2px 0;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);z-index:1}.cc-setting-row:hover{z-index:10}.cc-setting-label{color:#444;cursor:default;font-size:11px;font-weight:500;line-height:1.3}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-switch{display:inline-block;height:16px;position:relative;width:28px;-ms-flex-negative:0;flex-shrink:0}.cc-switch input{opacity:0;pointer-events:none;position:absolute}.cc-switch-bg{background-color:#d4d4d4;border-radius:20px;bottom:0;cursor:pointer;left:0;right:0;top:0}.cc-switch-bg,.cc-switch-bg:before{position:absolute;-webkit-transition:.25s ease;transition:.25s ease}.cc-switch-bg:before{background-color:#fff;border-radius:50%;bottom:2px;-webkit-box-shadow:0 1px 2px rgba(0,0,0,.2);box-shadow:0 1px 2px rgba(0,0,0,.2);content:\"\";height:12px;left:2px;width:12px}.cc-switch input:checked+.cc-switch-bg{background-color:#aa2c16}.cc-switch input:focus-visible+.cc-switch-bg{-webkit-box-shadow:0 0 0 2px rgba(170,44,22,.4);box-shadow:0 0 0 2px rgba(170,44,22,.4)}.cc-switch input:checked+.cc-switch-bg:before{-webkit-transform:translateX(12px);transform:translateX(12px)}.cc-setting-group{background:#fdfdfd;border:1px solid #eaeaea;border-radius:6px;padding:4px 8px;-webkit-transition:background-color .2s;transition:background-color .2s}.cc-setting-group:hover{background:#f8f8f8}.cc-setting-collapse-trigger{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-flex:1;-ms-flex-positive:1;cursor:pointer;flex-grow:1;padding:4px 0;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.cc-setting-collapse-trigger:hover .cc-setting-label{color:#aa2c16}.cc-chevron{color:#888;height:14px;margin-left:auto;-webkit-transition:-webkit-transform .2s ease;transition:-webkit-transform .2s ease;transition:transform .2s ease;transition:transform .2s ease,-webkit-transform .2s ease;width:14px}.cc-setting-group.is-collapsed .cc-chevron{-webkit-transform:rotate(-90deg);transform:rotate(-90deg)}.cc-setting-sub{display:-webkit-box;display:-ms-flexbox;display:flex;padding-bottom:2px;padding-left:36px;padding-top:4px;-webkit-box-orient:vertical;-webkit-box-direction:normal;border-top:1px solid transparent;-ms-flex-direction:column;flex-direction:column;gap:6px}.cc-setting-group.is-collapsed .cc-setting-sub,.cc-setting-sub[hidden]{display:none!important}.cc-setting-sub.is-disabled{filter:url('data:image/svg+xml;charset=utf-8,<svg xmlns=\"http://www.w3.org/2000/svg\"><filter id=\"filter\"><feColorMatrix type=\"matrix\" color-interpolation-filters=\"sRGB\" values=\"0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0\" /></filter></svg>#filter');-webkit-filter:grayscale(100%);filter:grayscale(100%);opacity:.45;pointer-events:none}.cc-form-field{color:#444;display:grid;font-size:11px;gap:4px}.cc-form-field input[type=text]{border:1px solid #d4d4d4;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:11px;line-height:1.2;padding:6px 8px;width:100%}.cc-sub-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:10px;margin-top:2px}.cc-button-small{font-size:11px;padding:4px 10px}.cc-setting-icons{display:-webkit-box;display:-ms-flexbox;display:flex;gap:6px;margin-left:auto}.cc-info-icon,.cc-setting-icons{-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-info-icon{color:#a0a0a0;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-pack:center;-ms-flex-pack:center;background:transparent;border:none;cursor:pointer;justify-content:center;padding:0;position:relative;-webkit-transition:color .2s ease;transition:color .2s ease}.cc-info-icon:hover{color:#aa2c16}.cc-info-icon:after{background-color:#242424;border-radius:6px;bottom:calc(100% + 8px);-webkit-box-shadow:0 4px 15px rgba(0,0,0,.2);box-shadow:0 4px 15px rgba(0,0,0,.2);color:#fff;content:attr(aria-label);font-size:11px;font-weight:500;line-height:1.4;max-width:240px;padding:8px 12px;right:-5px;text-align:left;white-space:pre-wrap;width:-webkit-max-content;width:-moz-max-content;width:max-content}.cc-info-icon:after,.cc-info-icon:before{opacity:0;pointer-events:none;position:absolute;-webkit-transform:translateY(4px);transform:translateY(4px);-webkit-transition:opacity .2s ease,-webkit-transform .2s ease;transition:opacity .2s ease,-webkit-transform .2s ease;transition:opacity .2s ease,transform .2s ease;transition:opacity .2s ease,transform .2s ease,-webkit-transform .2s ease;visibility:hidden}.cc-info-icon:before{border-color:#242424 transparent transparent;border-style:solid;border-width:5px 5px 0;bottom:calc(100% + 3px);content:\"\";right:2px}.cc-info-icon:hover:after,.cc-info-icon:hover:before{opacity:1;-webkit-transform:translateY(0);transform:translateY(0);visibility:visible}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:0;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}#cc-ratings-progress-label{-webkit-box-flex:1;-ms-flex:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cc-ratings-progress-count{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-maint-actions{display:-webkit-box;display:-ms-flexbox;display:flex;gap:6px}.cc-maint-btn{background:#fff;border:1px solid #cfcfcf;border-radius:6px;color:#444;cursor:pointer;font-size:11px;padding:6px 8px}.cc-maint-btn:hover{background:#f7f7f7;border-color:#bcbcbc}.cc-version-info-overlay{background:rgba(0,0,0,.36);display:none;inset:0;position:fixed;z-index:10030;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;-webkit-box-sizing:border-box;box-sizing:border-box;justify-content:center;padding:16px}.cc-version-info-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-version-info-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 20px 45px rgba(0,0,0,.25);box-shadow:0 20px 45px rgba(0,0,0,.25);color:#222;display:grid;grid-template-rows:auto minmax(0,1fr);max-height:80vh;overflow:hidden;width:min(560px,100%)}.cc-version-info-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:12px 14px}.cc-version-info-head h3{font-size:14px;font-weight:700;margin:0}.cc-version-info-close{background:transparent;border:0;border-radius:7px;color:#666;cursor:pointer;font-size:20px;height:28px;line-height:1;width:28px}.cc-version-info-close:hover{background:#f1f1f1;color:#222}.cc-version-info-body{font-size:12px;line-height:1.5;overflow:auto;padding:12px 14px}.cc-badge[role=button]{cursor:pointer}.cc-ratings-table-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.45);justify-content:center;padding:24px;z-index:10010}.cc-ratings-table-modal,.cc-ratings-table-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-ratings-table-modal{background:#fff;border-radius:12px;-webkit-box-shadow:0 16px 42px rgba(0,0,0,.28);box-shadow:0 16px 42px rgba(0,0,0,.28);max-height:calc(100vh - 48px);overflow:hidden;width:min(1080px,calc(100vw - 40px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-ratings-table-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:14px 16px}.cc-ratings-table-head h3{font-size:15px;margin:0}.cc-ratings-table-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-ratings-table-close:hover{background:#f1f1f1;color:#222}.cc-ratings-table-toolbar{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #f0f0f0;-ms-flex-wrap:wrap;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:10px 16px}.cc-ratings-table-search{border:1px solid #d8d8d8;border-radius:8px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;height:34px;line-height:34px;margin:0!important;padding:0 10px;width:min(440px,100%)}.cc-ratings-table-summary{color:#666;font-size:12px;margin-left:auto;white-space:nowrap}.cc-ratings-type-multiselect{position:relative;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-ratings-type-toggle{background:#fff;border:1px solid #d8d8d8;border-radius:8px;-webkit-box-sizing:border-box;box-sizing:border-box;color:#333;cursor:pointer;font-size:12px;height:34px;line-height:34px;max-width:280px;min-width:186px;overflow:hidden;padding:0 32px 0 10px;position:relative;text-align:left;text-overflow:ellipsis;text-transform:none!important;white-space:nowrap}.cc-ratings-type-toggle:after{color:#777;content:\"▼\";font-size:10px;position:absolute;right:10px;top:50%;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.cc-ratings-type-menu{background:#fff;border:1px solid #ddd;border-radius:8px;-webkit-box-shadow:0 8px 22px rgba(0,0,0,.12);box-shadow:0 8px 22px rgba(0,0,0,.12);left:0;max-height:220px;min-width:180px;overflow:auto;padding:6px;position:absolute;top:calc(100% + 6px);z-index:3}.cc-ratings-type-menu label{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;border-radius:6px;cursor:pointer;font-size:12px;gap:7px;padding:6px 8px}.cc-ratings-type-menu label:hover{background:#f5f5f5}.cc-ratings-table-wrap{overflow:auto;padding:0 0 4px}.cc-ratings-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-ratings-table td,.cc-ratings-table th{border-bottom:1px solid #f0f0f0;font-size:12px;padding:10px 16px;vertical-align:top}.cc-ratings-table th{background:#fafafa;position:sticky;top:0;z-index:1}.cc-ratings-table th button{background:transparent;border:0;color:#333;cursor:pointer;font:inherit;font-weight:700;gap:6px;padding:0}.cc-ratings-table th button,.cc-sort-indicator{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-sort-indicator{-webkit-box-pack:center;-ms-flex-pack:center;color:#8a8a8a;font-size:10px;justify-content:center;min-width:12px}.cc-ratings-table th button.is-active .cc-sort-indicator{color:#aa2c16}.cc-ratings-table td:first-child,.cc-ratings-table th:first-child{width:40%}.cc-ratings-table td:nth-child(2),.cc-ratings-table th:nth-child(2){width:18%}.cc-ratings-table td:nth-child(3),.cc-ratings-table th:nth-child(3){width:10%}.cc-ratings-table td:nth-child(4),.cc-ratings-table th:nth-child(4){width:12%}.cc-ratings-table td:nth-child(5),.cc-ratings-table th:nth-child(5){width:20%}.cc-ratings-table-name-row{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;gap:8px;justify-content:space-between;width:100%}.cc-ratings-table-name-link{color:#1f4f8f;font-size:13px;font-weight:600;text-decoration:none;word-break:break-word;-webkit-box-flex:1;-ms-flex:1;flex:1}.cc-ratings-table-name-link:hover{text-decoration:underline}.cc-ratings-table-details-btn,.cc-ratings-table-link-icon{border:1px solid #cfcfcf;border-radius:6px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:22px;width:22px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#7b7b7b;justify-content:center;text-decoration:none;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;opacity:.88}.cc-ratings-table-details-btn{-moz-appearance:none;appearance:none;-webkit-appearance:none;cursor:pointer;padding:0}.cc-ratings-table-details-btn:hover,.cc-ratings-table-link-icon:hover{background:#f3f3f3;border-color:#bcbcbc;color:#aa2c16;opacity:1}.cc-ratings-table-date,.cc-ratings-table-rating,.cc-ratings-table-year{white-space:nowrap}.cc-ratings-table-type{color:#444;white-space:nowrap}.cc-ratings-table-rating{color:#b8321d;font-size:13px;font-weight:700;letter-spacing:.2px}.cc-ratings-table-rating.is-odpad{color:#000;font-weight:700;letter-spacing:0}.cc-ratings-square{border-radius:2px;height:11px;width:11px;-webkit-box-flex:0;-ms-flex:0 0 11px;flex:0 0 11px;margin-right:2px}.cc-ratings-square.is-1{background:#465982}.cc-ratings-square.is-2{background:#5c6f96}.cc-ratings-square.is-3{background:#9a3d2b}.cc-ratings-square.is-4,.cc-ratings-square.is-5{background:#b8321d}.cc-ratings-square.is-unknown{background:#9a9a9a}.cc-ratings-table-empty{color:#7a7a7a;padding:18px 16px;text-align:center}body.cc-ratings-modal-open{overflow:hidden}.cc-rating-detail-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.32);justify-content:center;padding:20px;z-index:10011}.cc-rating-detail-card,.cc-rating-detail-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-rating-detail-card{background:#fff;border-radius:12px;-webkit-box-shadow:0 14px 38px rgba(0,0,0,.24);box-shadow:0 14px 38px rgba(0,0,0,.24);max-height:calc(100vh - 60px);overflow:hidden;width:min(760px,calc(100vw - 32px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-rating-detail-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:12px 14px}.cc-rating-detail-head h4{font-size:14px;font-weight:700;margin:0}.cc-rating-detail-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-rating-detail-close:hover{background:#f1f1f1;color:#222}.cc-rating-detail-body{overflow:auto;padding:8px 14px 12px}.cc-rating-detail-row{border-bottom:1px solid #f1f1f1;display:grid;gap:10px;grid-template-columns:180px 1fr;padding:8px 0}.cc-rating-detail-key{color:#666;font-size:12px;font-weight:600}.cc-rating-detail-value{color:#222;font-size:12px;white-space:pre-wrap;word-break:break-word}body.cc-menu-open .box-video,body.cc-menu-open .slick-list,body.cc-menu-open .slick-slider{pointer-events:none!important}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-lc-modal-overlay{display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;z-index:10032;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.42);justify-content:center;opacity:0;padding:14px;-webkit-transition:opacity .16s ease;transition:opacity .16s ease}.cc-lc-modal-overlay.is-open{opacity:1}.cc-lc-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 18px 42px rgba(0,0,0,.28);box-shadow:0 18px 42px rgba(0,0,0,.28);display:grid;gap:8px;grid-template-rows:auto auto minmax(0,1fr) auto;max-height:min(80vh,700px);padding:12px;width:min(720px,calc(100vw - 30px))}.cc-lc-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-lc-modal-head h3{font-size:14px;margin:0}.cc-lc-modal-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-lc-modal-help{color:#666;font-size:11px}.cc-lc-modal-body{border:1px solid #ededed;border-radius:8px;overflow:auto}.cc-lc-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-lc-table td,.cc-lc-table th{border-bottom:1px solid #f1f1f1;font-size:11px;padding:7px 8px;vertical-align:middle}.cc-lc-table th{background:#fafafa;position:sticky;text-align:left;top:0}.cc-lc-table td.cc-lc-key,.cc-lc-table th:first-child{width:33%}.cc-lc-table td.cc-lc-value,.cc-lc-table th:nth-child(2){width:45%}.cc-lc-table td.cc-lc-action,.cc-lc-table th:last-child{width:22%}.cc-lc-key,.cc-lc-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-lc-table-empty{color:#757575;padding:10px;text-align:center}.cc-lc-modal-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:end;-ms-flex-pack:end;gap:6px;justify-content:flex-end}";
+  var css_248z$1 = ".dropdown-content.cc-settings{background-color:#fff!important;border:1px solid #eaeaea;border-radius:0 0 10px 10px;border-top:none;-webkit-box-shadow:0 12px 34px rgba(0,0,0,.15),0 4px 12px rgba(0,0,0,.08);box-shadow:0 12px 34px rgba(0,0,0,.15),0 4px 12px rgba(0,0,0,.08);-webkit-box-sizing:border-box;box-sizing:border-box;margin-top:0;overflow:hidden;padding:0;right:0;top:100%;width:360px;z-index:10000!important}header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings,header.page-header.user-not-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings{margin-top:-4px;right:8px;z-index:10000!important}.dropdown-content.cc-settings .cc-settings-section,.dropdown-content.cc-settings .dropdown-content-head{-webkit-box-sizing:border-box;box-sizing:border-box;margin:0;width:100%}.cc-settings-section .cc-settings-section-content{-webkit-box-sizing:border-box;box-sizing:border-box;padding:10px;width:100%}.cc-settings-section+.cc-settings-section .cc-settings-section-content{border-top:1px solid #efefef}.dropdown-content.cc-settings .left-head{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:start;-ms-flex-align:start;align-items:flex-start;gap:2px}.dropdown-content.cc-settings .left-head h2{line-height:1.1;margin:0}.cc-version-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:6px}.cc-version-link{color:#555;font-size:11px;line-height:1;opacity:.9;text-decoration:none}.cc-version-link:hover{color:#aa2c16;text-decoration:underline}.cc-version-status{background:#b8b8b8;border-radius:999px;display:inline-block;height:8px;opacity:0;-webkit-transition:opacity .18s ease;transition:opacity .18s ease;width:8px}.cc-version-status.is-visible{opacity:1}.cc-version-status.is-checking{background:#9ca3af}.cc-version-status.is-ok{background:#8f8f8f}.cc-version-status.is-error{background:#9b9b9b}.cc-version-status.is-update{background:#aa2c16;color:#fff;font-size:10px;font-weight:700;height:auto;line-height:1.3;padding:1px 6px;width:auto}.cc-head-right,.cc-head-tools{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:4px}.cc-version-info-btn{font-weight:700}.cc-version-info-btn svg{height:15px;width:15px}.cc-sync-icon-btn{border:1px solid #cfcfcf;border-radius:8px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:28px;width:28px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;color:#202020;cursor:pointer;justify-content:center;padding:0;text-decoration:none;-webkit-transition:background-color .15s ease,border-color .15s ease,color .15s ease;transition:background-color .15s ease,border-color .15s ease,color .15s ease}.cc-sync-icon-btn:focus-visible,.cc-sync-icon-btn:hover{background:#f3f3f3;border-color:#bdbdbd;color:#aa2c16;outline:none}.cc-sync-icon-btn.is-enabled{background:#cae8cd!important;border-color:#6bb475!important;color:#184e21!important}.cc-badge{background-color:#2c3e50;border-radius:6px;color:#fff;cursor:help;font-size:11.2px;font-size:.7rem;font-weight:700;line-height:1.4;padding:2px 6px}.cc-badge-red{background-color:#aa2c16}.cc-badge-black{background-color:#000}.cc-button{border:none;border-radius:7px;color:#fff;cursor:pointer;font-size:12px;font-weight:600;height:auto;line-height:1.2;padding:6px 8px;-webkit-transition:background .2s,-webkit-transform .12s;transition:background .2s,-webkit-transform .12s;transition:background .2s,transform .12s;transition:background .2s,transform .12s,-webkit-transform .12s}.cc-button:hover{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-button:active{-webkit-transform:translateY(0);transform:translateY(0)}.cc-button-red{background-color:#aa2c16}.cc-button-red:hover{background-color:#8b2414}.cc-button-red:active{background-color:#7a1f12}.cc-button-black{background-color:#242424}#cc-load-computed-btn:hover,.cc-button-black:hover{background-color:#000!important}.cc-button-iconed{gap:5px}.cc-button-icon,.cc-button-iconed{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-button-icon{height:12px;width:12px}.cc-settings-actions{display:grid;gap:5px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.cc-settings-actions .cc-button{min-width:0;width:100%}.cc-settings-actions .cc-button-iconed span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-section-title{color:#444;font-size:12px;font-weight:700;margin:0 0 8px}.cc-category-title{border-top:1px solid #f0f0f0;color:#1f4f8f;font-size:12px;font-weight:700;margin:14px 0 6px;padding-top:10px}.cc-category-title.cc-category-first{border-top:none;margin-top:0;padding-top:0}.cc-config-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;gap:5px}.cc-config-list>.cc-setting-row{padding-left:9px;padding-right:9px}.cc-setting-row{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-backface-visibility:hidden;backface-visibility:hidden;background-color:#fff;border-radius:4px;contain:layout;gap:8px;padding:2px 0;position:relative;-webkit-transform:translateZ(0);transform:translateZ(0);z-index:1}.cc-setting-row:hover{z-index:10}.cc-setting-label{color:#444;cursor:default;font-size:11px;font-weight:500;line-height:1.3}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-switch{display:inline-block;height:16px;position:relative;width:28px;-ms-flex-negative:0;flex-shrink:0}.cc-switch input{opacity:0;pointer-events:none;position:absolute}.cc-switch-bg{background-color:#d4d4d4;border-radius:20px;bottom:0;cursor:pointer;left:0;right:0;top:0}.cc-switch-bg,.cc-switch-bg:before{position:absolute;-webkit-transition:.25s ease;transition:.25s ease}.cc-switch-bg:before{background-color:#fff;border-radius:50%;bottom:2px;-webkit-box-shadow:0 1px 2px rgba(0,0,0,.2);box-shadow:0 1px 2px rgba(0,0,0,.2);content:\"\";height:12px;left:2px;width:12px}.cc-switch input:checked+.cc-switch-bg{background-color:#aa2c16}.cc-switch input:focus-visible+.cc-switch-bg{-webkit-box-shadow:0 0 0 2px rgba(170,44,22,.4);box-shadow:0 0 0 2px rgba(170,44,22,.4)}.cc-switch input:checked+.cc-switch-bg:before{-webkit-transform:translateX(12px);transform:translateX(12px)}.cc-setting-group{background:#fdfdfd;border:1px solid #eaeaea;border-radius:6px;padding:4px 8px;-webkit-transition:background-color .2s;transition:background-color .2s}.cc-setting-group:hover{background:#f8f8f8}.cc-setting-collapse-trigger{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-flex:1;-ms-flex-positive:1;cursor:pointer;flex-grow:1;padding:4px 0;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}.cc-setting-collapse-trigger:hover .cc-setting-label{color:#aa2c16}.cc-chevron{color:#888;height:14px;margin-left:auto;-webkit-transition:-webkit-transform .2s ease;transition:-webkit-transform .2s ease;transition:transform .2s ease;transition:transform .2s ease,-webkit-transform .2s ease;width:14px}.cc-setting-group.is-collapsed .cc-chevron{-webkit-transform:rotate(-90deg);transform:rotate(-90deg)}.cc-setting-sub{display:-webkit-box!important;display:-ms-flexbox!important;display:flex!important;padding-bottom:2px;padding-left:36px;padding-top:4px;-webkit-box-orient:vertical;-webkit-box-direction:normal;border-top:1px solid transparent;-ms-flex-direction:column;flex-direction:column;gap:6px;max-height:250px;opacity:1;overflow:hidden;-webkit-transform-origin:top;transform-origin:top;-webkit-transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s ease-out,padding .3s cubic-bezier(.4,0,.2,1);transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s ease-out,padding .3s cubic-bezier(.4,0,.2,1)}.cc-setting-group.is-collapsed .cc-setting-sub,.cc-setting-sub[hidden]{max-height:0;opacity:0;padding-bottom:0;padding-top:0;pointer-events:none}.cc-setting-sub.is-disabled{filter:url('data:image/svg+xml;charset=utf-8,<svg xmlns=\"http://www.w3.org/2000/svg\"><filter id=\"filter\"><feColorMatrix type=\"matrix\" color-interpolation-filters=\"sRGB\" values=\"0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0 0 0 1 0\" /></filter></svg>#filter');-webkit-filter:grayscale(100%);filter:grayscale(100%);opacity:.45;pointer-events:none}.cc-form-field{color:#444;display:grid;font-size:11px;gap:4px}.cc-form-field input[type=text]{border:1px solid #d4d4d4;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:11px;line-height:1.2;padding:6px 8px;width:100%}.cc-sub-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;gap:10px;margin-top:2px}.cc-button-small{font-size:11px;padding:4px 10px}.cc-setting-icons{display:-webkit-box;display:-ms-flexbox;display:flex;gap:6px;margin-left:auto}.cc-info-icon,.cc-setting-icons{-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-info-icon{color:#a0a0a0;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-pack:center;-ms-flex-pack:center;background:transparent;border:none;cursor:pointer;justify-content:center;padding:0;position:relative;-webkit-transition:color .2s ease;transition:color .2s ease}.cc-info-icon:hover{color:#aa2c16}.cc-info-icon:after{background-color:#242424;border-radius:6px;bottom:calc(100% + 8px);-webkit-box-shadow:0 4px 15px rgba(0,0,0,.2);box-shadow:0 4px 15px rgba(0,0,0,.2);color:#fff;content:attr(aria-label);font-size:11px;font-weight:500;line-height:1.4;max-width:240px;padding:8px 12px;right:-5px;text-align:left;white-space:pre-wrap;width:-webkit-max-content;width:-moz-max-content;width:max-content}.cc-info-icon:after,.cc-info-icon:before{opacity:0;pointer-events:none;position:absolute;-webkit-transform:translateY(4px);transform:translateY(4px);-webkit-transition:opacity .2s ease,-webkit-transform .2s ease;transition:opacity .2s ease,-webkit-transform .2s ease;transition:opacity .2s ease,transform .2s ease;transition:opacity .2s ease,transform .2s ease,-webkit-transform .2s ease;visibility:hidden}.cc-info-icon:before{border-color:#242424 transparent transparent;border-style:solid;border-width:5px 5px 0;bottom:calc(100% + 3px);content:\"\";right:2px}.cc-info-icon:hover:after,.cc-info-icon:hover:before{opacity:1;-webkit-transform:translateY(0);transform:translateY(0);visibility:visible}.cc-ratings-progress{background:#f9f9f9;border:1px solid #e4e4e4;border-radius:6px;margin:0;padding:8px}.cc-ratings-progress-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;color:#555;font-size:11px;gap:10px;margin-bottom:6px}#cc-ratings-progress-label{-webkit-box-flex:1;-ms-flex:1;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#cc-ratings-progress-count{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-ratings-progress-track{background:#e6e6e6;border-radius:999px;height:8px;overflow:hidden;width:100%}.cc-ratings-progress-bar{background:-webkit-gradient(linear,left top,right top,from(#aa2c16),to(#d13b1f));background:linear-gradient(90deg,#aa2c16,#d13b1f);border-radius:999px;height:100%;-webkit-transition:width .25s ease;transition:width .25s ease;width:0}.cc-ratings-progress-actions{display:-webkit-box;display:-ms-flexbox;display:flex;margin-top:6px;-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-ratings-cancel-link{background:transparent;border:0;border-radius:4px;color:#7a7a7a;cursor:pointer;font-size:11px;padding:2px 6px;text-decoration:none;-webkit-transition:background-color .15s ease,color .15s ease;transition:background-color .15s ease,color .15s ease}.cc-ratings-cancel-link:hover{background:rgba(0,0,0,.06);color:#444}.cc-maint-actions{display:-webkit-box;display:-ms-flexbox;display:flex;gap:6px}.cc-version-info-overlay{background:rgba(0,0,0,.36);display:none;inset:0;position:fixed;z-index:10030;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);-webkit-box-sizing:border-box;box-sizing:border-box;justify-content:center;padding:16px}.cc-version-info-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-version-info-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 20px 45px rgba(0,0,0,.25);box-shadow:0 20px 45px rgba(0,0,0,.25);color:#222;display:grid;grid-template-rows:auto minmax(0,1fr);max-height:80vh;overflow:hidden;width:min(560px,100%)}.cc-version-info-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:12px 14px}.cc-version-info-head h3{font-size:14px;font-weight:700;margin:0}.cc-version-info-close{background:transparent;border:0;border-radius:7px;color:#666;cursor:pointer;font-size:20px;height:28px;line-height:1;width:28px}.cc-version-info-close:hover{background:#f1f1f1;color:#222}.cc-version-info-body{font-size:12px;line-height:1.5;overflow:auto;padding:12px 14px}.cc-badge[role=button]{cursor:pointer}.cc-ratings-table-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.45);justify-content:center;padding:24px;z-index:10010}.cc-ratings-table-modal,.cc-ratings-table-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-ratings-table-modal{background:#fff;border-radius:12px;-webkit-box-shadow:0 16px 42px rgba(0,0,0,.28);box-shadow:0 16px 42px rgba(0,0,0,.28);max-height:calc(100vh - 48px);overflow:hidden;width:min(1080px,calc(100vw - 40px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-ratings-table-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:14px 16px}.cc-ratings-table-head h3{font-size:15px;margin:0}.cc-ratings-table-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-ratings-table-close:hover{background:#f1f1f1;color:#222}.cc-ratings-table-toolbar{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #f0f0f0;-ms-flex-wrap:wrap;flex-wrap:wrap;gap:10px;justify-content:space-between;padding:10px 16px}.cc-ratings-table-search{border:1px solid #d8d8d8;border-radius:8px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;height:34px;line-height:34px;margin:0!important;padding:0 10px;width:min(440px,100%)}.cc-ratings-table-summary{color:#666;font-size:12px;margin-left:auto;white-space:nowrap}.cc-ratings-type-multiselect{position:relative;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-ratings-type-toggle{background:#fff;border:1px solid #d8d8d8;border-radius:8px;-webkit-box-sizing:border-box;box-sizing:border-box;color:#333;cursor:pointer;font-size:12px;height:34px;line-height:34px;max-width:280px;min-width:186px;overflow:hidden;padding:0 32px 0 10px;position:relative;text-align:left;text-overflow:ellipsis;text-transform:none!important;white-space:nowrap}.cc-ratings-type-toggle:after{color:#777;content:\"▼\";font-size:10px;position:absolute;right:10px;top:50%;-webkit-transform:translateY(-50%);transform:translateY(-50%)}.cc-ratings-type-menu{background:#fff;border:1px solid #ddd;border-radius:8px;-webkit-box-shadow:0 8px 22px rgba(0,0,0,.12);box-shadow:0 8px 22px rgba(0,0,0,.12);left:0;max-height:220px;min-width:180px;overflow:auto;padding:6px;position:absolute;top:calc(100% + 6px);z-index:3}.cc-ratings-type-menu label{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;border-radius:6px;cursor:pointer;font-size:12px;gap:7px;padding:6px 8px}.cc-ratings-type-menu label:hover{background:#f5f5f5}.cc-ratings-table-wrap{overflow:auto;padding:0 0 4px}.cc-ratings-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-ratings-table td,.cc-ratings-table th{border-bottom:1px solid #f0f0f0;font-size:12px;padding:10px 16px;vertical-align:top}.cc-ratings-table th{background:#fafafa;position:sticky;top:0;z-index:1}.cc-ratings-table th button{background:transparent;border:0;color:#333;cursor:pointer;font:inherit;font-weight:700;gap:6px;padding:0}.cc-ratings-table th button,.cc-sort-indicator{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-sort-indicator{-webkit-box-pack:center;-ms-flex-pack:center;color:#8a8a8a;font-size:10px;justify-content:center;min-width:12px}.cc-ratings-table th button.is-active .cc-sort-indicator{color:#aa2c16}.cc-ratings-table td:first-child,.cc-ratings-table th:first-child{width:40%}.cc-ratings-table td:nth-child(2),.cc-ratings-table th:nth-child(2){width:18%}.cc-ratings-table td:nth-child(3),.cc-ratings-table th:nth-child(3){width:10%}.cc-ratings-table td:nth-child(4),.cc-ratings-table th:nth-child(4){width:12%}.cc-ratings-table td:nth-child(5),.cc-ratings-table th:nth-child(5){width:20%}.cc-ratings-table-name-row{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;contain:layout paint;gap:8px;justify-content:space-between;width:100%}.cc-ratings-table-name-link{color:#1f4f8f;font-size:13px;font-weight:600;text-decoration:none;word-break:break-word;-webkit-box-flex:1;-ms-flex:1;flex:1}.cc-ratings-table-name-link:hover{text-decoration:underline}.cc-ratings-table-details-btn,.cc-ratings-table-link-icon{border:1px solid #cfcfcf;border-radius:6px;display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;height:22px;width:22px;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:#fff;justify-content:center;text-decoration:none;-webkit-box-flex:0;-moz-appearance:none;appearance:none;-webkit-appearance:none;color:#8a8a8a;cursor:pointer;-ms-flex:0 0 auto;flex:0 0 auto;padding:0;-webkit-transition:color .15s,background-color .15s,border-color .15s;transition:color .15s,background-color .15s,border-color .15s}.cc-ratings-table-details-btn:hover,.cc-ratings-table-link-icon:hover{background:#f3f3f3;border-color:#bcbcbc;color:#aa2c16}.cc-ratings-table-date,.cc-ratings-table-rating,.cc-ratings-table-year{white-space:nowrap}.cc-ratings-table-type{color:#444;white-space:nowrap}.cc-ratings-table-rating{color:#b8321d;font-size:13px;font-weight:700;letter-spacing:.2px}.cc-ratings-table-rating.is-odpad{color:#000;font-weight:700;letter-spacing:0}.cc-ratings-square{border-radius:2px;height:11px;width:11px;-webkit-box-flex:0;-ms-flex:0 0 11px;flex:0 0 11px;margin-right:2px}.cc-ratings-square.is-1{background:#465982}.cc-ratings-square.is-2{background:#5c6f96}.cc-ratings-square.is-3{background:#9a3d2b}.cc-ratings-square.is-4,.cc-ratings-square.is-5{background:#b8321d}.cc-ratings-square.is-unknown{background:#9a9a9a}.cc-ratings-table-empty{color:#7a7a7a;padding:18px 16px;text-align:center}body.cc-ratings-modal-open{overflow:hidden}.cc-rating-detail-overlay{display:none;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.32);justify-content:center;padding:20px;z-index:10011}.cc-rating-detail-card,.cc-rating-detail-overlay.is-open{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-rating-detail-card{background:#fff;border-radius:12px;-webkit-box-shadow:0 14px 38px rgba(0,0,0,.24);box-shadow:0 14px 38px rgba(0,0,0,.24);max-height:calc(100vh - 60px);overflow:hidden;width:min(760px,calc(100vw - 32px));-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-rating-detail-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;border-bottom:1px solid #ececec;justify-content:space-between;padding:12px 14px}.cc-rating-detail-head h4{font-size:14px;font-weight:700;margin:0}.cc-rating-detail-close{background:transparent;border:0;border-radius:8px;color:#666;cursor:pointer;font-size:24px;height:28px;line-height:1;width:28px}.cc-rating-detail-close:hover{background:#f1f1f1;color:#222}.cc-rating-detail-body{overflow:auto;padding:8px 14px 12px}.cc-rating-detail-row{border-bottom:1px solid #f1f1f1;display:grid;gap:10px;grid-template-columns:180px 1fr;padding:8px 0}.cc-rating-detail-key{color:#666;font-size:12px;font-weight:600}.cc-rating-detail-value{color:#222;font-size:12px;white-space:pre-wrap;word-break:break-word}body.cc-menu-open .box-video,body.cc-menu-open .slick-list,body.cc-menu-open .slick-slider{pointer-events:none!important}.cc-sync-modal-overlay{background:rgba(0,0,0,.45);display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;opacity:0;pointer-events:none;-webkit-transition:opacity .18s ease,visibility .18s ease;transition:opacity .18s ease,visibility .18s ease;visibility:hidden;z-index:10002}.cc-sync-modal-overlay.visible{opacity:1;pointer-events:auto;visibility:visible}.cc-sync-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 10px 30px rgba(0,0,0,.22);box-shadow:0 10px 30px rgba(0,0,0,.22);max-width:calc(100vw - 30px);padding:14px;width:340px}.cc-sync-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;margin-bottom:8px}.cc-sync-modal-head h3{font-size:14px;margin:0}.cc-sync-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-sync-help{color:#444;font-size:12px;margin:0 0 10px}.cc-sync-toggle-row{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;font-size:12px;gap:6px;margin-bottom:10px}.cc-sync-label{color:#333;display:block;font-size:12px;margin-bottom:4px}.cc-sync-input{border:1px solid #d9d9d9;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;font-size:12px;padding:7px 8px;width:100%}.cc-sync-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:end;-ms-flex-pack:end;gap:8px;justify-content:flex-end;margin-top:12px}.cc-sync-note{color:#666;font-size:11px;margin-top:8px}.cc-lc-modal-overlay{display:-webkit-box;display:-ms-flexbox;display:flex;inset:0;position:fixed;z-index:10032;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background:rgba(0,0,0,.42);justify-content:center;opacity:0;padding:14px;pointer-events:none;-webkit-transition:opacity .16s ease,visibility .16s ease;transition:opacity .16s ease,visibility .16s ease;visibility:hidden}.cc-lc-modal-overlay.is-open{opacity:1;pointer-events:auto;visibility:visible}.cc-lc-modal{background:#fff;border-radius:10px;-webkit-box-shadow:0 18px 42px rgba(0,0,0,.28);box-shadow:0 18px 42px rgba(0,0,0,.28);display:grid;gap:8px;grid-template-rows:auto auto minmax(0,1fr) auto;max-height:min(80vh,700px);padding:12px;width:min(720px,calc(100vw - 30px))}.cc-lc-modal-head{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-lc-modal-head h3{font-size:14px;margin:0}.cc-lc-modal-close{background:transparent;border:0;color:#666;cursor:pointer;font-size:22px;line-height:1}.cc-lc-modal-help{color:#666;font-size:11px}.cc-lc-modal-body{border:1px solid #ededed;border-radius:8px;overflow:auto}.cc-lc-table{border-collapse:collapse;table-layout:fixed;width:100%}.cc-lc-table td,.cc-lc-table th{border-bottom:1px solid #f1f1f1;font-size:11px;padding:7px 8px;vertical-align:middle}.cc-lc-table th{background:#fafafa;position:sticky;text-align:left;top:0}.cc-lc-table td.cc-lc-key,.cc-lc-table th:first-child{width:33%}.cc-lc-table td.cc-lc-value,.cc-lc-table th:nth-child(2){width:45%}.cc-lc-table td.cc-lc-action,.cc-lc-table th:last-child{width:22%}.cc-lc-key,.cc-lc-value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-lc-table-empty{color:#757575;padding:10px;text-align:center}.cc-lc-modal-actions{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:end;-ms-flex-pack:end;gap:6px;justify-content:flex-end}.cc-lc-modal-body::-webkit-scrollbar,.cc-ratings-table-wrap::-webkit-scrollbar,.cc-version-info-body::-webkit-scrollbar{height:8px;width:8px}.cc-lc-modal-body::-webkit-scrollbar-track,.cc-ratings-table-wrap::-webkit-scrollbar-track,.cc-version-info-body::-webkit-scrollbar-track{background:transparent}.cc-lc-modal-body::-webkit-scrollbar-thumb,.cc-ratings-table-wrap::-webkit-scrollbar-thumb,.cc-version-info-body::-webkit-scrollbar-thumb{background:#ccc;border-radius:10px}.cc-lc-modal-body::-webkit-scrollbar-thumb:hover,.cc-ratings-table-wrap::-webkit-scrollbar-thumb:hover,.cc-version-info-body::-webkit-scrollbar-thumb:hover{background:#a8a8a8}.cc-pill-input-container{background:#fff;border:1px solid #d4d4d4;border-radius:6px;-webkit-box-sizing:border-box;box-sizing:border-box;cursor:text;display:-webkit-box;display:-ms-flexbox;display:flex;-ms-flex-wrap:wrap;flex-wrap:wrap;gap:6px;min-height:32px;padding:5px 6px;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-pill-input-container.is-disabled{background:#f5f5f5;cursor:not-allowed}.cc-pills{display:-webkit-box;display:-ms-flexbox;display:flex;-ms-flex-wrap:wrap;flex-wrap:wrap;gap:6px}.cc-pill{background:#aa2c16;border-radius:4px;color:#fff;font-size:12px;font-weight:600;line-height:1.2;padding:4px 8px}.cc-pill,.cc-pill-remove{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center}.cc-pill-remove{cursor:pointer;font-size:16px;margin-left:6px;opacity:.7;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;line-height:1;-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-pill-remove:hover{opacity:1}.cc-pill-input-container input{border:none!important;margin:0!important;outline:none!important;padding:0!important;-webkit-box-flex:1;background:transparent;color:#444;-ms-flex:1;flex:1;font-size:12px;min-width:80px}.cc-pill-input-container input:disabled{cursor:not-allowed}.cc-select-compact{-moz-appearance:none;appearance:none;-webkit-appearance:none;background-color:#fff;background-image:url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"10\" height=\"10\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"%23777777\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"6 9 12 15 18 9\"></polyline></svg>');background-position:right 6px center;background-repeat:no-repeat;border:1px solid #d4d4d4;border-radius:5px;color:#444;cursor:pointer;font-family:inherit;font-size:11px;height:22px;outline:none;padding:0 20px 0 6px;-webkit-transition:border-color .15s ease,-webkit-box-shadow .15s ease;transition:border-color .15s ease,-webkit-box-shadow .15s ease;transition:border-color .15s ease,box-shadow .15s ease;transition:border-color .15s ease,box-shadow .15s ease,-webkit-box-shadow .15s ease}.cc-select-compact:focus,.cc-select-compact:hover{border-color:#bcbcbc}.cc-select-compact:focus{border-color:#aa2c16;-webkit-box-shadow:0 0 0 2px rgba(170,44,22,.15);box-shadow:0 0 0 2px rgba(170,44,22,.15)}.cc-setting-sub.is-disabled .cc-select-compact{background-color:#f5f5f5;cursor:not-allowed}";
   styleInject(css_248z$1);
 
-  var css_248z = ".cc-flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-flex-column{-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-flex-row{-webkit-box-orient:horizontal;-webkit-box-direction:normal;-ms-flex-direction:row;flex-direction:row}.cc-flex-row-reverse{-webkit-box-orient:horizontal;-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.cc-flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.cc-justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.cc-justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.cc-justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-justify-around{-ms-flex-pack:distribute;justify-content:space-around}.cc-align-center{text-align:center}.cc-align-left{text-align:left}.cc-align-right{text-align:right}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.cc-grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.cc-grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.cc-grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.cc-grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.cc-gap-5{gap:5px}.cc-gap-10{gap:10px}.cc-gap-30{gap:30px}.cc-ml-auto{margin-left:auto}.cc-mr-auto{margin-right:auto}.cc-ph-5{padding:0 5px}.cc-ph-10{padding:0 10px}.cc-pv-5{padding:5px 0}.cc-pv-10{padding:10px 0}.cc-mh-5{margin:0 5px}.cc-mh-10{margin:0 10px}.cc-mv-5{margin:5px 0}.cc-mv-10{margin:10px 0}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:hsla(0,34%,69%,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-ratings-table-export{cursor:pointer;font-size:11px;margin-left:auto;padding:5px 7px;text-align:center}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.article-header{padding-top:2px}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:176px}.cc-creator-preview-image{background:#ececec;display:block;height:200px;-o-object-fit:contain;object-fit:contain;-o-object-position:center center;object-position:center center;width:100%}.cc-creator-preview.is-no-image .cc-creator-preview-image{background:linear-gradient(160deg,#f2f2f2,#e3e3e3);opacity:0}.cc-creator-preview.is-no-image .cc-creator-preview-card:before{color:#777;content:\"Bez fotky\";font-size:12px;font-weight:600;left:50%;letter-spacing:.02em;position:absolute;top:82px;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);z-index:1}.cc-creator-preview-name{color:#303030;display:-webkit-box;display:-ms-flexbox;display:flex;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:7px 8px 8px;text-align:center;text-overflow:ellipsis;white-space:nowrap;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;gap:4px;justify-content:center}.cc-creator-preview-name-flag{height:auto;width:14px;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 9px}.cc-creator-preview-meta-line{color:#434343;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}.cc-creator-preview-meta-birth{color:#2f2f2f;font-size:12px;font-weight:600;line-height:1.4;white-space:normal}.cc-creator-preview-meta-birth-age-inline{color:#666;font-size:11px;font-weight:500}.cc-creator-preview-meta-age{color:#595959;font-size:11px;font-weight:600;text-align:center}.cc-creator-preview-meta-photo{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:baseline;-ms-flex-align:baseline;align-items:baseline;color:#505050;font-weight:600;gap:6px;min-width:0;white-space:nowrap}.cc-creator-preview-meta-photo:before{content:\"🎬\";line-height:1;margin-right:2px}.cc-creator-preview-meta-photo.is-copyright:before{content:\"©\";font-weight:700}.cc-creator-preview-meta-photo-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo-year{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-creator-preview-meta-photo.is-movie{color:#ba0305}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-year{font-weight:700}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source{line-height:1;white-space:nowrap}.cc-creator-preview-meta-photo.is-copyright{color:#4c4c4c}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-year{display:none}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-source{display:-webkit-box;overflow:hidden;text-overflow:clip;white-space:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical}nav.tab-nav.cc-show-all-tabs{padding-right:0!important}nav.tab-nav.cc-show-all-tabs .tab-nav-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;list-style:none;margin:0;padding:0;width:100%}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item{-webkit-box-flex:1;-ms-flex:1 1 auto;flex:1 1 auto;min-width:0;top:-4px}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active{top:0}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link{display:block;overflow:hidden;padding:0 5px;text-align:center;text-overflow:ellipsis;white-space:nowrap}";
+  var css_248z = ".cc-flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-flex-column{-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-flex-row{-webkit-box-orient:horizontal;-webkit-box-direction:normal;-ms-flex-direction:row;flex-direction:row}.cc-flex-row-reverse{-webkit-box-orient:horizontal;-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.cc-flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.cc-justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.cc-justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.cc-justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-justify-around{-ms-flex-pack:distribute;justify-content:space-around}.cc-align-center{text-align:center}.cc-align-left{text-align:left}.cc-align-right{text-align:right}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.cc-grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.cc-grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.cc-grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.cc-grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.cc-gap-5{gap:5px}.cc-gap-10{gap:10px}.cc-gap-30{gap:30px}.cc-ml-auto{margin-left:auto}.cc-mr-auto{margin-right:auto}.cc-ph-5{padding:0 5px}.cc-ph-10{padding:0 10px}.cc-pv-5{padding:5px 0}.cc-pv-10{padding:10px 0}.cc-mh-5{margin:0 5px}.cc-mh-10{margin:0 10px}.cc-mv-5{margin:5px 0}.cc-mv-10{margin:10px 0}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:hsla(0,34%,69%,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-ratings-table-export{cursor:pointer;font-size:11px;margin-left:auto;padding:5px 7px;text-align:center}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.article-header{padding-top:2px}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:176px}.cc-creator-preview-image{background-color:#ececec;display:block;height:200px;-o-object-fit:contain;object-fit:contain;-o-object-position:center center;object-position:center center;width:100%}.cc-creator-preview-image.empty-image{background-color:#c4c4c4;background-position:50%;background-repeat:no-repeat;background-size:60%}.cc-creator-preview-name{color:#303030;display:-webkit-box;display:-ms-flexbox;display:flex;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:7px 8px 8px;text-align:center;text-overflow:ellipsis;white-space:nowrap;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;gap:4px;justify-content:center}.cc-creator-preview-name-flag{height:auto;width:14px;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 9px}.cc-creator-preview-meta-line{color:#434343;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}.cc-creator-preview-meta-birth{color:#2f2f2f;font-size:12px;font-weight:600;line-height:1.4;white-space:normal}.cc-creator-preview-meta-birth-age-inline{color:#666;font-size:11px;font-weight:500}.cc-creator-preview-meta-age{color:#595959;font-size:11px;font-weight:600;text-align:center}.cc-creator-preview-meta-photo{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:baseline;-ms-flex-align:baseline;align-items:baseline;color:#505050;font-weight:600;gap:6px;min-width:0;white-space:nowrap}.cc-creator-preview-meta-photo:before{content:\"🎬\";line-height:1;margin-right:2px}.cc-creator-preview-meta-photo.is-copyright:before{content:\"©\";font-weight:700}.cc-creator-preview-meta-photo-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo-year{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-creator-preview-meta-photo.is-movie{color:#ba0305}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-year{font-weight:700}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source{line-height:1;white-space:nowrap}.cc-creator-preview-meta-photo.is-copyright{color:#4c4c4c}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-year{display:none}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-source{display:-webkit-box;overflow:hidden;text-overflow:clip;white-space:normal;-webkit-line-clamp:2;-webkit-box-orient:vertical}nav.tab-nav.cc-show-all-tabs{padding-right:0!important}nav.tab-nav.cc-show-all-tabs .tab-nav-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;list-style:none;margin:0;padding:0;width:100%}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item{-webkit-box-flex:1;-ms-flex:1 1 auto;flex:1 1 auto;min-width:0;top:-4px}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active{top:0}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link{display:block;overflow:hidden;padding:0 5px;text-align:center;text-overflow:ellipsis;white-space:nowrap}";
   styleInject(css_248z);
 
-  var htmlContent = "<svg style=\"display: none;\" xmlns=\"http://www.w3.org/2000/svg\">\r\n    <symbol id=\"cc-icon-info\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <circle cx=\"12\" cy=\"12\" r=\"10\"></circle>\r\n        <line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line>\r\n        <line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-image\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect>\r\n        <circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"></circle>\r\n        <polyline points=\"21 15 16 10 5 21\"></polyline>\r\n    </symbol>\r\n</svg>\r\n\r\n<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n        aria-hidden=\"true\" focusable=\"false\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </svg>\r\n</a>\r\n\r\n<div class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.6</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" title=\"Uloženo / Celkem\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" title=\"Spočtená hodnocení\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button id=\"cc-sync-cloud-btn\" class=\"cc-sync-icon-btn\" title=\"Cloud sync\" aria-label=\"Cloud sync\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"18\" height=\"18\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <path\r\n                            d=\"M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27\"\r\n                            stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" stroke-linejoin=\"round\" />\r\n                        <path d=\"M18.5 18V22\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <path d=\"M16.5 20H20.5\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                    </svg>\r\n                </button>\r\n                <button id=\"cc-version-info-btn\" class=\"cc-sync-icon-btn cc-version-info-btn\" title=\"Informace o verzi\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg viewBox=\"0 0 24 24\" width=\"16\" height=\"16\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"\r\n                        aria-hidden=\"true\" focusable=\"false\">\r\n                        <circle cx=\"12\" cy=\"12\" r=\"8\" stroke=\"currentColor\" stroke-width=\"1.9\" />\r\n                        <path d=\"M12 11V15\" stroke=\"currentColor\" stroke-width=\"1.9\" stroke-linecap=\"round\" />\r\n                        <circle cx=\"12\" cy=\"8.4\" r=\"1\" fill=\"currentColor\" />\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\"\r\n                            fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path d=\"M12 4V14\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                            <path d=\"M8 10L12 14L16 10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"\r\n                                stroke-linejoin=\"round\" />\r\n                            <path d=\"M5 19H19\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" />\r\n                        </svg></span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\">\r\n                        <svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\r\n                            <path\r\n                                d=\"M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z\"\r\n                                stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linejoin=\"round\" />\r\n                        </svg>\r\n                    </span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\" hidden>\r\n        <div class=\"cc-settings-section-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <h3 class=\"cc-section-title\">Konfigurace</h3>\r\n            <div class=\"cc-config-list\">\r\n\r\n                <div class=\"cc-setting-row\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" checked />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazovat formáty obrázků v galerii</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-show-all-creator-tabs\" checked />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazit všechny záložky tvůrce</span>\r\n\r\n                    <div class=\"cc-setting-icons\">\r\n                        <div class=\"cc-info-icon\" data-image-url=\"https://i.imgur.com/aTrSU2X.png\"\r\n                            aria-label=\"Na stránce tvůrce natvrdo zobrazí všechny záložky (Režie, Scénář, Herec atd.), i když v nich má méně než 3 filmy.&#10;&#10;👉 Klikni pro ukázku\">\r\n                            <svg width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-info\"></use>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-group\" id=\"cc-creator-preview-group\">\r\n                    <div class=\"cc-setting-row\">\r\n                        <label class=\"cc-switch\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" checked />\r\n                            <span class=\"cc-switch-bg\"></span>\r\n                        </label>\r\n                        <div class=\"cc-setting-collapse-trigger\" id=\"cc-creator-preview-group-toggle\"\r\n                            aria-expanded=\"true\">\r\n                            <span class=\"cc-setting-label cc-grow\">Náhledy fotek tvůrců</span>\r\n                            <svg class=\"cc-chevron\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"\r\n                                stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n                                <polyline points=\"6 9 12 15 18 9\"></polyline>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"cc-setting-sub\" id=\"cc-creator-preview-group-body\">\r\n                        <div class=\"cc-setting-row\">\r\n                            <label class=\"cc-switch\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\" checked />\r\n                                <span class=\"cc-switch-bg\"></span>\r\n                            </label>\r\n                            <span class=\"cc-setting-label\">Zobrazovat datum narození</span>\r\n                        </div>\r\n                        <div class=\"cc-setting-row\">\r\n                            <label class=\"cc-switch\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\" checked />\r\n                                <span class=\"cc-switch-bg\"></span>\r\n                            </label>\r\n                            <span class=\"cc-setting-label\">Zobrazovat „Photo from“</span>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-enable-clickable-header-boxes\" checked />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Boxy s tlačítkem \"VÍCE\" jsou klikatelné celé</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-ratings-estimate\" />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Vypočtení % při počtu hodnocení pod 10</span>\r\n\r\n                    <div class=\"cc-setting-icons\">\r\n                        <div class=\"cc-info-icon\"\r\n                            aria-label=\"Když má film méně než 10 hodnocení, CSFD procenta skryje. Tato funkce je matematicky dopočítá a zobrazí.\">\r\n                            <svg width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-info\"></use>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-ratings-from-favorites\" />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazit hodnocení z průměru oblíbených</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-add-ratings-date\" />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazit datum hodnocení</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-group\" id=\"cc-hide-reviews-group\">\r\n                    <div class=\"cc-setting-row\">\r\n                        <label class=\"cc-switch\">\r\n                            <input type=\"checkbox\" id=\"cc-hide-selected-reviews\" />\r\n                            <span class=\"cc-switch-bg\"></span>\r\n                        </label>\r\n                        <div class=\"cc-setting-collapse-trigger\" id=\"cc-hide-reviews-group-toggle\"\r\n                            aria-expanded=\"false\">\r\n                            <span class=\"cc-setting-label cc-grow\">Skrýt recenze lidí</span>\r\n                            <svg class=\"cc-chevron\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"\r\n                                stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n                                <polyline points=\"6 9 12 15 18 9\"></polyline>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"cc-setting-sub\" id=\"cc-hide-reviews-group-body\" hidden>\r\n                        <label class=\"cc-form-field\">\r\n                            <span>Jména (oddělena čárkou)</span>\r\n                            <input type=\"text\" data-bwignore=\"true\" id=\"cc-hide-selected-reviews-list\"\r\n                                placeholder=\"Např. Adrian, Karel\" />\r\n                        </label>\r\n                        <div class=\"cc-sub-actions\">\r\n                            <button type=\"button\" id=\"cc-hide-reviews-apply\"\r\n                                class=\"cc-button cc-button-red cc-button-small\">Použít</button>\r\n                            <span class=\"cc-form-note\">Stiskněte Enter pro uložení.</span>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-group\" style=\"padding: 8px;\">\r\n                    <label class=\"cc-form-field\">\r\n                        <span style=\"font-weight: 600; color: #444; margin-bottom: 2px;\">Vlastní štítek sekce</span>\r\n                        <input type=\"text\" data-bwignore=\"true\" name=\"sectionLabel\"\r\n                            placeholder=\"Např. Můj CSFD Compare\" />\r\n                    </label>\r\n                </div>\r\n\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <h3 class=\"cc-section-title\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\"\r\n                    id=\"cc-maint-reset-btn\">Reset</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small\" id=\"cc-maint-clear-lc-btn\">Smazat\r\n                    LC</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small\" id=\"cc-maint-clear-db-btn\">Smazat\r\n                    DB</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>\r\n\r\n<!-- <div class=\"cc-version-info-overlay\" id=\"cc-image-modal\">\r\n    <div class=\"cc-version-info-modal\" style=\"width: min(800px, 95vw);\">\r\n        <div class=\"cc-version-info-head\">\r\n            <h3 id=\"cc-image-modal-title\">Ukázka funkce</h3>\r\n            <button type=\"button\" class=\"cc-version-info-close\" id=\"cc-image-modal-close\" aria-label=\"Zavřít\">×</button>\r\n        </div>\r\n        <div class=\"cc-version-info-body\" style=\"text-align: center; padding: 16px;\">\r\n            <img id=\"cc-image-modal-img\" src=\"\" alt=\"Ukázka\"\r\n                style=\"max-width: 100%; max-height: 65vh; object-fit: contain; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);\" />\r\n        </div>\r\n    </div>\r\n</div> -->";
+  var htmlContent = "<svg style=\"display: none;\" xmlns=\"http://www.w3.org/2000/svg\">\r\n    <symbol id=\"cc-icon-info\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <circle cx=\"12\" cy=\"12\" r=\"10\"></circle>\r\n        <line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line>\r\n        <line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line>\r\n    </symbol>\r\n\r\n    <symbol id=\"cc-icon-image\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect>\r\n        <circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"></circle>\r\n        <polyline points=\"21 15 16 10 5 21\"></polyline>\r\n    </symbol>\r\n\r\n    <symbol id=\"cc-icon-menu-logo\" viewBox=\"0 0 24 24\" fill=\"none\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </symbol>\r\n\r\n    <symbol id=\"cc-icon-download\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path>\r\n        <polyline points=\"7 10 12 15 17 10\"></polyline>\r\n        <line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"></line>\r\n    </symbol>\r\n\r\n    <symbol id=\"cc-icon-star\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polygon\r\n            points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\">\r\n        </polygon>\r\n    </symbol>\r\n\r\n    <symbol id=\"cc-icon-cloud\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"></path>\r\n    </symbol>\r\n\r\n    <symbol id=\"cc-icon-chevron\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polyline points=\"6 9 12 15 18 9\"></polyline>\r\n    </symbol>\r\n</svg>\r\n\r\n<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\">\r\n        <use href=\"#cc-icon-menu-logo\"></use>\r\n    </svg>\r\n</a>\r\n\r\n<div id=\"dropdown-compare-menu\" class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.7</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" tabindex=\"0\" role=\"button\"\r\n                title=\"Uloženo / Celkem: Počet přímo načtených hodnocení z vašeho profilu\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" tabindex=\"0\" role=\"button\"\r\n                title=\"Spočtená hodnocení: Počet hodnocení automaticky dopočítaných pro seriály\">0</span>\r\n\r\n            <div class=\"cc-head-tools\">\r\n                <button class=\"cc-sync-icon-btn\" id=\"cc-sync-cloud-btn\"\r\n                    title=\"Cloud sync: Zálohuje vaše hodnocení do cloudu a synchronizuje je s ostatními zařízeními.\"\r\n                    aria-label=\"Cloud sync\">\r\n                    <svg width=\"18\" height=\"18\">\r\n                        <use href=\"#cc-icon-cloud\"></use>\r\n                    </svg>\r\n                </button>\r\n                <button class=\"cc-sync-icon-btn cc-version-info-btn\" id=\"cc-version-info-btn\"\r\n                    title=\"Informace o verzi: Zobrazit historii změn a novinky v této verzi.\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg width=\"16\" height=\"16\">\r\n                        <use href=\"#cc-icon-info\"></use>\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\"\r\n                    title=\"Projde váš profil a stáhne všechna vaše hodnocení do lokální databáze (nutné pro správné fungování ostatních funkcí).\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                            <use href=\"#cc-icon-download\"></use>\r\n                        </svg></span>\r\n                    <span>Načíst moje hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\"\r\n                    title=\"Z načtených hodnocení automaticky vypočítá a doplní hodnocení pro celé seriály nebo jejich série.\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                            <use href=\"#cc-icon-star\"></use>\r\n                        </svg></span>\r\n                    <span>Dopočítat seriály</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\" hidden>\r\n        <div class=\"cc-settings-section-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\" style=\"padding-top: 8px;\">\r\n\r\n            <h3 class=\"cc-category-title cc-category-first\">Globální</h3>\r\n            <div class=\"cc-config-list\">\r\n                <div class=\"cc-setting-row\"\r\n                    title=\"Na domovské stránce roztáhne klikatelnou oblast u tlačítek 'Více' přes celý informační blok, takže se na ně lépe kliká.\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-enable-clickable-header-boxes\" checked />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Boxy s tlačítkem \"VÍCE\" jsou klikatelné celé</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-group\" style=\"padding: 6px 8px; margin-top: 2px;\">\r\n                    <label class=\"cc-form-field\">\r\n                        <span style=\"font-weight: 600; color: #444; margin-bottom: 2px;\"\r\n                            title=\"Umožňuje přidat vlastní nápis nebo jmenovku na konec domovské stránky pro lepší vizuální organizaci.\">Vlastní\r\n                            štítek sekce</span>\r\n                        <input type=\"text\" data-bwignore=\"true\" name=\"sectionLabel\"\r\n                            placeholder=\"Např. Můj CSFD Compare\" />\r\n                    </label>\r\n                </div>\r\n            </div>\r\n\r\n            <h3 class=\"cc-category-title\">Filmy a seriály</h3>\r\n            <div class=\"cc-config-list\">\r\n                <div class=\"cc-setting-row\"\r\n                    title=\"Na stránce galerie přidá pod fotky odkazy pro rychlé zobrazení obrázků v originální velikosti.\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-enable-gallery-image-links\" checked />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazovat formáty obrázků v galerii</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\"\r\n                    title=\"CSFD běžně skrývá procentuální hodnocení u filmů s méně než 10 hodnoceními. Tato funkce průměr matematicky dopočítá a zobrazí ho i tak.\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-ratings-estimate\" />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Vypočtení % při počtu hodnocení pod 10</span>\r\n\r\n                    <div class=\"cc-setting-icons\">\r\n                        <div class=\"cc-info-icon\"\r\n                            aria-label=\"Když má film méně než 10 hodnocení, CSFD procenta skryje. Tato funkce je matematicky dopočítá a zobrazí.&#10;&#10;👉 Klikni pro ukázku\"\r\n                            data-image-url=\"https://i.imgur.com/8QG9gHq.jpeg\">\r\n                            <svg width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-info\"></use>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\"\r\n                    title=\"Pod hlavním procentuálním hodnocením filmu se zobrazí doplňující průměrné hodnocení, vypočítané pouze z uživatelů, které máte ve svých oblíbených.\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-ratings-from-favorites\" />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazit hodnocení z průměru oblíbených</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-row\"\r\n                    title=\"V hlavičce s vaším hvězdičkovým hodnocením filmu vždy zobrazí konkrétní datum, kdy jste film hodnotili.\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-add-ratings-date\" />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label\">Zobrazit datum hodnocení</span>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-group\" id=\"cc-hide-reviews-group\" style=\"margin-top: 2px;\">\r\n                    <div class=\"cc-setting-row\"\r\n                        title=\"Umožňuje skrýt komentáře a recenze od uživatelů, které nechcete číst.\">\r\n                        <label class=\"cc-switch\">\r\n                            <input type=\"checkbox\" id=\"cc-hide-selected-reviews\" />\r\n                            <span class=\"cc-switch-bg\"></span>\r\n                        </label>\r\n                        <div class=\"cc-setting-collapse-trigger\" id=\"cc-hide-reviews-group-toggle\"\r\n                            aria-expanded=\"false\">\r\n                            <span class=\"cc-setting-label cc-grow\">Skrýt recenze lidí</span>\r\n                            <svg class=\"cc-chevron\" width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-chevron\"></use>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"cc-setting-sub\" id=\"cc-hide-reviews-group-body\" hidden>\r\n                        <label class=\"cc-form-field\">\r\n                            <span\r\n                                title=\"Zadejte uživatelské jméno a potvrďte klávesou Enter nebo Mezerou. Jméno není citlivé na velikost písmen.\">Jména\r\n                                uživatelů (oddělte mezerou nebo čárkou)</span>\r\n                            <div class=\"cc-pill-input-container\" id=\"cc-hide-reviews-pill-container\"\r\n                                title=\"Zadejte jméno uživatele, jehož recenze nechcete číst, a stiskněte Enter nebo Mezeru\">\r\n                                <div class=\"cc-pills\" id=\"cc-hide-reviews-pills\"></div>\r\n                                <input type=\"text\" data-bwignore=\"true\" id=\"cc-hide-reviews-pill-input\"\r\n                                    placeholder=\"Přidat jméno...\" />\r\n                            </div>\r\n                        </label>\r\n                        <div class=\"cc-sub-actions\" style=\"margin-top: 6px;\">\r\n                            <button type=\"button\" id=\"cc-hide-reviews-apply\"\r\n                                class=\"cc-button cc-button-red cc-button-small\"\r\n                                title=\"Okamžitě uloží seznam a ihned skryje (nebo zobrazí) vybrané recenze na aktuální stránce bez nutnosti obnovení okna.\">Uložit\r\n                                jména</button>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n\r\n            <h3 class=\"cc-category-title\">Herci a tvůrci</h3>\r\n            <div class=\"cc-config-list\">\r\n                <div class=\"cc-setting-row\"\r\n                    title=\"Na profilu herce/režiséra automaticky rozbalí menu 'Více' a ukáže všechny záložky (Režie, Herec atd.) hezky vedle sebe.\">\r\n                    <label class=\"cc-switch\">\r\n                        <input type=\"checkbox\" id=\"cc-show-all-creator-tabs\" checked />\r\n                        <span class=\"cc-switch-bg\"></span>\r\n                    </label>\r\n                    <span class=\"cc-setting-label cc-grow\">Zobrazit všechny záložky tvůrce</span>\r\n\r\n                    <div class=\"cc-setting-icons\">\r\n                        <div class=\"cc-info-icon\" data-image-url=\"https://i.imgur.com/aTrSU2X.png\"\r\n                            aria-label=\"Na stránce tvůrce natvrdo zobrazí všechny záložky (Režie, Scénář, Herec atd.), i když v nich má méně než 3 filmy.&#10;&#10;👉 Klikni pro ukázku\">\r\n                            <svg width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-info\"></use>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-setting-group\" id=\"cc-creator-preview-group\" style=\"margin-top: 2px;\">\r\n                    <div class=\"cc-setting-row\"\r\n                        title=\"Po najetí myší na jméno herce nebo tvůrce kdekoliv na webu se objeví rychlý vyskakovací panel s jeho fotografií a detaily.\">\r\n                        <label class=\"cc-switch\">\r\n                            <input type=\"checkbox\" id=\"cc-enable-creator-preview\" checked />\r\n                            <span class=\"cc-switch-bg\"></span>\r\n                        </label>\r\n                        <div class=\"cc-setting-collapse-trigger\" id=\"cc-creator-preview-group-toggle\"\r\n                            aria-expanded=\"true\">\r\n                            <span class=\"cc-setting-label cc-grow\">Náhledy fotek tvůrců</span>\r\n                            <svg class=\"cc-chevron\" width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-chevron\"></use>\r\n                            </svg>\r\n                        </div>\r\n                    </div>\r\n                    <div class=\"cc-setting-sub\" id=\"cc-creator-preview-group-body\">\r\n                        <div class=\"cc-setting-row\"\r\n                            title=\"Ve vyskakovacím panelu náhledu zobrazí datum narození/úmrtí a přesný věk tvůrce.\">\r\n                            <label class=\"cc-switch\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-birth\" checked />\r\n                                <span class=\"cc-switch-bg\"></span>\r\n                            </label>\r\n                            <span class=\"cc-setting-label\">Zobrazovat datum narození</span>\r\n                        </div>\r\n                        <div class=\"cc-setting-row\"\r\n                            title=\"Ve vyskakovacím panelu náhledu zobrazí copyright a informaci o tom, z jakého filmu daná fotka pochází.\">\r\n                            <label class=\"cc-switch\">\r\n                                <input type=\"checkbox\" id=\"cc-creator-preview-show-photo-from\" checked />\r\n                                <span class=\"cc-switch-bg\"></span>\r\n                            </label>\r\n                            <span class=\"cc-setting-label\">Zobrazovat „Photo from“</span>\r\n                        </div>\r\n\r\n                        <div class=\"cc-setting-row\" style=\"margin-top: 2px;\"\r\n                            title=\"Určuje, jak dlouho si prohlížeč bude pamatovat stažené fotky tvůrců. Delší čas šetří data a zrychluje web.\">\r\n                            <span class=\"cc-setting-label cc-grow\">Délka mezipaměti (Cache)</span>\r\n                            <select id=\"cc-creator-preview-cache-hours\" class=\"cc-select-compact\">\r\n                                <option value=\"1\">1 hodina</option>\r\n                                <option value=\"12\">12 hodin</option>\r\n                                <option value=\"24\">24 hodin</option>\r\n                                <option value=\"168\">7 dní</option>\r\n                            </select>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <h3 class=\"cc-section-title\" style=\"margin-top: 0;\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\">\r\n                <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-reset-btn\"\r\n                    title=\"Vrátí veškeré přepínače a nastavení tohoto doplňku (včetně skrytých uživatelů) do původního, výchozího stavu.\">Reset</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small\" id=\"cc-maint-clear-lc-btn\"\r\n                    title=\"Otevře správce pro expertní manuální smazání dat z paměti LocalStorage.\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small\" id=\"cc-maint-clear-db-btn\"\r\n                    title=\"Kompletně a bezpečně vymaže celou vaši lokální databázi hodnocení z prohlížeče (IndexedDB). Vaše hodnocení na webu CSFD.cz zůstanou nedotčena.\">Smazat\r\n                    DB</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>";
 
   const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
   const REQUEST_DELAY_MIN_MS = 250;
@@ -2414,8 +2414,96 @@
     setCancelPausedButtonVisible(hasAnyPaused, cancelMode);
   }
 
+  // supabase-api.js
+
+  const SUPABASE_URL = 'https://ttbwkjnipnwqaujkyotc.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_Mb7Bm7xyq0yaHjhGeHS76w_CNvfcCjU';
+
+  const HEADERS = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    'Content-Type': 'application/json',
+  };
+
+  async function getOrCreateToken(userSlug) {
+    if (!userSlug) return null;
+    try {
+      const getResponse = await fetch(`${SUPABASE_URL}/rest/v1/cloud_sync?user_slug=eq.${userSlug}&select=token`, {
+        method: 'GET',
+        headers: HEADERS,
+      });
+      if (!getResponse.ok) throw new Error('Failed to fetch existing token');
+      const existingData = await getResponse.json();
+      if (existingData && existingData.length > 0) return existingData[0].token;
+
+      const postResponse = await fetch(`${SUPABASE_URL}/rest/v1/cloud_sync`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'return=representation' },
+        body: JSON.stringify({
+          user_slug: userSlug,
+          ratings_data: {},
+          updated_at: new Date().toISOString(),
+        }),
+      });
+      if (!postResponse.ok) throw new Error('Failed to create new token');
+      const newData = await postResponse.json();
+      return newData[0].token;
+    } catch (error) {
+      console.error('[CC Sync] Error generating token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Downloads the user's ratings from Supabase.
+   */
+  async function downloadFromCloud(userToken) {
+    try {
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/cloud_sync?token=eq.${userToken}&select=ratings_data`, {
+        method: 'GET',
+        headers: HEADERS,
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data.length > 0 ? data[0].ratings_data : null;
+    } catch (error) {
+      console.error('[CC Sync] Download error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Uploads merged ratings to Supabase using an Upsert.
+   */
+  async function uploadToCloud(userToken, ratingsJson, userSlug) {
+    try {
+      const payload = {
+        token: userToken,
+        ratings_data: ratingsJson,
+        updated_at: new Date().toISOString(),
+      };
+
+      // Include user_slug so Supabase's Upsert doesn't fail the Not-Null constraint
+      if (userSlug) {
+        payload.user_slug = userSlug;
+      }
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/cloud_sync`, {
+        method: 'POST',
+        headers: { ...HEADERS, Prefer: 'resolution=merge-duplicates' },
+        body: JSON.stringify(payload),
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('[CC Sync] Upload error:', error);
+      return false;
+    }
+  }
+
   const SYNC_ENABLED_KEY = 'cc_sync_enabled';
   const SYNC_ACCESS_KEY = 'cc_sync_access_key';
+
+  let isSyncing = false; // Lock to prevent overlapping sync loops
 
   function getSyncSetupState() {
     return {
@@ -2433,11 +2521,117 @@
     document.querySelector('.cc-sync-modal-overlay')?.remove();
   }
 
+  function getActiveUserSlugFallback() {
+    const match = document
+      .querySelector('a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]')
+      ?.getAttribute('href')
+      ?.match(/^\/uzivatel\/(\d+-[^/]+)\//);
+    return match ? match[1] : undefined;
+  }
+
   /**
-   * Creates and displays the Sync Setup modal.
-   * @param {Function} onSaveCallback - Function to run after the user clicks "Uložit" (Save).
+   * Creates the Conflict Modal to display differences and allow manual overrides.
    */
-  function createSyncSetupModal(onSaveCallback) {
+  function openConflictModal(conflicts, localData, cloudData, accessKey, currentUserSlug, onResolved) {
+    // Map the raw conflict data into a clean, human-readable JSON object
+    const localDiff = {};
+    const cloudDiff = {};
+
+    for (const [id, item] of Object.entries(conflicts)) {
+      const title = item.local?.name || item.cloud?.name || id;
+
+      localDiff[title] =
+        item.local && !item.local.deleted ? { hodnoceni: item.local.rating, datum: item.local.date } : '--- SMAZÁNO ---';
+
+      cloudDiff[title] =
+        item.cloud && !item.cloud.deleted ? { hodnoceni: item.cloud.rating, datum: item.cloud.date } : '--- SMAZÁNO ---';
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cc-sync-modal-overlay visible';
+    overlay.style.zIndex = '10050'; // Ensure it sits above the main sync modal
+
+    overlay.innerHTML = `
+    <div class="cc-sync-modal" style="width: 680px; max-width: 95vw;">
+      <div class="cc-sync-modal-head" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
+        <h3 style="color: #aa2c16;">Zjištěn konflikt v datech</h3>
+        <button type="button" class="cc-sync-close" aria-label="Zavřít">&times;</button>
+      </div>
+      <p style="font-size: 12px; color: #444; margin-bottom: 12px; line-height: 1.4;">
+        U následujících filmů se liší hodnocení mezi vaším prohlížečem a cloudem. Vyberte, která verze má přepsat tu druhou.
+      </p>
+
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <strong style="font-size: 11px; margin-bottom: 4px; color: #222;">Lokální data (Tento prohlížeč)</strong>
+          <textarea readonly style="width: 100%; height: 220px; font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; background: #f5f5f5; resize: none; white-space: pre;">${JSON.stringify(localDiff, null, 2)}</textarea>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column;">
+          <strong style="font-size: 11px; margin-bottom: 4px; color: #222;">Cloud data (Záloha na serveru)</strong>
+          <textarea readonly style="width: 100%; height: 220px; font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; background: #f5f5f5; resize: none; white-space: pre;">${JSON.stringify(cloudDiff, null, 2)}</textarea>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <button type="button" id="cc-conflict-download" class="cc-button cc-button-black" style="flex: 1; font-size: 11px; padding: 8px;">
+          ↓ PŘEPSAT Z CLOUDU (Zrušit lokální změny)
+        </button>
+        <button type="button" id="cc-conflict-upload" class="cc-button cc-button-black" style="flex: 1; font-size: 11px; padding: 8px;">
+          ↑ PŘEPSAT DO CLOUDU (Potvrdit lokální změny)
+        </button>
+      </div>
+    </div>
+  `;
+
+    document.body.appendChild(overlay);
+
+    const closeModal = () => overlay.remove();
+    overlay.querySelector('.cc-sync-close')?.addEventListener('click', closeModal);
+
+    // Manual Download Overwrite (Mirrors cloud exactly)
+    overlay.querySelector('#cc-conflict-download')?.addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = 'Stahuji...';
+      try {
+        // For any item in cloud, if it's a tombstone, delete locally. Otherwise save it.
+        for (const record of Object.values(cloudData)) {
+          if (record.deleted) {
+            await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, record.id);
+          } else {
+            await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, record);
+          }
+        }
+        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+        onResolved('✅ Konflikt vyřešen: Data úspěšně přepsána z cloudu.');
+        closeModal();
+      } catch (err) {
+        btn.textContent = 'Chyba stahování';
+        btn.style.background = '#aa2c16';
+      }
+    });
+
+    // Manual Upload Overwrite
+    overlay.querySelector('#cc-conflict-upload')?.addEventListener('click', async (e) => {
+      const btn = e.target;
+      btn.disabled = true;
+      btn.textContent = 'Nahrávám...';
+      try {
+        const activeSlug = currentUserSlug || Object.values(localData)[0]?.userSlug;
+        await uploadToCloud(accessKey, localData, activeSlug);
+        onResolved('✅ Konflikt vyřešen: Cloud úspěšně přepsán lokálními daty.');
+        closeModal();
+      } catch (err) {
+        btn.textContent = 'Chyba nahrávání';
+        btn.style.background = '#aa2c16';
+      }
+    });
+  }
+
+  /**
+   * Creates and displays the primary Sync Setup modal.
+   */
+  function createSyncSetupModal(onSaveCallback, currentUserSlug) {
     removeSyncModal();
 
     const { enabled, accessKey } = getSyncSetupState();
@@ -2445,11 +2639,9 @@
     const overlay = document.createElement('div');
     overlay.className = 'cc-sync-modal-overlay';
 
-    const modal = document.createElement('form');
+    const modal = document.createElement('div');
     modal.className = 'cc-sync-modal';
-    modal.onsubmit = (e) => e.preventDefault(); // Stops the page from refreshing if the user hits "Enter"
 
-    // Updated HTML for a much better User Experience
     modal.innerHTML = `
     <div class="cc-sync-modal-head">
       <h3>Nastavení Cloud Sync <span style="color: #aa2c16; font-size: 11px; vertical-align: middle;">(BETA)</span></h3>
@@ -2458,12 +2650,9 @@
 
     <div style="font-size: 12px; color: #444; margin-bottom: 14px; line-height: 1.4;">
       <p style="margin-top: 0;">
-        Zálohujte svá hodnocení a synchronizujte je napříč zařízeními (např. mezi stolním PC a notebookem).
+        Zálohujte svá hodnocení a synchronizujte je napříč zařízeními.
+        Pro spárování vložte svůj osobní <strong>Sync Token</strong>.
       </p>
-      <p style="margin-bottom: 0;">
-        Pro spárování zařízení vložte svůj osobní <strong>Sync Token</strong>.
-        <br>
-        <a href="#" target="_blank" style="color: #aa2c16; text-decoration: none; font-weight: 600;">Jak získám svůj Token?</a> </p>
     </div>
 
     <div style="background: #f9f9f9; border: 1px solid #eee; padding: 10px; border-radius: 8px; margin-bottom: 14px;">
@@ -2472,23 +2661,36 @@
         <span style="font-weight: 600; color: #222;">Povolit synchronizaci</span>
       </label>
 
-      <label class="cc-sync-label" for="cc-sync-key-input" style="font-weight: 600; margin-top: 8px;">Váš Sync Token</label>
-      <input id="cc-sync-key-input" class="cc-sync-input" type="password" placeholder="Např. a1b2c3d4-e5f6..." value="${accessKey.replace(/"/g, '&quot;')}" style="margin-top: 4px; border: 1px solid #ccc;">
+      <div id="cc-sync-inputs-container" style="transition: opacity 0.2s ease;">
+        <label class="cc-sync-label" for="cc-sync-key-input" style="font-weight: 600; margin-top: 8px; display: block;">Váš Sync Token</label>
+
+        <div style="display: flex; gap: 6px; margin-top: 4px;">
+          <input id="cc-sync-key-input" class="cc-sync-input" type="password" placeholder="Např. a1b2c3d4-e5f6..." value="${accessKey.replace(/"/g, '&quot;')}" style="flex: 1; border: 1px solid #ccc; margin: 0;">
+          <button type="button" id="cc-generate-token-btn" class="cc-button cc-button-black" style="white-space: nowrap;" ${!currentUserSlug ? 'title="Musíte být přihlášeni"' : ''}>
+            Získat Token
+          </button>
+        </div>
+        <div id="cc-sync-error" style="color: #aa2c16; font-size: 11px; margin-top: 4px; display: none;">Došlo k chybě při komunikaci se serverem.</div>
+
+        <div id="cc-smart-sync-section" style="margin-top: 16px; transition: opacity 0.2s ease;">
+          <button type="button" id="cc-smart-sync-btn" class="cc-button cc-button-red" style="width: 100%; padding: 8px; font-size: 13px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Synchronizovat Nyní
+          </button>
+          <div id="cc-smart-sync-status" style="color: #184e21; font-size: 11px; margin-top: 8px; text-align: center; font-weight: 600; min-height: 14px; white-space: pre-wrap;"></div>
+        </div>
+      </div>
     </div>
 
     <div class="cc-sync-actions">
-      <button type="button" class="cc-sync-save cc-button cc-button-red">Uložit nastavení</button>
-      <button type="button" class="cc-sync-cancel cc-button cc-button-black">Zrušit</button>
+      <button type="button" class="cc-sync-save cc-button cc-button-red">Zavřít</button>
     </div>
   `;
 
     overlay.appendChild(modal);
     document.body.appendChild(overlay);
 
-    // Trigger CSS transition
-    requestAnimationFrame(() => {
-      overlay.classList.add('visible');
-    });
+    requestAnimationFrame(() => overlay.classList.add('visible'));
 
     const closeModal = () => {
       overlay.classList.remove('visible');
@@ -2498,32 +2700,122 @@
     overlay.addEventListener('click', (event) => {
       if (event.target === overlay) closeModal();
     });
-
     modal.querySelector('.cc-sync-close')?.addEventListener('click', closeModal);
-    modal.querySelector('.cc-sync-cancel')?.addEventListener('click', closeModal);
+    modal.querySelector('.cc-sync-save')?.addEventListener('click', closeModal);
 
-    modal.querySelector('.cc-sync-save')?.addEventListener('click', () => {
-      const enabledInput = modal.querySelector('#cc-sync-enabled-input');
-      const keyInput = modal.querySelector('#cc-sync-key-input');
+    // --- UI Elements ---
+    const generateBtn = modal.querySelector('#cc-generate-token-btn');
+    const keyInput = modal.querySelector('#cc-sync-key-input');
+    const enabledInput = modal.querySelector('#cc-sync-enabled-input');
+    const inputsContainer = modal.querySelector('#cc-sync-inputs-container');
+    const errorText = modal.querySelector('#cc-sync-error');
+    const smartSyncBtn = modal.querySelector('#cc-smart-sync-btn');
+    const smartSyncStatus = modal.querySelector('#cc-smart-sync-status');
+
+    const setStatus = (msg, isError = false) => {
+      smartSyncStatus.textContent = msg;
+      smartSyncStatus.style.color = isError ? '#aa2c16' : '#184e21';
+    };
+
+    // --- Toggle & Auto-Save Logic ---
+    const handleInputChange = () => {
+      const isChecked = enabledInput.checked;
+      const hasKey = keyInput.value.length > 0;
+
+      keyInput.disabled = !isChecked;
+      if (generateBtn) generateBtn.disabled = !isChecked || !currentUserSlug;
+
+      inputsContainer.style.opacity = isChecked ? '1' : '0.5';
+      inputsContainer.style.pointerEvents = isChecked ? 'auto' : 'none';
+
+      const sectionsEnabled = isChecked && hasKey;
+      smartSyncBtn.parentElement.style.opacity = sectionsEnabled ? '1' : '0.3';
+      smartSyncBtn.parentElement.style.pointerEvents = sectionsEnabled ? 'auto' : 'none';
 
       saveSyncSetupState({
-        enabled: Boolean(enabledInput?.checked),
-        accessKey: keyInput?.value || '',
+        enabled: Boolean(enabledInput.checked),
+        accessKey: keyInput.value || '',
       });
+      if (onSaveCallback) onSaveCallback();
+    };
 
-      // Execute the callback to instantly update the button UI
-      if (onSaveCallback) {
-        onSaveCallback();
-      }
+    handleInputChange();
+    enabledInput.addEventListener('change', handleInputChange);
+    keyInput.addEventListener('input', handleInputChange);
 
-      closeModal();
-    });
+    // --- Token Generation ---
+    if (generateBtn) {
+      generateBtn.addEventListener('click', async () => {
+        if (!currentUserSlug) return;
+
+        generateBtn.disabled = true;
+        generateBtn.textContent = 'Načítám...';
+        errorText.style.display = 'none';
+
+        const token = await getOrCreateToken(currentUserSlug);
+
+        if (token) {
+          keyInput.type = 'text';
+          keyInput.value = token;
+          enabledInput.checked = true;
+          generateBtn.textContent = 'Hotovo ✓';
+          handleInputChange();
+        } else {
+          errorText.style.display = 'block';
+          generateBtn.disabled = false;
+          generateBtn.textContent = 'Zkusit znovu';
+        }
+      });
+    }
+
+    // --- SMART SYNC NOW ---
+    if (smartSyncBtn) {
+      smartSyncBtn.addEventListener('click', async () => {
+        smartSyncBtn.disabled = true;
+        const originalText = smartSyncBtn.innerHTML;
+        smartSyncBtn.textContent = 'Prověřuji data...';
+        smartSyncStatus.textContent = '';
+
+        // true = we are running manually, so it checks for conflicts!
+        const result = await performCloudSync(true);
+
+        if (result.status === 'conflict') {
+          setStatus('Zjištěny nesrovnalosti.', true);
+          openConflictModal(
+            result.conflicts,
+            result.localData,
+            result.cloudData,
+            keyInput.value,
+            currentUserSlug,
+            (resolutionMsg) => {
+              setStatus(resolutionMsg);
+            },
+          );
+        } else if (result.status === 'success') {
+          const { addedToLocal, updatedInLocal, addedToCloud, updatedInCloud } = result.stats;
+
+          if (addedToLocal === 0 && updatedInLocal === 0 && addedToCloud === 0 && updatedInCloud === 0) {
+            setStatus('✅ Všechna data jsou již aktuální.');
+          } else {
+            let msg = '✅ Synchronizace úspěšná.\n';
+            if (addedToLocal > 0) msg += `Staženo nových: ${addedToLocal}. `;
+            if (updatedInLocal > 0) msg += `Aktualizováno lokálně: ${updatedInLocal}. `;
+            if (addedToCloud > 0) msg += `Nahráno do cloudu: ${addedToCloud}. `;
+            if (updatedInCloud > 0) msg += `Aktualizováno v cloudu: ${updatedInCloud}.`;
+            setStatus(msg);
+          }
+        } else {
+          setStatus('Nastala chyba při synchronizaci.', true);
+        }
+
+        smartSyncBtn.disabled = false;
+        smartSyncBtn.innerHTML = originalText;
+      });
+    }
   }
 
   function updateSyncButtonLabel(button) {
     const { enabled, accessKey } = getSyncSetupState();
-
-    // Only show as fully enabled if the checkbox is checked AND they actually provided a key
     const isFullyEnabled = enabled && accessKey.length > 0;
 
     button.classList.toggle('is-enabled', isFullyEnabled);
@@ -2531,22 +2823,152 @@
     button.setAttribute('aria-label', isFullyEnabled ? 'Cloud sync zapnutý' : 'Nastavit Cloud sync');
   }
 
-  function initializeRatingsSync(rootElement) {
+  function initializeRatingsSync(rootElement, getCurrentUserSlug) {
     const syncButton = rootElement.querySelector('#cc-sync-cloud-btn');
 
-    if (!syncButton || syncButton.dataset.ccSyncBound === 'true') {
-      return;
-    }
+    if (!syncButton || syncButton.dataset.ccSyncBound === 'true') return;
 
     syncButton.dataset.ccSyncBound = 'true';
     updateSyncButtonLabel(syncButton);
 
     syncButton.addEventListener('click', () => {
-      // We pass the update logic as a callback so it fires ONLY when the user clicks "Save"
+      const userSlug = getCurrentUserSlug();
       createSyncSetupModal(() => {
         updateSyncButtonLabel(syncButton);
-      });
+      }, userSlug);
     });
+  }
+
+  /**
+   * The main synchronization engine.
+   * If isManualCheck is true, it strictly detects conflicts and pauses. Otherwise, it autosyncs.
+   */
+  async function performCloudSync(isManualCheck = false) {
+    if (isSyncing) return { status: 'error' };
+
+    const { enabled, accessKey } = getSyncSetupState();
+    if (!enabled || !accessKey) return { status: 'error' };
+
+    isSyncing = true;
+    console.log('☁️ [CC Sync] Starting sync...');
+
+    try {
+      const localArray = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
+      const localData = {};
+      localArray.forEach((record) => {
+        if (record && record.movieId) localData[record.movieId] = record;
+      });
+
+      const cloudData = (await downloadFromCloud(accessKey)) || {};
+
+      let hasLocalChanges = false;
+      let hasCloudChanges = false;
+      const mergedData = { ...localData };
+      const stats = { addedToLocal: 0, updatedInLocal: 0, addedToCloud: 0, updatedInCloud: 0 };
+
+      // ==========================================
+      // 1. CONFLICT DETECTION (Manual Mode Only)
+      // ==========================================
+      if (isManualCheck) {
+        const conflicts = {};
+        let hasConflicts = false;
+
+        for (const [movieId, cloudRecord] of Object.entries(cloudData)) {
+          const localRecord = localData[movieId];
+
+          if (!localRecord && !cloudRecord.deleted) {
+            // It's a real record in the cloud, but totally missing here.
+            hasConflicts = true;
+            conflicts[movieId] = { local: null, cloud: cloudRecord };
+          } else if (localRecord && cloudRecord.deleted && !localRecord.deleted) {
+            // We have it, but cloud says it's deleted
+            hasConflicts = true;
+            conflicts[movieId] = { local: localRecord, cloud: cloudRecord };
+          } else if (localRecord && !cloudRecord.deleted && localRecord.rating !== cloudRecord.rating) {
+            // Ratings are just different
+            hasConflicts = true;
+            conflicts[movieId] = { local: localRecord, cloud: cloudRecord };
+          }
+        }
+
+        if (hasConflicts) {
+          return { status: 'conflict', conflicts, localData, cloudData };
+        }
+      }
+
+      // ==========================================
+      // 2. STANDARD MERGE (Timestamp Based with Tombstones)
+      // ==========================================
+      for (const [movieId, cloudRecord] of Object.entries(cloudData)) {
+        const localRecord = mergedData[movieId];
+
+        if (!localRecord) {
+          // We don't have it locally.
+          if (cloudRecord.deleted) {
+            // It's a tombstone. Ignore it, we already don't have it.
+          } else {
+            // It's a real new movie from the cloud. Download it.
+            mergedData[movieId] = cloudRecord;
+            await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, cloudRecord);
+            hasLocalChanges = true;
+            stats.addedToLocal++;
+          }
+        } else {
+          const localTime = new Date(localRecord.lastUpdate || 0).getTime();
+          const cloudTime = new Date(cloudRecord.lastUpdate || 0).getTime();
+
+          if (cloudTime > localTime) {
+            // Cloud is newer!
+            mergedData[movieId] = cloudRecord;
+
+            if (cloudRecord.deleted) {
+              // Cloud says it was deleted on another device! Remove it here.
+              await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, cloudRecord.id);
+              stats.updatedInLocal++;
+              hasLocalChanges = true;
+            } else {
+              await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, cloudRecord);
+              stats.updatedInLocal++;
+              hasLocalChanges = true;
+            }
+          } else if (localTime > cloudTime) {
+            // Local is newer! (Could be a local edit, OR a local tombstone)
+            hasCloudChanges = true;
+            stats.updatedInCloud++;
+          }
+        }
+      }
+
+      // Add entirely new local items to the cloud list
+      for (const movieId of Object.keys(localData)) {
+        if (!cloudData[movieId]) {
+          hasCloudChanges = true;
+          stats.addedToCloud++;
+        }
+      }
+
+      // ==========================================
+      // 3. UPLOAD & REFRESH
+      // ==========================================
+      if (hasCloudChanges || Object.keys(cloudData).length === 0) {
+        console.log('☁️ [CC Sync] Uploading updated data to cloud...');
+        const activeSlug = getActiveUserSlugFallback() || Object.values(localData)[0]?.userSlug;
+        await uploadToCloud(accessKey, mergedData, activeSlug);
+      }
+
+      if (hasLocalChanges) {
+        console.log('☁️ [CC Sync] Local DB updated. Refreshing UI.');
+        window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
+      }
+
+      console.log('☁️ [CC Sync] Sync complete!', stats);
+      return { status: 'success', stats, hasLocalChanges, hasCloudChanges };
+    } catch (error) {
+      console.error('☁️ [CC Sync] Failed:', error);
+      return { status: 'error' };
+    } finally {
+      isSyncing = false;
+    }
   }
 
   const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
@@ -2554,7 +2976,7 @@
   const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
   const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
 
-  function escapeHtml$2(value) {
+  function escapeHtml$3(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -2792,7 +3214,7 @@
       bodyElement.innerHTML = `
       <div class="cc-version-info-meta">
         <div class="cc-version-info-key">Nainstalováno</div>
-        <div class="cc-version-info-value">${escapeHtml$2(normalizeVersionLabel(currentVersion))}</div>
+        <div class="cc-version-info-value">${escapeHtml$3(normalizeVersionLabel(currentVersion))}</div>
       </div>
       <p class="cc-version-info-empty">Nepodařilo se načíst informace z GreasyFork.</p>
     `;
@@ -2806,25 +3228,25 @@
     const changelogItems = Array.isArray(details?.changelogItems) ? details.changelogItems : [];
 
     const changelogHtml = changelogItems.length
-      ? `<ul class="cc-version-info-list">${changelogItems.map((item) => `<li>${escapeHtml$2(item)}</li>`).join('')}</ul>`
+      ? `<ul class="cc-version-info-list">${changelogItems.map((item) => `<li>${escapeHtml$3(item)}</li>`).join('')}</ul>`
       : '<p class="cc-version-info-empty">Changelog není k dispozici.</p>';
 
     bodyElement.innerHTML = `
     <div class="cc-version-info-meta">
       <div class="cc-version-info-key">Nainstalováno</div>
-      <div class="cc-version-info-value">${escapeHtml$2(normalizeVersionLabel(currentVersion))}</div>
+      <div class="cc-version-info-value">${escapeHtml$3(normalizeVersionLabel(currentVersion))}</div>
 
       <div class="cc-version-info-key">Nejnovější</div>
-      <div class="cc-version-info-value">${escapeHtml$2(normalizeVersionLabel(latestVersion))}</div>
+      <div class="cc-version-info-value">${escapeHtml$3(normalizeVersionLabel(latestVersion))}</div>
 
       <div class="cc-version-info-key">Poslední aktualizace</div>
-      <div class="cc-version-info-value">${escapeHtml$2(formatVersionDateTime(details?.datetimeRaw))}</div>
+      <div class="cc-version-info-value">${escapeHtml$3(formatVersionDateTime(details?.datetimeRaw))}</div>
 
       <div class="cc-version-info-key">Stav</div>
       <div class="cc-version-info-value">
         <span class="cc-version-info-status ${statusClass}">
           <span class="cc-version-info-status-dot" aria-hidden="true"></span>
-          ${escapeHtml$2(statusText)}
+          ${escapeHtml$3(statusText)}
         </span>
       </div>
     </div>
@@ -3108,7 +3530,7 @@
     blackBadge.textContent = `${computedCount}`;
   }
 
-  function escapeHtml$1(value) {
+  function escapeHtml$2(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -3516,7 +3938,7 @@
         </button>`;
 
       const iconLink = row.url
-        ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${escapeHtml$1(row.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
+        ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${escapeHtml$2(row.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -3525,25 +3947,25 @@
         </a>`
         : '';
 
-      const escapedName = escapeHtml$1(row.name || 'Bez názvu');
+      const escapedName = escapeHtml$2(row.name || 'Bez názvu');
       const nameLink = row.url
-        ? `<a class="cc-ratings-table-name-link" href="${escapeHtml$1(row.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a>`
+        ? `<a class="cc-ratings-table-name-link" href="${escapeHtml$2(row.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a>`
         : `<span class="cc-ratings-table-name-link">${escapedName}</span>`;
 
       return `
       <tr>
         <td>
           <div class="cc-ratings-table-name-row">
-            <span class="cc-ratings-square ${escapeHtml$1(row.ratingSquareClass)}" aria-hidden="true"></span>
+            <span class="cc-ratings-square ${escapeHtml$2(row.ratingSquareClass)}" aria-hidden="true"></span>
             ${nameLink}
             ${detailsButton}
             ${iconLink}
           </div>
         </td>
-        <td class="cc-ratings-table-type">${escapeHtml$1(row.typeDisplay)}</td>
+        <td class="cc-ratings-table-type">${escapeHtml$2(row.typeDisplay)}</td>
         <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
-        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml$1(row.ratingText)}</td>
-        <td class="cc-ratings-table-date">${escapeHtml$1(row.date || '—')}</td>
+        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml$2(row.ratingText)}</td>
+        <td class="cc-ratings-table-date">${escapeHtml$2(row.date || '—')}</td>
       </tr>
     `;
     };
@@ -4208,7 +4630,7 @@
     }, 1800);
   }
 
-  function escapeHtml(value) {
+  function escapeHtml$1(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -4243,14 +4665,13 @@
   // MAIN INITIALIZATION
   // ==========================================
 
-  // Creates a clone of the Version Info modal specifically for Image Previews
   function getOrCreateImageModal() {
     let overlay = document.getElementById('cc-image-preview-overlay');
     if (overlay) return overlay;
 
     overlay = document.createElement('div');
     overlay.id = 'cc-image-preview-overlay';
-    overlay.className = 'cc-version-info-overlay'; // Reuse exact CSS from version modal!
+    overlay.className = 'cc-version-info-overlay';
 
     overlay.innerHTML = `
     <div class="cc-version-info-modal" style="width: min(840px, 95vw); max-height: 90vh;">
@@ -4273,7 +4694,7 @@
       overlay.classList.remove('is-open');
       setTimeout(() => {
         img.src = '';
-      }, 200); // clear image after fade out
+      }, 200);
     };
 
     closeBtn.addEventListener('click', close);
@@ -4286,7 +4707,6 @@
 
   async function addSettingsButton() {
 
-    // 1. Create and Insert Button (Vanilla JS)
     const settingsButton = document.createElement('li');
     settingsButton.className = 'cc-menu-item';
     settingsButton.innerHTML = htmlContent;
@@ -4294,10 +4714,6 @@
     const dropdown = settingsButton.querySelector('.dropdown-content');
     if (dropdown) {
       const blockEvent = (e) => e.stopPropagation();
-
-      // By using 'true' as the third argument (Capture Phase), we intercept the mouse
-      // events at the very top level and destroy them BEFORE CSFD's heavy scripts
-      // can see them and trigger the 800ms carousel lag.
       ['pointermove', 'mousemove', 'mouseover', 'mouseenter', 'wheel', 'touchmove'].forEach((evt) => {
         dropdown.addEventListener(evt, blockEvent, true);
       });
@@ -4312,24 +4728,21 @@
       else headerBar.prepend(settingsButton);
     }
 
-    // 2. Initialize Sub-Components
     initializeVersionUi(settingsButton).catch(() => undefined);
     initializeRatingsLoader(settingsButton);
-    initializeRatingsSync(settingsButton);
+    initializeRatingsSync(settingsButton, getCurrentUserSlug);
 
-    // 3. Setup Toggles & DOM Elements
     const creatorPreviewGroup = settingsButton.querySelector('#cc-creator-preview-group');
     const creatorPreviewGroupBody = settingsButton.querySelector('#cc-creator-preview-group-body');
     const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
 
-    // Generic Toggle Binder
     const toggles = [];
     function bindToggle(selector, storageKey, defaultValue, eventName, toastOn, toastOff, callback = null) {
       const element = settingsButton.querySelector(selector);
       if (!element) return;
 
       element.checked = getBoolSetting(storageKey, defaultValue);
-      toggles.push({ element, storageKey, defaultValue }); // Store for reset logic
+      toggles.push({ element, storageKey, defaultValue });
 
       element.addEventListener('change', () => {
         localStorage.setItem(storageKey, String(element.checked));
@@ -4340,7 +4753,17 @@
       return element;
     }
 
-    // UI Syncer for Creator Previews
+    // --- Creator Preview Cache Setting ---
+    const cacheSelect = settingsButton.querySelector('#cc-creator-preview-cache-hours');
+    if (cacheSelect) {
+      // Default to 24 hours if not set
+      cacheSelect.value = localStorage.getItem('cc_creator_preview_cache_hours') || '24';
+      cacheSelect.addEventListener('change', () => {
+        localStorage.setItem('cc_creator_preview_cache_hours', cacheSelect.value);
+        showSettingsInfoToast('Délka mezipaměti uložena.');
+      });
+    }
+
     const updateCreatorPreviewUI = () => {
       const enabled = getBoolSetting(CREATOR_PREVIEW_ENABLED_KEY, true);
       const showBirth = getBoolSetting(CREATOR_PREVIEW_SHOW_BIRTH_KEY, true);
@@ -4352,7 +4775,6 @@
       if (birthToggle) birthToggle.disabled = !enabled;
       if (photoToggle) photoToggle.disabled = !enabled;
 
-      // ADD THIS: Visually disable the sub-menu container
       if (creatorPreviewGroupBody) {
         creatorPreviewGroupBody.classList.toggle('is-disabled', !enabled);
       }
@@ -4362,7 +4784,6 @@
       );
     };
 
-    // Bind All Toggles
     bindToggle(
       '#cc-enable-gallery-image-links',
       GALLERY_IMAGE_LINKS_ENABLED_KEY,
@@ -4431,26 +4852,6 @@
       'Průměr oblíbených zapnut.',
       'Průměr oblíbených vypnut.',
     );
-
-    // hide reviews group elements
-    const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
-    const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
-    const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
-    const hideListInput = settingsButton.querySelector('#cc-hide-selected-reviews-list');
-    const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
-
-    // UI updater for hide-reviews group
-    const updateHideReviewsUI = () => {
-      const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
-      if (hideListInput) hideListInput.disabled = !enabled;
-      if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
-
-      // ADD THIS: Visually disable the sub-menu container
-      if (hideGroupBody) {
-        hideGroupBody.classList.toggle('is-disabled', !enabled);
-      }
-    };
-
     bindToggle(
       '#cc-add-ratings-date',
       ADD_RATINGS_DATE_KEY,
@@ -4459,17 +4860,113 @@
       'Zobrazení data hodnocení zapnuto.',
       'Zobrazení data hodnocení vypnuto.',
     );
+
+    // ==========================================
+    // MODERN PILL LOGIC FOR REVIEWS
+    // ==========================================
+    const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
+    const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
+    const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
+
+    const pillContainer = settingsButton.querySelector('#cc-hide-reviews-pill-container');
+    const pillsWrapper = settingsButton.querySelector('#cc-hide-reviews-pills');
+    const pillInput = settingsButton.querySelector('#cc-hide-reviews-pill-input');
+    const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
+
+    let currentPills = [];
+
+    try {
+      const saved = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
+      if (saved) currentPills = JSON.parse(saved);
+    } catch (e) {}
+
+    const renderPills = () => {
+      if (!pillsWrapper) return;
+      pillsWrapper.innerHTML = '';
+      currentPills.forEach((pill, index) => {
+        const pillEl = document.createElement('span');
+        pillEl.className = 'cc-pill';
+        pillEl.textContent = pill;
+
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'cc-pill-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.onclick = (e) => {
+          e.stopPropagation(); // Don't trigger the container click
+          currentPills.splice(index, 1);
+          renderPills();
+        };
+
+        pillEl.appendChild(removeBtn);
+        pillsWrapper.appendChild(pillEl);
+      });
+    };
+
+    const addPill = (value) => {
+      const trimmed = value.trim();
+      if (trimmed && !currentPills.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
+        currentPills.push(trimmed);
+        renderPills();
+      }
+      if (pillInput) pillInput.value = '';
+    };
+
+    if (pillInput) {
+      pillInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+          e.preventDefault();
+          addPill(pillInput.value);
+        } else if (e.key === 'Backspace' && pillInput.value === '' && currentPills.length > 0) {
+          // Delete the last pill if input is empty
+          currentPills.pop();
+          renderPills();
+        }
+      });
+
+      pillInput.addEventListener('blur', () => {
+        addPill(pillInput.value);
+      });
+    }
+
+    if (pillContainer) {
+      pillContainer.addEventListener('click', () => {
+        if (!pillContainer.classList.contains('is-disabled')) {
+          pillInput?.focus();
+        }
+      });
+    }
+
+    const updateHideReviewsUI = () => {
+      const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
+      if (pillInput) pillInput.disabled = !enabled;
+      if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
+      if (pillContainer) pillContainer.classList.toggle('is-disabled', !enabled);
+      if (hideGroupBody) hideGroupBody.classList.toggle('is-disabled', !enabled);
+    };
+
+    renderPills();
+
     bindToggle(
       '#cc-hide-selected-reviews',
       HIDE_SELECTED_REVIEWS_KEY,
       false,
-      null,
+      'cc-hide-selected-reviews-updated', // Dispatch event instantly on toggle
       'Filtrování recenzí zapnuto.',
       'Filtrování recenzí vypnuto.',
       updateHideReviewsUI,
     );
 
-    // collapse logic for hide reviews group
+    if (hideApplyBtn) {
+      hideApplyBtn.addEventListener('click', () => {
+        if (pillInput && pillInput.value.trim()) {
+          addPill(pillInput.value);
+        }
+        localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(currentPills));
+        window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+        showSettingsInfoToast('Seznam skrytých uživatelů byl uložen.');
+      });
+    }
+
     const setHideGroupCollapsedState = (collapsed) => {
       if (hideGroup) hideGroup.classList.toggle('is-collapsed', collapsed);
       if (hideGroupToggle) hideGroupToggle.setAttribute('aria-expanded', String(!collapsed));
@@ -4485,37 +4982,9 @@
       });
     }
 
-    const applyHideList = () => {
-      if (!hideListInput) return;
-      const list = hideListInput.value
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
-      localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(list));
-      window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
-    };
-
-    if (hideListInput) {
-      try {
-        const saved = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
-        hideListInput.value = saved ? JSON.parse(saved).join(', ') : '';
-      } catch (e) {
-        hideListInput.value = '';
-      }
-      hideListInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          applyHideList();
-        }
-      });
-      if (hideApplyBtn) hideApplyBtn.addEventListener('click', applyHideList);
-    }
-
-    // Initialize UI State
     updateCreatorPreviewUI();
     updateHideReviewsUI();
 
-    // Collapsible Preview Section
     const setPreviewCollapsedState = (collapsed) => {
       if (creatorPreviewGroup) creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
       if (creatorPreviewGroupToggle) creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
@@ -4535,16 +5004,44 @@
     const syncControlsFromStorage = () => {
       toggles.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
       updateCreatorPreviewUI();
+      updateHideReviewsUI();
     };
 
     settingsButton.querySelector('#cc-maint-reset-btn')?.addEventListener('click', () => {
-      localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-      localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
-      localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-      localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
+      if (!confirm('Opravdu chcete vyresetovat všechna nastavení (tlačítka a skryté uživatele) do výchozího stavu?'))
+        return;
+
+      // 1. Remove all known configuration keys from LocalStorage
+      const keysToRemove = [
+        GALLERY_IMAGE_LINKS_ENABLED_KEY,
+        SHOW_ALL_CREATOR_TABS_KEY,
+        CREATOR_PREVIEW_ENABLED_KEY,
+        CREATOR_PREVIEW_SHOW_BIRTH_KEY,
+        CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
+        CREATOR_PREVIEW_CACHE_HOURS_KEY,
+        CLICKABLE_HEADER_BOXES_KEY,
+        RATINGS_ESTIMATE_KEY,
+        RATINGS_FROM_FAVORITES_KEY,
+        ADD_RATINGS_DATE_KEY,
+        HIDE_SELECTED_REVIEWS_KEY,
+        HIDE_SELECTED_REVIEWS_LIST_KEY,
+        HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
+      ];
+
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+      // 2. Clear the hidden users pill array and visually clear the container
+      currentPills = [];
+      renderPills();
+
+      // 3. Force all UI toggles to snap back to their default states
       syncControlsFromStorage();
+
+      // 4. Dispatch events to tell the active page to update itself (e.g. unhide reviews)
       window.dispatchEvent(new CustomEvent('cc-gallery-image-links-toggled', { detail: { enabled: true } }));
-      showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
+      window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+
+      showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
     });
 
     settingsButton.querySelector('#cc-maint-clear-db-btn')?.addEventListener('click', async () => {
@@ -4602,10 +5099,10 @@
           .map(
             ({ key, value }) => `
         <tr>
-          <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
-          <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
+          <td class="cc-lc-key" title="${escapeHtml$1(key)}">${escapeHtml$1(key)}</td>
+          <td class="cc-lc-value" title="${escapeHtml$1(String(value))}">${escapeHtml$1(formatLocalStorageValue(value))}</td>
           <td class="cc-lc-action">
-             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
+             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml$1(key)}">Smazat</button>
           </td>
         </tr>`,
           )
@@ -4712,20 +5209,13 @@
     refreshBadgesSafely();
     window.setTimeout(refreshBadgesSafely, 1200);
 
-    window.addEventListener('cc-ratings-updated', () => {
-      invalidateRatingsModalCache();
-      refreshBadgesSafely();
-    });
-
     // --- IMAGE PREVIEW MODAL LOGIC ---
     settingsButton.querySelectorAll('.cc-info-icon[data-image-url]').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        // Prevent default button behavior so CSFD search/forms don't repaint or submit
         e.preventDefault();
         e.stopPropagation();
 
         const url = btn.getAttribute('data-image-url');
-        // Optional: you can extract the row label to put it in the modal title!
         const titleText =
           btn.closest('.cc-setting-row')?.querySelector('.cc-setting-label')?.textContent || 'Ukázka funkce';
 
@@ -4734,14 +5224,36 @@
           modal.querySelector('#cc-image-modal-title').textContent = titleText;
           modal.querySelector('#cc-image-modal-img').src = url;
 
-          // Show the modal
           modal.classList.add('is-open');
         }
       });
     });
 
-    // use the raw DOM element; helper no longer depends on jQuery
     initializeSettingsMenuHover(settingsButton);
+
+    let autoSyncTimeout;
+    window.addEventListener('cc-ratings-updated', () => {
+      invalidateRatingsModalCache();
+      refreshBadgesSafely();
+
+      clearTimeout(autoSyncTimeout);
+
+      autoSyncTimeout = setTimeout(() => {
+        performCloudSync();
+      }, 3000);
+    });
+
+    const SYNC_COOLDOWN_MS = 1000 * 60 * 60 * 2; // 2 hours
+    const lastAutoSync = Number.parseInt(localStorage.getItem('cc_last_startup_sync') || '0', 10);
+
+    if (Date.now() - lastAutoSync > SYNC_COOLDOWN_MS) {
+      console.log('☁️ [CC Sync] Running startup background sync...');
+      localStorage.setItem('cc_last_startup_sync', String(Date.now()));
+
+      setTimeout(() => {
+        performCloudSync();
+      }, 2500);
+    }
   }
 
   // Utility to enable/disable controls by IDs based on login state
@@ -4761,968 +5273,311 @@
     });
   }
 
-  // ==========================================
-  // 1. DATA STRUCTURES (TYPES)
-  // ==========================================
-
-  /**
-   * @typedef {Object} CreatorPreviewData
-   * @property {string|undefined} imageUrl - Normalized URL of the best available photo.
-   * @property {string|undefined} birthInfo - Extracted birth date and location text.
-   * @property {string|undefined} deathAgeInfo - Age at death, if applicable.
-   * @property {string|undefined} birthFlagUrl - URL to the country flag image.
-   * @property {string|undefined} birthFlagAlt - Alt text for the country flag.
-   * @property {string|undefined} photoFromInfo - Source/copyright info for the photo.
-   * @property {'movie'|'copyright'|undefined} photoFromKind - Type of photo source.
-   * @property {string|undefined} photoFromYear - Year the photo was taken (if from a movie).
-   */
-
-  // ==========================================
-  // 2. CONFIGURATION & STATE
-  // ==========================================
-
+  const CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';
   const CREATOR_LINK_SELECTOR = 'a[href*="/tvurce/"], a[href*="/tvorca/"]';
-  const MAX_CREATORS_IN_CACHE = 24;
-  const MAX_IMAGE_CANDIDATES = 6;
-  const PREVIEW_OFFSET_X = 18;
-  const PREVIEW_OFFSET_Y = 18;
 
-  // DOM Elements
   let previewRoot;
-  let previewImage;
-  let previewName;
-  let previewNameText;
-  let previewNameFlag;
-  let previewMeta;
-  let previewMetaBirth;
-  let previewMetaBirthText;
-  let previewMetaBirthAgeInline;
-  let previewMetaAge;
-  let previewMetaPhotoFrom;
-  let previewMetaPhotoSource;
-  let previewMetaPhotoYear;
-
-  // Interaction State
   let activeAnchor;
-  let pointerX = 0;
-  let pointerY = 0;
-  let hoverToken = 0; // Used to prevent race conditions when hovering multiple links quickly
+  let hoverToken = 0;
+  let mouseX = 0,
+    mouseY = 0;
 
-  // Network & Data Caches
-  const creatorPreviewCache = new Map();
-  const creatorCacheOrder = [];
-  const creatorFetchPromises = new Map();
-  const failedImageUrls = new Set();
-  const imageProbeResultCache = new Map();
+  // Tracker for active network requests to prevent duplicate fetches
+  const inflightRequests = new Map();
 
-  // ==========================================
-  // 3. UTILITIES & PREFERENCES
-  // ==========================================
+  // Escape HTML to prevent XSS from weird CSFD data
+  const escapeHtml = (str) =>
+    String(str || '').replace(
+      /[&<>"']/g,
+      (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m],
+    );
 
-  /** @returns {boolean} Whether the preview feature is enabled in local storage. */
-  function isCreatorPreviewEnabled() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  /** @returns {boolean} Whether birth information should be shown. */
-  function isCreatorPreviewBirthVisible() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  /** @returns {boolean} Whether photo source information should be shown. */
-  function isCreatorPreviewPhotoFromVisible() {
-    const persistedValue = localStorage.getItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
-    return persistedValue === null ? true : persistedValue === 'true';
-  }
-
-  /**
-   * Collapses multiple spaces into a single space and trims the string.
-   * @param {string|null|undefined} value
-   * @returns {string}
-   */
-  function normalizeText(value) {
-    return String(value || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-  }
-
-  // ==========================================
-  // 4. DOM MANAGEMENT & UI
-  // ==========================================
-
-  /**
-   * Bootstraps the DOM elements required for the preview card.
-   * Only runs once; exits early if the root element already exists.
-   */
-  function ensurePreviewElements() {
-    if (previewRoot) {
-      return;
-    }
-
+  function ensurePreview() {
+    if (previewRoot) return;
     previewRoot = document.createElement('div');
     previewRoot.className = 'cc-creator-preview';
-    previewRoot.hidden = true;
-
-    const card = document.createElement('div');
-    card.className = 'cc-creator-preview-card';
-
-    previewImage = document.createElement('img');
-    previewImage.className = 'cc-creator-preview-image';
-    previewImage.alt = '';
-    previewImage.loading = 'lazy';
-
-    previewName = document.createElement('div');
-    previewName.className = 'cc-creator-preview-name';
-
-    previewNameText = document.createElement('span');
-
-    previewNameFlag = document.createElement('img');
-    previewNameFlag.className = 'cc-creator-preview-name-flag';
-    previewNameFlag.alt = '';
-    previewNameFlag.hidden = true;
-
-    previewName.appendChild(previewNameText);
-    previewName.appendChild(previewNameFlag);
-
-    previewMeta = document.createElement('div');
-    previewMeta.className = 'cc-creator-preview-meta';
-
-    previewMetaBirth = document.createElement('div');
-    previewMetaBirth.className = 'cc-creator-preview-meta-line cc-creator-preview-meta-birth';
-
-    previewMetaBirthText = document.createElement('span');
-    previewMetaBirthAgeInline = document.createElement('span');
-    previewMetaBirthAgeInline.className = 'cc-creator-preview-meta-birth-age-inline';
-
-    previewMetaBirth.appendChild(previewMetaBirthText);
-    previewMetaBirth.appendChild(previewMetaBirthAgeInline);
-
-    previewMetaAge = document.createElement('div');
-    previewMetaAge.className = 'cc-creator-preview-meta-line cc-creator-preview-meta-age';
-
-    previewMetaPhotoFrom = document.createElement('div');
-    previewMetaPhotoFrom.className = 'cc-creator-preview-meta-line cc-creator-preview-meta-photo';
-
-    previewMetaPhotoSource = document.createElement('span');
-    previewMetaPhotoSource.className = 'cc-creator-preview-meta-photo-source';
-
-    previewMetaPhotoYear = document.createElement('span');
-    previewMetaPhotoYear.className = 'cc-creator-preview-meta-photo-year';
-
-    previewMetaPhotoFrom.appendChild(previewMetaPhotoSource);
-    previewMetaPhotoFrom.appendChild(previewMetaPhotoYear);
-
-    previewMeta.appendChild(previewMetaBirth);
-    previewMeta.appendChild(previewMetaAge);
-    previewMeta.appendChild(previewMetaPhotoFrom);
-
-    card.appendChild(previewImage);
-    card.appendChild(previewName);
-    card.appendChild(previewMeta);
-    previewRoot.appendChild(card);
     document.body.appendChild(previewRoot);
   }
 
-  /** Hides the preview card and cleans up state classes. */
   function hidePreview() {
-    if (!previewRoot) {
-      return;
-    }
-
-    previewRoot.hidden = true;
-    previewRoot.classList.remove('is-visible');
-    previewRoot.classList.remove('is-no-image');
+    if (previewRoot) previewRoot.classList.remove('is-visible');
   }
 
-  /**
-   * Calculates and applies the X/Y position of the preview card relative to the cursor.
-   * Keeps the card bounded within the viewport margins.
-   */
   function positionPreview() {
-    if (!previewRoot || previewRoot.hidden) {
-      return;
-    }
-
-    const margin = 10; // Distance from the edge of the viewport
+    if (!previewRoot || !previewRoot.classList.contains('is-visible')) return;
     const rect = previewRoot.getBoundingClientRect();
-    const maxX = Math.max(margin, window.innerWidth - rect.width - margin);
-    const maxY = Math.max(margin, window.innerHeight - rect.height - margin);
-
-    const desiredX = pointerX + PREVIEW_OFFSET_X;
-    const desiredY = pointerY + PREVIEW_OFFSET_Y;
-
-    const x = Math.min(maxX, Math.max(margin, desiredX));
-    const y = Math.min(maxY, Math.max(margin, desiredY));
-
+    const x = Math.min(window.innerWidth - rect.width - 10, Math.max(10, mouseX + 18));
+    const y = Math.min(window.innerHeight - rect.height - 10, Math.max(10, mouseY + 18));
     previewRoot.style.left = `${x}px`;
     previewRoot.style.top = `${y}px`;
   }
 
-  // ==========================================
-  // 5. URL & CACHE MANAGEMENT
-  // ==========================================
+  // Age calculator (Handles normal life and calculating age at death)
+  function calculateAge(birthStr, deathStr) {
+    const extractDate = (str) => {
+      const m = str?.match(/(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/);
+      return m ? new Date(m[3], m[2] - 1, m[1]) : null;
+    };
+    const bDate = extractDate(birthStr);
+    if (!bDate) return null;
 
-  /**
-   * Cleans up creator URLs to point to their overview page for consistent fetching.
-   * Accounts for both CZ (.cz/prehled/) and SK (.sk/prehlad/) domains.
-   * @param {string|null} href
-   * @returns {string|undefined} Normalized URL
-   */
-  function normalizeCreatorUrl(href) {
-    if (!href) {
-      return undefined;
+    const endDate = extractDate(deathStr) || new Date();
+    let age = endDate.getFullYear() - bDate.getFullYear();
+    if (
+      endDate.getMonth() < bDate.getMonth() ||
+      (endDate.getMonth() === bDate.getMonth() && endDate.getDate() < bDate.getDate())
+    ) {
+      age--;
     }
+    return age;
+  }
+
+  // Cleans up expired cache items randomly so localStorage doesn't bloat
+  function cleanExpiredCache() {
+    const maxAgeMs = parseInt(localStorage.getItem(CACHE_HOURS_KEY) || '24', 10) * 60 * 60 * 1000;
+    const now = Date.now();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith('cc_creator_')) {
+        // V5 cache bump: Instantly removes older versions with transparent pixel bugs
+        if (!key.startsWith('cc_creator_v5_')) {
+          localStorage.removeItem(key);
+          continue;
+        }
+        try {
+          const item = JSON.parse(localStorage.getItem(key));
+          if (now - item.timestamp > maxAgeMs) localStorage.removeItem(key);
+        } catch {
+          localStorage.removeItem(key);
+        }
+      }
+    }
+  }
+
+  async function fetchCreatorData(url) {
+    const slug = url.match(/\/(tvurce|tvorca)\/(\d+-[^/]+)/i)?.[2];
+    if (!slug) return null;
+
+    // 1. Check persistent Cache (Using v5 prefix)
+    const cacheKey = `cc_creator_v5_${slug}`;
+    const maxAgeMs = parseInt(localStorage.getItem(CACHE_HOURS_KEY) || '24', 10) * 60 * 60 * 1000;
 
     try {
-      const url = new URL(href, location.origin);
-      url.search = '';
-      url.hash = '';
-      // Matches patterns like /tvurce/123-john-doe/
-      const pathname = url.pathname.match(/^\/(tvurce|tvorca)\/\d+-[^/]+\//i);
-      if (!pathname) {
-        return undefined;
-      }
+      const cached = JSON.parse(localStorage.getItem(cacheKey));
+      if (cached && Date.now() - cached.timestamp < maxAgeMs) return cached.data;
+    } catch (e) {}
 
-      const overviewSegment = location.hostname.endsWith('.sk') ? 'prehlad' : 'prehled';
-      url.pathname = `${pathname[0]}${overviewSegment}/`;
-      return url.toString();
-    } catch {
-      return undefined;
-    }
-  }
-
-  /**
-   * Extracts the unique ID/slug from a normalized creator URL.
-   * @param {string} url
-   * @returns {string|undefined}
-   */
-  function getCreatorSlugFromUrl(url) {
-    const match = String(url || '').match(/\/(tvurce|tvorca)\/(\d+-[^/]+)\//i);
-    return match ? match[2] : undefined;
-  }
-
-  /**
-   * Saves fetched creator data to an LRU (Least Recently Used) cache.
-   * @param {string} slug
-   * @param {CreatorPreviewData} data
-   */
-  function upsertCreatorCache(slug, data) {
-    if (!slug || !data) {
-      return;
+    // 2. Prevent duplicate fetches if already fetching this exact creator
+    if (inflightRequests.has(slug)) {
+      return await inflightRequests.get(slug);
     }
 
-    creatorPreviewCache.set(slug, {
-      imageUrl: data.imageUrl,
-      birthInfo: data.birthInfo,
-      deathAgeInfo: data.deathAgeInfo,
-      birthFlagUrl: data.birthFlagUrl,
-      birthFlagAlt: data.birthFlagAlt,
-      photoFromInfo: data.photoFromInfo,
-      photoFromKind: data.photoFromKind,
-      photoFromYear: data.photoFromYear,
-    });
+    // 3. Fetch fresh data and save the promise to the inflight map
+    const fetchPromise = (async () => {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const doc = new DOMParser().parseFromString(await res.text(), 'text/html');
 
-    // LRU Eviction logic
-    const existingIndex = creatorCacheOrder.indexOf(slug);
-    if (existingIndex >= 0) {
-      creatorCacheOrder.splice(existingIndex, 1);
-    }
-    creatorCacheOrder.push(slug);
+        // Scrape Data cleanly
+        const name = doc.querySelector('h1')?.textContent.trim() || 'Tvůrce';
+        const imgEl = doc.querySelector('.creator-profile figure img, .creator-profile-header figure img');
+        let img = imgEl?.src || null;
 
-    while (creatorCacheOrder.length > MAX_CREATORS_IN_CACHE) {
-      const oldest = creatorCacheOrder.shift();
-      if (oldest) {
-        creatorPreviewCache.delete(oldest);
-      }
-    }
-  }
-
-  /**
-   * Parses a standard HTML srcset attribute into an array of individual URLs.
-   * @param {string|null} srcset
-   * @returns {string[]}
-   */
-  function extractUrlsFromSrcset(srcset) {
-    if (!srcset) {
-      return [];
-    }
-
-    return srcset
-      .split(',')
-      .map((entry) => entry.trim().split(/\s+/)[0])
-      .filter(Boolean);
-  }
-
-  /**
-   * @param {string} rawUrl
-   * @returns {string|undefined}
-   */
-  function normalizeImageUrl(rawUrl) {
-    if (!rawUrl) {
-      return undefined;
-    }
-
-    try {
-      return new URL(rawUrl, location.origin).toString();
-    } catch {
-      return undefined;
-    }
-  }
-
-  // ==========================================
-  // 6. HTML PARSING & SCRAPING
-  // ==========================================
-
-  /**
-   * Scores an image URL based on its dimensions, preferring sizes closest to 100x132.
-   * Lower score is better.
-   * @param {string} url
-   * @returns {number}
-   */
-  function getImageSizeScore(url) {
-    if (!url) {
-      return 9999;
-    }
-
-    // Matches explicitly defined width/height in URL (e.g., /w100h132crop/)
-    const preciseMatch = url.match(/\/w(\d+)h(\d+)(?:crop)?\//i);
-    if (preciseMatch) {
-      const width = Number.parseInt(preciseMatch[1], 10);
-      const height = Number.parseInt(preciseMatch[2], 10);
-      return Math.abs(width - 100) + Math.abs(height - 132);
-    }
-
-    // Matches width-only parameters (e.g., /w100/)
-    const widthMatch = url.match(/\/w(\d+)(?:h\d+)?\//i);
-    if (widthMatch) {
-      const width = Number.parseInt(widthMatch[1], 10);
-      return Math.abs(width - 100) + 120; // +120 penalty for missing height
-    }
-
-    return 2000; // Base penalty for unrecognizable sizes
-  }
-
-  /**
-   * Strips resizing parameters from an image URL to get the full-res original.
-   * @param {string} url
-   * @returns {string|undefined}
-   */
-  function toOriginalVariant(url) {
-    if (!url) {
-      return undefined;
-    }
-    return url.replace(/\/cache\/resized\/w\d+h\d+(?:crop)?\//i, '/').replace(/\/cache\/resized\/w\d+\//i, '/');
-  }
-
-  /**
-   * Scrapes the DOM for all potential creator profile images, including fallbacks (OG/Twitter).
-   * @param {Document} doc - The parsed HTML document of the creator's page.
-   * @returns {string[]} Sorted array of image candidates.
-   */
-  function pickCreatorImageCandidates(doc) {
-    const candidates = [];
-    const seen = new Set();
-
-    const pushCandidate = (candidateUrl) => {
-      const normalized = normalizeImageUrl(candidateUrl);
-      if (!normalized || seen.has(normalized)) {
-        return;
-      }
-
-      seen.add(normalized);
-      candidates.push(normalized);
-
-      const originalVariant = normalizeImageUrl(toOriginalVariant(normalized));
-      if (originalVariant && !seen.has(originalVariant)) {
-        seen.add(originalVariant);
-        candidates.push(originalVariant);
-      }
-    };
-
-    const profileImage =
-      doc.querySelector('.creator-profile-header figure img, .creator-profile figure img') ||
-      doc.querySelector(
-        '.creator-profile-header img[src*="/creator/photos/"], .creator-profile img[src*="/creator/photos/"]',
-      );
-
-    if (profileImage) {
-      pushCandidate(profileImage.getAttribute('src'));
-      extractUrlsFromSrcset(profileImage.getAttribute('srcset')).forEach(pushCandidate);
-
-      const sourceUrls = Array.from(profileImage.closest('picture')?.querySelectorAll('source') || []).flatMap((source) =>
-        extractUrlsFromSrcset(source.getAttribute('srcset')),
-      );
-      sourceUrls.forEach(pushCandidate);
-    }
-
-    pushCandidate(doc.querySelector('meta[property="og:image"]')?.getAttribute('content'));
-    pushCandidate(doc.querySelector('meta[name="twitter:image"]')?.getAttribute('content'));
-
-    return candidates
-      .filter((url) => /\/creator\//i.test(url)) // Ensure it's actually a creator image
-      .sort((a, b) => getImageSizeScore(a) - getImageSizeScore(b))
-      .slice(0, MAX_IMAGE_CANDIDATES);
-  }
-
-  /**
-   * Removes whitespace from a date string (e.g., "1. 1. 2000" -> "1.1.2000").
-   * @param {string} value
-   * @returns {string}
-   */
-  function normalizeDateToken(value) {
-    return normalizeText(value).replace(/\s*/g, '');
-  }
-
-  /**
-   * Attempts to locate and parse a standard European date format from a text node.
-   * @param {Element|undefined} paragraph
-   * @returns {string|undefined}
-   */
-  function extractDateFromParagraph(paragraph) {
-    if (!paragraph) {
-      return undefined;
-    }
-
-    const line = normalizeText(paragraph.textContent || '');
-    if (!line) {
-      return undefined;
-    }
-
-    // Matches formats like "1.1.2000" or "01. 12. 1995"
-    const dateMatch = line.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4})/);
-    if (dateMatch) {
-      return normalizeDateToken(dateMatch[1]);
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Computes a person's current age based on their birth date.
-   * @param {string} birthInfo
-   * @returns {string|undefined} Age string (e.g., "45 let")
-   */
-  function calculateCurrentAgeFromBirthInfo(birthInfo) {
-    const line = normalizeText(birthInfo || '');
-    const match = line.match(/(\d{1,2})\.(\d{1,2})\.(\d{4})/);
-    if (!match) {
-      return undefined;
-    }
-
-    const day = Number.parseInt(match[1], 10);
-    const month = Number.parseInt(match[2], 10);
-    const year = Number.parseInt(match[3], 10);
-    if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) {
-      return undefined;
-    }
-
-    const now = new Date();
-    let age = now.getFullYear() - year;
-    const hadBirthdayThisYear = now.getMonth() + 1 > month || (now.getMonth() + 1 === month && now.getDate() >= day);
-    if (!hadBirthdayThisYear) {
-      age -= 1;
-    }
-
-    return age >= 0 ? `${age} let` : undefined;
-  }
-
-  /**
-   * Scrapes birth date, death date, and nationality flag from the creator's profile page.
-   * @param {Document} doc
-   * @returns {Partial<CreatorPreviewData>}
-   */
-  function extractLifeInfo(doc) {
-    const detailsParagraphs = Array.from(doc.querySelectorAll('.creator-profile-details p'));
-    if (detailsParagraphs.length === 0) {
-      return {
-        birthInfo: undefined,
-        deathAgeInfo: undefined,
-        birthFlagUrl: undefined,
-        birthFlagAlt: undefined,
-      };
-    }
-
-    // Look for language-specific keywords for birth and death
-    const birthParagraph =
-      detailsParagraphs.find((paragraph) => /\bnar\.|\bnaroden|\bborn\b/i.test(normalizeText(paragraph.textContent))) ||
-      detailsParagraphs[0];
-
-    const deathParagraph = detailsParagraphs.find((paragraph) =>
-      /\bzem\.|\bzomr|\bdied\b/i.test(normalizeText(paragraph.textContent)),
-    );
-
-    const birthDate = extractDateFromParagraph(birthParagraph);
-    const deathDate = extractDateFromParagraph(deathParagraph);
-    const deathAge = normalizeText(deathParagraph?.querySelector('.info')?.textContent || '').replace(/^\((.*)\)$/, '$1');
-
-    let birthInfo;
-    if (birthDate && deathDate) {
-      birthInfo = `${birthDate} → ${deathDate}`;
-    } else if (birthDate) {
-      birthInfo = `nar. ${birthDate}`;
-    } else {
-      // Fallback: Clone the node and remove the location tag to just get the text
-      const birthClone = birthParagraph?.cloneNode(true);
-      if (birthClone) {
-        birthClone.querySelector('.info-place')?.remove();
-        birthInfo = normalizeText(birthClone.textContent || '');
-      }
-    }
-
-    const flagImage =
-      birthParagraph?.querySelector('.info-place img.flag') ||
-      detailsParagraphs[0]?.querySelector('.info-place img.flag') ||
-      doc.querySelector('.creator-profile-details .info-place img.flag');
-
-    return {
-      birthInfo,
-      deathAgeInfo: deathAge || undefined,
-      birthFlagUrl: normalizeImageUrl(flagImage?.getAttribute('src')),
-      birthFlagAlt: normalizeText(flagImage?.getAttribute('title') || flagImage?.getAttribute('alt') || ''),
-    };
-  }
-
-  /**
-   * Scrapes metadata about where the profile photo came from (e.g., copyright or movie still).
-   * @param {Document} doc
-   * @returns {Partial<CreatorPreviewData>}
-   */
-  function extractPhotoFromInfo(doc) {
-    const footer = doc.querySelector('.creator-profile-footer');
-    if (!footer) {
-      return {
-        photoFromInfo: undefined,
-        photoFromKind: undefined,
-        photoFromYear: undefined,
-      };
-    }
-
-    const movieAnchor = footer.querySelector('a.item-movie');
-    if (movieAnchor) {
-      const movieTitle = normalizeText(movieAnchor.textContent);
-      const siblingYear =
-        movieAnchor.nextElementSibling instanceof Element && movieAnchor.nextElementSibling.matches('.item-movie-rest')
-          ? movieAnchor.nextElementSibling
-          : undefined;
-      const movieYear = normalizeText(
-        footer.querySelector('.item-movie-rest')?.textContent || siblingYear?.textContent || '',
-      );
-
-      if (movieTitle) {
-        return {
-          photoFromInfo: movieTitle,
-          photoFromKind: 'movie',
-          photoFromYear: movieYear,
-        };
-      }
-    }
-
-    const sourceText = normalizeText(footer.querySelector('.item-text')?.textContent || '');
-    if (!sourceText) {
-      return {
-        photoFromInfo: undefined,
-        photoFromKind: undefined,
-        photoFromYear: undefined,
-      };
-    }
-
-    // Clean up typical copyright text noise
-    let normalizedSource = sourceText.replace(/^(photo|foto)\s*/i, '').trim() || sourceText;
-    normalizedSource = normalizedSource.replace(/^([©Ⓒ]|\(c\)|copyright)\s*/i, '').trim() || normalizedSource;
-    return {
-      photoFromInfo: normalizedSource,
-      photoFromKind: 'copyright',
-      photoFromYear: undefined,
-    };
-  }
-
-  // ==========================================
-  // 7. NETWORK & IMAGE VALIDATION
-  // ==========================================
-
-  /**
-   * Pre-loads an image to verify it actually resolves and has valid dimensions.
-   * Prevents rendering 1x1 tracking pixels or broken images.
-   * @param {string} url
-   * @param {number} timeoutMs
-   * @returns {Promise<boolean>}
-   */
-  function probeImageUrl(url, timeoutMs = 5000) {
-    if (!url) {
-      return Promise.resolve(false);
-    }
-
-    if (failedImageUrls.has(url)) {
-      return Promise.resolve(false);
-    }
-
-    if (imageProbeResultCache.has(url)) {
-      return Promise.resolve(imageProbeResultCache.get(url) === true);
-    }
-
-    return new Promise((resolve) => {
-      const probe = new Image();
-      let done = false;
-
-      const finish = (isValid) => {
-        if (done) {
-          return;
+        // Reject CSFD's 1x1 transparent placeholder GIFs so we correctly show the native empty silhouette
+        if (img && (img.startsWith('data:image') || imgEl.classList.contains('empty-image'))) {
+          img = null;
         }
 
-        done = true;
-        imageProbeResultCache.set(url, isValid);
-        resolve(isValid);
-      };
+        const flag = doc.querySelector('.creator-profile-details img.flag')?.src || null;
 
-      const timeout = window.setTimeout(() => {
-        finish(false);
-      }, timeoutMs);
+        // Life details
+        const details = Array.from(doc.querySelectorAll('.creator-profile-details p'));
+        const birthP = details.find((p) => /nar\.|born|naroden/i.test(p.textContent));
+        const deathP = details.find((p) => /zem\.|zomr|died/i.test(p.textContent));
 
-      probe.onload = () => {
-        window.clearTimeout(timeout);
-        const validDimensions = Number.isFinite(probe.naturalWidth) && Number.isFinite(probe.naturalHeight);
-        // Reject images that are smaller than 8x8 (likely tracking pixels)
-        finish(validDimensions && probe.naturalWidth > 8 && probe.naturalHeight > 8);
-      };
+        // Clear out locations AND native CSFD age spans (.info) so we don't duplicate them
+        const cleanLifeText = (el) => {
+          if (!el) return null;
+          const clone = el.cloneNode(true);
+          clone.querySelector('.info-place')?.remove();
+          clone.querySelectorAll('.info').forEach((info) => info.remove());
+          return clone.textContent.replace(/\s+/g, ' ').trim();
+        };
 
-      probe.onerror = () => {
-        window.clearTimeout(timeout);
-        finish(false);
-      };
+        // Photo details
+        const footer = doc.querySelector('.creator-profile-footer');
+        const movieL = footer?.querySelector('a.item-movie');
+        const copyright = footer?.querySelector('.item-text')?.textContent;
+        let photoSource = null;
+        let isMovie = false;
 
-      probe.src = url;
-    });
-  }
+        if (movieL) {
+          photoSource = movieL.textContent.trim() + ' ' + (movieL.nextElementSibling?.textContent.trim() || '');
+          isMovie = true;
+        } else if (copyright) {
+          // Robust clean: Aggressively strips combinations of Photo, Foto, Copyright, (c), ©, colons, dashes and spaces
+          photoSource = copyright
+            .trim()
+            .replace(/^(?:photo|foto|copyright|\(c\)|©|:|-|\s)+/gi, '')
+            .trim();
+        }
 
-  /**
-   * Fetches the target creator page in the background and parses it for preview data.
-   * @param {string} creatorUrl
-   * @returns {Promise<CreatorPreviewData>}
-   */
-  async function fetchCreatorPreviewDataFromUrl(creatorUrl) {
-    const response = await fetch(creatorUrl, {
-      credentials: 'include',
-      method: 'GET',
-    });
+        const data = {
+          name,
+          img,
+          flag,
+          birthText: cleanLifeText(birthP),
+          deathText: cleanLifeText(deathP),
+          photoSource,
+          isMovie,
+        };
 
-    if (!response.ok) {
-      return {
-        imageUrl: undefined,
-        birthInfo: undefined,
-        deathAgeInfo: undefined,
-        birthFlagUrl: undefined,
-        birthFlagAlt: undefined,
-        photoFromInfo: undefined,
-        photoFromKind: undefined,
-        photoFromYear: undefined,
-      };
-    }
+        localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
 
-    const html = await response.text();
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const imageCandidates = pickCreatorImageCandidates(doc);
+        // Small chance to trigger a garbage collection of old cache items
+        if (Math.random() < 0.1) cleanExpiredCache();
 
-    let validImageUrl;
-    // Test candidate images one by one until a valid one is found
-    for (const candidateUrl of imageCandidates) {
-      const isValid = await probeImageUrl(candidateUrl);
-      if (isValid) {
-        validImageUrl = candidateUrl;
-        break;
+        return data;
+      } catch {
+        return null;
+      } finally {
+        // Always remove from the inflight tracker when finished (whether success or fail)
+        inflightRequests.delete(slug);
       }
+    })();
 
-      failedImageUrls.add(candidateUrl);
-    }
-
-    return {
-      imageUrl: validImageUrl,
-      ...extractLifeInfo(doc),
-      ...extractPhotoFromInfo(doc),
-    };
+    inflightRequests.set(slug, fetchPromise);
+    return await fetchPromise;
   }
 
-  /**
-   * Orchestrates the data fetching, checking the cache and resolving inflight requests.
-   * @param {Element} anchorEl
-   * @returns {Promise<CreatorPreviewData|undefined>}
-   */
-  async function getCreatorPreviewDataForLink(anchorEl) {
-    const creatorUrl = normalizeCreatorUrl(anchorEl.getAttribute('href'));
-    if (!creatorUrl) {
-      return undefined;
-    }
+  async function showPreviewForAnchor(anchor, token) {
+    ensurePreview();
+    const isEnabled = localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY) !== 'false';
+    if (!isEnabled) return;
 
-    const creatorSlug = getCreatorSlugFromUrl(creatorUrl);
-    if (!creatorSlug) {
-      return undefined;
-    }
+    // Force the URL to bypass the 302 Redirect to /prehled/ to speed up the network tab
+    let url = anchor.href.split('?')[0].split('#')[0];
+    url = url.replace(/\/(prehled|prehlad|diskuze|galerie|zajimavosti|biografie)\/?$/i, '/');
+    const segment = location.hostname.endsWith('.sk') ? 'prehlad' : 'prehled';
+    url = url.endsWith('/') ? `${url}${segment}/` : `${url}/${segment}/`;
 
-    if (creatorPreviewCache.has(creatorSlug)) {
-      return creatorPreviewCache.get(creatorSlug);
-    }
+    const data = await fetchCreatorData(url);
 
-    // Prevent duplicate network requests if user hovers multiple times before resolution
-    if (!creatorFetchPromises.has(creatorSlug)) {
-      const fetchPromise = fetchCreatorPreviewDataFromUrl(creatorUrl)
-        .catch(() => ({
-          imageUrl: undefined,
-          birthInfo: undefined,
-          deathAgeInfo: undefined,
-          birthFlagUrl: undefined,
-          birthFlagAlt: undefined,
-          photoFromInfo: undefined,
-          photoFromKind: undefined,
-          photoFromYear: undefined,
-        }))
-        .then((data) => {
-          upsertCreatorCache(creatorSlug, data);
-          return data;
-        })
-        .finally(() => {
-          creatorFetchPromises.delete(creatorSlug);
-        });
+    if (token !== hoverToken || activeAnchor !== anchor) return;
+    if (!data) return;
 
-      creatorFetchPromises.set(creatorSlug, fetchPromise);
-    }
+    const showBirth = localStorage.getItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY) !== 'false';
+    const showPhoto = localStorage.getItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY) !== 'false';
+    const age = calculateAge(data.birthText, data.deathText);
 
-    const inFlight = creatorFetchPromises.get(creatorSlug);
-    return inFlight ? await inFlight : undefined;
-  }
+    // Use CSFD's native 1x1 pixel and empty-image class to render the native silhouette perfectly
+    const emptySrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+    const imgHtml = data.img
+      ? `<img class="cc-creator-preview-image" src="${escapeHtml(data.img)}" onerror="this.onerror=null;this.src='${emptySrc}';this.classList.add('empty-image');" />`
+      : `<img class="cc-creator-preview-image empty-image" src="${emptySrc}" />`;
 
-  // ==========================================
-  // 8. RENDER CONTROLLERS
-  // ==========================================
-
-  /**
-   * Updates the DOM elements for the text-based metadata (birth, age, photo source).
-   * @param {CreatorPreviewData} data
-   */
-  function renderPreviewMeta(data) {
-    if (
-      !previewMeta ||
-      !previewMetaBirth ||
-      !previewMetaBirthText ||
-      !previewMetaBirthAgeInline ||
-      !previewMetaAge ||
-      !previewMetaPhotoFrom ||
-      !previewMetaPhotoSource ||
-      !previewMetaPhotoYear
-    ) {
-      return;
-    }
-
-    const showBirth = isCreatorPreviewBirthVisible() && Boolean(data?.birthInfo);
-    const liveAgeInfo = showBirth && !data?.deathAgeInfo ? calculateCurrentAgeFromBirthInfo(data?.birthInfo) : undefined;
-    const deceasedAgeInfo = showBirth ? data?.deathAgeInfo : undefined;
-    const showAgeLine = Boolean(deceasedAgeInfo);
-    const showPhotoFrom = isCreatorPreviewPhotoFromVisible() && Boolean(data?.photoFromInfo);
-
+    // Dynamic layout for birth/death logic
+    let lifeHtml = '';
     if (showBirth) {
-      previewMetaBirthText.textContent = data.birthInfo;
-      previewMetaBirthAgeInline.textContent = liveAgeInfo ? ` (${liveAgeInfo})` : '';
-      previewMetaBirthAgeInline.hidden = !liveAgeInfo;
-    } else {
-      previewMetaBirthText.textContent = '';
-      previewMetaBirthAgeInline.textContent = '';
-      previewMetaBirthAgeInline.hidden = true;
-    }
-    previewMetaBirth.hidden = !showBirth;
+      const bDateMatch = data.birthText?.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4}|\d{4})/);
+      const dDateMatch = data.deathText?.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4}|\d{4})/);
 
-    previewMetaAge.textContent = showAgeLine ? `(${deceasedAgeInfo})` : '';
-    previewMetaAge.hidden = !showAgeLine;
-
-    previewMetaPhotoFrom.classList.remove('is-movie', 'is-copyright');
-    if (showPhotoFrom) {
-      const kind = data?.photoFromKind === 'movie' ? 'movie' : 'copyright';
-      previewMetaPhotoFrom.classList.add(kind === 'movie' ? 'is-movie' : 'is-copyright');
-      previewMetaPhotoSource.textContent = data.photoFromInfo || '';
-      previewMetaPhotoYear.textContent = kind === 'movie' ? normalizeText(data?.photoFromYear || '') : '';
-      previewMetaPhotoYear.hidden = !(kind === 'movie' && Boolean(previewMetaPhotoYear.textContent));
-    } else {
-      previewMetaPhotoSource.textContent = '';
-      previewMetaPhotoYear.textContent = '';
-      previewMetaPhotoYear.hidden = true;
-    }
-    previewMetaPhotoFrom.hidden = !showPhotoFrom;
-
-    previewMeta.hidden = !showBirth && !showPhotoFrom && !showAgeLine;
-  }
-
-  /**
-   * Handles the fallback state when a creator has a profile but no valid photo.
-   * @param {string} label
-   * @param {CreatorPreviewData} data
-   */
-  function showNoImagePreview(label, data) {
-    ensurePreviewElements();
-    previewImage.removeAttribute('src');
-    previewImage.alt = 'Bez fotografie';
-    previewNameText.textContent = label;
-
-    if (data?.birthFlagUrl) {
-      previewNameFlag.src = data.birthFlagUrl;
-      previewNameFlag.alt = data.birthFlagAlt || '';
-      previewNameFlag.title = data.birthFlagAlt || '';
-      previewNameFlag.hidden = false;
-    } else {
-      previewNameFlag.removeAttribute('src');
-      previewNameFlag.alt = '';
-      previewNameFlag.title = '';
-      previewNameFlag.hidden = true;
+      if (data.deathText && bDateMatch) {
+        const bDate = bDateMatch[1].replace(/\s/g, '');
+        const dDate = dDateMatch ? dDateMatch[1].replace(/\s/g, '') : '?';
+        lifeHtml += `
+              <div class="cc-creator-preview-meta-line cc-creator-preview-meta-birth" style="text-align: center;">
+                  <span>nar. ${bDate} &rarr; ${dDate}</span>
+              </div>
+              ${age ? `<div class="cc-creator-preview-meta-line cc-creator-preview-meta-age" style="margin-top: 1px;">(${age} let)</div>` : ''}
+          `;
+      } else if (data.birthText) {
+        lifeHtml += `
+              <div class="cc-creator-preview-meta-line cc-creator-preview-meta-birth">
+                  <span>${escapeHtml(data.birthText)}</span>
+                  ${!data.deathText && age ? `<span class="cc-creator-preview-meta-birth-age-inline">(${age} let)</span>` : ''}
+              </div>
+          `;
+      }
     }
 
-    renderPreviewMeta(data);
-    previewRoot.hidden = false;
-    previewRoot.classList.add('is-visible', 'is-no-image');
-    positionPreview();
-  }
+    const photoHtml =
+      showPhoto && data.photoSource
+        ? `
+      <div class="cc-creator-preview-meta-line cc-creator-preview-meta-photo ${data.isMovie ? 'is-movie' : 'is-copyright'}" style="margin-top: 4px;">
+          <span class="cc-creator-preview-meta-photo-source">${escapeHtml(data.photoSource)}</span>
+      </div>
+  `
+        : '';
 
-  /**
-   * Master rendering function. Fetches data and updates the full DOM tree for the preview.
-   * @param {Element} anchorEl
-   * @param {number} token - Validates that the user hasn't hovered away during the fetch.
-   */
-  async function showPreviewForAnchor(anchorEl, token) {
-    ensurePreviewElements();
+    previewRoot.innerHTML = `
+      <div class="cc-creator-preview-card">
+          ${imgHtml}
+          <div class="cc-creator-preview-name">
+              <span>${escapeHtml(data.name)}</span>
+              ${data.flag ? `<img class="cc-creator-preview-name-flag" src="${escapeHtml(data.flag)}" />` : ''}
+          </div>
+          <div class="cc-creator-preview-meta" ${!showBirth && !showPhoto ? 'hidden' : ''}>
+              ${lifeHtml}
+              ${photoHtml}
+          </div>
+      </div>
+  `;
 
-    if (!isCreatorPreviewEnabled()) {
-      hidePreview();
-      return;
-    }
-
-    const anchorText = anchorEl.textContent?.replace(/\s+/g, ' ').trim() || 'Tvůrce';
-    const previewData = await getCreatorPreviewDataForLink(anchorEl);
-
-    // Abort if the user moved on to another link while we were fetching
-    if (token !== hoverToken || activeAnchor !== anchorEl) {
-      return;
-    }
-
-    if (!previewData || !previewData.imageUrl) {
-      showNoImagePreview(anchorText, previewData);
-      return;
-    }
-
-    previewImage.src = previewData.imageUrl;
-    previewImage.alt = anchorText;
-    previewNameText.textContent = anchorText;
-
-    if (previewData?.birthFlagUrl) {
-      previewNameFlag.src = previewData.birthFlagUrl;
-      previewNameFlag.alt = previewData.birthFlagAlt || '';
-      previewNameFlag.title = previewData.birthFlagAlt || '';
-      previewNameFlag.hidden = false;
-    } else {
-      previewNameFlag.removeAttribute('src');
-      previewNameFlag.alt = '';
-      previewNameFlag.title = '';
-      previewNameFlag.hidden = true;
-    }
-
-    renderPreviewMeta(previewData);
-    previewRoot.hidden = false;
-    previewRoot.classList.remove('is-no-image');
     previewRoot.classList.add('is-visible');
     positionPreview();
   }
 
-  // ==========================================
-  // 9. EVENT HANDLERS & INITIALIZATION
-  // ==========================================
-
-  function handlePointerMove(event) {
-    pointerX = event.clientX;
-    pointerY = event.clientY;
-    positionPreview();
-  }
-
-  function handlePointerOver(event) {
-    const anchorEl = event.target.closest(CREATOR_LINK_SELECTOR);
-    if (!anchorEl) {
-      return;
-    }
-
-    if (!isCreatorPreviewEnabled()) {
-      return;
-    }
-
-    if (activeAnchor === anchorEl) {
-      return;
-    }
-
-    activeAnchor = anchorEl;
-    hoverToken += 1;
-    showPreviewForAnchor(anchorEl, hoverToken).catch(() => {
-      if (hoverToken && activeAnchor === anchorEl) {
-        hidePreview();
-      }
-    });
-  }
-
-  function handlePointerOut(event) {
-    if (!activeAnchor) {
-      return;
-    }
-
-    // Don't hide if moving between nested elements inside the anchor
-    const related = event.relatedTarget;
-    if (related instanceof Element && activeAnchor.contains(related)) {
-      return;
-    }
-
-    const leftFromActiveAnchor =
-      event.target instanceof Element && event.target.closest(CREATOR_LINK_SELECTOR) === activeAnchor;
-    if (!leftFromActiveAnchor) {
-      return;
-    }
-
-    activeAnchor = undefined;
-    hoverToken += 1;
-    hidePreview();
-  }
-
-  /**
-   * Call this function once on page load to bind global event listeners.
-   */
   function initializeCreatorHoverPreview() {
-    ensurePreviewElements();
+    if (/^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(location.pathname)) return;
 
-    // Disable preview on creator detail pages (we don't want popups when hovering the tabs there)
-    const onCreatorPage = /^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(location.pathname || '');
-    if (onCreatorPage) {
-      // Ensure preview is hidden and don't bind global handlers on creator pages
-      hidePreview();
-      return;
-    }
-
-    document.addEventListener('mousemove', handlePointerMove, true);
-    document.addEventListener('mouseover', handlePointerOver, true);
-    document.addEventListener('mouseout', handlePointerOut, true);
-
-    window.addEventListener(
-      'scroll',
-      () => {
+    document.addEventListener(
+      'mousemove',
+      (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
         positionPreview();
       },
       true,
     );
 
-    // Listen for preference changes from the UI
-    window.addEventListener('cc-creator-preview-toggled', () => {
-      if (!isCreatorPreviewEnabled()) {
-        hidePreview();
-        activeAnchor = undefined;
-        hoverToken += 1;
-        return;
-      }
+    document.addEventListener(
+      'mouseover',
+      (e) => {
+        const anchor = e.target.closest(CREATOR_LINK_SELECTOR);
+        if (!anchor || activeAnchor === anchor) return;
 
-      if (activeAnchor) {
-        hoverToken += 1;
-        showPreviewForAnchor(activeAnchor, hoverToken).catch(() => {
-          hidePreview();
-        });
+        activeAnchor = anchor;
+        hoverToken++;
+        showPreviewForAnchor(anchor, hoverToken);
+      },
+      true,
+    );
+
+    // FIXED BUG: Removing the bad check allows the modal to close the moment the mouse leaves the link boundaries
+    document.addEventListener(
+      'mouseout',
+      (e) => {
+        if (!activeAnchor) return;
+        if (e.relatedTarget instanceof Element && activeAnchor.contains(e.relatedTarget)) return;
+
+        activeAnchor = null;
+        hoverToken++;
+        hidePreview();
+      },
+      true,
+    );
+
+    window.addEventListener('scroll', positionPreview, true);
+    window.addEventListener('cc-creator-preview-toggled', () => {
+      if (localStorage.getItem(CREATOR_PREVIEW_ENABLED_KEY) === 'false') {
+        hidePreview();
+        activeAnchor = null;
+        hoverToken++;
+      } else if (activeAnchor) {
+        hoverToken++;
+        showPreviewForAnchor(activeAnchor, hoverToken);
       }
     });
   }

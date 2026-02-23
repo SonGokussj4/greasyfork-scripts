@@ -1,6 +1,6 @@
 import htmlContent from './settings-button-content.html';
 import { initializeRatingsLoader } from './ratings-loader.js';
-import { initializeRatingsSync } from './ratings-sync.js';
+import { initializeRatingsSync, performCloudSync } from './ratings-sync.js';
 import { deleteIndexedDB } from './storage.js';
 import {
   CREATOR_PREVIEW_ENABLED_KEY,
@@ -137,14 +137,13 @@ function formatLocalStorageValue(value, maxLength = 120) {
 // MAIN INITIALIZATION
 // ==========================================
 
-// Creates a clone of the Version Info modal specifically for Image Previews
 function getOrCreateImageModal() {
   let overlay = document.getElementById('cc-image-preview-overlay');
   if (overlay) return overlay;
 
   overlay = document.createElement('div');
   overlay.id = 'cc-image-preview-overlay';
-  overlay.className = 'cc-version-info-overlay'; // Reuse exact CSS from version modal!
+  overlay.className = 'cc-version-info-overlay';
 
   overlay.innerHTML = `
     <div class="cc-version-info-modal" style="width: min(840px, 95vw); max-height: 90vh;">
@@ -167,7 +166,7 @@ function getOrCreateImageModal() {
     overlay.classList.remove('is-open');
     setTimeout(() => {
       img.src = '';
-    }, 200); // clear image after fade out
+    }, 200);
   };
 
   closeBtn.addEventListener('click', close);
@@ -181,7 +180,6 @@ function getOrCreateImageModal() {
 async function addSettingsButton() {
   'use strict';
 
-  // 1. Create and Insert Button (Vanilla JS)
   const settingsButton = document.createElement('li');
   settingsButton.className = 'cc-menu-item';
   settingsButton.innerHTML = htmlContent;
@@ -189,10 +187,6 @@ async function addSettingsButton() {
   const dropdown = settingsButton.querySelector('.dropdown-content');
   if (dropdown) {
     const blockEvent = (e) => e.stopPropagation();
-
-    // By using 'true' as the third argument (Capture Phase), we intercept the mouse
-    // events at the very top level and destroy them BEFORE CSFD's heavy scripts
-    // can see them and trigger the 800ms carousel lag.
     ['pointermove', 'mousemove', 'mouseover', 'mouseenter', 'wheel', 'touchmove'].forEach((evt) => {
       dropdown.addEventListener(evt, blockEvent, true);
     });
@@ -207,24 +201,21 @@ async function addSettingsButton() {
     else headerBar.prepend(settingsButton);
   }
 
-  // 2. Initialize Sub-Components
   initializeVersionUi(settingsButton).catch(() => undefined);
   initializeRatingsLoader(settingsButton);
-  initializeRatingsSync(settingsButton);
+  initializeRatingsSync(settingsButton, getCurrentUserSlug);
 
-  // 3. Setup Toggles & DOM Elements
   const creatorPreviewGroup = settingsButton.querySelector('#cc-creator-preview-group');
   const creatorPreviewGroupBody = settingsButton.querySelector('#cc-creator-preview-group-body');
   const creatorPreviewGroupToggle = settingsButton.querySelector('#cc-creator-preview-group-toggle');
 
-  // Generic Toggle Binder
   const toggles = [];
   function bindToggle(selector, storageKey, defaultValue, eventName, toastOn, toastOff, callback = null) {
     const element = settingsButton.querySelector(selector);
     if (!element) return;
 
     element.checked = getBoolSetting(storageKey, defaultValue);
-    toggles.push({ element, storageKey, defaultValue }); // Store for reset logic
+    toggles.push({ element, storageKey, defaultValue });
 
     element.addEventListener('change', () => {
       localStorage.setItem(storageKey, String(element.checked));
@@ -235,7 +226,17 @@ async function addSettingsButton() {
     return element;
   }
 
-  // UI Syncer for Creator Previews
+  // --- Creator Preview Cache Setting ---
+  const cacheSelect = settingsButton.querySelector('#cc-creator-preview-cache-hours');
+  if (cacheSelect) {
+    // Default to 24 hours if not set
+    cacheSelect.value = localStorage.getItem('cc_creator_preview_cache_hours') || '24';
+    cacheSelect.addEventListener('change', () => {
+      localStorage.setItem('cc_creator_preview_cache_hours', cacheSelect.value);
+      showSettingsInfoToast('Délka mezipaměti uložena.');
+    });
+  }
+
   const updateCreatorPreviewUI = () => {
     const enabled = getBoolSetting(CREATOR_PREVIEW_ENABLED_KEY, true);
     const showBirth = getBoolSetting(CREATOR_PREVIEW_SHOW_BIRTH_KEY, true);
@@ -247,7 +248,6 @@ async function addSettingsButton() {
     if (birthToggle) birthToggle.disabled = !enabled;
     if (photoToggle) photoToggle.disabled = !enabled;
 
-    // ADD THIS: Visually disable the sub-menu container
     if (creatorPreviewGroupBody) {
       creatorPreviewGroupBody.classList.toggle('is-disabled', !enabled);
     }
@@ -257,7 +257,6 @@ async function addSettingsButton() {
     );
   };
 
-  // Bind All Toggles
   bindToggle(
     '#cc-enable-gallery-image-links',
     GALLERY_IMAGE_LINKS_ENABLED_KEY,
@@ -326,26 +325,6 @@ async function addSettingsButton() {
     'Průměr oblíbených zapnut.',
     'Průměr oblíbených vypnut.',
   );
-
-  // hide reviews group elements
-  const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
-  const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
-  const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
-  const hideListInput = settingsButton.querySelector('#cc-hide-selected-reviews-list');
-  const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
-
-  // UI updater for hide-reviews group
-  const updateHideReviewsUI = () => {
-    const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
-    if (hideListInput) hideListInput.disabled = !enabled;
-    if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
-
-    // ADD THIS: Visually disable the sub-menu container
-    if (hideGroupBody) {
-      hideGroupBody.classList.toggle('is-disabled', !enabled);
-    }
-  };
-
   bindToggle(
     '#cc-add-ratings-date',
     ADD_RATINGS_DATE_KEY,
@@ -354,17 +333,113 @@ async function addSettingsButton() {
     'Zobrazení data hodnocení zapnuto.',
     'Zobrazení data hodnocení vypnuto.',
   );
+
+  // ==========================================
+  // MODERN PILL LOGIC FOR REVIEWS
+  // ==========================================
+  const hideGroup = settingsButton.querySelector('#cc-hide-reviews-group');
+  const hideGroupBody = settingsButton.querySelector('#cc-hide-reviews-group-body');
+  const hideGroupToggle = settingsButton.querySelector('#cc-hide-reviews-group-toggle');
+
+  const pillContainer = settingsButton.querySelector('#cc-hide-reviews-pill-container');
+  const pillsWrapper = settingsButton.querySelector('#cc-hide-reviews-pills');
+  const pillInput = settingsButton.querySelector('#cc-hide-reviews-pill-input');
+  const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
+
+  let currentPills = [];
+
+  try {
+    const saved = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
+    if (saved) currentPills = JSON.parse(saved);
+  } catch (e) {}
+
+  const renderPills = () => {
+    if (!pillsWrapper) return;
+    pillsWrapper.innerHTML = '';
+    currentPills.forEach((pill, index) => {
+      const pillEl = document.createElement('span');
+      pillEl.className = 'cc-pill';
+      pillEl.textContent = pill;
+
+      const removeBtn = document.createElement('span');
+      removeBtn.className = 'cc-pill-remove';
+      removeBtn.innerHTML = '&times;';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation(); // Don't trigger the container click
+        currentPills.splice(index, 1);
+        renderPills();
+      };
+
+      pillEl.appendChild(removeBtn);
+      pillsWrapper.appendChild(pillEl);
+    });
+  };
+
+  const addPill = (value) => {
+    const trimmed = value.trim();
+    if (trimmed && !currentPills.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
+      currentPills.push(trimmed);
+      renderPills();
+    }
+    if (pillInput) pillInput.value = '';
+  };
+
+  if (pillInput) {
+    pillInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ',' || e.key === ' ') {
+        e.preventDefault();
+        addPill(pillInput.value);
+      } else if (e.key === 'Backspace' && pillInput.value === '' && currentPills.length > 0) {
+        // Delete the last pill if input is empty
+        currentPills.pop();
+        renderPills();
+      }
+    });
+
+    pillInput.addEventListener('blur', () => {
+      addPill(pillInput.value);
+    });
+  }
+
+  if (pillContainer) {
+    pillContainer.addEventListener('click', () => {
+      if (!pillContainer.classList.contains('is-disabled')) {
+        pillInput?.focus();
+      }
+    });
+  }
+
+  const updateHideReviewsUI = () => {
+    const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
+    if (pillInput) pillInput.disabled = !enabled;
+    if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
+    if (pillContainer) pillContainer.classList.toggle('is-disabled', !enabled);
+    if (hideGroupBody) hideGroupBody.classList.toggle('is-disabled', !enabled);
+  };
+
+  renderPills();
+
   bindToggle(
     '#cc-hide-selected-reviews',
     HIDE_SELECTED_REVIEWS_KEY,
     false,
-    null,
+    'cc-hide-selected-reviews-updated', // Dispatch event instantly on toggle
     'Filtrování recenzí zapnuto.',
     'Filtrování recenzí vypnuto.',
     updateHideReviewsUI,
   );
 
-  // collapse logic for hide reviews group
+  if (hideApplyBtn) {
+    hideApplyBtn.addEventListener('click', () => {
+      if (pillInput && pillInput.value.trim()) {
+        addPill(pillInput.value);
+      }
+      localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(currentPills));
+      window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+      showSettingsInfoToast('Seznam skrytých uživatelů byl uložen.');
+    });
+  }
+
   const setHideGroupCollapsedState = (collapsed) => {
     if (hideGroup) hideGroup.classList.toggle('is-collapsed', collapsed);
     if (hideGroupToggle) hideGroupToggle.setAttribute('aria-expanded', String(!collapsed));
@@ -380,37 +455,9 @@ async function addSettingsButton() {
     });
   }
 
-  const applyHideList = () => {
-    if (!hideListInput) return;
-    const list = hideListInput.value
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    localStorage.setItem(HIDE_SELECTED_REVIEWS_LIST_KEY, JSON.stringify(list));
-    window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
-  };
-
-  if (hideListInput) {
-    try {
-      const saved = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
-      hideListInput.value = saved ? JSON.parse(saved).join(', ') : '';
-    } catch (e) {
-      hideListInput.value = '';
-    }
-    hideListInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        applyHideList();
-      }
-    });
-    if (hideApplyBtn) hideApplyBtn.addEventListener('click', applyHideList);
-  }
-
-  // Initialize UI State
   updateCreatorPreviewUI();
   updateHideReviewsUI();
 
-  // Collapsible Preview Section
   const setPreviewCollapsedState = (collapsed) => {
     if (creatorPreviewGroup) creatorPreviewGroup.classList.toggle('is-collapsed', collapsed);
     if (creatorPreviewGroupToggle) creatorPreviewGroupToggle.setAttribute('aria-expanded', String(!collapsed));
@@ -430,16 +477,44 @@ async function addSettingsButton() {
   const syncControlsFromStorage = () => {
     toggles.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
     updateCreatorPreviewUI();
+    updateHideReviewsUI();
   };
 
   settingsButton.querySelector('#cc-maint-reset-btn')?.addEventListener('click', () => {
-    localStorage.removeItem(GALLERY_IMAGE_LINKS_ENABLED_KEY);
-    localStorage.removeItem(CREATOR_PREVIEW_ENABLED_KEY);
-    localStorage.removeItem(CREATOR_PREVIEW_SHOW_BIRTH_KEY);
-    localStorage.removeItem(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY);
+    if (!confirm('Opravdu chcete vyresetovat všechna nastavení (tlačítka a skryté uživatele) do výchozího stavu?'))
+      return;
+
+    // 1. Remove all known configuration keys from LocalStorage
+    const keysToRemove = [
+      GALLERY_IMAGE_LINKS_ENABLED_KEY,
+      SHOW_ALL_CREATOR_TABS_KEY,
+      CREATOR_PREVIEW_ENABLED_KEY,
+      CREATOR_PREVIEW_SHOW_BIRTH_KEY,
+      CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
+      CREATOR_PREVIEW_CACHE_HOURS_KEY,
+      CLICKABLE_HEADER_BOXES_KEY,
+      RATINGS_ESTIMATE_KEY,
+      RATINGS_FROM_FAVORITES_KEY,
+      ADD_RATINGS_DATE_KEY,
+      HIDE_SELECTED_REVIEWS_KEY,
+      HIDE_SELECTED_REVIEWS_LIST_KEY,
+      HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
+    ];
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    // 2. Clear the hidden users pill array and visually clear the container
+    currentPills = [];
+    renderPills();
+
+    // 3. Force all UI toggles to snap back to their default states
     syncControlsFromStorage();
+
+    // 4. Dispatch events to tell the active page to update itself (e.g. unhide reviews)
     window.dispatchEvent(new CustomEvent('cc-gallery-image-links-toggled', { detail: { enabled: true } }));
-    showSettingsInfoToast('Nastavení náhledů bylo vráceno na výchozí hodnoty.');
+    window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+
+    showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
   });
 
   settingsButton.querySelector('#cc-maint-clear-db-btn')?.addEventListener('click', async () => {
@@ -607,20 +682,13 @@ async function addSettingsButton() {
   refreshBadgesSafely();
   window.setTimeout(refreshBadgesSafely, 1200);
 
-  window.addEventListener('cc-ratings-updated', () => {
-    invalidateRatingsModalCache();
-    refreshBadgesSafely();
-  });
-
   // --- IMAGE PREVIEW MODAL LOGIC ---
   settingsButton.querySelectorAll('.cc-info-icon[data-image-url]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      // Prevent default button behavior so CSFD search/forms don't repaint or submit
       e.preventDefault();
       e.stopPropagation();
 
       const url = btn.getAttribute('data-image-url');
-      // Optional: you can extract the row label to put it in the modal title!
       const titleText =
         btn.closest('.cc-setting-row')?.querySelector('.cc-setting-label')?.textContent || 'Ukázka funkce';
 
@@ -629,14 +697,36 @@ async function addSettingsButton() {
         modal.querySelector('#cc-image-modal-title').textContent = titleText;
         modal.querySelector('#cc-image-modal-img').src = url;
 
-        // Show the modal
         modal.classList.add('is-open');
       }
     });
   });
 
-  // use the raw DOM element; helper no longer depends on jQuery
   initializeSettingsMenuHover(settingsButton);
+
+  let autoSyncTimeout;
+  window.addEventListener('cc-ratings-updated', () => {
+    invalidateRatingsModalCache();
+    refreshBadgesSafely();
+
+    clearTimeout(autoSyncTimeout);
+
+    autoSyncTimeout = setTimeout(() => {
+      performCloudSync();
+    }, 3000);
+  });
+
+  const SYNC_COOLDOWN_MS = 1000 * 60 * 60 * 2; // 2 hours
+  const lastAutoSync = Number.parseInt(localStorage.getItem('cc_last_startup_sync') || '0', 10);
+
+  if (Date.now() - lastAutoSync > SYNC_COOLDOWN_MS) {
+    console.log('☁️ [CC Sync] Running startup background sync...');
+    localStorage.setItem('cc_last_startup_sync', String(Date.now()));
+
+    setTimeout(() => {
+      performCloudSync();
+    }, 2500);
+  }
 }
 
 export { addSettingsButton };

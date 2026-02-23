@@ -4,6 +4,7 @@ import {
   RATINGS_STORE_NAME,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
+  HIDE_SELECTED_REVIEWS_KEY, // ADDED KEY
 } from './config.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
@@ -48,10 +49,6 @@ export class Csfd {
     this.userSlug = undefined;
   }
 
-  /**
-   * @returns {string|undefined} - Returns the user URL or undefined if not found
-   * @description - Retrieves the current user's URL from the CSFD page and sets isLoggedIn.
-   */
   getCurrentUser() {
     const userEl = document.querySelector(PROFILE_LINK_SELECTOR);
     if (userEl) {
@@ -63,10 +60,6 @@ export class Csfd {
     return undefined;
   }
 
-  /**
-   * @returns {string|undefined} - Returns the username or undefined if not found
-   * @description - Retrieves the current user's username from the CSFD page.
-   */
   getUsername() {
     const userHref = this.userUrl || this.getCurrentUser();
     if (!userHref) {
@@ -127,12 +120,15 @@ export class Csfd {
       if (localStorage.getItem('cc_add_ratings_date') === 'true') {
         this.addRatingsDate();
       }
-      if (localStorage.getItem('cc_hide_selected_user_reviews') === 'true') {
-        this.hideSelectedUserReviews();
-      }
     } catch (e) {
       // ignore silently
     }
+
+    // Dynamic Filter Trigger (runs immediately and whenever the list is updated)
+    this.hideSelectedUserReviews();
+    window.addEventListener('cc-hide-selected-reviews-updated', () => {
+      this.hideSelectedUserReviews();
+    });
   }
 
   showAllCreatorTabs() {
@@ -144,7 +140,6 @@ export class Csfd {
       if (!navs.length) return;
 
       navs.forEach((nav) => {
-        // make sure any inline padding reserved for the dropdown is removed
         nav.style.paddingRight = '';
         const mainList = nav.querySelector('.tab-nav-list');
         const dropdown = nav.querySelector('.tab-nav-more .dropdown-content, .tab-nav-more > .dropdown-content');
@@ -172,8 +167,6 @@ export class Csfd {
         if (more) more.style.display = 'none';
 
         nav.classList.add('cc-show-all-tabs');
-
-        // Removed dead code here that just iterated and trimmed text strings
       });
     } catch (err) {
       console.error('[CC] showAllCreatorTabs failed', err);
@@ -193,11 +186,9 @@ export class Csfd {
         const more = nav.querySelector('.tab-nav-more');
         if (more) more.style.display = '';
         nav.classList.remove('cc-show-all-tabs');
-        // clear inline padding that CSFD may have set, forcing a layout recalculation
         nav.style.paddingRight = '';
       });
 
-      // fire a resize so the site script recalculates widths immediately
       window.dispatchEvent(new Event('resize'));
     } catch (err) {
       console.error('[CC] restoreCreatorTabs failed', err);
@@ -266,7 +257,6 @@ export class Csfd {
   getCurrentPageComputedInfo() {
     const isStarComputed = document.querySelectorAll('.my-rating .stars-rating a.star.computed').length > 0;
 
-    // Consolidated selectors
     const titleSelectors = [
       '.others-rating .current-user-rating [title*="spočten" i]',
       '.mobile-film-rating-detail [title*="spočten" i]',
@@ -286,7 +276,6 @@ export class Csfd {
     };
   }
 
-  // helper used by several legacy features
   _parseRatingFromStars(starElem) {
     const clazz = starElem.className || '';
     const m = clazz.match(/stars-(\d)/);
@@ -301,9 +290,7 @@ export class Csfd {
     return 'black';
   }
 
-  // legacy features ported from old script
   clickableHeaderBoxes() {
-    // make a few specific header buttons clickable by clicking anywhere on the box
     const selectors = ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'];
     selectors.forEach((sel) => {
       const el = document.querySelector(sel);
@@ -319,7 +306,6 @@ export class Csfd {
       }
     });
 
-    // entire box headers
     const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header'));
     headers.forEach((div) => {
       const btn = div.querySelector('a.button');
@@ -332,7 +318,7 @@ export class Csfd {
       wrapper.setAttribute('href', href);
       div.parentNode.replaceChild(wrapper, div);
       wrapper.appendChild(div);
-      // hover styling borrowed from old code
+
       const h2 = div.querySelector('h2');
       const spanCount = h2?.querySelector('span.count');
       div.addEventListener('mouseenter', () => {
@@ -391,7 +377,6 @@ export class Csfd {
     const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
     if (!avgEl) return;
 
-    // remember the unmodified text so we can restore later
     if (!avgEl.dataset.original) {
       avgEl.dataset.original = avgEl.textContent.trim();
     }
@@ -410,7 +395,6 @@ export class Csfd {
       avgEl.textContent = avgEl.dataset.original;
       delete avgEl.dataset.original;
     } else {
-      // fallback: just remove the appended span if it exists
       const absSpan = avgEl.querySelector('span[style*="position:absolute"]');
       if (absSpan) {
         avgEl.textContent = absSpan.textContent.trim();
@@ -447,22 +431,33 @@ export class Csfd {
   }
 
   hideSelectedUserReviews() {
-    let raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
-    let list;
-    try {
-      list = JSON.parse(raw);
-    } catch (e) {
-      list = [];
+    const enabled = localStorage.getItem(HIDE_SELECTED_REVIEWS_KEY) === 'true';
+    let list = [];
+
+    if (enabled) {
+      try {
+        const raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
+        // Map to lowercase for case-insensitive matching
+        list = JSON.parse(raw).map((s) => s.toLowerCase());
+      } catch (e) {
+        list = [];
+      }
     }
-    if (!Array.isArray(list) || list.length === 0) return;
+
     const headers = Array.from(document.querySelectorAll('.article-header-review-name'));
     headers.forEach((el) => {
       const title = el.querySelector('.user-title-name');
       if (!title) return;
-      const name = title.textContent.trim();
-      if (list.includes(name)) {
-        const article = el.closest('article');
-        if (article) article.style.display = 'none';
+
+      const name = title.textContent.trim().toLowerCase();
+      const article = el.closest('article');
+
+      if (article) {
+        if (enabled && list.includes(name)) {
+          article.style.display = 'none';
+        } else {
+          article.style.display = ''; // Restore visibility instantly
+        }
       }
     });
   }
@@ -507,8 +502,14 @@ export class Csfd {
 
     if (pageRating === null) {
       if (existingRecord) {
-        await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, storageId);
-        delete this.stars[pageInfo.movieId];
+        const tombstone = {
+          ...existingRecord,
+          rating: null,
+          deleted: true, // This is the magic flag
+          lastUpdate: new Date().toISOString(),
+        };
+        await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, tombstone);
+        this.stars[pageInfo.movieId] = tombstone;
         window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
       }
       return;
@@ -771,7 +772,7 @@ export class Csfd {
 
       const movieId = await this.getMovieIdFromUrl(link.getAttribute('href'));
       const ratingRecord = this.stars[movieId];
-      if (!ratingRecord) continue;
+      if (!ratingRecord || ratingRecord.deleted === true) continue; // Skip rendering if deleted
 
       const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
       const isComputed = ratingRecord?.computed === true;

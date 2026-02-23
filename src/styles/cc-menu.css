@@ -1,4 +1,22 @@
 /* =========================================================
+   0. THEMING (CSS VARIABLES)
+   ========================================================= */
+:root {
+    /* Main Brand Colors */
+    --cc-color-red: #aa2c16;
+    --cc-color-red-hover: #8b2414;
+    --cc-color-red-active: #7a1f12;
+    --cc-color-red-gradient: #d13b1f;
+    /* Used in progress bar */
+
+    --cc-color-blue: #1f4f8f;
+
+    /* Focus Rings & Overlays */
+    --cc-focus-ring-heavy: rgba(170, 44, 22, 0.4);
+    --cc-focus-ring-light: rgba(170, 44, 22, 0.15);
+}
+
+/* =========================================================
    1. MAIN MENU CONTAINER (With Lag & Z-Index Fixes)
    ========================================================= */
 .dropdown-content.cc-settings {
@@ -13,14 +31,15 @@
     /* Force above CSFD sliders */
     z-index: 10000 !important;
     background-color: #ffffff !important;
+
+    /* New styles for a modern, clean look */
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 12px 34px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #eaeaea;
+    border-top: none;
 }
 
-header.page-header.user-not-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings {
-    margin-top: -4px;
-    right: 8px;
-    z-index: 10000 !important;
-}
-
+header.page-header.user-not-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings,
 header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings {
     margin-top: -4px;
     right: 8px;
@@ -30,32 +49,6 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 /* =========================================================
    2. HEADER, BADGES & BUTTONS
    ========================================================= */
-.cc-badge.cc-badge-disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-.cc-badge.cc-badge-warning {
-    position: relative;
-    box-shadow: inset 0 0 0 1px #f3c24f;
-}
-
-.cc-badge.cc-badge-warning::after {
-    content: '!';
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 12px;
-    height: 12px;
-    border-radius: 999px;
-    background: #f3c24f;
-    color: #3b2a04;
-    font-size: 9px;
-    line-height: 12px;
-    text-align: center;
-    font-weight: 800;
-}
-
 .dropdown-content.cc-settings .dropdown-content-head,
 .dropdown-content.cc-settings .cc-settings-section {
     width: 100%;
@@ -100,7 +93,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-version-link:hover {
-    color: #aa2c16;
+    color: var(--cc-color-red);
     text-decoration: underline;
 }
 
@@ -138,7 +131,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     line-height: 1.3;
     font-weight: 700;
     color: #fff;
-    background: #aa2c16;
+    background: var(--cc-color-red);
 }
 
 .cc-head-right,
@@ -177,20 +170,14 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 .cc-sync-icon-btn:focus-visible {
     background: #f3f3f3;
     border-color: #bdbdbd;
-    color: #aa2c16;
+    color: var(--cc-color-red);
     outline: none;
 }
 
 .cc-sync-icon-btn.is-enabled {
-    color: #aa2c16;
-    border-color: #cf7c6d;
-    background: #fff3f0;
-}
-
-.cc-sync-icon-btn.cc-sync-icon-btn-disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    color: #8b8b8b;
+    color: #184e21 !important;
+    border-color: #6bb475 !important;
+    background: #cae8cd !important;
 }
 
 .cc-badge {
@@ -205,7 +192,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-badge-red {
-    background-color: #aa2c16;
+    background-color: var(--cc-color-red);
 }
 
 .cc-badge-black {
@@ -234,15 +221,15 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-button-red {
-    background-color: #aa2c16;
+    background-color: var(--cc-color-red);
 }
 
 .cc-button-red:hover {
-    background-color: #8b2414;
+    background-color: var(--cc-color-red-hover);
 }
 
 .cc-button-red:active {
-    background-color: #7a1f12;
+    background-color: var(--cc-color-red-active);
 }
 
 .cc-button-black {
@@ -288,13 +275,31 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 /* =========================================================
-   3. SETTINGS TOGGLES & LISTS
+   3. SETTINGS TOGGLES, LISTS & CATEGORIES
    ========================================================= */
+
+/* Default section titles */
 .cc-section-title {
     margin: 0 0 8px;
     font-size: 12px;
     font-weight: 700;
     color: #444;
+}
+
+/* Special colored category headers */
+.cc-category-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cc-color-blue);
+    margin: 14px 0 6px 0;
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.cc-category-title.cc-category-first {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
 }
 
 .cc-config-list {
@@ -315,21 +320,17 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     gap: 8px;
     padding: 2px 0;
     contain: layout;
-    /* Prevents layout thrashing */
     transform: translateZ(0);
     backface-visibility: hidden;
     background-color: #ffffff;
     border-radius: 4px;
     position: relative;
     z-index: 1;
-    /* Prepares row for tooltip overlapping */
 }
 
 .cc-setting-row:hover {
     z-index: 10;
 }
-
-/* Brings hovered row to top so tooltips aren't hidden */
 
 .cc-setting-label {
     font-size: 11px;
@@ -358,8 +359,6 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     pointer-events: none;
 }
 
-/* Hidden but accessible */
-
 .cc-switch-bg {
     position: absolute;
     top: 0;
@@ -386,11 +385,11 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-switch input:checked+.cc-switch-bg {
-    background-color: #aa2c16;
+    background-color: var(--cc-color-red);
 }
 
 .cc-switch input:focus-visible+.cc-switch-bg {
-    box-shadow: 0 0 0 2px rgba(170, 44, 22, 0.4);
+    box-shadow: 0 0 0 2px var(--cc-focus-ring-heavy);
 }
 
 .cc-switch input:checked+.cc-switch-bg:before {
@@ -420,7 +419,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-setting-collapse-trigger:hover .cc-setting-label {
-    color: #aa2c16;
+    color: var(--cc-color-red);
 }
 
 .cc-chevron {
@@ -439,16 +438,30 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     padding-left: 36px;
     padding-top: 4px;
     padding-bottom: 2px;
-    display: flex;
+    display: flex !important;
+    /* Animated display */
     flex-direction: column;
     gap: 6px;
     border-top: 1px solid transparent;
+
+    /* Animation Core */
+    max-height: 250px;
+    opacity: 1;
+    overflow: hidden;
+    transform-origin: top;
+    transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.25s ease-out,
+        padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Force hiding of sub-menus (Overrides display:flex) */
+/* The Collapsed State (Smoothly squishes to 0) */
 .cc-setting-group.is-collapsed .cc-setting-sub,
 .cc-setting-sub[hidden] {
-    display: none !important;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    pointer-events: none;
 }
 
 /* Visual Disabled State when main switch is off */
@@ -512,7 +525,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-info-icon:hover {
-    color: #aa2c16;
+    color: var(--cc-color-red);
 }
 
 /* Hover Bubble */
@@ -529,13 +542,8 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     font-size: 11px;
     font-weight: 500;
     line-height: 1.4;
-
-    /* pre-wrap allows the &#10; HTML entity to create actual line breaks! */
     white-space: pre-wrap;
-
-    /* Left-aligning looks much better for multi-line paragraphs */
     text-align: left;
-
     width: max-content;
     max-width: 240px;
     opacity: 0;
@@ -614,7 +622,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     width: 0;
     height: 100%;
     border-radius: 999px;
-    background: linear-gradient(90deg, #aa2c16, #d13b1f);
+    background: linear-gradient(90deg, var(--cc-color-red), var(--cc-color-red-gradient));
     transition: width 0.25s ease;
 }
 
@@ -646,21 +654,6 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     gap: 6px;
 }
 
-.cc-maint-btn {
-    border: 1px solid #cfcfcf;
-    border-radius: 6px;
-    background: #fff;
-    color: #444;
-    font-size: 11px;
-    padding: 6px 8px;
-    cursor: pointer;
-}
-
-.cc-maint-btn:hover {
-    border-color: #bcbcbc;
-    background: #f7f7f7;
-}
-
 /* =========================================================
    6. MODALS (Version Info, Sync, Ratings Table & Image Preview)
    ========================================================= */
@@ -674,6 +667,8 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     justify-content: center;
     padding: 16px;
     box-sizing: border-box;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
 }
 
 .cc-version-info-overlay.is-open {
@@ -735,7 +730,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 /* =========================================================
-   6. RATINGS TABLE MODAL (Restored)
+   6. RATINGS TABLE MODAL
    ========================================================= */
 .cc-ratings-table-overlay {
     position: fixed;
@@ -937,7 +932,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-ratings-table th button.is-active .cc-sort-indicator {
-    color: #aa2c16;
+    color: var(--cc-color-red);
 }
 
 .cc-ratings-table th:nth-child(1),
@@ -971,10 +966,11 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     justify-content: space-between;
     gap: 8px;
     width: 100%;
+    contain: layout paint;
 }
 
 .cc-ratings-table-name-link {
-    color: #1f4f8f;
+    color: var(--cc-color-blue);
     text-decoration: none;
     word-break: break-word;
     font-size: 13px;
@@ -986,21 +982,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     text-decoration: underline;
 }
 
-.cc-ratings-table-link-icon {
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    border: 1px solid #cfcfcf;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: #7b7b7b;
-    background: #fff;
-    text-decoration: none;
-    flex: 0 0 auto;
-    opacity: 0.88;
-}
-
+.cc-ratings-table-link-icon,
 .cc-ratings-table-details-btn {
     width: 22px;
     height: 22px;
@@ -1009,29 +991,22 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: #7b7b7b;
     background: #fff;
     text-decoration: none;
     flex: 0 0 auto;
-    opacity: 0.88;
     appearance: none;
     -webkit-appearance: none;
     padding: 0;
     cursor: pointer;
+    color: #8a8a8a;
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 }
 
-.cc-ratings-table-link-icon:hover {
-    color: #aa2c16;
-    border-color: #bcbcbc;
-    background: #f3f3f3;
-    opacity: 1;
-}
-
+.cc-ratings-table-link-icon:hover,
 .cc-ratings-table-details-btn:hover {
-    color: #aa2c16;
+    color: var(--cc-color-red);
     border-color: #bcbcbc;
     background: #f3f3f3;
-    opacity: 1;
 }
 
 .cc-ratings-table-rating,
@@ -1202,11 +1177,15 @@ body.cc-menu-open .box-video {
     justify-content: center;
     z-index: 10002;
     opacity: 0;
-    transition: opacity 0.18s ease;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
 }
 
 .cc-sync-modal-overlay.visible {
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .cc-sync-modal {
@@ -1293,11 +1272,15 @@ body.cc-menu-open .box-video {
     padding: 14px;
     background: rgba(0, 0, 0, 0.42);
     opacity: 0;
-    transition: opacity 0.16s ease;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.16s ease, visibility 0.16s ease;
 }
 
 .cc-lc-modal-overlay.is-open {
     opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .cc-lc-modal {
@@ -1397,4 +1380,136 @@ body.cc-menu-open .box-video {
     align-items: center;
     justify-content: flex-end;
     gap: 6px;
+}
+
+/* --- CUSTOM SCROLLBARS --- */
+.cc-ratings-table-wrap::-webkit-scrollbar,
+.cc-version-info-body::-webkit-scrollbar,
+.cc-lc-modal-body::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.cc-ratings-table-wrap::-webkit-scrollbar-track,
+.cc-version-info-body::-webkit-scrollbar-track,
+.cc-lc-modal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.cc-ratings-table-wrap::-webkit-scrollbar-thumb,
+.cc-version-info-body::-webkit-scrollbar-thumb,
+.cc-lc-modal-body::-webkit-scrollbar-thumb {
+    background: #cccccc;
+    border-radius: 10px;
+}
+
+.cc-ratings-table-wrap::-webkit-scrollbar-thumb:hover,
+.cc-version-info-body::-webkit-scrollbar-thumb:hover,
+.cc-lc-modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* --- Modern Pill Input --- */
+.cc-pill-input-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    border: 1px solid #d4d4d4;
+    border-radius: 6px;
+    padding: 5px 6px;
+    background: #fff;
+    min-height: 32px;
+    box-sizing: border-box;
+    cursor: text;
+    align-items: center;
+}
+
+.cc-pill-input-container.is-disabled {
+    background: #f5f5f5;
+    cursor: not-allowed;
+}
+
+.cc-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.cc-pill {
+    display: inline-flex;
+    align-items: center;
+    background: var(--cc-color-red);
+    color: #fff;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.cc-pill-remove {
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    opacity: 0.7;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transform: translateY(-1px);
+}
+
+.cc-pill-remove:hover {
+    opacity: 1;
+}
+
+.cc-pill-input-container input {
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1;
+    min-width: 80px;
+    font-size: 12px;
+    background: transparent;
+    color: #444;
+}
+
+.cc-pill-input-container input:disabled {
+    cursor: not-allowed;
+}
+
+/* Compact Select Dropdown */
+.cc-select-compact {
+    border: 1px solid #d4d4d4;
+    border-radius: 5px;
+    height: 22px;
+    padding: 0 20px 0 6px;
+    font-size: 11px;
+    color: #444;
+    background-color: #fff;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="%23777777" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>');
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    font-family: inherit;
+}
+
+.cc-select-compact:hover,
+.cc-select-compact:focus {
+    border-color: #bcbcbc;
+}
+
+.cc-select-compact:focus {
+    box-shadow: 0 0 0 2px var(--cc-focus-ring-light);
+    border-color: var(--cc-color-red);
+}
+
+.cc-setting-sub.is-disabled .cc-select-compact {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
 }
