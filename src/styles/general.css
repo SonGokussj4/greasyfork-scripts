@@ -473,3 +473,75 @@ nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link {
     text-overflow: ellipsis;
     padding: 0 5px;
 }
+
+/* =========================================
+   HOME PAGE PANEL HIDING (Inline 'Skrýt' Button)
+   ========================================= */
+.cc-hide-panel-btn,
+.cc-hide-video-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #ba0305;
+    color: #fff !important;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    border: none;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    line-height: 1;
+    box-sizing: border-box;
+}
+
+.cc-hide-panel-btn:hover,
+.cc-hide-video-btn:hover {
+    background-color: #8b0204;
+}
+
+.box-header:hover .cc-hide-panel-btn,
+.updated-box-header:hover .cc-hide-panel-btn,
+.updated-box-homepage-video:hover .cc-hide-video-btn,
+.updated-box-banner:hover .cc-hide-panel-btn,
+.updated-box-banner-mobile:hover .cc-hide-panel-btn {
+    opacity: 1;
+}
+
+.cc-hide-panel-btn {
+    margin-left: 12px;
+    vertical-align: middle;
+    transform: translateY(-2px);
+}
+
+.cc-hide-video-btn {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Specific Fix for "Partnerem CSFD sálu je" */
+.updated-box--homepage-csfd-cinema .updated-box-header p {
+    display: inline-flex;
+    align-items: center;
+    overflow: visible !important;
+    position: relative;
+    z-index: 10;
+}
+
+.updated-box--homepage-csfd-cinema .cc-hide-panel-btn {
+    transform: translateY(0);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+/* =========================================
+   DEV MODE
+   ========================================= */
+body:not(.cc-dev-mode-active) .fancy-alert-controls,
+body:not(.cc-dev-mode-active) .cc-dev-only {
+    display: none !important;
+}

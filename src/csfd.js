@@ -129,6 +129,157 @@ export class Csfd {
     window.addEventListener('cc-hide-selected-reviews-updated', () => {
       this.hideSelectedUserReviews();
     });
+
+    // Initialize Home Panels Hiding
+    this.initHomePanels();
+
+    // LIVE DOM REFRESH LISTENER (Triggered by Settings Menu)
+    window.addEventListener('cc-ratings-updated', async () => {
+      // 1. Wipe old injected stars specific to your original code
+      document.querySelectorAll('.cc-own-rating, .cc-my-rating-col, .cc-my-rating-cell').forEach((el) => el.remove());
+      document.querySelectorAll('a[data-cc-star-added="true"]').forEach((el) => {
+        delete el.dataset.ccStarAdded;
+      });
+
+      // 2. Reload your original DB logic
+      const settings = await getSettings(SETTINGSNAME);
+      this.stars = settings?.stars || {};
+      await this.loadStarsFromIndexedDb();
+
+      // 3. Redraw the stars
+      await this.addStars();
+    });
+  }
+
+  initHomePanels() {
+    if (location.pathname !== '/' && location.pathname !== '') return;
+
+    const syncVisibility = () => {
+      const enabled = localStorage.getItem('cc_hide_home_panels') !== 'false';
+      let hiddenList = [];
+      try {
+        hiddenList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+      } catch (e) {}
+
+      const headers = document.querySelectorAll(`
+          .page-content .box-header > h2,
+          .page-content .updated-box-header > h2,
+          .page-content .updated-box-header > p,
+          .updated-box-homepage-video,
+          .page-content .updated-box-banner p,
+          .page-content .updated-box-banner-mobile p
+        `);
+
+      headers.forEach((headerEl) => {
+        const isVideoSlider = headerEl.classList.contains('updated-box-homepage-video');
+        let title = '';
+
+        if (isVideoSlider) {
+          title = 'Trailery a Videa';
+        } else {
+          title = Array.from(headerEl.childNodes)
+            .filter((node) => node.nodeType === Node.TEXT_NODE)
+            .map((node) => node.textContent)
+            .join('')
+            .replace(/\s+/g, ' ')
+            .trim();
+        }
+
+        if (!title || title.length > 60) return;
+
+        let wrapper =
+          headerEl.closest('.column') || headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
+
+        if (wrapper.classList.contains('column') && wrapper.children.length > 1) {
+          wrapper = headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
+        }
+
+        if (enabled && hiddenList.includes(title)) {
+          wrapper.style.display = 'none';
+        } else {
+          wrapper.style.display = '';
+        }
+
+        if (isVideoSlider) {
+          if (!headerEl.querySelector('.cc-hide-video-btn')) {
+            const btn = document.createElement('button');
+            btn.className = 'cc-hide-video-btn';
+            btn.title = 'Skrýt Trailery';
+            btn.textContent = 'skrýt trailery';
+
+            btn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              let currentList = [];
+              try {
+                currentList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+              } catch (err) {}
+
+              if (!currentList.includes(title)) {
+                currentList.push(title);
+                localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentList));
+                window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+              }
+            };
+            headerEl.appendChild(btn);
+          }
+        } else {
+          if (!headerEl.querySelector('.cc-hide-panel-btn')) {
+            const btn = document.createElement('button');
+            btn.className = 'cc-hide-panel-btn';
+            btn.title = 'Skrýt tento panel';
+            btn.textContent = 'skrýt';
+
+            btn.onclick = (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              let currentList = [];
+              try {
+                currentList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+              } catch (err) {}
+
+              if (!currentList.includes(title)) {
+                currentList.push(title);
+                localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentList));
+                window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+              }
+            };
+            headerEl.appendChild(btn);
+          }
+        }
+      });
+
+      // GROUP & ROW COLLAPSE ENGINE
+      document.querySelectorAll('.page-content .updated-box-group').forEach((group) => {
+        const items = Array.from(group.querySelectorAll(':scope > section, :scope > div.updated-box'));
+        if (items.length > 0) {
+          const allHidden = items.every((item) => item.style.display === 'none');
+          group.style.display = allHidden ? 'none' : '';
+        }
+      });
+
+      document.querySelectorAll('.page-content .row').forEach((row) => {
+        const cols = Array.from(row.querySelectorAll(':scope > .column'));
+        if (cols.length === 0) return;
+
+        const allHidden = cols.every((col) => {
+          if (col.style.display === 'none') return true;
+          const sections = Array.from(
+            col.querySelectorAll(':scope > section, :scope > div.updated-box, :scope > div.updated-box-group'),
+          );
+          if (sections.length === 0) return false;
+
+          return sections.every((sec) => sec.style.display === 'none');
+        });
+
+        row.style.display = allHidden ? 'none' : '';
+      });
+    };
+
+    syncVisibility();
+    window.addEventListener('cc-hidden-panels-updated', syncVisibility);
+    setTimeout(syncVisibility, 500);
+    setTimeout(syncVisibility, 1500);
   }
 
   showAllCreatorTabs() {
