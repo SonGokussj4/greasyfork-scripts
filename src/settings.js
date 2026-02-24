@@ -751,6 +751,28 @@ async function addSettingsButton() {
     });
   }
 
+  // --------------------------------------------------------
+  // Homepage Panels Visibility Logic
+  // --------------------------------------------------------
+  const updatePanelsFeatureState = () => {
+    // Evaluate the setting. (Default is true, so we check if it's explicitly 'false')
+    const isEnabled = localStorage.getItem('cc_hide_home_panels') !== 'false';
+
+    // Wait for body to exist before toggling the class (Firefox safety)
+    if (!document.body) {
+      window.addEventListener('DOMContentLoaded', updatePanelsFeatureState, { once: true });
+      return;
+    }
+
+    document.body.classList.toggle('cc-panels-feature-enabled', isEnabled);
+  };
+
+  // 1. Run immediately on load
+  updatePanelsFeatureState();
+
+  // 2. Listen for changes from the settings menu toggle
+  window.addEventListener('cc-hidden-panels-updated', updatePanelsFeatureState);
+
   const syncControlsFromStorage = () => {
     togglesTracker.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
     updateCreatorPreviewUI();
