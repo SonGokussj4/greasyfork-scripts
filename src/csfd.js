@@ -35,6 +35,8 @@ const BLOCKED_LINK_CLOSEST_SELECTORS = [
   '.span-more-small',
   '.more',
   '.article-more',
+  '#snippet--boxButtonCollection',
+  '.label-simple',
 ].join(', ');
 
 export class Csfd {

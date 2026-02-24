@@ -182,6 +182,8 @@
     '.span-more-small',
     '.more',
     '.article-more',
+    '#snippet--boxButtonCollection',
+    '.label-simple',
   ].join(', ');
 
   class Csfd {
