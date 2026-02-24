@@ -4,6 +4,8 @@ import {
   CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
 } from './config.js';
 
+import { escapeHtml } from './utils.js';
+
 const CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';
 const CREATOR_LINK_SELECTOR = 'a[href*="/tvurce/"], a[href*="/tvorca/"]';
 
@@ -15,13 +17,6 @@ let mouseX = 0,
 
 // Tracker for active network requests to prevent duplicate fetches
 const inflightRequests = new Map();
-
-// Escape HTML to prevent XSS from weird CSFD data
-const escapeHtml = (str) =>
-  String(str || '').replace(
-    /[&<>"']/g,
-    (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m],
-  );
 
 function ensurePreview() {
   if (previewRoot) return;

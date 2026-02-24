@@ -18,6 +18,7 @@ import {
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
+  CREATOR_PREVIEW_CACHE_HOURS_KEY,
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
 import { refreshRatingsBadges } from './settings-badges.js';
@@ -177,11 +178,41 @@ function getOrCreateImageModal() {
 // MAIN INITIALIZATION
 // ==========================================
 async function addSettingsButton() {
-  'use strict';
+  ('use strict');
+
+  // 1. FIREFOX SHIELD: Wait for the HTML body and header to actually exist!
+  if (document.readyState === 'loading') {
+    await new Promise((resolve) => window.addEventListener('DOMContentLoaded', resolve));
+  }
+
+  const loggedIn = isUserLoggedIn();
 
   const settingsButton = document.createElement('li');
   settingsButton.className = 'cc-menu-item';
   settingsButton.innerHTML = htmlContent;
+
+  // Disable main actions if the user is not logged in
+  if (!loggedIn) {
+    // Buttons & Cloud Icon
+    ['#cc-load-ratings-btn', '#cc-load-computed-btn', '#cc-sync-cloud-btn'].forEach((id) => {
+      const btn = settingsButton.querySelector(id);
+      if (btn) {
+        btn.disabled = true;
+        btn.title += ' (Vyžaduje přihlášení)';
+      }
+    });
+
+    // Badges
+    ['#cc-badge-red', '#cc-badge-black'].forEach((id) => {
+      const badge = settingsButton.querySelector(id);
+      if (badge) {
+        badge.classList.add('is-disabled');
+        badge.title += ' (Vyžaduje přihlášení)';
+        badge.removeAttribute('tabindex'); // Prevent keyboard focus
+        badge.removeAttribute('role');
+      }
+    });
+  }
 
   const dropdown = settingsButton.querySelector('.dropdown-content');
   if (dropdown) {
@@ -213,7 +244,9 @@ async function addSettingsButton() {
     if (body) body.classList.toggle('is-disabled', !enabled);
 
     window.dispatchEvent(
-      new CustomEvent('cc-creator-preview-toggled', { detail: { enabled, showBirth, showPhotoFrom: showPhoto } }),
+      new CustomEvent('cc-creator-preview-toggled', {
+        detail: { enabled, showBirth, showPhotoFrom: showPhoto },
+      }),
     );
   };
 
@@ -295,7 +328,7 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-ratings-estimate',
           storageKey: RATINGS_ESTIMATE_KEY,
-          defaultValue: false,
+          defaultValue: true,
           label: 'Vypočtení % při počtu hodnocení pod 10',
           tooltip: 'Matematicky dopočítá a zobrazí procentuální hodnocení i u filmů s méně než 10 hodnoceními.',
           eventName: 'cc-ratings-estimate-toggled',
@@ -308,7 +341,8 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-ratings-from-favorites',
           storageKey: RATINGS_FROM_FAVORITES_KEY,
-          defaultValue: false,
+          defaultValue: true,
+          requiresLogin: true,
           label: 'Zobrazit hodnocení z průměru oblíbených',
           tooltip: 'Zobrazí doplňující průměrné hodnocení, vypočítané pouze z uživatelů, které máte v oblíbených.',
           eventName: 'cc-ratings-from-favorites-toggled',
@@ -317,7 +351,8 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-add-ratings-date',
           storageKey: ADD_RATINGS_DATE_KEY,
-          defaultValue: false,
+          defaultValue: true,
+          requiresLogin: true,
           label: 'Zobrazit datum hodnocení',
           tooltip: 'V hlavičce s vaším hodnocením filmu vždy zobrazí konkrétní datum, kdy jste film hodnotili.',
           eventName: 'cc-add-ratings-date-toggled',
@@ -355,7 +390,7 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-show-all-creator-tabs',
           storageKey: SHOW_ALL_CREATOR_TABS_KEY,
-          defaultValue: false,
+          defaultValue: true,
           label: 'Zobrazit všechny záložky tvůrce',
           tooltip: 'Na profilu herce/režiséra automaticky rozbalí menu "Více" a ukáže všechny záložky vedle sebe.',
           eventName: 'cc-show-all-creator-tabs-toggled',
@@ -411,42 +446,56 @@ async function addSettingsButton() {
     },
   ];
 
-  const buildToggleHtml = (item) => `
-    <div class="cc-setting-row" title="${escapeHtml(item.tooltip || '')}">
-        <label class="cc-switch">
-            <input type="checkbox" id="${item.id}" />
-            <span class="cc-switch-bg"></span>
-        </label>
-        <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml(item.label)}</span>
-        ${
-          item.infoIcon
-            ? `
-            <div class="cc-setting-icons">
-                <div class="cc-info-icon" aria-label="${escapeHtml(item.infoIcon.text)}" data-image-url="${escapeHtml(item.infoIcon.url)}">
-                    <svg width="14" height="14"><use href="#cc-icon-info"></use></svg>
-                </div>
-            </div>`
-            : ''
-        }
-    </div>`;
+  const buildToggleHtml = (item) => {
+    const isDisabled = item.requiresLogin && !loggedIn;
+    const wrapperClass = isDisabled ? 'cc-requires-login' : '';
+    const titleSuffix = isDisabled ? '\n(Vyžaduje přihlášení)' : '';
+    const disabledAttr = isDisabled ? 'disabled' : '';
 
-  const buildGroupHtml = (item) => `
-    <div class="cc-setting-group" id="${item.id}-group" style="margin-top: 2px;">
-        <div class="cc-setting-row" title="${escapeHtml(item.tooltip || '')}">
-            <label class="cc-switch">
-                <input type="checkbox" id="${item.id}" />
-                <span class="cc-switch-bg"></span>
-            </label>
-            <div class="cc-setting-collapse-trigger" id="${item.groupToggleId}" aria-expanded="false">
-                <span class="cc-setting-label cc-grow">${escapeHtml(item.label)}</span>
-                <svg class="cc-chevron" width="14" height="14"><use href="#cc-icon-chevron"></use></svg>
-            </div>
-        </div>
-        <div class="cc-setting-sub" id="${item.groupBodyId}" hidden>
-            ${(item.childrenItems || []).map(buildToggleHtml).join('')}
-            ${item.childrenHtml || ''}
-        </div>
-    </div>`;
+    return `
+      <div class="cc-setting-row ${wrapperClass}" title="${escapeHtml((item.tooltip || '') + titleSuffix)}">
+          <label class="cc-switch">
+              <input type="checkbox" id="${item.id}" ${disabledAttr} />
+              <span class="cc-switch-bg"></span>
+          </label>
+          <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml(item.label)}</span>
+          ${
+            item.infoIcon
+              ? `
+              <div class="cc-setting-icons">
+                  <div class="cc-info-icon" aria-label="${escapeHtml(item.infoIcon.text)}" data-image-url="${escapeHtml(item.infoIcon.url)}">
+                      <svg width="14" height="14"><use href="#cc-icon-info"></use></svg>
+                  </div>
+              </div>`
+              : ''
+          }
+      </div>`;
+  };
+
+  const buildGroupHtml = (item) => {
+    const isDisabled = item.requiresLogin && !loggedIn;
+    const wrapperClass = isDisabled ? 'cc-requires-login' : '';
+    const titleSuffix = isDisabled ? '\n(Vyžaduje přihlášení)' : '';
+    const disabledAttr = isDisabled ? 'disabled' : '';
+
+    return `
+      <div class="cc-setting-group ${wrapperClass}" id="${item.id}-group" style="margin-top: 2px;">
+          <div class="cc-setting-row" title="${escapeHtml((item.tooltip || '') + titleSuffix)}">
+              <label class="cc-switch">
+                  <input type="checkbox" id="${item.id}" ${disabledAttr} />
+                  <span class="cc-switch-bg"></span>
+              </label>
+              <div class="cc-setting-collapse-trigger" id="${item.groupToggleId}" aria-expanded="false">
+                  <span class="cc-setting-label cc-grow">${escapeHtml(item.label)}</span>
+                  <svg class="cc-chevron" width="14" height="14"><use href="#cc-icon-chevron"></use></svg>
+              </div>
+          </div>
+          <div class="cc-setting-sub" id="${item.groupBodyId}" hidden>
+              ${(item.childrenItems || []).map(buildToggleHtml).join('')}
+              ${item.childrenHtml || ''}
+          </div>
+      </div>`;
+  };
 
   const dynamicContainer = settingsButton.querySelector('#cc-dynamic-settings-container');
   if (dynamicContainer) {
@@ -473,7 +522,12 @@ async function addSettingsButton() {
 
     element.addEventListener('change', () => {
       localStorage.setItem(storageKey, String(element.checked));
-      if (eventName) window.dispatchEvent(new CustomEvent(eventName, { detail: { enabled: element.checked } }));
+      if (eventName)
+        window.dispatchEvent(
+          new CustomEvent(eventName, {
+            detail: { enabled: element.checked },
+          }),
+        );
       if (toastOn && toastOff) showSettingsInfoToast(element.checked ? toastOn : toastOff);
       if (callback) callback();
     });
@@ -519,9 +573,9 @@ async function addSettingsButton() {
 
   const cacheSelect = settingsButton.querySelector('#cc-creator-preview-cache-hours');
   if (cacheSelect) {
-    cacheSelect.value = localStorage.getItem('cc_creator_preview_cache_hours') || '24';
+    cacheSelect.value = localStorage.getItem(CREATOR_PREVIEW_CACHE_HOURS_KEY) || '24';
     cacheSelect.addEventListener('change', () => {
-      localStorage.setItem('cc_creator_preview_cache_hours', cacheSelect.value);
+      localStorage.setItem(CREATOR_PREVIEW_CACHE_HOURS_KEY, cacheSelect.value);
       showSettingsInfoToast('Délka mezipaměti uložena.');
     });
   }
@@ -664,9 +718,25 @@ async function addSettingsButton() {
   }
 
   const devBtn = settingsButton.querySelector('#cc-maint-dev-btn');
+
   const updateDevState = () => {
+    // 1. Get the current state
     const isDev = localStorage.getItem('cc_dev_mode') === 'true';
-    if (devBtn) devBtn.textContent = isDev ? 'DEV: ON' : 'DEV: OFF';
+
+    // 2. Update the button text (safe because devBtn is in memory)
+    if (devBtn) {
+      devBtn.textContent = isDev ? 'DEV: ON' : 'DEV: OFF';
+    }
+
+    // 3. Firefox safety check: Wait for the body to exist before touching it
+    if (!document.body) {
+      window.addEventListener('DOMContentLoaded', updateDevState, {
+        once: true,
+      });
+      return;
+    }
+
+    // 4. Update the body class
     document.body.classList.toggle('cc-dev-mode-active', isDev);
   };
 
@@ -698,7 +768,7 @@ async function addSettingsButton() {
     localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
     localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
-    localStorage.removeItem('cc_creator_preview_cache_hours');
+    localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
     localStorage.removeItem('cc_hide_home_panels');
     localStorage.removeItem('cc_hidden_panels_list');
     localStorage.removeItem('cc_hide_panels_collapsed');
@@ -712,7 +782,11 @@ async function addSettingsButton() {
 
     syncControlsFromStorage();
 
-    window.dispatchEvent(new CustomEvent('cc-gallery-image-links-toggled', { detail: { enabled: true } }));
+    window.dispatchEvent(
+      new CustomEvent('cc-gallery-image-links-toggled', {
+        detail: { enabled: true },
+      }),
+    );
     window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
     window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
     showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
@@ -730,7 +804,11 @@ async function addSettingsButton() {
       try {
         await deleteIndexedDB(INDEXED_DB_NAME);
         invalidateRatingsModalCache();
-        window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
+        window.dispatchEvent(
+          new CustomEvent('cc-ratings-updated', {
+            detail: { skipSync: true },
+          }),
+        );
         showSettingsInfoToast('IndexedDB byla smazána.');
       } catch (error) {
         console.error('[CC] Failed to delete IndexedDB:', error);
@@ -806,7 +884,9 @@ async function addSettingsButton() {
       syncControlsFromStorage();
       window.dispatchEvent(
         new CustomEvent('cc-gallery-image-links-toggled', {
-          detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+          detail: {
+            enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
+          },
         }),
       );
       refreshTable();
@@ -820,7 +900,9 @@ async function addSettingsButton() {
       syncControlsFromStorage();
       window.dispatchEvent(
         new CustomEvent('cc-gallery-image-links-toggled', {
-          detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+          detail: {
+            enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
+          },
         }),
       );
       refreshTable();
@@ -883,7 +965,11 @@ async function addSettingsButton() {
   setupBadge('#cc-badge-red', 'direct');
   setupBadge('#cc-badge-black', 'computed');
 
-  const badgeRefreshOptions = { isUserLoggedIn, getCurrentUserSlug, getMostFrequentUserSlug };
+  const badgeRefreshOptions = {
+    isUserLoggedIn,
+    getCurrentUserSlug,
+    getMostFrequentUserSlug,
+  };
   const refreshBadgesSafely = () =>
     refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((err) =>
       console.error('[CC] Failed to refresh badges:', err),

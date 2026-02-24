@@ -1519,3 +1519,25 @@ body.cc-menu-open .box-video {
     background-color: #f5f5f5;
     cursor: not-allowed;
 }
+
+/* =========================================================
+   9. LOGGED-OUT DISABLED STATES
+   ========================================================= */
+.cc-requires-login {
+    opacity: 0.5;
+    filter: grayscale(100%);
+    cursor: not-allowed !important;
+}
+
+/* Prevent clicks on the toggle switches inside disabled rows */
+.cc-setting-row.cc-requires-login *,
+.cc-setting-group.cc-requires-login * {
+    pointer-events: none;
+}
+
+/* Make sure the buttons keep pointer events so the browser triggers hover/title */
+.cc-button.cc-requires-login,
+.cc-sync-icon-btn.cc-requires-login,
+.cc-badge.cc-requires-login {
+    pointer-events: auto;
+}
