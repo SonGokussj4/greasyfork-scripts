@@ -341,7 +341,7 @@ function setLoadButtonMode(button, mode) {
   }
 
   button.disabled = false;
-  labelEl.textContent = 'Načíst moje hodnocení';
+  labelEl.textContent = 'Načíst hodnocení';
 }
 
 function getPersistedLoaderState() {

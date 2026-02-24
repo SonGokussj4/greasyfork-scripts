@@ -177,11 +177,36 @@ function getOrCreateImageModal() {
 // MAIN INITIALIZATION
 // ==========================================
 async function addSettingsButton() {
-  'use strict';
+  ('use strict');
+
+  const loggedIn = isUserLoggedIn();
 
   const settingsButton = document.createElement('li');
   settingsButton.className = 'cc-menu-item';
   settingsButton.innerHTML = htmlContent;
+
+  // Disable main actions if the user is not logged in
+  if (!loggedIn) {
+    // Buttons & Cloud Icon
+    ['#cc-load-ratings-btn', '#cc-load-computed-btn', '#cc-sync-cloud-btn'].forEach((id) => {
+      const btn = settingsButton.querySelector(id);
+      if (btn) {
+        btn.disabled = true;
+        btn.title += ' (Vyžaduje přihlášení)';
+      }
+    });
+
+    // Badges
+    ['#cc-badge-red', '#cc-badge-black'].forEach((id) => {
+      const badge = settingsButton.querySelector(id);
+      if (badge) {
+        badge.classList.add('is-disabled');
+        badge.title += ' (Vyžaduje přihlášení)';
+        badge.removeAttribute('tabindex'); // Prevent keyboard focus
+        badge.removeAttribute('role');
+      }
+    });
+  }
 
   const dropdown = settingsButton.querySelector('.dropdown-content');
   if (dropdown) {
@@ -309,6 +334,7 @@ async function addSettingsButton() {
           id: 'cc-ratings-from-favorites',
           storageKey: RATINGS_FROM_FAVORITES_KEY,
           defaultValue: false,
+          requiresLogin: true,
           label: 'Zobrazit hodnocení z průměru oblíbených',
           tooltip: 'Zobrazí doplňující průměrné hodnocení, vypočítané pouze z uživatelů, které máte v oblíbených.',
           eventName: 'cc-ratings-from-favorites-toggled',
@@ -318,6 +344,7 @@ async function addSettingsButton() {
           id: 'cc-add-ratings-date',
           storageKey: ADD_RATINGS_DATE_KEY,
           defaultValue: false,
+          requiresLogin: true,
           label: 'Zobrazit datum hodnocení',
           tooltip: 'V hlavičce s vaším hodnocením filmu vždy zobrazí konkrétní datum, kdy jste film hodnotili.',
           eventName: 'cc-add-ratings-date-toggled',
@@ -411,42 +438,56 @@ async function addSettingsButton() {
     },
   ];
 
-  const buildToggleHtml = (item) => `
-    <div class="cc-setting-row" title="${escapeHtml(item.tooltip || '')}">
-        <label class="cc-switch">
-            <input type="checkbox" id="${item.id}" />
-            <span class="cc-switch-bg"></span>
-        </label>
-        <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml(item.label)}</span>
-        ${
-          item.infoIcon
-            ? `
-            <div class="cc-setting-icons">
-                <div class="cc-info-icon" aria-label="${escapeHtml(item.infoIcon.text)}" data-image-url="${escapeHtml(item.infoIcon.url)}">
-                    <svg width="14" height="14"><use href="#cc-icon-info"></use></svg>
-                </div>
-            </div>`
-            : ''
-        }
-    </div>`;
+  const buildToggleHtml = (item) => {
+    const isDisabled = item.requiresLogin && !loggedIn;
+    const wrapperClass = isDisabled ? 'cc-requires-login' : '';
+    const titleSuffix = isDisabled ? '\n(Vyžaduje přihlášení)' : '';
+    const disabledAttr = isDisabled ? 'disabled' : '';
 
-  const buildGroupHtml = (item) => `
-    <div class="cc-setting-group" id="${item.id}-group" style="margin-top: 2px;">
-        <div class="cc-setting-row" title="${escapeHtml(item.tooltip || '')}">
-            <label class="cc-switch">
-                <input type="checkbox" id="${item.id}" />
-                <span class="cc-switch-bg"></span>
-            </label>
-            <div class="cc-setting-collapse-trigger" id="${item.groupToggleId}" aria-expanded="false">
-                <span class="cc-setting-label cc-grow">${escapeHtml(item.label)}</span>
-                <svg class="cc-chevron" width="14" height="14"><use href="#cc-icon-chevron"></use></svg>
-            </div>
-        </div>
-        <div class="cc-setting-sub" id="${item.groupBodyId}" hidden>
-            ${(item.childrenItems || []).map(buildToggleHtml).join('')}
-            ${item.childrenHtml || ''}
-        </div>
-    </div>`;
+    return `
+      <div class="cc-setting-row ${wrapperClass}" title="${escapeHtml((item.tooltip || '') + titleSuffix)}">
+          <label class="cc-switch">
+              <input type="checkbox" id="${item.id}" ${disabledAttr} />
+              <span class="cc-switch-bg"></span>
+          </label>
+          <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml(item.label)}</span>
+          ${
+            item.infoIcon
+              ? `
+              <div class="cc-setting-icons">
+                  <div class="cc-info-icon" aria-label="${escapeHtml(item.infoIcon.text)}" data-image-url="${escapeHtml(item.infoIcon.url)}">
+                      <svg width="14" height="14"><use href="#cc-icon-info"></use></svg>
+                  </div>
+              </div>`
+              : ''
+          }
+      </div>`;
+  };
+
+  const buildGroupHtml = (item) => {
+    const isDisabled = item.requiresLogin && !loggedIn;
+    const wrapperClass = isDisabled ? 'cc-requires-login' : '';
+    const titleSuffix = isDisabled ? '\n(Vyžaduje přihlášení)' : '';
+    const disabledAttr = isDisabled ? 'disabled' : '';
+
+    return `
+      <div class="cc-setting-group ${wrapperClass}" id="${item.id}-group" style="margin-top: 2px;">
+          <div class="cc-setting-row" title="${escapeHtml((item.tooltip || '') + titleSuffix)}">
+              <label class="cc-switch">
+                  <input type="checkbox" id="${item.id}" ${disabledAttr} />
+                  <span class="cc-switch-bg"></span>
+              </label>
+              <div class="cc-setting-collapse-trigger" id="${item.groupToggleId}" aria-expanded="false">
+                  <span class="cc-setting-label cc-grow">${escapeHtml(item.label)}</span>
+                  <svg class="cc-chevron" width="14" height="14"><use href="#cc-icon-chevron"></use></svg>
+              </div>
+          </div>
+          <div class="cc-setting-sub" id="${item.groupBodyId}" hidden>
+              ${(item.childrenItems || []).map(buildToggleHtml).join('')}
+              ${item.childrenHtml || ''}
+          </div>
+      </div>`;
+  };
 
   const dynamicContainer = settingsButton.querySelector('#cc-dynamic-settings-container');
   if (dynamicContainer) {
