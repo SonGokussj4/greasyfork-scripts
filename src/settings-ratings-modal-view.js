@@ -16,24 +16,37 @@ function getRatingsTableModal() {
   overlay.innerHTML = `
     <div class="cc-ratings-table-modal" role="dialog" aria-modal="true" aria-labelledby="cc-ratings-table-title">
       <div class="cc-ratings-table-head">
-        <h3 id="cc-ratings-table-title">Přehled hodnocení</h3>
-        <button type="button" class="cc-ratings-table-close" aria-label="Zavřít">×</button>
+        <h3 id="cc-ratings-table-title" style="flex: 1; margin: 0; font-size: 15px;">Přehled hodnocení</h3>
+
+        <div class="cc-ratings-scope-toggle">
+          <button type="button" data-scope="all">Všechny</button>
+          <button type="button" data-scope="direct">Přímo hodnocené</button>
+          <button type="button" data-scope="computed">Spočtené</button>
+        </div>
+
+        <div style="flex: 1; display: flex; justify-content: flex-end;">
+          <button type="button" class="cc-ratings-table-close" aria-label="Zavřít">×</button>
+        </div>
       </div>
       <div class="cc-ratings-table-toolbar">
         <input type="search" class="cc-ratings-table-search" placeholder="Filtrovat (název, URL, hodnocení, datum)…" />
-        <div class="cc-ratings-type-multiselect" data-open="false">
-          <button type="button" class="cc-ratings-type-toggle" aria-expanded="false">All types</button>
-          <div class="cc-ratings-type-menu" hidden>
-            <label><input type="checkbox" value="all" checked /> All</label>
-            <label><input type="checkbox" value="movie" /> Movie</label>
-            <label><input type="checkbox" value="series" /> Series</label>
-            <label><input type="checkbox" value="season" /> Season</label>
-            <label><input type="checkbox" value="episode" /> Episode</label>
+
+        <div class="cc-toolbar-right">
+          <div class="cc-ratings-type-multiselect" data-open="false">
+            <button type="button" class="cc-ratings-type-toggle" aria-expanded="false">All types</button>
+            <div class="cc-ratings-type-menu" hidden>
+              <label><input type="checkbox" value="all" checked /> All</label>
+              <label><input type="checkbox" value="movie" /> Movie</label>
+              <label><input type="checkbox" value="series" /> Series</label>
+              <label><input type="checkbox" value="season" /> Season</label>
+              <label><input type="checkbox" value="episode" /> Episode</label>
+            </div>
           </div>
+          <span class="cc-ratings-table-summary">0 položek</span>
+          <button type="button" class="cc-button cc-button-red cc-button-iconed cc-ratings-table-export">Export</button>
         </div>
-        <span class="cc-ratings-table-summary">0 položek</span>
-        <button type="button" class="cc-button cc-button-red cc-button-iconed cc-ratings-table-export">Export CSV</button>
       </div>
+
       <div class="cc-ratings-table-wrap">
         <table class="cc-ratings-table" aria-live="polite">
           <thead>
@@ -70,6 +83,7 @@ function getRatingsTableModal() {
     typeFilters: new Set(['all']),
     sortKey: 'name',
     sortDir: 'asc',
+    scopeFilter: 'all',
     renderToken: 0,
   };
 
@@ -124,7 +138,7 @@ function getRatingsTableModal() {
       <tr>
         <td>
           <div class="cc-ratings-table-name-row">
-            <span class="cc-ratings-square ${escapeHtml(row.ratingSquareClass)}" aria-hidden="true"></span>
+            <span class="cc-ratings-square ${escapeHtml(row.ratingSquareClass)} ${row.isComputed ? 'is-computed' : ''}" aria-hidden="true"></span>
             ${nameLink}
             ${detailsButton}
             ${iconLink}
@@ -132,7 +146,7 @@ function getRatingsTableModal() {
         </td>
         <td class="cc-ratings-table-type">${escapeHtml(row.typeDisplay)}</td>
         <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
-        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml(row.ratingText)}</td>
+        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''} ${row.isComputed ? 'is-computed' : ''}">${escapeHtml(row.ratingText)}</td>
         <td class="cc-ratings-table-date">${escapeHtml(row.date || '—')}</td>
       </tr>
     `;
@@ -187,7 +201,16 @@ function getRatingsTableModal() {
   const render = () => {
     state.renderToken += 1;
     const renderToken = state.renderToken;
-    const typeFiltered = filterRowsByType(state.rows, state.typeFilters);
+
+    // 1. Filter by scope first
+    const scopeFiltered = state.rows.filter((r) => {
+      if (state.scopeFilter === 'direct') return !r.isComputed;
+      if (state.scopeFilter === 'computed') return r.isComputed;
+      return true;
+    });
+
+    // 2. Filter by type using the newly filtered scope list (BUG FIX)
+    const typeFiltered = filterRowsByType(scopeFiltered, state.typeFilters);
     const filtered = filterRows(typeFiltered, state.search);
     const sorted = sortRows(filtered, state.sortKey, state.sortDir);
     state.visibleRows = sorted;
@@ -207,10 +230,22 @@ function getRatingsTableModal() {
     }
   };
 
-  overlay.openWithData = ({ rows, modalTitle }) => {
-    console.debug('[CC] ratings modal opening, rows count', rows.length, modalTitle);
-    // update export button availability (always enabled since rows supplied)
+  const scopeBtns = overlay.querySelectorAll('.cc-ratings-scope-toggle button');
+  scopeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.scopeFilter = btn.dataset.scope;
+      scopeBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+      render();
+    });
+  });
+
+  overlay.openWithData = ({ rows, modalTitle, initialScope = 'all' }) => {
+    // update export button availability
     if (exportBtn) exportBtn.disabled = rows.length === 0;
+
+    state.scopeFilter = initialScope;
+    scopeBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.scope === initialScope));
+
     state.rows = rows;
     state.search = '';
     state.typeFilters = new Set(['all']);
@@ -279,11 +314,9 @@ function getRatingsTableModal() {
     exportBtn.addEventListener('click', () => {
       // generate CSV from currently visible rows
       const csvLines = [];
-      // include required columns plus fullURL and movieID
       const header = ['Název', 'Typ', 'Rok', 'Hodnocení', 'Datum hodnocení', 'URL', 'movieID'];
       csvLines.push(header.map((h) => `"${h.replace(/"/g, '""')}"`).join(','));
       state.visibleRows.forEach((row) => {
-        // rating numeric: prefer ratingValue (NaN -> empty, 0 -> 0, etc.)
         let ratingNum = '';
         if (Number.isFinite(row.ratingValue)) {
           ratingNum = Math.round(row.ratingValue);
@@ -391,7 +424,8 @@ function getRatingsTableModal() {
   return overlay;
 }
 
-export function openRatingsTableView({ rows, modalTitle }) {
+// BUG FIX: Ensure initialScope defaults properly and passes down.
+export function openRatingsTableView({ rows, modalTitle, initialScope = 'all' }) {
   const modal = getRatingsTableModal();
-  modal.openWithData({ rows, modalTitle });
+  modal.openWithData({ rows, modalTitle, initialScope });
 }

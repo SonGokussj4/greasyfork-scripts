@@ -998,7 +998,7 @@ async function addSettingsButton() {
         showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
         return;
       }
-      openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((err) =>
+      openRatingsTableModal(settingsButton, 'all', ratingsModalOptions).catch((err) =>
         console.error(`[CC] Failed to open ratings table via icon button:`, err),
       );
     };

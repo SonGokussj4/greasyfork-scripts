@@ -772,11 +772,6 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     border-bottom: 1px solid #ececec;
 }
 
-.cc-ratings-table-head h3 {
-    margin: 0;
-    font-size: 15px;
-}
-
 .cc-ratings-table-close {
     border: 0;
     background: transparent;
@@ -1579,4 +1574,85 @@ body.cc-menu-open .box-video {
 /* Align the list button */
 #cc-open-ratings-btn {
     margin-right: 2px;
+}
+
+/* =========================================================
+    11. RATINGS TABLE SPECIFIC
+    ========================================================= */
+/* Center Toolbar Elements & Scope Toggle */
+.cc-ratings-table-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.cc-ratings-table-toolbar .cc-ratings-table-search {
+    flex: 1 1 200px;
+    max-width: 300px;
+    margin: 0 !important;
+}
+
+.cc-toolbar-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex: 1 1 200px;
+}
+
+/* Modern 3-Button Segmented Control centered in Header */
+.cc-ratings-scope-toggle {
+    display: flex;
+    background: #eef0f2;
+    border-radius: 8px;
+    padding: 4px;
+    gap: 2px;
+    margin: 0 auto;
+}
+
+.cc-ratings-scope-toggle button {
+    border: none;
+    background: transparent;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #666;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-ratings-scope-toggle button:hover {
+    color: #111;
+}
+
+.cc-ratings-scope-toggle button.is-active[data-scope="all"] {
+    background: #fff;
+    color: #222;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.cc-ratings-scope-toggle button.is-active[data-scope="direct"] {
+    background: var(--cc-color-red);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(170, 44, 22, 0.3);
+}
+
+.cc-ratings-scope-toggle button.is-active[data-scope="computed"] {
+    background: #000;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Computed Table Stars & Squares should be strictly black */
+.cc-ratings-table-rating.is-computed {
+    color: #000 !important;
+}
+
+.cc-ratings-square.is-computed {
+    background: #000 !important;
 }

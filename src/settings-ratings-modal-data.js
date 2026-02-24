@@ -144,6 +144,7 @@ export function toModalRows(records) {
       ratingSquareClass: getRatingSquareClass(record.rating),
       date: (record.date || '').trim(),
       dateSortValue: parseCzechDateToSortableValue(record.date),
+      isComputed: record.computed === true,
       rawRecord: { ...record },
     };
   });
