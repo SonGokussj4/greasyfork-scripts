@@ -987,6 +987,26 @@ async function addSettingsButton() {
   setupBadge('#cc-badge-red', 'direct');
   setupBadge('#cc-badge-black', 'computed');
 
+  // Setup the dedicated list button in the settings menu
+  const listBtn = settingsButton.querySelector('#cc-open-ratings-btn');
+  if (listBtn) {
+    const handler = (e) => {
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+
+      if (!isUserLoggedIn()) {
+        showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
+        return;
+      }
+      openRatingsTableModal(settingsButton, 'direct', ratingsModalOptions).catch((err) =>
+        console.error(`[CC] Failed to open ratings table via icon button:`, err),
+      );
+    };
+
+    listBtn.addEventListener('click', handler);
+    listBtn.addEventListener('keydown', handler);
+  }
+
   const badgeRefreshOptions = {
     isUserLoggedIn,
     getCurrentUserSlug,

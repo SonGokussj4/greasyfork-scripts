@@ -721,6 +721,7 @@ export class Csfd {
       if (
         !/\/\d+-/.test(href) ||
         /[?&](page|comment)=\d+/i.test(href) ||
+        /[?&]modal=/i.test(href) ||
         /\/(galerie|videa?|tvurci|obsahy?)\//.test(href)
       ) {
         return false;
