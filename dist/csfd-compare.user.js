@@ -4857,6 +4857,11 @@
   // ==========================================
   async function addSettingsButton() {
 
+    // 1. FIREFOX SHIELD: Wait for the HTML body and header to actually exist!
+    if (document.readyState === 'loading') {
+      await new Promise((resolve) => window.addEventListener('DOMContentLoaded', resolve));
+    }
+
     const loggedIn = isUserLoggedIn();
 
     const settingsButton = document.createElement('li');
@@ -4916,7 +4921,9 @@
       if (body) body.classList.toggle('is-disabled', !enabled);
 
       window.dispatchEvent(
-        new CustomEvent('cc-creator-preview-toggled', { detail: { enabled, showBirth, showPhotoFrom: showPhoto } }),
+        new CustomEvent('cc-creator-preview-toggled', {
+          detail: { enabled, showBirth, showPhotoFrom: showPhoto },
+        }),
       );
     };
 
@@ -5192,7 +5199,12 @@
 
       element.addEventListener('change', () => {
         localStorage.setItem(storageKey, String(element.checked));
-        if (eventName) window.dispatchEvent(new CustomEvent(eventName, { detail: { enabled: element.checked } }));
+        if (eventName)
+          window.dispatchEvent(
+            new CustomEvent(eventName, {
+              detail: { enabled: element.checked },
+            }),
+          );
         if (callback) callback();
       });
     }
@@ -5382,9 +5394,25 @@
     }
 
     const devBtn = settingsButton.querySelector('#cc-maint-dev-btn');
+
     const updateDevState = () => {
+      // 1. Get the current state
       const isDev = localStorage.getItem('cc_dev_mode') === 'true';
-      if (devBtn) devBtn.textContent = isDev ? 'DEV: ON' : 'DEV: OFF';
+
+      // 2. Update the button text (safe because devBtn is in memory)
+      if (devBtn) {
+        devBtn.textContent = isDev ? 'DEV: ON' : 'DEV: OFF';
+      }
+
+      // 3. Firefox safety check: Wait for the body to exist before touching it
+      if (!document.body) {
+        window.addEventListener('DOMContentLoaded', updateDevState, {
+          once: true,
+        });
+        return;
+      }
+
+      // 4. Update the body class
       document.body.classList.toggle('cc-dev-mode-active', isDev);
     };
 
@@ -5430,7 +5458,11 @@
 
       syncControlsFromStorage();
 
-      window.dispatchEvent(new CustomEvent('cc-gallery-image-links-toggled', { detail: { enabled: true } }));
+      window.dispatchEvent(
+        new CustomEvent('cc-gallery-image-links-toggled', {
+          detail: { enabled: true },
+        }),
+      );
       window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
       window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
       showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
@@ -5448,7 +5480,11 @@
         try {
           await deleteIndexedDB(INDEXED_DB_NAME);
           invalidateRatingsModalCache();
-          window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
+          window.dispatchEvent(
+            new CustomEvent('cc-ratings-updated', {
+              detail: { skipSync: true },
+            }),
+          );
           showSettingsInfoToast('IndexedDB byla smazána.');
         } catch (error) {
           console.error('[CC] Failed to delete IndexedDB:', error);
@@ -5524,7 +5560,9 @@
         syncControlsFromStorage();
         window.dispatchEvent(
           new CustomEvent('cc-gallery-image-links-toggled', {
-            detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+            detail: {
+              enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
+            },
           }),
         );
         refreshTable();
@@ -5538,7 +5576,9 @@
         syncControlsFromStorage();
         window.dispatchEvent(
           new CustomEvent('cc-gallery-image-links-toggled', {
-            detail: { enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true) },
+            detail: {
+              enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
+            },
           }),
         );
         refreshTable();
@@ -5601,7 +5641,11 @@
     setupBadge('#cc-badge-red', 'direct');
     setupBadge('#cc-badge-black', 'computed');
 
-    const badgeRefreshOptions = { isUserLoggedIn, getCurrentUserSlug, getMostFrequentUserSlug };
+    const badgeRefreshOptions = {
+      isUserLoggedIn,
+      getCurrentUserSlug,
+      getMostFrequentUserSlug,
+    };
     const refreshBadgesSafely = () =>
       refreshRatingsBadges(settingsButton, badgeRefreshOptions).catch((err) =>
         console.error('[CC] Failed to refresh badges:', err),
