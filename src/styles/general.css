@@ -547,7 +547,7 @@ body:not(.cc-panels-feature-enabled) .cc-hide-video-btn {
 /* =========================================
    DEV MODE
    ========================================= */
-body:not(.cc-dev-mode-active) .fancy-alert-controls,
+body:not(.cc-dev-mode-active) .cc-settings-sticky,
 body:not(.cc-dev-mode-active) .cc-dev-only {
     display: none !important;
 }

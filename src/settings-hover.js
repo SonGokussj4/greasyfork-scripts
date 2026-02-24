@@ -63,42 +63,79 @@ export function initializeSettingsMenuHover(menuButton) {
 
   console.log('🟣 DEBUG:', DEBUG);
   if (DEBUG) {
-    let controlsContainer = document.querySelector('.fancy-alert-controls');
-    if (!controlsContainer) {
-      controlsContainer = document.createElement('div');
-      controlsContainer.className = 'fancy-alert-controls';
-      Object.assign(controlsContainer.style, {
-        position: 'fixed',
-        top: '4px',
-        right: '150px',
-        zIndex: '9999',
-        display: 'flex', // Fixed invalid 'cc-flex'
+    // Place the debug toggle inside the settings menu next to the DEV button.
+    // Fallback: if the settings menu isn't available yet, create a simple floating control.
+    const maintActions = menuButton.querySelector('.cc-maint-actions');
+    let checkbox;
+    if (maintActions) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'cc-setting-row cc-dev-only';
+      wrapper.title = 'Při aktivaci nechá CC menu trvale otevřené.';
+
+      const switchLabel = document.createElement('label');
+      switchLabel.className = 'cc-switch';
+
+      checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.id = 'cc-debug-hover-checkbox';
+      checkbox.checked = localStorage.getItem(HEADER_HOVER_STORAGE_KEY) === 'true';
+
+      const switchBg = document.createElement('span');
+      switchBg.className = 'cc-switch-bg';
+
+      switchLabel.appendChild(checkbox);
+      switchLabel.appendChild(switchBg);
+
+      const labelText = document.createElement('span');
+      labelText.className = 'cc-setting-label';
+      labelText.textContent = 'Hovered';
+
+      wrapper.appendChild(switchLabel);
+      wrapper.appendChild(labelText);
+
+      const devBtn = maintActions.querySelector('#cc-maint-dev-btn');
+      if (devBtn) {
+        maintActions.insertBefore(wrapper, devBtn);
+      } else {
+        maintActions.appendChild(wrapper);
+      }
+    } else {
+      let controlsContainer = document.querySelector('.fancy-alert-controls');
+      if (!controlsContainer) {
+        controlsContainer = document.createElement('div');
+        controlsContainer.className = 'fancy-alert-controls';
+        Object.assign(controlsContainer.style, {
+          position: 'fixed',
+          top: '4px',
+          right: '150px',
+          zIndex: '9999',
+          display: 'flex',
+          alignItems: 'center',
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          padding: '8px 16px',
+        });
+        document.body.appendChild(controlsContainer);
+      }
+
+      controlsContainer.innerHTML = '';
+      const checkboxLabel = document.createElement('label');
+      Object.assign(checkboxLabel.style, {
+        display: 'inline-flex',
         alignItems: 'center',
-        background: 'rgba(255,255,255,0.95)',
-        borderRadius: '8px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-        padding: '8px 16px',
+        marginRight: '10px',
+        cursor: 'pointer',
       });
-      document.body.appendChild(controlsContainer);
+      checkboxLabel.textContent = 'Hovered';
+
+      checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.style.marginRight = '5px';
+      checkbox.checked = localStorage.getItem(HEADER_HOVER_STORAGE_KEY) === 'true';
+      checkboxLabel.prepend(checkbox);
+      controlsContainer.appendChild(checkboxLabel);
     }
-
-    controlsContainer.innerHTML = '';
-
-    const checkboxLabel = document.createElement('label');
-    Object.assign(checkboxLabel.style, {
-      display: 'inline-flex',
-      alignItems: 'center',
-      marginRight: '10px',
-      cursor: 'pointer',
-    });
-    checkboxLabel.textContent = 'Hovered';
-
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.style.marginRight = '5px';
-    checkbox.checked = localStorage.getItem(HEADER_HOVER_STORAGE_KEY) === 'true';
-    checkboxLabel.prepend(checkbox);
-    controlsContainer.appendChild(checkboxLabel);
 
     const menuLink = menuButton.querySelector('.csfd-compare-menu');
 
@@ -137,21 +174,23 @@ export function initializeSettingsMenuHover(menuButton) {
       });
     }
 
-    if (checkbox.checked) {
+    if (checkbox && checkbox.checked) {
       enableDebugHover();
-    } else {
+    } else if (checkbox) {
       enableNormalHover();
     }
 
-    checkbox.addEventListener('change', function () {
-      if (checkbox.checked) {
-        localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'true');
-        enableDebugHover();
-      } else {
-        localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'false');
-        enableNormalHover();
-      }
-    });
+    if (checkbox) {
+      checkbox.addEventListener('change', function () {
+        if (checkbox.checked) {
+          localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'true');
+          enableDebugHover();
+        } else {
+          localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'false');
+          enableNormalHover();
+        }
+      });
+    }
   } else {
     bindHoverHandlers(menuButton, {
       get hoverTimeout() {
