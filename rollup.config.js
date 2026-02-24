@@ -105,7 +105,19 @@ export default {
     //   output: 'bundle.css', // Output CSS file
     // }),
     postcss({
-      plugins: [simplevars(), nested(), cssnext({ warnForDuplicates: false }), cssnano()],
+      plugins: [
+        simplevars(),
+        nested(),
+        cssnext({ warnForDuplicates: false }),
+        cssnano({
+          preset: [
+            'default',
+            {
+              svgo: false,
+            },
+          ],
+        }),
+      ],
       extensions: ['.css'],
     }),
     injectScriptVersion(),
