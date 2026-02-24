@@ -1,5 +1,4 @@
 import { DEBUG } from './env.js';
-import { bindFancyAlertButton } from './fancy-alert.js';
 
 const HEADER_HOVER_STORAGE_KEY = 'headerBarHovered';
 const HOVER_TOGGLE_DELAY_MS = 200;
@@ -100,17 +99,6 @@ export function initializeSettingsMenuHover(menuButton) {
     checkbox.checked = localStorage.getItem(HEADER_HOVER_STORAGE_KEY) === 'true';
     checkboxLabel.prepend(checkbox);
     controlsContainer.appendChild(checkboxLabel);
-
-    let alertButton = document.querySelector('.fancy-alert-button');
-    if (!alertButton) {
-      alertButton = document.createElement('button');
-      alertButton.textContent = 'Show Fancy Alert';
-      alertButton.className = 'fancy-alert-button';
-    } else if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
-      alertButton.parentNode.removeChild(alertButton);
-    }
-    bindFancyAlertButton(alertButton);
-    controlsContainer.appendChild(alertButton);
 
     const menuLink = menuButton.querySelector('.csfd-compare-menu');
 

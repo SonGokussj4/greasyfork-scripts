@@ -1,12 +1,10 @@
 import { Csfd } from './csfd.js';
 import { delay } from './utils.js';
-import './styles/fancy-alert.css';
 import './styles/alert-modal.css';
 import './styles/cc-menu.css';
 import './styles/general.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
-import { fancyAlert } from './fancy-alert.js';
 import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
 
 (async () => {
@@ -145,16 +143,4 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
 
   // Disable Option 2 if not logged in (now using utility)
   setControlsDisabledByLoginState(csfd.getIsLoggedIn(), ['option2']);
-
-  // Add fancy alert
-  let alertButton = document.querySelector('.fancy-alert-button');
-  if (!alertButton) {
-    alertButton = document.createElement('button');
-    alertButton.textContent = 'Show Fancy Alert';
-    alertButton.className = 'fancy-alert-button';
-    document.body.appendChild(alertButton);
-  }
-  alertButton.addEventListener('click', () => {
-    fancyAlert();
-  });
 })();

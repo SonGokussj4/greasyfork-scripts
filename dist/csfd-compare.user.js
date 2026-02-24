@@ -1231,9 +1231,6 @@
     }
   }
 
-  var css_248z$3 = ".alert-content{position:relative;text-align:center}.close-btn{background:none;border:none;color:#7f8c8d;cursor:pointer;font-size:20px;position:absolute;right:10px;top:10px;-webkit-transition:color .2s;transition:color .2s}.close-btn:hover{color:#f5f5f5}.fancy-alert-button{position:fixed;right:10px;top:10px;z-index:1000}.modal-overlay{background:rgba(0,0,0,.5);display:-webkit-box;display:-ms-flexbox;display:flex;height:100%;left:0;position:fixed;top:0;width:100%;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center;-webkit-box-align:center;-ms-flex-align:center;align-items:center;opacity:0;-webkit-transition:opacity .3s ease;transition:opacity .3s ease;z-index:10000}.modal-overlay.visible{opacity:1}";
-  styleInject(css_248z$3);
-
   var css_248z$2 = ".fancy-alert{background:#fff;border-radius:8px;-webkit-box-shadow:0 5px 15px rgba(0,0,0,.3);box-shadow:0 5px 15px rgba(0,0,0,.3);max-width:400px;padding:25px;-webkit-transform:translateY(-20px);transform:translateY(-20px);-webkit-transition:-webkit-transform .3s ease;transition:-webkit-transform .3s ease;transition:transform .3s ease;transition:transform .3s ease,-webkit-transform .3s ease;width:90%}.modal-overlay.visible .fancy-alert{-webkit-transform:translateY(0);transform:translateY(0)}.alert-title{color:#2c3e50;font-size:1.5em;margin-bottom:15px}.alert-message{color:#34495e;line-height:1.6;margin-bottom:20px}.alert-button{background:#3498db;border:none;border-radius:4px;color:#fff;cursor:pointer;height:auto;padding:8px 20px;-webkit-transition:background .2s;transition:background .2s}.alert-button:hover{background:#2980b9}";
   styleInject(css_248z$2);
 
@@ -4481,70 +4478,6 @@
 
   const DEBUG = true;
 
-  let isFancyAlertOpen = false;
-
-  async function fancyAlert() {
-    if (isFancyAlertOpen) {
-      return;
-    }
-    isFancyAlertOpen = true;
-
-    console.log('fancyAlert called');
-
-    const overlay = document.createElement('div');
-    overlay.className = 'modal-overlay';
-
-    const alert = document.createElement('div');
-    alert.className = 'fancy-alert';
-    alert.innerHTML = `
-    <div class="alert-content">
-      <button class="close-btn">&times;</button>
-      <h2 class="alert-title">Welcome!</h2>
-      <p class="alert-message">This is a fancy modal alert with modern styling and animations.</p>
-      <button class="alert-button">Got it!</button>
-    </div>
-  `;
-
-    overlay.appendChild(alert);
-    document.body.appendChild(overlay);
-
-    requestAnimationFrame(() => {
-      overlay.classList.add('visible');
-    });
-
-    let isClosing = false;
-    const closeModal = () => {
-      if (isClosing) {
-        return;
-      }
-      isClosing = true;
-      overlay.classList.remove('visible');
-      setTimeout(() => {
-        overlay.remove();
-        isFancyAlertOpen = false;
-        isClosing = false;
-      }, 300);
-    };
-
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeModal();
-    });
-
-    alert.querySelector('.close-btn').addEventListener('click', closeModal);
-    alert.querySelector('.alert-button').addEventListener('click', closeModal);
-  }
-
-  function bindFancyAlertButton(alertButton) {
-    if (!alertButton || alertButton.dataset.fancyAlertBound === 'true') {
-      return;
-    }
-
-    alertButton.addEventListener('click', () => {
-      fancyAlert();
-    });
-    alertButton.dataset.fancyAlertBound = 'true';
-  }
-
   const HEADER_HOVER_STORAGE_KEY = 'headerBarHovered';
   const HOVER_TOGGLE_DELAY_MS = 200;
 
@@ -4644,17 +4577,6 @@
       checkbox.checked = localStorage.getItem(HEADER_HOVER_STORAGE_KEY) === 'true';
       checkboxLabel.prepend(checkbox);
       controlsContainer.appendChild(checkboxLabel);
-
-      let alertButton = document.querySelector('.fancy-alert-button');
-      if (!alertButton) {
-        alertButton = document.createElement('button');
-        alertButton.textContent = 'Show Fancy Alert';
-        alertButton.className = 'fancy-alert-button';
-      } else if (alertButton.parentNode && alertButton.parentNode !== controlsContainer) {
-        alertButton.parentNode.removeChild(alertButton);
-      }
-      bindFancyAlertButton(alertButton);
-      controlsContainer.appendChild(alertButton);
 
       const menuLink = menuButton.querySelector('.csfd-compare-menu');
 
@@ -6186,18 +6108,6 @@
 
     // Disable Option 2 if not logged in (now using utility)
     setControlsDisabledByLoginState(csfd.getIsLoggedIn(), ['option2']);
-
-    // Add fancy alert
-    let alertButton = document.querySelector('.fancy-alert-button');
-    if (!alertButton) {
-      alertButton = document.createElement('button');
-      alertButton.textContent = 'Show Fancy Alert';
-      alertButton.className = 'fancy-alert-button';
-      document.body.appendChild(alertButton);
-    }
-    alertButton.addEventListener('click', () => {
-      fancyAlert();
-    });
   })();
 
 })();
