@@ -585,9 +585,9 @@
     }
 
     _getRatingColor(percent) {
-      if (percent >= 70) return 'red';
-      if (percent >= 30) return 'blue';
-      return 'black';
+      if (percent >= 70) return '#ba0305'; // Native CSFD red
+      if (percent >= 30) return '#62829d'; // Native CSFD blue
+      return '#545454'; // Native CSFD gray/black
     }
 
     clickableHeaderBoxes() {
@@ -657,7 +657,7 @@
         .filter(Number.isFinite);
       if (!numbers.length) return;
       const average = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
-      avgEl.textContent = `${average} %`;
+      avgEl.textContent = `${average}%`;
       avgEl.style.color = '#fff';
       avgEl.style.backgroundColor = this._getRatingColor(average);
       avgEl.setAttribute('title', `spočteno z hodnocení: ${numbers.length}`);
@@ -684,7 +684,7 @@
 
       avgEl.innerHTML = `
                 <span style="position: absolute;">${baseText}</span>
-                <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage} %</span>
+                <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage}%</span>
             `;
     }
 
