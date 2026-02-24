@@ -169,3 +169,21 @@ export async function deleteIndexedDB(dbName) {
     req.onerror = () => reject(req.error);
   });
 }
+
+/**
+ * Clears all data from a specific IndexedDB object store.
+ * @param {string} dbName - The name of the database.
+ * @param {string} storeName - The name of the object store to clear.
+ * @returns {Promise<void>}
+ */
+export async function clearIndexedDB(dbName, storeName) {
+  const db = await openIndexedDB(dbName);
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([storeName], 'readwrite');
+    const store = transaction.objectStore(storeName);
+    const request = store.clear();
+
+    request.onsuccess = () => resolve();
+    request.onerror = (event) => reject(event.target.error);
+  });
+}

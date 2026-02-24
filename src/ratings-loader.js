@@ -1008,7 +1008,7 @@ export function initializeRatingsLoader(rootElement) {
     }
 
     computedButton.disabled = false;
-    labelEl.textContent = 'Dopočítat seriály';
+    labelEl.textContent = 'Načíst spočtené';
   };
 
   const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {

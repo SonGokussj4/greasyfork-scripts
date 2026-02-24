@@ -18,6 +18,7 @@ import {
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
+  CREATOR_PREVIEW_CACHE_HOURS_KEY,
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
 import { refreshRatingsBadges } from './settings-badges.js';
@@ -327,7 +328,7 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-ratings-estimate',
           storageKey: RATINGS_ESTIMATE_KEY,
-          defaultValue: false,
+          defaultValue: true,
           label: 'Vypočtení % při počtu hodnocení pod 10',
           tooltip: 'Matematicky dopočítá a zobrazí procentuální hodnocení i u filmů s méně než 10 hodnoceními.',
           eventName: 'cc-ratings-estimate-toggled',
@@ -340,7 +341,7 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-ratings-from-favorites',
           storageKey: RATINGS_FROM_FAVORITES_KEY,
-          defaultValue: false,
+          defaultValue: true,
           requiresLogin: true,
           label: 'Zobrazit hodnocení z průměru oblíbených',
           tooltip: 'Zobrazí doplňující průměrné hodnocení, vypočítané pouze z uživatelů, které máte v oblíbených.',
@@ -350,7 +351,7 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-add-ratings-date',
           storageKey: ADD_RATINGS_DATE_KEY,
-          defaultValue: false,
+          defaultValue: true,
           requiresLogin: true,
           label: 'Zobrazit datum hodnocení',
           tooltip: 'V hlavičce s vaším hodnocením filmu vždy zobrazí konkrétní datum, kdy jste film hodnotili.',
@@ -389,7 +390,7 @@ async function addSettingsButton() {
           type: 'toggle',
           id: 'cc-show-all-creator-tabs',
           storageKey: SHOW_ALL_CREATOR_TABS_KEY,
-          defaultValue: false,
+          defaultValue: true,
           label: 'Zobrazit všechny záložky tvůrce',
           tooltip: 'Na profilu herce/režiséra automaticky rozbalí menu "Více" a ukáže všechny záložky vedle sebe.',
           eventName: 'cc-show-all-creator-tabs-toggled',
@@ -572,9 +573,9 @@ async function addSettingsButton() {
 
   const cacheSelect = settingsButton.querySelector('#cc-creator-preview-cache-hours');
   if (cacheSelect) {
-    cacheSelect.value = localStorage.getItem('cc_creator_preview_cache_hours') || '24';
+    cacheSelect.value = localStorage.getItem(CREATOR_PREVIEW_CACHE_HOURS_KEY) || '24';
     cacheSelect.addEventListener('change', () => {
-      localStorage.setItem('cc_creator_preview_cache_hours', cacheSelect.value);
+      localStorage.setItem(CREATOR_PREVIEW_CACHE_HOURS_KEY, cacheSelect.value);
       showSettingsInfoToast('Délka mezipaměti uložena.');
     });
   }
@@ -767,7 +768,7 @@ async function addSettingsButton() {
     localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
     localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
-    localStorage.removeItem('cc_creator_preview_cache_hours');
+    localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
     localStorage.removeItem('cc_hide_home_panels');
     localStorage.removeItem('cc_hidden_panels_list');
     localStorage.removeItem('cc_hide_panels_collapsed');

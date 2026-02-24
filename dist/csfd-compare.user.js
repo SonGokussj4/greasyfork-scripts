@@ -39,6 +39,7 @@
   const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
   const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
   const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';
+  const CREATOR_PREVIEW_CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';
 
   async function getSettings(settingsName = 'CSFD-Compare-settings', defaultSettings = {}) {
     if (!localStorage.getItem(settingsName)) {
@@ -147,6 +148,13 @@
   function delay(t) {
     return new Promise((resolve) => setTimeout(resolve, t));
   }
+
+  // Escape HTML to prevent XSS from weird CSFD data
+  const escapeHtml$3 = (str) =>
+    String(str || '').replace(
+      /[&<>"']/g,
+      (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m],
+    );
 
   const PROFILE_LINK_SELECTOR$3 =
     'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
@@ -1235,7 +1243,7 @@
   var css_248z = ".cc-flex{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-flex-column{-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column}.cc-flex-row{-webkit-box-orient:horizontal;-webkit-box-direction:normal;-ms-flex-direction:row;flex-direction:row}.cc-flex-row-reverse{-webkit-box-orient:horizontal;-webkit-box-direction:reverse;-ms-flex-direction:row-reverse;flex-direction:row-reverse}.cc-flex-column-reverse{-webkit-box-orient:vertical;-webkit-box-direction:reverse;-ms-flex-direction:column-reverse;flex-direction:column-reverse}.cc-justify-center{-webkit-box-pack:center;-ms-flex-pack:center;justify-content:center}.cc-justify-evenly{-webkit-box-pack:space-evenly;-ms-flex-pack:space-evenly;justify-content:space-evenly}.cc-justify-start{-webkit-box-pack:start;-ms-flex-pack:start;justify-content:flex-start}.cc-justify-end{-webkit-box-pack:end;-ms-flex-pack:end;justify-content:flex-end}.cc-justify-between{-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between}.cc-justify-around{-ms-flex-pack:distribute;justify-content:space-around}.cc-align-center{text-align:center}.cc-align-left{text-align:left}.cc-align-right{text-align:right}.cc-grow{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-0{-webkit-box-flex:0;-ms-flex-positive:0;flex-grow:0}.cc-grow-1{-webkit-box-flex:1;-ms-flex-positive:1;flex-grow:1}.cc-grow-2{-webkit-box-flex:2;-ms-flex-positive:2;flex-grow:2}.cc-grow-3{-webkit-box-flex:3;-ms-flex-positive:3;flex-grow:3}.cc-grow-4{-webkit-box-flex:4;-ms-flex-positive:4;flex-grow:4}.cc-grow-5{-webkit-box-flex:5;-ms-flex-positive:5;flex-grow:5}.cc-gap-5{gap:5px}.cc-gap-10{gap:10px}.cc-gap-30{gap:30px}.cc-ml-auto{margin-left:auto}.cc-mr-auto{margin-right:auto}.cc-ph-5{padding:0 5px}.cc-ph-10{padding:0 10px}.cc-pv-5{padding:5px 0}.cc-pv-10{padding:10px 0}.cc-mh-5{margin:0 5px}.cc-mh-10{margin:0 10px}.cc-mv-5{margin:5px 0}.cc-mv-10{margin:10px 0}.cc-own-rating{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;margin-left:8px;vertical-align:middle;-webkit-box-align:center;-ms-flex-align:center;align-items:center;line-height:1}.cc-own-rating-foreign-profile{background-color:hsla(0,34%,69%,.08);border:1px solid #ba0305;border-radius:999px;-webkit-box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);box-shadow:inset 0 0 0 1px hsla(0,0%,100%,.5);padding:0 7px 0 5px;position:relative;top:-4px;white-space:nowrap;-ms-flex-negative:0;flex-shrink:0}.cc-own-rating-foreign-profile:before{color:#ba0305;content:\"🤍\";display:inline-block;font-size:9px;font-weight:700;letter-spacing:.04em;margin-right:5px;opacity:.85;text-transform:uppercase}.cc-own-rating-computed .stars:before{color:#d2d2d2}.cc-own-rating-computed-count{color:#7b7b7b;font-size:11px;line-height:1;margin-left:3px;vertical-align:super}h3.film-title-inline .cc-own-rating,h3.film-title-nooverflow .cc-own-rating{-webkit-transform:translateY(-1px);transform:translateY(-1px)}.cc-ratings-table-export{cursor:pointer;font-size:11px;margin-left:auto;padding:5px 7px;text-align:center}.cc-my-rating-cell,.cc-my-rating-col{text-align:center;width:64px}.cc-my-rating-cell{white-space:nowrap}.cc-my-rating-cell .cc-own-rating{margin-left:0}.cc-compare-ratings-table{width:calc(100% + 24px)}.article-header{padding-top:2px}.cc-gallery-size-host{position:relative}.cc-gallery-size-links{bottom:8px;display:none;position:absolute;right:8px;-webkit-box-orient:vertical;-webkit-box-direction:normal;-ms-flex-direction:column;flex-direction:column;-webkit-box-align:end;-ms-flex-align:end;align-items:flex-end;gap:4px;z-index:11}.cc-gallery-size-host:hover .cc-gallery-size-links,.cc-gallery-size-links.is-visible,.cc-gallery-size-links:hover{display:-webkit-box;display:-ms-flexbox;display:flex}.cc-gallery-size-link{background-color:hsla(0,100%,98%,.82);border-radius:5px;color:#222;display:inline-block;font-size:11px;font-weight:700;line-height:1.2;min-width:48px;padding:2px 6px;text-align:center;text-decoration:none}.cc-gallery-size-link:hover{text-decoration:underline}.cc-creator-preview{left:0;opacity:0;pointer-events:none;position:fixed;top:0;-webkit-transform:translateY(2px);transform:translateY(2px);-webkit-transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,-webkit-transform .12s ease;transition:opacity .12s ease,transform .12s ease;transition:opacity .12s ease,transform .12s ease,-webkit-transform .12s ease;z-index:10030}.cc-creator-preview.is-visible{opacity:1;-webkit-transform:translateY(0);transform:translateY(0)}.cc-creator-preview-card{background:hsla(0,0%,99%,.96);border:1px solid hsla(0,0%,50%,.35);border-radius:10px;-webkit-box-shadow:0 8px 20px rgba(0,0,0,.2);box-shadow:0 8px 20px rgba(0,0,0,.2);overflow:hidden;position:relative;width:176px}.cc-creator-preview-image{background-color:#ececec;display:block;height:200px;-o-object-fit:contain;object-fit:contain;-o-object-position:center center;object-position:center center;width:100%}.cc-creator-preview-image.empty-image{background-color:#c4c4c4;background-position:50%;background-repeat:no-repeat;background-size:60%}.cc-creator-preview-name{color:#303030;display:-webkit-box;display:-ms-flexbox;display:flex;font-size:11px;font-weight:600;line-height:1.2;overflow:hidden;padding:7px 8px 8px;text-align:center;text-overflow:ellipsis;white-space:nowrap;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;gap:4px;justify-content:center}.cc-creator-preview-name-flag{height:auto;width:14px;-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto}.cc-creator-preview-meta{background:hsla(0,0%,98%,.92);border-top:1px solid rgba(0,0,0,.06);padding:0 8px 9px}.cc-creator-preview-meta-line{color:#434343;font-size:11px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-line+.cc-creator-preview-meta-line{margin-top:2px}.cc-creator-preview-meta-birth{color:#2f2f2f;font-size:12px;font-weight:600;line-height:1.4;white-space:normal}.cc-creator-preview-meta-birth-age-inline{color:#666;font-size:11px;font-weight:500}.cc-creator-preview-meta-age{color:#595959;font-size:11px;font-weight:600;text-align:center}.cc-creator-preview-meta-photo{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:baseline;-ms-flex-align:baseline;align-items:baseline;color:#505050;font-weight:600;gap:6px;min-width:0;white-space:nowrap}.cc-creator-preview-meta-photo:before{content:\"🎬\";line-height:1;margin-right:2px}.cc-creator-preview-meta-photo.is-copyright:before{content:\"©\";font-weight:700}.cc-creator-preview-meta-photo-source{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cc-creator-preview-meta-photo-year{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;white-space:nowrap}.cc-creator-preview-meta-photo.is-movie{color:#ba0305}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-year{font-weight:700}.cc-creator-preview-meta-photo.is-movie .cc-creator-preview-meta-photo-source{line-height:1;white-space:nowrap}.cc-creator-preview-meta-photo.is-copyright{color:#4c4c4c}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-year{display:none}.cc-creator-preview-meta-photo.is-copyright .cc-creator-preview-meta-photo-source{display:-webkit-box;-webkit-line-clamp:2;overflow:hidden;text-overflow:clip;white-space:normal;-webkit-box-orient:vertical}nav.tab-nav.cc-show-all-tabs{padding-right:0!important}nav.tab-nav.cc-show-all-tabs .tab-nav-list{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-pack:justify;-ms-flex-pack:justify;justify-content:space-between;-webkit-box-align:center;-ms-flex-align:center;align-items:center;list-style:none;margin:0;padding:0;width:100%}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item{-webkit-box-flex:1;-ms-flex:1 1 auto;flex:1 1 auto;min-width:0;top:-4px}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-nav-item.active{top:0}nav.tab-nav.cc-show-all-tabs .tab-nav-list .tab-link{display:block;overflow:hidden;padding:0 5px;text-align:center;text-overflow:ellipsis;white-space:nowrap}.cc-hide-panel-btn,.cc-hide-video-btn{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-ms-flex-pack:center;background-color:#ba0305;border:none;border-radius:4px;-webkit-box-sizing:border-box;box-sizing:border-box;color:#fff!important;cursor:pointer;font-size:10px;font-weight:700;justify-content:center;line-height:1;opacity:0;padding:3px 8px;text-transform:uppercase;-webkit-transition:opacity .2s ease,background-color .2s ease;transition:opacity .2s ease,background-color .2s ease}.cc-hide-panel-btn:hover,.cc-hide-video-btn:hover{background-color:#8b0204}.box-header:hover .cc-hide-panel-btn,.updated-box-banner-mobile:hover .cc-hide-panel-btn,.updated-box-banner:hover .cc-hide-panel-btn,.updated-box-header:hover .cc-hide-panel-btn,.updated-box-homepage-video:hover .cc-hide-video-btn{opacity:1}.cc-hide-panel-btn{margin-left:12px;-webkit-transform:translateY(-2px);transform:translateY(-2px);vertical-align:middle}.cc-hide-video-btn{-webkit-box-shadow:0 2px 8px rgba(0,0,0,.3);box-shadow:0 2px 8px rgba(0,0,0,.3);left:10px;position:absolute;top:10px;z-index:10000}.updated-box--homepage-csfd-cinema .updated-box-header p{display:-webkit-inline-box;display:-ms-inline-flexbox;display:inline-flex;-webkit-box-align:center;-ms-flex-align:center;align-items:center;overflow:visible!important;position:relative;z-index:10}.updated-box--homepage-csfd-cinema .cc-hide-panel-btn{-webkit-box-shadow:0 1px 4px rgba(0,0,0,.15);box-shadow:0 1px 4px rgba(0,0,0,.15);-webkit-transform:translateY(0);transform:translateY(0)}body:not(.cc-dev-mode-active) .cc-dev-only,body:not(.cc-dev-mode-active) .fancy-alert-controls{display:none!important}";
   styleInject(css_248z);
 
-  var htmlContent = "<svg style=\"display: none;\" xmlns=\"http://www.w3.org/2000/svg\">\r\n    <symbol id=\"cc-icon-info\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <circle cx=\"12\" cy=\"12\" r=\"10\"></circle>\r\n        <line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line>\r\n        <line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-image\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect>\r\n        <circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"></circle>\r\n        <polyline points=\"21 15 16 10 5 21\"></polyline>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-menu-logo\" viewBox=\"0 0 24 24\" fill=\"none\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-download\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path>\r\n        <polyline points=\"7 10 12 15 17 10\"></polyline>\r\n        <line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-star\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polygon\r\n            points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\">\r\n        </polygon>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-cloud\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"></path>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-chevron\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polyline points=\"6 9 12 15 18 9\"></polyline>\r\n    </symbol>\r\n</svg>\r\n\r\n<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\">\r\n        <use href=\"#cc-icon-menu-logo\"></use>\r\n    </svg>\r\n</a>\r\n\r\n<div id=\"dropdown-compare-menu\" class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.9</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" tabindex=\"0\" role=\"button\"\r\n                title=\"Uloženo / Celkem: Počet přímo načtených hodnocení z vašeho profilu\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" tabindex=\"0\" role=\"button\"\r\n                title=\"Spočtená hodnocení: Počet hodnocení automaticky dopočítaných pro seriály\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button class=\"cc-sync-icon-btn\" id=\"cc-sync-cloud-btn\"\r\n                    title=\"Cloud sync: Zálohuje vaše hodnocení do cloudu a synchronizuje je s ostatními zařízeními.\"\r\n                    aria-label=\"Cloud sync\">\r\n                    <svg width=\"18\" height=\"18\">\r\n                        <use href=\"#cc-icon-cloud\"></use>\r\n                    </svg>\r\n                </button>\r\n                <button class=\"cc-sync-icon-btn cc-version-info-btn\" id=\"cc-version-info-btn\"\r\n                    title=\"Informace o verzi: Zobrazit historii změn a novinky v této verzi.\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg width=\"16\" height=\"16\">\r\n                        <use href=\"#cc-icon-info\"></use>\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\"\r\n                    title=\"Projde váš profil a stáhne všechna vaše hodnocení do lokální databáze (nutné pro správné fungování ostatních funkcí).\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                            <use href=\"#cc-icon-download\"></use>\r\n                        </svg></span>\r\n                    <span>Načíst hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\"\r\n                    title=\"Z načtených hodnocení automaticky vypočítá a doplní hodnocení pro celé seriály nebo jejich série.\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                            <use href=\"#cc-icon-star\"></use>\r\n                        </svg></span>\r\n                    <span>Dopočítat spočtené</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\" hidden>\r\n        <div class=\"cc-settings-section-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\" style=\"padding-top: 8px;\" id=\"cc-dynamic-settings-container\">\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <h3 class=\"cc-section-title\" style=\"margin-top: 0;\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\" style=\"width: 100%;\">\r\n                <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-reset-btn\"\r\n                    title=\"Vrátí veškeré přepínače a nastavení tohoto doplňku (včetně skrytých uživatelů) do původního, výchozího stavu.\">Reset</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small cc-dev-only\"\r\n                    id=\"cc-maint-clear-lc-btn\"\r\n                    title=\"Otevře správce pro expertní manuální smazání dat z paměti LocalStorage.\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small cc-dev-only\"\r\n                    id=\"cc-maint-clear-db-btn\"\r\n                    title=\"Kompletně a bezpečně vymaže celou vaši lokální databázi hodnocení z prohlížeče (IndexedDB). Vaše hodnocení na webu CSFD.cz zůstanou nedotčena.\">Smazat\r\n                    DB</button>\r\n\r\n                <div style=\"flex-grow: 1;\"></div>\r\n\r\n                <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-dev-btn\"\r\n                    title=\"Zapne/vypne vývojářský režim (skryje nebo zobrazí testovací prvky).\">DEV: OFF</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>";
+  var htmlContent = "<svg style=\"display: none;\" xmlns=\"http://www.w3.org/2000/svg\">\r\n    <symbol id=\"cc-icon-info\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <circle cx=\"12\" cy=\"12\" r=\"10\"></circle>\r\n        <line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line>\r\n        <line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-image\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect>\r\n        <circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"></circle>\r\n        <polyline points=\"21 15 16 10 5 21\"></polyline>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-menu-logo\" viewBox=\"0 0 24 24\" fill=\"none\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-download\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path>\r\n        <polyline points=\"7 10 12 15 17 10\"></polyline>\r\n        <line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-star\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polygon\r\n            points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\">\r\n        </polygon>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-cloud\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"></path>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-chevron\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polyline points=\"6 9 12 15 18 9\"></polyline>\r\n    </symbol>\r\n</svg>\r\n\r\n<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\">\r\n        <use href=\"#cc-icon-menu-logo\"></use>\r\n    </svg>\r\n</a>\r\n\r\n<div id=\"dropdown-compare-menu\" class=\"dropdown-content cc-settings\">\r\n\r\n    <div class=\"dropdown-content-head\">\r\n        <div class=\"left-head\">\r\n            <h2>CSFD-Compare</h2>\r\n            <div class=\"cc-version-row\">\r\n                <span class=\"cc-version-link\" id=\"cc-version-value\">v0.8.9</span>\r\n                <span class=\"cc-version-status\" id=\"cc-version-status\" aria-hidden=\"true\"></span>\r\n            </div>\r\n        </div>\r\n        <div class=\"right-head cc-ml-auto cc-head-right\">\r\n            <span class=\"cc-badge cc-badge-red\" id=\"cc-badge-red\" tabindex=\"0\" role=\"button\"\r\n                title=\"Uloženo / Celkem: Počet přímo načtených hodnocení z vašeho profilu\">0 / 0</span>\r\n            <span class=\"cc-badge cc-badge-black\" id=\"cc-badge-black\" tabindex=\"0\" role=\"button\"\r\n                title=\"Spočtená hodnocení: Počet hodnocení automaticky dopočítaných pro seriály\">0</span>\r\n            <div class=\"cc-head-tools\">\r\n                <button class=\"cc-sync-icon-btn\" id=\"cc-sync-cloud-btn\"\r\n                    title=\"Cloud sync: Zálohuje vaše hodnocení do cloudu a synchronizuje je s ostatními zařízeními.\"\r\n                    aria-label=\"Cloud sync\">\r\n                    <svg width=\"18\" height=\"18\">\r\n                        <use href=\"#cc-icon-cloud\"></use>\r\n                    </svg>\r\n                </button>\r\n                <button class=\"cc-sync-icon-btn cc-version-info-btn\" id=\"cc-version-info-btn\"\r\n                    title=\"Informace o verzi: Zobrazit historii změn a novinky v této verzi.\"\r\n                    aria-label=\"Informace o verzi\">\r\n                    <svg width=\"16\" height=\"16\">\r\n                        <use href=\"#cc-icon-info\"></use>\r\n                    </svg>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <div class=\"cc-settings-actions\">\r\n                <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\"\r\n                    title=\"Projde váš profil a stáhne všechna vaše hodnocení do lokální databáze (nutné pro správné fungování ostatních funkcí).\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                            <use href=\"#cc-icon-download\"></use>\r\n                        </svg></span>\r\n                    <span>Načíst hodnocení</span>\r\n                </button>\r\n                <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\"\r\n                    title=\"Z načtených hodnocení automaticky vypočítá a doplní hodnocení pro celé seriály nebo jejich série.\">\r\n                    <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                            <use href=\"#cc-icon-star\"></use>\r\n                        </svg></span>\r\n                    <span>Načíst spočtené</span>\r\n                </button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\" hidden>\r\n        <div class=\"cc-settings-section-content\">\r\n            <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                <div class=\"cc-ratings-progress-head\">\r\n                    <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                    <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-track\">\r\n                    <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\"></div>\r\n                </div>\r\n                <div class=\"cc-ratings-progress-actions\">\r\n                    <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                        načítání</button>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\" style=\"padding-top: 8px;\" id=\"cc-dynamic-settings-container\">\r\n        </div>\r\n    </div>\r\n\r\n    <div class=\"cc-settings-section\">\r\n        <div class=\"cc-settings-section-content\">\r\n            <h3 class=\"cc-section-title\" style=\"margin-top: 0;\">Další akce</h3>\r\n            <div class=\"cc-maint-actions\" style=\"width: 100%;\">\r\n                <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-reset-btn\"\r\n                    title=\"Vrátí veškeré přepínače a nastavení tohoto doplňku (včetně skrytých uživatelů) do původního, výchozího stavu.\">Reset</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small cc-dev-only\"\r\n                    id=\"cc-maint-clear-lc-btn\"\r\n                    title=\"Otevře správce pro expertní manuální smazání dat z paměti LocalStorage.\">Smazat LC</button>\r\n                <button type=\"button\" class=\"cc-button cc-button-red cc-button-small cc-dev-only\"\r\n                    id=\"cc-maint-clear-db-btn\"\r\n                    title=\"Kompletně a bezpečně vymaže celou vaši lokální databázi hodnocení z prohlížeče (IndexedDB). Vaše hodnocení na webu CSFD.cz zůstanou nedotčena.\">Smazat\r\n                    DB</button>\r\n\r\n                <div style=\"flex-grow: 1;\"></div>\r\n\r\n                <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-dev-btn\"\r\n                    title=\"Zapne/vypne vývojářský režim (skryje nebo zobrazí testovací prvky).\">DEV: OFF</button>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>";
 
   const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
   const REQUEST_DELAY_MIN_MS = 250;
@@ -2227,7 +2235,7 @@
       }
 
       computedButton.disabled = false;
-      labelEl.textContent = 'Dopočítat seriály';
+      labelEl.textContent = 'Načíst spočtené';
     };
 
     const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
@@ -3127,7 +3135,7 @@
   const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
   const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
 
-  function escapeHtml$3(value) {
+  function escapeHtml$2(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -3365,7 +3373,7 @@
       bodyElement.innerHTML = `
       <div class="cc-version-info-meta">
         <div class="cc-version-info-key">Nainstalováno</div>
-        <div class="cc-version-info-value">${escapeHtml$3(normalizeVersionLabel(currentVersion))}</div>
+        <div class="cc-version-info-value">${escapeHtml$2(normalizeVersionLabel(currentVersion))}</div>
       </div>
       <p class="cc-version-info-empty">Nepodařilo se načíst informace z GreasyFork.</p>
     `;
@@ -3379,25 +3387,25 @@
     const changelogItems = Array.isArray(details?.changelogItems) ? details.changelogItems : [];
 
     const changelogHtml = changelogItems.length
-      ? `<ul class="cc-version-info-list">${changelogItems.map((item) => `<li>${escapeHtml$3(item)}</li>`).join('')}</ul>`
+      ? `<ul class="cc-version-info-list">${changelogItems.map((item) => `<li>${escapeHtml$2(item)}</li>`).join('')}</ul>`
       : '<p class="cc-version-info-empty">Changelog není k dispozici.</p>';
 
     bodyElement.innerHTML = `
     <div class="cc-version-info-meta">
       <div class="cc-version-info-key">Nainstalováno</div>
-      <div class="cc-version-info-value">${escapeHtml$3(normalizeVersionLabel(currentVersion))}</div>
+      <div class="cc-version-info-value">${escapeHtml$2(normalizeVersionLabel(currentVersion))}</div>
 
       <div class="cc-version-info-key">Nejnovější</div>
-      <div class="cc-version-info-value">${escapeHtml$3(normalizeVersionLabel(latestVersion))}</div>
+      <div class="cc-version-info-value">${escapeHtml$2(normalizeVersionLabel(latestVersion))}</div>
 
       <div class="cc-version-info-key">Poslední aktualizace</div>
-      <div class="cc-version-info-value">${escapeHtml$3(formatVersionDateTime(details?.datetimeRaw))}</div>
+      <div class="cc-version-info-value">${escapeHtml$2(formatVersionDateTime(details?.datetimeRaw))}</div>
 
       <div class="cc-version-info-key">Stav</div>
       <div class="cc-version-info-value">
         <span class="cc-version-info-status ${statusClass}">
           <span class="cc-version-info-status-dot" aria-hidden="true"></span>
-          ${escapeHtml$3(statusText)}
+          ${escapeHtml$2(statusText)}
         </span>
       </div>
     </div>
@@ -3681,7 +3689,7 @@
     blackBadge.textContent = `${computedCount}`;
   }
 
-  function escapeHtml$2(value) {
+  function escapeHtml$1(value) {
     return String(value || '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -4089,7 +4097,7 @@
         </button>`;
 
       const iconLink = row.url
-        ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${escapeHtml$2(row.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
+        ? `<a class="cc-ratings-table-link-icon cc-script-link-btn" href="${escapeHtml$1(row.url)}" target="_blank" rel="noopener noreferrer" aria-label="Otevřít detail">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
             <path d="M9 8H6.5C5.1 8 4 9.1 4 10.5V17.5C4 18.9 5.1 20 6.5 20H13.5C14.9 20 16 18.9 16 17.5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             <path d="M10 14L20 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -4098,25 +4106,25 @@
         </a>`
         : '';
 
-      const escapedName = escapeHtml$2(row.name || 'Bez názvu');
+      const escapedName = escapeHtml$1(row.name || 'Bez názvu');
       const nameLink = row.url
-        ? `<a class="cc-ratings-table-name-link" href="${escapeHtml$2(row.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a>`
+        ? `<a class="cc-ratings-table-name-link" href="${escapeHtml$1(row.url)}" target="_blank" rel="noopener noreferrer">${escapedName}</a>`
         : `<span class="cc-ratings-table-name-link">${escapedName}</span>`;
 
       return `
       <tr>
         <td>
           <div class="cc-ratings-table-name-row">
-            <span class="cc-ratings-square ${escapeHtml$2(row.ratingSquareClass)}" aria-hidden="true"></span>
+            <span class="cc-ratings-square ${escapeHtml$1(row.ratingSquareClass)}" aria-hidden="true"></span>
             ${nameLink}
             ${detailsButton}
             ${iconLink}
           </div>
         </td>
-        <td class="cc-ratings-table-type">${escapeHtml$2(row.typeDisplay)}</td>
+        <td class="cc-ratings-table-type">${escapeHtml$1(row.typeDisplay)}</td>
         <td class="cc-ratings-table-year">${Number.isFinite(row.yearValue) ? row.yearValue : '—'}</td>
-        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml$2(row.ratingText)}</td>
-        <td class="cc-ratings-table-date">${escapeHtml$2(row.date || '—')}</td>
+        <td class="cc-ratings-table-rating ${row.ratingIsOdpad ? 'is-odpad' : ''}">${escapeHtml$1(row.ratingText)}</td>
+        <td class="cc-ratings-table-date">${escapeHtml$1(row.date || '—')}</td>
       </tr>
     `;
     };
@@ -4781,7 +4789,7 @@
     }, 1800);
   }
 
-  function escapeHtml$1(value) {
+  function escapeHtml(value) {
     return String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -5005,7 +5013,7 @@
             type: 'toggle',
             id: 'cc-ratings-estimate',
             storageKey: RATINGS_ESTIMATE_KEY,
-            defaultValue: false,
+            defaultValue: true,
             label: 'Vypočtení % při počtu hodnocení pod 10',
             tooltip: 'Matematicky dopočítá a zobrazí procentuální hodnocení i u filmů s méně než 10 hodnoceními.',
             eventName: 'cc-ratings-estimate-toggled',
@@ -5018,7 +5026,7 @@
             type: 'toggle',
             id: 'cc-ratings-from-favorites',
             storageKey: RATINGS_FROM_FAVORITES_KEY,
-            defaultValue: false,
+            defaultValue: true,
             requiresLogin: true,
             label: 'Zobrazit hodnocení z průměru oblíbených',
             tooltip: 'Zobrazí doplňující průměrné hodnocení, vypočítané pouze z uživatelů, které máte v oblíbených.',
@@ -5028,7 +5036,7 @@
             type: 'toggle',
             id: 'cc-add-ratings-date',
             storageKey: ADD_RATINGS_DATE_KEY,
-            defaultValue: false,
+            defaultValue: true,
             requiresLogin: true,
             label: 'Zobrazit datum hodnocení',
             tooltip: 'V hlavičce s vaším hodnocením filmu vždy zobrazí konkrétní datum, kdy jste film hodnotili.',
@@ -5067,7 +5075,7 @@
             type: 'toggle',
             id: 'cc-show-all-creator-tabs',
             storageKey: SHOW_ALL_CREATOR_TABS_KEY,
-            defaultValue: false,
+            defaultValue: true,
             label: 'Zobrazit všechny záložky tvůrce',
             tooltip: 'Na profilu herce/režiséra automaticky rozbalí menu "Více" a ukáže všechny záložky vedle sebe.',
             eventName: 'cc-show-all-creator-tabs-toggled',
@@ -5130,17 +5138,17 @@
       const disabledAttr = isDisabled ? 'disabled' : '';
 
       return `
-      <div class="cc-setting-row ${wrapperClass}" title="${escapeHtml$1((item.tooltip || '') + titleSuffix)}">
+      <div class="cc-setting-row ${wrapperClass}" title="${escapeHtml((item.tooltip || '') + titleSuffix)}">
           <label class="cc-switch">
               <input type="checkbox" id="${item.id}" ${disabledAttr} />
               <span class="cc-switch-bg"></span>
           </label>
-          <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml$1(item.label)}</span>
+          <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml(item.label)}</span>
           ${
             item.infoIcon
               ? `
               <div class="cc-setting-icons">
-                  <div class="cc-info-icon" aria-label="${escapeHtml$1(item.infoIcon.text)}" data-image-url="${escapeHtml$1(item.infoIcon.url)}">
+                  <div class="cc-info-icon" aria-label="${escapeHtml(item.infoIcon.text)}" data-image-url="${escapeHtml(item.infoIcon.url)}">
                       <svg width="14" height="14"><use href="#cc-icon-info"></use></svg>
                   </div>
               </div>`
@@ -5157,13 +5165,13 @@
 
       return `
       <div class="cc-setting-group ${wrapperClass}" id="${item.id}-group" style="margin-top: 2px;">
-          <div class="cc-setting-row" title="${escapeHtml$1((item.tooltip || '') + titleSuffix)}">
+          <div class="cc-setting-row" title="${escapeHtml((item.tooltip || '') + titleSuffix)}">
               <label class="cc-switch">
                   <input type="checkbox" id="${item.id}" ${disabledAttr} />
                   <span class="cc-switch-bg"></span>
               </label>
               <div class="cc-setting-collapse-trigger" id="${item.groupToggleId}" aria-expanded="false">
-                  <span class="cc-setting-label cc-grow">${escapeHtml$1(item.label)}</span>
+                  <span class="cc-setting-label cc-grow">${escapeHtml(item.label)}</span>
                   <svg class="cc-chevron" width="14" height="14"><use href="#cc-icon-chevron"></use></svg>
               </div>
           </div>
@@ -5178,7 +5186,7 @@
     if (dynamicContainer) {
       let generatedHtml = '';
       MENU_CONFIG.forEach((cat, idx) => {
-        generatedHtml += `<h3 class="cc-category-title ${idx === 0 ? 'cc-category-first' : ''}">${escapeHtml$1(cat.category)}</h3>`;
+        generatedHtml += `<h3 class="cc-category-title ${idx === 0 ? 'cc-category-first' : ''}">${escapeHtml(cat.category)}</h3>`;
         generatedHtml += `<div class="cc-config-list">`;
         cat.items.forEach((item) => {
           if (item.type === 'toggle') generatedHtml += buildToggleHtml(item);
@@ -5249,9 +5257,9 @@
 
     const cacheSelect = settingsButton.querySelector('#cc-creator-preview-cache-hours');
     if (cacheSelect) {
-      cacheSelect.value = localStorage.getItem('cc_creator_preview_cache_hours') || '24';
+      cacheSelect.value = localStorage.getItem(CREATOR_PREVIEW_CACHE_HOURS_KEY) || '24';
       cacheSelect.addEventListener('change', () => {
-        localStorage.setItem('cc_creator_preview_cache_hours', cacheSelect.value);
+        localStorage.setItem(CREATOR_PREVIEW_CACHE_HOURS_KEY, cacheSelect.value);
         showSettingsInfoToast('Délka mezipaměti uložena.');
       });
     }
@@ -5444,7 +5452,7 @@
       localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
       localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
       localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
-      localStorage.removeItem('cc_creator_preview_cache_hours');
+      localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
       localStorage.removeItem('cc_hide_home_panels');
       localStorage.removeItem('cc_hidden_panels_list');
       localStorage.removeItem('cc_hide_panels_collapsed');
@@ -5539,10 +5547,10 @@
           .map(
             ({ key, value }) => `
         <tr>
-          <td class="cc-lc-key" title="${escapeHtml$1(key)}">${escapeHtml$1(key)}</td>
-          <td class="cc-lc-value" title="${escapeHtml$1(String(value))}">${escapeHtml$1(formatLocalStorageValue(value))}</td>
+          <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
+          <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
           <td class="cc-lc-action">
-             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml$1(key)}">Smazat</button>
+             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
           </td>
         </tr>`,
           )
@@ -5731,13 +5739,6 @@
   // Tracker for active network requests to prevent duplicate fetches
   const inflightRequests = new Map();
 
-  // Escape HTML to prevent XSS from weird CSFD data
-  const escapeHtml = (str) =>
-    String(str || '').replace(
-      /[&<>"']/g,
-      (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[m],
-    );
-
   function ensurePreview() {
     if (previewRoot) return;
     previewRoot = document.createElement('div');
@@ -5920,7 +5921,7 @@
     // Use CSFD's native 1x1 pixel and empty-image class to render the native silhouette perfectly
     const emptySrc = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     const imgHtml = data.img
-      ? `<img class="cc-creator-preview-image" src="${escapeHtml(data.img)}" onerror="this.onerror=null;this.src='${emptySrc}';this.classList.add('empty-image');" />`
+      ? `<img class="cc-creator-preview-image" src="${escapeHtml$3(data.img)}" onerror="this.onerror=null;this.src='${emptySrc}';this.classList.add('empty-image');" />`
       : `<img class="cc-creator-preview-image empty-image" src="${emptySrc}" />`;
 
     // Dynamic layout for birth/death logic
@@ -5941,7 +5942,7 @@
       } else if (data.birthText) {
         lifeHtml += `
               <div class="cc-creator-preview-meta-line cc-creator-preview-meta-birth">
-                  <span>${escapeHtml(data.birthText)}</span>
+                  <span>${escapeHtml$3(data.birthText)}</span>
                   ${!data.deathText && age ? `<span class="cc-creator-preview-meta-birth-age-inline">(${age} let)</span>` : ''}
               </div>
           `;
@@ -5952,7 +5953,7 @@
       showPhoto && data.photoSource
         ? `
       <div class="cc-creator-preview-meta-line cc-creator-preview-meta-photo ${data.isMovie ? 'is-movie' : 'is-copyright'}" style="margin-top: 4px;">
-          <span class="cc-creator-preview-meta-photo-source">${escapeHtml(data.photoSource)}</span>
+          <span class="cc-creator-preview-meta-photo-source">${escapeHtml$3(data.photoSource)}</span>
       </div>
   `
         : '';
@@ -5961,8 +5962,8 @@
       <div class="cc-creator-preview-card">
           ${imgHtml}
           <div class="cc-creator-preview-name">
-              <span>${escapeHtml(data.name)}</span>
-              ${data.flag ? `<img class="cc-creator-preview-name-flag" src="${escapeHtml(data.flag)}" />` : ''}
+              <span>${escapeHtml$3(data.name)}</span>
+              ${data.flag ? `<img class="cc-creator-preview-name-flag" src="${escapeHtml$3(data.flag)}" />` : ''}
           </div>
           <div class="cc-creator-preview-meta" ${!showBirth && !showPhoto ? 'hidden' : ''}>
               ${lifeHtml}
