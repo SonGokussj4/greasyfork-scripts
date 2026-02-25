@@ -34,6 +34,7 @@ const BLOCKED_LINK_CLOSEST_SELECTORS = [
   '.pages',
   '.pagination',
   '.paginator',
+  '.reference.down.reply',
   '.span-more-small',
   '.tab-nav-item',
   '#cc-ratings-table-modal-overlay',
