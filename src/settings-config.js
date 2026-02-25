@@ -93,8 +93,12 @@ export const MENU_CONFIG = [
         storageKey: GALLERY_IMAGE_LINKS_ENABLED_KEY,
         defaultValue: true,
         label: 'Zobrazovat formáty obrázků v galerii',
-        tooltip: 'Na stránce galerie přidá pod fotky odkazy pro rychlé zobrazení obrázků v originální velikosti.',
+        tooltip: '',
         eventName: 'cc-gallery-image-links-toggled',
+        infoIcon: {
+          url: 'https://i.imgur.com/2KEixfW.png',
+          text: 'U obrázků v galerii filmu zobrazí tlačítka pro otevření v různých velikostech.\n\n👉 Klikni pro ukázku',
+        },
       },
       {
         type: 'toggle',
@@ -102,11 +106,11 @@ export const MENU_CONFIG = [
         storageKey: RATINGS_ESTIMATE_KEY,
         defaultValue: true,
         label: 'Vypočtení % při počtu hodnocení pod 10',
-        tooltip: 'Matematicky dopočítá a zobrazí procentuální hodnocení i u filmů s méně než 10 hodnoceními.',
+        tooltip: '',
         eventName: 'cc-ratings-estimate-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/8QG9gHq.jpeg',
-          text: 'Když má film méně než 10 hodnocení, CSFD procenta skryje. Tato funkce je matematicky dopočítá.\\n\\n👉 Klikni pro ukázku',
+          url: 'https://i.imgur.com/ySdMhXt.png',
+          text: 'Film s méně než 10 hodnoceními CSFD skryje procenta. Tato funkce je dopočítá a zobrazí.\n\n👉 Klikni pro ukázku',
         },
       },
       {
@@ -168,7 +172,7 @@ export const MENU_CONFIG = [
         eventName: 'cc-show-all-creator-tabs-toggled',
         infoIcon: {
           url: 'https://i.imgur.com/aTrSU2X.png',
-          text: 'Zobrazí všechny záložky (Režie, Scénář atd.) i když v nich má méně než 3 filmy.\\n\\n👉 Klikni pro ukázku',
+          text: 'Zobrazí všechny záložky (Režie, Scénář atd.) i když v nich má méně než 3 filmy.\n\n👉 Klikni pro ukázku',
         },
       },
       {

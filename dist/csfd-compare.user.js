@@ -4774,8 +4774,12 @@
           storageKey: GALLERY_IMAGE_LINKS_ENABLED_KEY,
           defaultValue: true,
           label: 'Zobrazovat formáty obrázků v galerii',
-          tooltip: 'Na stránce galerie přidá pod fotky odkazy pro rychlé zobrazení obrázků v originální velikosti.',
+          tooltip: '',
           eventName: 'cc-gallery-image-links-toggled',
+          infoIcon: {
+            url: 'https://i.imgur.com/2KEixfW.png',
+            text: 'U obrázků v galerii filmu zobrazí tlačítka pro otevření v různých velikostech.\n\n👉 Klikni pro ukázku',
+          },
         },
         {
           type: 'toggle',
@@ -4783,11 +4787,11 @@
           storageKey: RATINGS_ESTIMATE_KEY,
           defaultValue: true,
           label: 'Vypočtení % při počtu hodnocení pod 10',
-          tooltip: 'Matematicky dopočítá a zobrazí procentuální hodnocení i u filmů s méně než 10 hodnoceními.',
+          tooltip: '',
           eventName: 'cc-ratings-estimate-toggled',
           infoIcon: {
-            url: 'https://i.imgur.com/8QG9gHq.jpeg',
-            text: 'Když má film méně než 10 hodnocení, CSFD procenta skryje. Tato funkce je matematicky dopočítá.\\n\\n👉 Klikni pro ukázku',
+            url: 'https://i.imgur.com/ySdMhXt.png',
+            text: 'Film s méně než 10 hodnoceními CSFD skryje procenta. Tato funkce je dopočítá a zobrazí.\n\n👉 Klikni pro ukázku',
           },
         },
         {
@@ -4849,7 +4853,7 @@
           eventName: 'cc-show-all-creator-tabs-toggled',
           infoIcon: {
             url: 'https://i.imgur.com/aTrSU2X.png',
-            text: 'Zobrazí všechny záložky (Režie, Scénář atd.) i když v nich má méně než 3 filmy.\\n\\n👉 Klikni pro ukázku',
+            text: 'Zobrazí všechny záložky (Režie, Scénář atd.) i když v nich má méně než 3 filmy.\n\n👉 Klikni pro ukázku',
           },
         },
         {
@@ -5020,13 +5024,13 @@
     overlay.className = 'cc-version-info-overlay';
 
     overlay.innerHTML = `
-    <div class="cc-version-info-modal" style="width: min(840px, 95vw); max-height: 90vh;">
+    <div class="cc-version-info-modal" style="width: fit-content; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="cc-version-info-head">
         <h3 id="cc-image-modal-title">Ukázka funkce</h3>
         <button type="button" class="cc-version-info-close" id="cc-image-modal-close" aria-label="Zavřít">×</button>
       </div>
-      <div class="cc-version-info-body" style="text-align: center; padding: 16px; display: flex; justify-content: center; align-items: center; background: #f4f4f4;">
-        <img id="cc-image-modal-img" src="" alt="Ukázka" style="max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" />
+      <div class="cc-version-info-body" style="padding: 0; background: #242424; overflow: auto;">
+        <img id="cc-image-modal-img" src="" alt="Ukázka" style="display: block; margin: 0 auto; max-width: none; max-height: none;" />
       </div>
     </div>
   `;
