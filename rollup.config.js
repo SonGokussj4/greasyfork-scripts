@@ -5,6 +5,8 @@ import commonjs from '@rollup/plugin-commonjs';
 import { string } from 'rollup-plugin-string';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
+import { basename } from 'node:path';
 
 // PostCSS plugins
 import simplevars from 'postcss-simple-vars';
@@ -74,6 +76,22 @@ function injectScriptVersion() {
   };
 }
 
+function runSyncVersionOnChange() {
+  return {
+    name: 'run-sync-version-on-change',
+    watchChange(id) {
+      try {
+        if (basename(id) === 'package.json') {
+          // Run the sync script before Rollup rebuilds the project.
+          execSync('node scripts/sync-version.mjs', { stdio: 'inherit' });
+        }
+      } catch (err) {
+        console.error('Failed to run sync-version.mjs on package.json change', err);
+      }
+    },
+  };
+}
+
 // Rollup configuration
 export default {
   input: 'src/main.js',
@@ -98,7 +116,7 @@ export default {
 // ==/UserScript==\n`,
   },
   watch: {
-    include: ['src/**', 'package.json'],
+    include: ['src/**', 'package.json', 'rollup.config.js'],
   },
   plugins: [
     // css({
@@ -127,5 +145,7 @@ export default {
     commonjs({
       exclude: ['src/**'], // don't convert our own ES modules
     }),
+    // Ensure package.json changes trigger the sync-version script during watch
+    runSyncVersionOnChange(),
   ],
 };
