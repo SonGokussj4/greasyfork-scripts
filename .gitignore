@@ -10,6 +10,8 @@ logs/
 .vscode/
 coverage/
 
+.VSCodeCounter/*
+
 # TEMP
 csfd-compare-new.js
 test-results/*
