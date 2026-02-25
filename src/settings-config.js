@@ -208,9 +208,9 @@ export const MENU_CONFIG = [
                 <span class="cc-setting-label cc-grow">Délka mezipaměti (Cache)</span>
                 <select id="cc-creator-preview-cache-hours" class="cc-select-compact">
                     <option value="1">1 hodina</option>
-                    <option value="12">12 hodin</option>
                     <option value="24">24 hodin</option>
                     <option value="168">7 dní</option>
+                    <option value="720">1 měsíc</option>
                 </select>
             </div>`,
       },

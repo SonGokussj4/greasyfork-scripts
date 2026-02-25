@@ -25,12 +25,12 @@
   const INDEXED_DB_NAME = 'CC-Ratings';
   const RATINGS_STORE_NAME = 'ratings';
   const GALLERY_IMAGE_LINKS_ENABLED_KEY = 'cc_gallery_image_links_enabled';
+  const CREATOR_PREVIEW_CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';
   const CREATOR_PREVIEW_ENABLED_KEY = 'cc_creator_preview_enabled';
   const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
   const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
   const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
   const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
-
   const SHOW_RATINGS_KEY = 'cc_show_ratings';
   const SHOW_RATINGS_IN_REVIEWS_KEY = 'cc_show_ratings_in_reviews';
   const SHOW_RATINGS_SECTION_COLLAPSED_KEY = 'cc_show_ratings_section_collapsed';
@@ -43,7 +43,6 @@
   const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
   const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
   const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';
-  const CREATOR_PREVIEW_CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';
 
   async function getSettings(settingsName = 'CSFD-Compare-settings', defaultSettings = {}) {
     if (!localStorage.getItem(settingsName)) {
@@ -4890,9 +4889,9 @@
                 <span class="cc-setting-label cc-grow">Délka mezipaměti (Cache)</span>
                 <select id="cc-creator-preview-cache-hours" class="cc-select-compact">
                     <option value="1">1 hodina</option>
-                    <option value="12">12 hodin</option>
                     <option value="24">24 hodin</option>
                     <option value="168">7 dní</option>
+                    <option value="720">1 měsíc</option>
                 </select>
             </div>`,
         },
