@@ -120,8 +120,12 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   window.addEventListener('cc-clickable-header-boxes-toggled', () => {
     csfd.clickableHeaderBoxes();
   });
-  window.addEventListener('cc-ratings-estimate-toggled', () => {
-    csfd.ratingsEstimate();
+  window.addEventListener('cc-ratings-estimate-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.ratingsEstimate();
+    } else {
+      csfd.clearRatingsEstimate();
+    }
   });
   window.addEventListener('cc-ratings-from-favorites-toggled', (ev) => {
     if (ev?.detail?.enabled) {

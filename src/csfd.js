@@ -501,11 +501,44 @@ export class Csfd {
     });
   }
 
-  ratingsEstimate() {
+  _getOrInitRatingContainer() {
     const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    if (!avgEl) return null;
+
+    if (!avgEl.dataset.ccInitialized) {
+      avgEl.dataset.ccOriginalText = avgEl.textContent.trim();
+      avgEl.dataset.ccOriginalBg = avgEl.style.backgroundColor || '';
+      avgEl.dataset.ccOriginalColor = avgEl.style.color || '';
+      avgEl.dataset.ccOriginalTitle = avgEl.getAttribute('title') || '';
+
+      avgEl.innerHTML = '';
+
+      const mainSpan = document.createElement('span');
+      mainSpan.className = 'cc-main-rating';
+      mainSpan.textContent = avgEl.dataset.ccOriginalText;
+
+      const favSpan = document.createElement('span');
+      favSpan.className = 'cc-fav-rating';
+      favSpan.style.position = 'relative';
+      favSpan.style.top = '25px';
+      favSpan.style.fontSize = '0.3em';
+      favSpan.style.fontWeight = '600';
+      favSpan.style.display = 'none';
+
+      avgEl.appendChild(mainSpan);
+      avgEl.appendChild(favSpan);
+      avgEl.dataset.ccInitialized = 'true';
+    }
+    return avgEl;
+  }
+
+  ratingsEstimate() {
+    const avgEl = this._getOrInitRatingContainer();
     if (!avgEl) return;
-    const text = avgEl.textContent.replace(/\s/g, '');
-    if (!text.includes('?%')) return;
+
+    // Počítáme odhad jen pokud je původní CSFD stav "? %"
+    if (!avgEl.dataset.ccOriginalText.includes('?')) return;
+
     const userRatings = Array.from(document.querySelectorAll('section.others-rating .star-rating'));
     if (!userRatings.length) return;
     const numbers = userRatings
@@ -514,10 +547,35 @@ export class Csfd {
       .filter(Number.isFinite);
     if (!numbers.length) return;
     const average = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
-    avgEl.textContent = `${average}%`;
+
+    const mainSpan = avgEl.querySelector('.cc-main-rating');
+    if (mainSpan) {
+      mainSpan.textContent = `${average}%`;
+    }
+
     avgEl.style.color = '#fff';
     avgEl.style.backgroundColor = this._getRatingColor(average);
     avgEl.setAttribute('title', `spočteno z hodnocení: ${numbers.length}`);
+  }
+
+  clearRatingsEstimate() {
+    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    if (!avgEl || !avgEl.dataset.ccInitialized) return;
+
+    const mainSpan = avgEl.querySelector('.cc-main-rating');
+    if (mainSpan) {
+      mainSpan.textContent = avgEl.dataset.ccOriginalText;
+    }
+
+    // Obnovení původní barvy, pozadí a titulku
+    avgEl.style.color = avgEl.dataset.ccOriginalColor;
+    avgEl.style.backgroundColor = avgEl.dataset.ccOriginalBg;
+
+    if (avgEl.dataset.ccOriginalTitle) {
+      avgEl.setAttribute('title', avgEl.dataset.ccOriginalTitle);
+    } else {
+      avgEl.removeAttribute('title');
+    }
   }
 
   ratingsFromFavorites() {
@@ -531,31 +589,30 @@ export class Csfd {
     if (!numbers.length) return;
 
     const ratingAverage = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
-    const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
+
+    const avgEl = this._getOrInitRatingContainer();
     if (!avgEl) return;
 
-    if (!avgEl.dataset.original) {
-      avgEl.dataset.original = avgEl.textContent.trim();
-    }
-    const baseText = avgEl.dataset.original;
+    const favSpan = avgEl.querySelector('.cc-fav-rating');
+    const mainSpan = avgEl.querySelector('.cc-main-rating');
 
-    avgEl.innerHTML = `
-                <span style="position: absolute;">${baseText}</span>
-                <span style="position: relative; top: 25px; font-size: 0.3em; font-weight: 600;">oblíbení: ${ratingAverage}%</span>
-            `;
+    if (favSpan && mainSpan) {
+      favSpan.textContent = `oblíbení: ${ratingAverage}%`;
+      favSpan.style.display = 'inline-block';
+      mainSpan.style.position = 'absolute';
+    }
   }
 
   clearRatingsFromFavorites() {
-    const avgEl = document.querySelector('.box-rating-container div.film-rating-average');
-    if (!avgEl) return;
-    if (avgEl.dataset.original) {
-      avgEl.textContent = avgEl.dataset.original;
-      delete avgEl.dataset.original;
-    } else {
-      const absSpan = avgEl.querySelector('span[style*="position:absolute"]');
-      if (absSpan) {
-        avgEl.textContent = absSpan.textContent.trim();
-      }
+    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    if (!avgEl || !avgEl.dataset.ccInitialized) return;
+
+    const favSpan = avgEl.querySelector('.cc-fav-rating');
+    const mainSpan = avgEl.querySelector('.cc-main-rating');
+
+    if (favSpan && mainSpan) {
+      favSpan.style.display = 'none';
+      mainSpan.style.position = 'static';
     }
   }
 
