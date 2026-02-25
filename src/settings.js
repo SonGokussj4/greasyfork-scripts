@@ -150,13 +150,13 @@ function getOrCreateImageModal() {
   overlay.className = 'cc-version-info-overlay';
 
   overlay.innerHTML = `
-    <div class="cc-version-info-modal" style="width: min(840px, 95vw); max-height: 90vh;">
+    <div class="cc-version-info-modal" style="width: fit-content; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column;">
       <div class="cc-version-info-head">
         <h3 id="cc-image-modal-title">Ukázka funkce</h3>
         <button type="button" class="cc-version-info-close" id="cc-image-modal-close" aria-label="Zavřít">×</button>
       </div>
-      <div class="cc-version-info-body" style="text-align: center; padding: 16px; display: flex; justify-content: center; align-items: center; background: #f4f4f4;">
-        <img id="cc-image-modal-img" src="" alt="Ukázka" style="max-width: 100%; max-height: 75vh; object-fit: contain; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);" />
+      <div class="cc-version-info-body" style="padding: 0; background: #242424; overflow: auto;">
+        <img id="cc-image-modal-img" src="" alt="Ukázka" style="display: block; margin: 0 auto; max-width: none; max-height: none;" />
       </div>
     </div>
   `;
