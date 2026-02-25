@@ -4,7 +4,9 @@ import {
   RATINGS_STORE_NAME,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
-  HIDE_SELECTED_REVIEWS_KEY, // ADDED KEY
+  HIDE_SELECTED_REVIEWS_KEY,
+  SHOW_RATINGS_KEY,
+  SHOW_RATINGS_IN_REVIEWS_KEY,
 } from './config.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
@@ -717,6 +719,8 @@ export class Csfd {
 
   getCandidateFilmLinks() {
     const searchRoot = this.csfdPage || document;
+    const showInReviews = localStorage.getItem(SHOW_RATINGS_IN_REVIEWS_KEY) !== 'false';
+
     return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
       const href = link.getAttribute('href') || '';
 
@@ -738,6 +742,11 @@ export class Csfd {
       }
 
       if (link.closest(BLOCKED_LINK_CLOSEST_SELECTORS) || this.shouldSkipProfileSectionLink(link)) {
+        return false;
+      }
+
+      // Check if ratings should be shown inside review texts
+      if (!showInReviews && link.closest('span.comment')) {
         return false;
       }
 
@@ -912,6 +921,9 @@ export class Csfd {
   }
 
   async addStars() {
+    // Check if the user completely disabled showing ratings globally
+    if (localStorage.getItem(SHOW_RATINGS_KEY) === 'false') return;
+
     if (location.href.match(/\/(zebricky|rebricky)\//)) return;
     if (this.isOnUserReviewsPage() && !this.isOnOtherUserProfilePage()) return;
     if (this.isOnOwnRatingsPage()) return;

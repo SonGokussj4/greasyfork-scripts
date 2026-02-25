@@ -24,6 +24,10 @@ export const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_phot
 export const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
 export const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
 
+export const SHOW_RATINGS_KEY = 'cc_show_ratings';
+export const SHOW_RATINGS_IN_REVIEWS_KEY = 'cc_show_ratings_in_reviews';
+export const SHOW_RATINGS_SECTION_COLLAPSED_KEY = 'cc_show_ratings_section_collapsed';
+
 // feature flags copied from legacy script
 export const CLICKABLE_HEADER_BOXES_KEY = 'cc_clickable_header_boxes';
 export const RATINGS_ESTIMATE_KEY = 'cc_ratings_estimate';

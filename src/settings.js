@@ -19,6 +19,9 @@ import {
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   CREATOR_PREVIEW_CACHE_HOURS_KEY,
+  SHOW_RATINGS_KEY, // Nové
+  SHOW_RATINGS_IN_REVIEWS_KEY, // Nové
+  SHOW_RATINGS_SECTION_COLLAPSED_KEY, // Nové
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
 import { refreshRatingsBadges } from './settings-badges.js';
@@ -269,6 +272,15 @@ async function addSettingsButton() {
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
+  const updateShowRatingsUI = () => {
+    const enabled = getBoolSetting(SHOW_RATINGS_KEY, true);
+    const childToggle = settingsButton.querySelector('#cc-show-ratings-in-reviews');
+    const body = settingsButton.querySelector('#cc-show-ratings-group-body');
+
+    if (childToggle) childToggle.disabled = !enabled;
+    if (body) body.classList.toggle('is-disabled', !enabled);
+  };
+
   // ==========================================
   // DATA-DRIVEN CONFIGURATION ARCHITECTURE
   // ==========================================
@@ -315,6 +327,31 @@ async function addSettingsButton() {
     {
       category: 'Filmy a seriály',
       items: [
+        {
+          type: 'group',
+          id: 'cc-show-ratings',
+          storageKey: SHOW_RATINGS_KEY,
+          defaultValue: true,
+          label: 'Ukázat hodnocení',
+          tooltip: 'Zobrazí tvé hodnocení (hvězdičky) vedle odkazů na filmy.',
+          eventName: 'cc-ratings-updated',
+          groupToggleId: 'cc-show-ratings-group-toggle',
+          groupBodyId: 'cc-show-ratings-group-body',
+          collapsedKey: SHOW_RATINGS_SECTION_COLLAPSED_KEY,
+          callback: updateShowRatingsUI,
+          childrenItems: [
+            {
+              type: 'toggle',
+              id: 'cc-show-ratings-in-reviews',
+              storageKey: SHOW_RATINGS_IN_REVIEWS_KEY,
+              defaultValue: true,
+              label: 'Ukazovat v recenzích',
+              tooltip: 'Zobrazí hvězdičky i u odkazů uvnitř textů recenzí a komentářů.',
+              eventName: 'cc-ratings-updated',
+              callback: null,
+            },
+          ],
+        },
         {
           type: 'toggle',
           id: 'cc-enable-gallery-image-links',
@@ -522,10 +559,11 @@ async function addSettingsButton() {
 
     element.addEventListener('change', () => {
       localStorage.setItem(storageKey, String(element.checked));
+      // skipSync: true so redraw triggers won't mistakenly try to push cloud updates constantly
       if (eventName)
         window.dispatchEvent(
           new CustomEvent(eventName, {
-            detail: { enabled: element.checked },
+            detail: { enabled: element.checked, skipSync: true },
           }),
         );
       if (toastOn && toastOff) showSettingsInfoToast(element.checked ? toastOn : toastOff);
@@ -654,6 +692,7 @@ async function addSettingsButton() {
   updateCreatorPreviewUI();
   updateHideReviewsUI();
   updateHidePanelsUI();
+  updateShowRatingsUI();
 
   let currentPanelPills = [];
   try {
@@ -778,6 +817,7 @@ async function addSettingsButton() {
     updateCreatorPreviewUI();
     updateHideReviewsUI();
     updateHidePanelsUI();
+    updateShowRatingsUI();
     updateDevState();
   };
 
@@ -791,6 +831,9 @@ async function addSettingsButton() {
     localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
+    localStorage.removeItem(SHOW_RATINGS_KEY);
+    localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
+    localStorage.removeItem(SHOW_RATINGS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem('cc_hide_home_panels');
     localStorage.removeItem('cc_hidden_panels_list');
     localStorage.removeItem('cc_hide_panels_collapsed');
@@ -811,6 +854,7 @@ async function addSettingsButton() {
     );
     window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
     window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+    window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
     showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
   });
 
