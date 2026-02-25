@@ -343,7 +343,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     color: #444;
     font-weight: 500;
     line-height: 1.3;
-    cursor: default;
+    cursor: inherit;
 }
 
 .cc-grow {
