@@ -31,7 +31,7 @@ export const MENU_CONFIG = [
         label: 'Domácí stránka - skryté panely',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/HkXrw6N.png',
           text: 'Skryje nechtěné sekce na domovské stránce.\n\n👉 Klikni pro ukázku',
         },
         eventName: 'cc-hidden-panels-updated',
@@ -58,7 +58,7 @@ export const MENU_CONFIG = [
         defaultValue: true,
         label: 'Boxy s tlačítkem "VÍCE" jsou klikatelné celé',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/sV23XS2.png',
           text: 'Boxy obsahující tlačítko "více" jsou klikatelné celé. Není potřeba mířit přesně na tlačítko.\n\n👉 Klikni pro ukázku',
         },
         tooltip: '',
