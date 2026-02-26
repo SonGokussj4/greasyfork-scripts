@@ -69,6 +69,10 @@ export const MENU_CONFIG = [
         defaultValue: true,
         label: 'Ukázat hodnocení',
         tooltip: 'Zobrazí tvé hodnocení (hvězdičky) vedle odkazů na filmy.',
+        infoIcon: {
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          text: 'Test v grupe\n\n👉 Klikni pro ukázku',
+        },
         eventName: 'cc-ratings-updated',
         groupToggleId: 'cc-show-ratings-group-toggle',
         groupBodyId: 'cc-show-ratings-group-body',
@@ -82,6 +86,10 @@ export const MENU_CONFIG = [
             defaultValue: true,
             label: 'Ukazovat v recenzích',
             tooltip: 'Zobrazí hvězdičky i u odkazů uvnitř textů recenzí a komentářů.',
+            infoIcon: {
+              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+              text: 'Test v subgrupe\n\n👉 Klikni pro ukázku',
+            },
             eventName: 'cc-ratings-updated',
             callback: null,
           },

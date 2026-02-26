@@ -351,6 +351,16 @@ async function addSettingsButton() {
               </label>
               <div class="cc-setting-collapse-trigger" id="${item.groupToggleId}" aria-expanded="false">
                   <span class="cc-setting-label cc-grow">${escapeHtml(item.label)}</span>
+                  ${
+                    item.infoIcon
+                      ? `
+                      <div class="cc-setting-icons" style="margin-right: 6px;">
+                          <div class="cc-info-icon" aria-label="${escapeHtml(item.infoIcon.text)}" data-image-url="${escapeHtml(item.infoIcon.url)}">
+                              <svg width="14" height="14"><use href="#cc-icon-info"></use></svg>
+                          </div>
+                      </div>`
+                      : ''
+                  }
                   <svg class="cc-chevron" width="14" height="14"><use href="#cc-icon-chevron"></use></svg>
               </div>
           </div>
@@ -412,7 +422,10 @@ async function addSettingsButton() {
     };
 
     setCollapsed(getBoolSetting(storageKey, true));
-    toggle.addEventListener('click', () => {
+    toggle.addEventListener('click', (e) => {
+      // If user click on an info icon, we don't want to toggle the group collapse
+      if (e.target.closest('.cc-setting-icons')) return;
+
       const currently = group?.classList.contains('is-collapsed');
       setCollapsed(!currently);
     });

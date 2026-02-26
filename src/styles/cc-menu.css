@@ -409,10 +409,14 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     border-radius: 6px;
     padding: 4px 8px;
     transition: background-color 0.2s;
+    position: relative;
+    z-index: 1;
 }
 
-.cc-setting-group:hover {
+.cc-setting-group:hover,
+.cc-setting-group:focus-within {
     background: #f8f8f8;
+    z-index: 10;
 }
 
 .cc-setting-collapse-trigger {
@@ -453,7 +457,8 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     /* Animation Core */
     max-height: 250px;
     opacity: 1;
-    overflow: hidden;
+    /* FIX: Pokud je okno rozbalené, overflow musí být viditelný kvůli Tooltipům! */
+    overflow: visible;
     transform-origin: top;
     transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
         opacity 0.25s ease-out,
@@ -468,6 +473,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     padding-bottom: 0;
     opacity: 0;
     pointer-events: none;
+    overflow: hidden;
 }
 
 /* Visual Disabled State when main switch is off */
