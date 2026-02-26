@@ -24,22 +24,16 @@ export const MENU_CONFIG = [
     category: 'Globální',
     items: [
       {
-        type: 'toggle',
-        id: 'cc-enable-clickable-header-boxes',
-        storageKey: CLICKABLE_HEADER_BOXES_KEY,
-        defaultValue: true,
-        label: 'Boxy s tlačítkem "VÍCE" jsou klikatelné celé',
-        tooltip: "Na domovské stránce roztáhne klikatelnou oblast u tlačítek 'Více' přes celý informační blok.",
-        eventName: 'cc-clickable-header-boxes-toggled',
-      },
-      {
         type: 'group',
         id: 'cc-hide-home-panels',
         storageKey: 'cc_hide_home_panels',
         defaultValue: true,
         label: 'Domácí stránka - skryté panely',
-        tooltip:
-          'Umožňuje na domovské stránce skrývat nechtěné sekce najetím myší na jejich nadpis a kliknutím na tlačítko.',
+        tooltip: '',
+        infoIcon: {
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          text: 'Skryje nechtěné sekce na domovské stránce.\n\n👉 Klikni pro ukázku',
+        },
         eventName: 'cc-hidden-panels-updated',
         groupToggleId: 'cc-hide-panels-group-toggle',
         groupBodyId: 'cc-hide-panels-group-body',
@@ -57,6 +51,19 @@ export const MENU_CONFIG = [
                 </div>
             </div>`,
       },
+      {
+        type: 'toggle',
+        id: 'cc-enable-clickable-header-boxes',
+        storageKey: CLICKABLE_HEADER_BOXES_KEY,
+        defaultValue: true,
+        label: 'Boxy s tlačítkem "VÍCE" jsou klikatelné celé',
+        infoIcon: {
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          text: 'Boxy obsahující tlačítko "více" jsou klikatelné celé. Není potřeba mířit přesně na tlačítko.\n\n👉 Klikni pro ukázku',
+        },
+        tooltip: '',
+        eventName: 'cc-clickable-header-boxes-toggled',
+      },
     ],
   },
   {
@@ -68,10 +75,10 @@ export const MENU_CONFIG = [
         storageKey: SHOW_RATINGS_KEY,
         defaultValue: true,
         label: 'Ukázat hodnocení',
-        tooltip: 'Zobrazí tvé hodnocení (hvězdičky) vedle odkazů na filmy.',
+        tooltip: '',
         infoIcon: {
           url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-          text: 'Test v grupe\n\n👉 Klikni pro ukázku',
+          text: 'Zobrazí hodnocení (hvězdičky) filmů vedle jejich názvů.\n\n👉 Klikni pro ukázku',
         },
         eventName: 'cc-ratings-updated',
         groupToggleId: 'cc-show-ratings-group-toggle',
@@ -85,10 +92,10 @@ export const MENU_CONFIG = [
             storageKey: SHOW_RATINGS_IN_REVIEWS_KEY,
             defaultValue: true,
             label: 'Ukazovat v recenzích',
-            tooltip: 'Zobrazí hvězdičky i u odkazů uvnitř textů recenzí a komentářů.',
+            tooltip: '',
             infoIcon: {
               url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-              text: 'Test v subgrupe\n\n👉 Klikni pro ukázku',
+              text: 'Zobrazí hodnocení (hvězdičky) i u odkazů uvnitř textů recenzí a komentářů.\n\n👉 Klikni pro ukázku',
             },
             eventName: 'cc-ratings-updated',
             callback: null,
@@ -118,7 +125,7 @@ export const MENU_CONFIG = [
         eventName: 'cc-ratings-estimate-toggled',
         infoIcon: {
           url: 'https://i.imgur.com/ySdMhXt.png',
-          text: 'Film s méně než 10 hodnoceními CSFD skryje procenta. Tato funkce je dopočítá a zobrazí.\n\n👉 Klikni pro ukázku',
+          text: 'Dopočítá a zobrazí hodnocení i u filmů s méně než 10 hodnoceními.\n\n👉 Klikni pro ukázku',
         },
       },
       {
@@ -128,8 +135,12 @@ export const MENU_CONFIG = [
         defaultValue: true,
         requiresLogin: true,
         label: 'Zobrazit hodnocení z průměru oblíbených',
-        tooltip: 'Zobrazí doplňující průměrné hodnocení, vypočítané pouze z uživatelů, které máte v oblíbených.',
+        tooltip: '',
         eventName: 'cc-ratings-from-favorites-toggled',
+        infoIcon: {
+          url: 'https://i.imgur.com/ySdMhXt.png',
+          text: 'Přidá doplňující průměrné hodnocení vypočítané z oblíbených uživatelů.\n\n👉 Klikni pro ukázku',
+        },
       },
       {
         type: 'toggle',
@@ -138,8 +149,12 @@ export const MENU_CONFIG = [
         defaultValue: true,
         requiresLogin: true,
         label: 'Zobrazit datum hodnocení',
-        tooltip: 'V hlavičce s vaším hodnocením filmu vždy zobrazí konkrétní datum, kdy jste film hodnotili.',
+        tooltip: '',
         eventName: 'cc-add-ratings-date-toggled',
+        infoIcon: {
+          url: 'https://i.imgur.com/ySdMhXt.png',
+          text: 'Zobrazí datum, kdy jste film hodnotili.\n\n👉 Klikni pro ukázku',
+        },
       },
       {
         type: 'group',
@@ -147,7 +162,11 @@ export const MENU_CONFIG = [
         storageKey: HIDE_SELECTED_REVIEWS_KEY,
         defaultValue: false,
         label: 'Skrýt recenze lidí',
-        tooltip: 'Umožňuje skrýt komentáře a recenze od uživatelů, které nechcete číst.',
+        tooltip: '',
+        infoIcon: {
+          url: 'https://i.imgur.com/ySdMhXt.png',
+          text: 'Skrýt komentáře a recenze uživatelů, které nechcete číst.\n\n👉 Klikni pro ukázku',
+        },
         eventName: 'cc-hide-selected-reviews-updated',
         groupToggleId: 'cc-hide-reviews-group-toggle',
         groupBodyId: 'cc-hide-reviews-group-body',
@@ -176,11 +195,11 @@ export const MENU_CONFIG = [
         storageKey: SHOW_ALL_CREATOR_TABS_KEY,
         defaultValue: true,
         label: 'Zobrazit všechny záložky tvůrce',
-        tooltip: 'Na profilu herce/režiséra automaticky rozbalí menu "Více" a ukáže všechny záložky vedle sebe.',
+        tooltip: '',
         eventName: 'cc-show-all-creator-tabs-toggled',
         infoIcon: {
           url: 'https://i.imgur.com/aTrSU2X.png',
-          text: 'Zobrazí všechny záložky (Režie, Scénář atd.) i když v nich má méně než 3 filmy.\n\n👉 Klikni pro ukázku',
+          text: 'Na profilu herce automaticky zobrazí všechny záložky (Videa, Galerie, Diskuze) vedle sebe bez klikání na "další 🔻".\n\n👉 Klikni pro ukázku',
         },
       },
       {
@@ -189,7 +208,11 @@ export const MENU_CONFIG = [
         storageKey: CREATOR_PREVIEW_ENABLED_KEY,
         defaultValue: true,
         label: 'Náhledy fotek tvůrců',
-        tooltip: 'Po najetí myší na jméno tvůrce se objeví rychlý vyskakovací panel s jeho fotografií a detaily.',
+        tooltip: '',
+        infoIcon: {
+          url: 'https://i.imgur.com/aTrSU2X.png',
+          text: 'Po najetí myší na jméno herce/tvůrce se objeví panel s jeho fotografií a detaily.\n\n👉 Klikni pro ukázku',
+        },
         eventName: null,
         groupToggleId: 'cc-creator-preview-group-toggle',
         groupBodyId: 'cc-creator-preview-group-body',
@@ -202,7 +225,11 @@ export const MENU_CONFIG = [
             storageKey: CREATOR_PREVIEW_SHOW_BIRTH_KEY,
             defaultValue: true,
             label: 'Zobrazovat datum narození',
-            tooltip: 'Zobrazí datum narození/úmrtí a věk tvůrce.',
+            tooltip: '',
+            infoIcon: {
+              url: 'https://i.imgur.com/aTrSU2X.png',
+              text: 'Zobrazí datum narození/úmrtí a věk tvůrce.\n\n👉 Klikni pro ukázku',
+            },
             callback: 'updateCreatorPreviewUI',
           },
           {
@@ -210,8 +237,12 @@ export const MENU_CONFIG = [
             id: 'cc-creator-preview-show-photo-from',
             storageKey: CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
             defaultValue: true,
-            label: 'Zobrazovat „Photo from“',
-            tooltip: 'Zobrazí copyright a film, ze kterého pochází fotka.',
+            label: 'Zobrazovat zdroj fotky',
+            tooltip: '',
+            infoIcon: {
+              url: 'https://i.imgur.com/aTrSU2X.png',
+              text: 'Zobrazovat, z jakého filmu pochází fotka.\n\n👉 Klikni pro ukázku',
+            },
             callback: 'updateCreatorPreviewUI',
           },
         ],
