@@ -157,7 +157,6 @@ export function initializeSettingsMenuHover(menuButton) {
       if (menuLink) {
         menuLink.removeEventListener('click', debugClickHandler);
       }
-      setHoverState(menuButton, false);
       bindHoverHandlers(menuButton, {
         get hoverTimeout() {
           return hoverTimeout;
