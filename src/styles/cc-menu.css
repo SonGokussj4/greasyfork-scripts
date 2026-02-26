@@ -1662,3 +1662,22 @@ body.cc-menu-open .box-video {
 .cc-ratings-square.is-computed {
     background: #000 !important;
 }
+
+/* =========================================================
+   12. TV PROGRAM RATINGS (Vedle času)
+   ========================================================= */
+.cc-own-rating-tv {
+    display: inline-flex !important;
+    align-items: center;
+    margin-left: 10px;
+    vertical-align: middle;
+    transform: translateY(-1px);
+    /* Slight optical alignment next to the time text */
+}
+
+/* Force horizontal arrangement on the original CSFD block with time */
+.program-item .time-rating {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}

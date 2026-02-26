@@ -1058,8 +1058,18 @@ export class Csfd {
 
       if (!starElement) continue;
 
-      const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-      headingAncestor ? headingAncestor.appendChild(starElement) : link.insertAdjacentElement('afterend', starElement);
+      // .program-item has overflow to hide excess text in ellipsis so we can't put the stars at the end.
+      const tvProgramTimeRating = link.closest('.program-item')?.querySelector('.time-rating');
+      if (tvProgramTimeRating) {
+        starElement.classList.add('cc-own-rating-tv');
+        tvProgramTimeRating.appendChild(starElement);
+      } else {
+        const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
+        headingAncestor
+          ? headingAncestor.appendChild(starElement)
+          : link.insertAdjacentElement('afterend', starElement);
+      }
+
       link.dataset.ccStarAdded = 'true';
     }
   }
