@@ -452,52 +452,100 @@ export class Csfd {
     selectors.forEach((sel) => {
       const el = document.querySelector(sel);
       if (el) {
-        el.addEventListener('click', () => {
+        el.style.cursor = 'pointer';
+        el.onclick = () => {
           const hrefMap = {
             '.user-link.wantsee': '/chci-videt/',
             '.user-link.favorites': '/soukrome/oblibene/',
             '.user-link.messages': '/posta/',
           };
           location.href = hrefMap[sel] || hrefMap['.user-link.wantsee'];
-        });
+        };
       }
     });
 
-    const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header'));
+    const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header, .updated-box-header'));
     headers.forEach((div) => {
+      if (div.dataset.ccClickable === 'true') return;
+
       const btn = div.querySelector('a.button');
       if (!btn) return;
       const text = btn.textContent.trim().toLowerCase();
       if (!['více', 'viac'].includes(text)) return;
       const href = btn.getAttribute('href');
       if (!href) return;
+
+      div.dataset.ccClickable = 'true';
+
       const wrapper = document.createElement('a');
       wrapper.setAttribute('href', href);
+      wrapper.dataset.ccHeaderWrapper = 'true';
+      wrapper.style.display = 'block';
+      wrapper.style.textDecoration = 'none';
+      wrapper.style.color = 'inherit';
+
       div.parentNode.replaceChild(wrapper, div);
       wrapper.appendChild(div);
 
       const h2 = div.querySelector('h2');
       const spanCount = h2?.querySelector('span.count');
-      div.addEventListener('mouseenter', () => {
+
+      div.ccHoverEnter = () => {
+        div.dataset.origBg = div.style.backgroundColor || '';
         div.style.backgroundColor = '#ba0305';
         if (h2) {
+          h2.dataset.origBg = h2.style.backgroundColor || '';
+          h2.dataset.origColor = h2.style.color || '';
           h2.style.backgroundColor = '#ba0305';
           h2.style.color = '#fff';
         }
-        if (spanCount) spanCount.style.color = '#fff';
-      });
-      div.addEventListener('mouseleave', () => {
-        if (div.classList.contains('dropdown-content-head')) {
-          div.style.backgroundColor = '#ececec';
-        } else {
-          div.style.backgroundColor = '#e3e3e3';
+        if (spanCount) {
+          spanCount.dataset.origColor = spanCount.style.color || '';
+          spanCount.style.color = '#fff';
         }
+      };
+
+      div.ccHoverLeave = () => {
+        div.style.backgroundColor = div.dataset.origBg || '';
         if (h2) {
-          h2.style.backgroundColor = 'initial';
-          h2.style.color = 'initial';
+          h2.style.backgroundColor = h2.dataset.origBg || '';
+          h2.style.color = h2.dataset.origColor || '';
         }
-        if (spanCount) spanCount.style.color = 'initial';
-      });
+        if (spanCount) {
+          spanCount.style.color = spanCount.dataset.origColor || '';
+        }
+      };
+
+      div.addEventListener('mouseenter', div.ccHoverEnter);
+      div.addEventListener('mouseleave', div.ccHoverLeave);
+    });
+  }
+
+  clearClickableHeaderBoxes() {
+    document.querySelectorAll('a[data-cc-header-wrapper="true"]').forEach((wrapper) => {
+      const div = wrapper.firstElementChild;
+      if (div) {
+        div.dataset.ccClickable = 'false';
+
+        // Clear hover styles if the mouse is currently over the element
+        if (div.ccHoverLeave) {
+          div.removeEventListener('mouseenter', div.ccHoverEnter);
+          div.removeEventListener('mouseleave', div.ccHoverLeave);
+          div.ccHoverLeave();
+        }
+
+        // Unwrap the div from the anchor
+        wrapper.parentNode.replaceChild(div, wrapper);
+      }
+    });
+
+    // Remove clickable styles and handlers from user links
+    ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'].forEach((sel) => {
+      const el = document.querySelector(sel);
+      if (el) {
+        el.style.cursor = '';
+        el.onclick = null;
+      }
     });
   }
 

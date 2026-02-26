@@ -117,8 +117,12 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   });
 
   // wire up legacy‑style toggles
-  window.addEventListener('cc-clickable-header-boxes-toggled', () => {
-    csfd.clickableHeaderBoxes();
+  window.addEventListener('cc-clickable-header-boxes-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.clickableHeaderBoxes();
+    } else {
+      csfd.clearClickableHeaderBoxes();
+    }
   });
   window.addEventListener('cc-ratings-estimate-toggled', (ev) => {
     if (ev?.detail?.enabled) {
