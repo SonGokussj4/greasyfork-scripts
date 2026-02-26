@@ -627,6 +627,19 @@ async function addSettingsButton() {
       localStorage.setItem('cc_dev_mode', String(!isDev));
       updateDevState();
       showSettingsInfoToast(`Vývojářský režim: ${!isDev ? 'ZAPNUT' : 'VYPNUT'}`);
+
+      // If we just turned DEV off, automatically turn off the Hover lock
+      if (isDev) {
+        // Find the checkbox (either the main one or the floating fallback)
+        const hoverCheckbox = document.querySelector(
+          '#cc-debug-hover-checkbox, .fancy-alert-controls input[type="checkbox"]',
+        );
+
+        // If it exists and is checked, natively click it to trigger its own 'change' logic
+        if (hoverCheckbox && hoverCheckbox.checked) {
+          hoverCheckbox.click();
+        }
+      }
     });
   }
 
