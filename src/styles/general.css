@@ -156,14 +156,30 @@
 }
 
 /* Ratings in other people /film review comments should be displayed differently */
-span.comment>.cc-own-rating,
+span.comment .cc-own-rating,
 .cc-own-rating-foreign-profile {
-    margin-top: -3px;
     border: 1px solid rgb(53, 52, 52, 0.5);
     border-radius: 6px;
     padding: 0px 5px;
+    margin-right: 3px;
     height: 20px;
     overflow: hidden;
+    display: inline-flex;
+    /* Fix 2: Centers the stars vertically inside the border */
+    align-items: center;
+    /* Centers the stars horizontally inside the border */
+    justify-content: center;
+    /* Fix 2: Aligns the whole box nicely with CSFD native stars */
+    vertical-align: middle;
+}
+
+/* Apply negative margin ONLY inside text paragraphs/comments to prevent line-height stretching.
+   This removes the unwanted upward offset in the "Poslední recenze" header (Fix 1). */
+span.comment .cc-own-rating,
+span.comment .cc-own-rating-foreign-profile,
+.diary-post p .cc-own-rating,
+.diary-post p .cc-own-rating-foreign-profile {
+    margin-top: -3px;
 }
 
 /* Own "border" setting for computed (black) stars */
@@ -546,8 +562,19 @@ body:not(.cc-dev-mode-active) .cc-dev-only {
     display: none !important;
 }
 
-/* Fix for ratings next to the film name in discussions (/diskuze/sledovane/) */
-.td-title-film .cc-own-rating {
-    position: absolute;
-    margin-top: 1px;
+/* =========================================
+   BUG FIXES
+   ========================================= */
+
+/* https://www.csfd.cz/diskuze/sledovane/ */
+/* Fix for discussion list titles wrapping to two lines when ratings are present */
+.discussion-list .td-title {
+    width: 60%;
+}
+
+/* https://www.csfd.cz/televize/ */
+/* Fix vertical alignment for stars in TV Tips and other ellipsis headers */
+.film-title-ellipsis .cc-own-rating,
+.film-title-ellipsis .cc-own-rating-foreign-profile {
+    margin-top: -5px;
 }

@@ -829,23 +829,33 @@ export class Csfd {
     return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
       const href = link.getAttribute('href') || '';
 
+      // Exclude links that don't have the typical "/12345-slug/" pattern or contain unwanted query parameters or paths
       if (
+        // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
         !/\/\d+-/.test(href) ||
+        // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
         /[?&](page|comment)=\d+/i.test(href) ||
+        // Links containing 'modal' query parameter (usually opens a modal)
         /[?&]modal=/i.test(href) ||
+        // Links pointing to sections that are not actual film pages
         /\/(galerie|videa?|tvurci|obsahy?)\//.test(href)
       ) {
         return false;
       }
 
+      // Exclude links in /tvurce/ (creator) pages except for those in the filmography section
       if (this.isOnCreatorPage() && link.closest('.creator-filmography')) return false;
+
+      // Exclude links that are likely for editing reviews (identified by classes or icons)
       if (link.matches('.edit-review, [class*="edit-review"]') || link.querySelector('.icon-edit-square, img'))
         return false;
 
+      // Include links in related boxes only if they match the film title pattern
       if (link.closest('section.box-related, div.box-related, .box-related')) {
         return link.matches('a.film-title-name[href*="/film/"]');
       }
 
+      // Exclude links in certain sections of the user profile overview page to avoid picking up non-film links
       if (link.closest(BLOCKED_LINK_CLOSEST_SELECTORS) || this.shouldSkipProfileSectionLink(link)) {
         return false;
       }
@@ -893,17 +903,24 @@ export class Csfd {
     return /^\/uzivatel\/\d+-[^/]+\/(recenze|recenzie)(\/|$)/i.test(location.pathname || '');
   }
 
+  /**
+   * Determines if a given link on the user overview page should be skipped when looking for film links,
+   * based on its context in the DOM.
+   * @param {*} link
+   * @returns {boolean}
+   */
   shouldSkipProfileSectionLink(link) {
     if (!this.isOnUserOverviewPage()) return false;
 
-    const explicitReviewOrRatingContainer = link.closest(
-      '[id*="review" i], [id*="recenz" i], [id*="rating" i], [id*="hodnoc" i], [id*="hodnoten" i], [class*="review" i], [class*="recenz" i], [class*="rating" i], [class*="hodnoc" i], [class*="hodnoten" i]',
+    // Block the Ratings table container so standard link crawler ignores it
+    const explicitRatingContainer = link.closest(
+      '[id*="rating" i], [id*="hodnoc" i], [id*="hodnoten" i], [class*="rating" i], [class*="hodnoc" i], [class*="hodnoten" i]',
     );
     const explicitDiaryContainer = link.closest(
       '[id*="diar" i], [id*="denik" i], [id*="denic" i], [class*="diar" i], [class*="denik" i], [class*="denic" i]',
     );
 
-    if (explicitReviewOrRatingContainer && !explicitDiaryContainer) return true;
+    if (explicitRatingContainer && !explicitDiaryContainer) return true;
 
     const searchRoot = this.csfdPage || document.body;
     let sectionNode = link;
@@ -913,16 +930,14 @@ export class Csfd {
         sectionNode = sectionNode.parentElement;
         continue;
       }
-
       const titleEl = sectionNode.querySelector(
         ':scope > .box-header h2, :scope > .box-header h3, :scope > header h2, :scope > header h3, :scope > h2, :scope > h3',
       );
       const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
 
       if (sectionTitle) {
-        if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední hodnocení|posledné hodnotenia/))
-          return true;
-        if (sectionTitle.match(/poslední deníček|posledny dennik/)) return false;
+        if (sectionTitle.match(/poslední hodnocení|posledné hodnotenia/)) return true;
+        if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední deníček|posledny dennik/)) return false;
       }
       sectionNode = sectionNode.parentElement;
     }
@@ -1025,19 +1040,73 @@ export class Csfd {
     return starRating;
   }
 
-  async addStars() {
-    // Check if the user completely disabled showing ratings globally
-    if (localStorage.getItem(SHOW_RATINGS_KEY) === 'false') return;
+  async addComparisonColumnOnOverviewPage() {
+    const table = document.querySelector('.last-ratings table');
+    if (!table) return;
 
-    if (location.href.match(/\/(zebricky|rebricky)\//)) return;
-    if (this.isOnUserReviewsPage() && !this.isOnOtherUserProfilePage()) return;
-    if (this.isOnOwnRatingsPage()) return;
+    table.classList.add('cc-compare-ratings-table');
+
+    const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
+      (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
+    );
+
+    for (const row of rows) {
+      if (row.querySelector('td.cc-my-rating-cell')) continue;
+
+      const nameLink = row.querySelector('td.name a[href*="/film/"]');
+      const ratingCell = row.querySelector('td.star-rating-only');
+      const movieId = await this.getMovieIdFromUrl(nameLink.getAttribute('href'));
+      const ratingRecord = this.stars[movieId];
+
+      const myRatingCell = document.createElement('td');
+      myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+
+      if (ratingRecord && ratingRecord.deleted !== true) {
+        const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
+        const isComputed = ratingRecord?.computed === true;
+        // The 'true' at the end forces the outlined box style
+        const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
+        if (starElement) {
+          starElement.classList.remove('cc-own-rating');
+          myRatingCell.appendChild(starElement);
+        }
+      }
+      ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+    }
+  }
+  async addStars() {
+    if (localStorage.getItem(SHOW_RATINGS_KEY) === 'false') {
+      console.debug('🟣 Ratings not added: SHOW_RATINGS_KEY disabled');
+      return;
+    }
+
+    if (location.href.match(/\/(zebricky|rebricky)\//)) {
+      console.debug('🟣 Ratings not added: on leaderboards page');
+      return;
+    }
+
+    if (this.isOnUserReviewsPage() && !this.isOnOtherUserProfilePage()) {
+      console.debug('🟣 Ratings not added: on user reviews page (not other user)');
+      return;
+    }
+
+    if (this.isOnOwnRatingsPage()) {
+      console.debug('🟣 Ratings not added: on own ratings page');
+      return;
+    }
 
     if (this.isOnForeignRatingsPage()) {
+      console.debug('🟣 Ratings not added: on foreign ratings page — adding comparison column instead');
       return this.addComparisonColumnOnForeignRatingsPage();
     }
 
+    // NEW: Handle the header-less table on the Overview page
+    if (this.isOnUserOverviewPage() && this.isOnOtherUserProfilePage()) {
+      await this.addComparisonColumnOnOverviewPage();
+    }
+
     const links = this.getCandidateFilmLinks();
+    console.debug(`🔵 Found ${links.length} candidate links for adding ratings`);
     const outlinedOnThisPage = this.isOnOtherUserProfilePage();
 
     for (const link of links) {
@@ -1045,7 +1114,7 @@ export class Csfd {
 
       const movieId = await this.getMovieIdFromUrl(link.getAttribute('href'));
       const ratingRecord = this.stars[movieId];
-      if (!ratingRecord || ratingRecord.deleted === true) continue; // Skip rendering if deleted
+      if (!ratingRecord || ratingRecord.deleted === true) continue;
 
       const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
       const isComputed = ratingRecord?.computed === true;
@@ -1058,16 +1127,25 @@ export class Csfd {
 
       if (!starElement) continue;
 
-      // .program-item has overflow to hide excess text in ellipsis so we can't put the stars at the end.
       const tvProgramTimeRating = link.closest('.program-item')?.querySelector('.time-rating');
+      // Look for the info wrapper in Review headers
+      const reviewHeaderInfo = link.closest('.article-header')?.querySelector('.film-title-info');
+      // /diskuze/sledovane/ after the .film-title-info
+      const siblingTitleInfo = link.parentElement.querySelector(':scope > .film-title-info');
+
       if (tvProgramTimeRating) {
         starElement.classList.add('cc-own-rating-tv');
         tvProgramTimeRating.appendChild(starElement);
+      } else if (reviewHeaderInfo) {
+        // Drop it at the end of the user's rating block
+        starElement.style.marginLeft = '12px';
+        reviewHeaderInfo.appendChild(starElement);
+      } else if (siblingTitleInfo) {
+        // Discussions and general lists: Drop it AFTER the (2022) (seriál) block
+        starElement.style.marginLeft = '8px';
+        siblingTitleInfo.insertAdjacentElement('afterend', starElement);
       } else {
-        const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-        headingAncestor
-          ? headingAncestor.appendChild(starElement)
-          : link.insertAdjacentElement('afterend', starElement);
+        link.insertAdjacentElement('afterend', starElement);
       }
 
       link.dataset.ccStarAdded = 'true';
