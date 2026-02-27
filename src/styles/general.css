@@ -551,3 +551,9 @@ body:not(.cc-dev-mode-active) .cc-settings-sticky,
 body:not(.cc-dev-mode-active) .cc-dev-only {
     display: none !important;
 }
+
+/* Fix for ratings next to the film name in discussions (/diskuze/sledovane/) */
+.td-title-film .cc-own-rating {
+    position: absolute;
+    margin-top: 1px;
+}
