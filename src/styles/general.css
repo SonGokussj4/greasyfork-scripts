@@ -155,6 +155,36 @@
     line-height: 1;
 }
 
+/* Ratings in other people /film review comments should be displayed differently */
+span.comment>.cc-own-rating {
+    margin-top: -3px;
+    border: 1px solid rgb(53, 52, 52, 0.5);
+    border-radius: 6px;
+    padding: 0px 5px;
+    height: 20px;
+    overflow: hidden;
+    /* display: inline-flex; */
+    /* align-items: center; */
+}
+
+/* Own "border" setting for computed (black) stars */
+/* .cc-own-rating-computed {
+    border: 1px solid rgba(61, 60, 60, 0.7);
+    } */
+
+.cc-own-rating-computed .stars:before {
+    color: var(--color-grey-dark2, #d2d2d2);
+}
+
+.cc-own-rating-computed-count {
+    font-size: 9px;
+    color: var(--color-grey-light2, #7b7b7b);
+    margin-left: 3px;
+    line-height: 1;
+    vertical-align: super;
+    top: -0.4em;
+}
+
 .cc-own-rating-foreign-profile {
     border: 1px solid var(--color-red, #ba0305);
     border-radius: 999px;
@@ -177,18 +207,6 @@
     text-transform: uppercase;
     color: var(--color-red, #ba0305);
     opacity: 0.85;
-}
-
-.cc-own-rating-computed .stars:before {
-    color: var(--color-grey-dark2, #d2d2d2);
-}
-
-.cc-own-rating-computed-count {
-    font-size: 11px;
-    color: var(--color-grey-light2, #7b7b7b);
-    margin-left: 3px;
-    line-height: 1;
-    vertical-align: super;
 }
 
 h3.film-title-inline .cc-own-rating,

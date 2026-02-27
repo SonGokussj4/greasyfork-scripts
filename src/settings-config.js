@@ -77,7 +77,7 @@ export const MENU_CONFIG = [
         label: 'Ukázat hodnocení',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/aTrSU2X.png',
           text: 'Zobrazí hodnocení (hvězdičky) filmů vedle jejich názvů.\n\n👉 Klikni pro ukázku',
         },
         eventName: 'cc-ratings-updated',
@@ -210,7 +210,7 @@ export const MENU_CONFIG = [
         label: 'Náhledy fotek tvůrců',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/aTrSU2X.png',
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
           text: 'Po najetí myší na jméno herce/tvůrce se objeví panel s jeho fotografií a detaily.\n\n👉 Klikni pro ukázku',
         },
         eventName: null,
