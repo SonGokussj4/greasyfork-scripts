@@ -259,19 +259,19 @@
       await this.syncCurrentPageRatingWithIndexedDb();
 
       try {
-        if (localStorage.getItem('cc_show_all_creator_tabs') === 'true') {
+        if (localStorage.getItem('cc_show_all_creator_tabs') !== 'false') {
           this.showAllCreatorTabs();
         }
-        if (localStorage.getItem('cc_clickable_header_boxes') === 'true') {
+        if (localStorage.getItem('cc_clickable_header_boxes') !== 'false') {
           this.clickableHeaderBoxes();
         }
-        if (localStorage.getItem('cc_ratings_estimate') === 'true') {
+        if (localStorage.getItem('cc_ratings_estimate') !== 'false') {
           this.ratingsEstimate();
         }
-        if (localStorage.getItem('cc_ratings_from_favorites') === 'true') {
+        if (localStorage.getItem('cc_ratings_from_favorites') !== 'false') {
           this.ratingsFromFavorites();
         }
-        if (localStorage.getItem('cc_add_ratings_date') === 'true') {
+        if (localStorage.getItem('cc_add_ratings_date') !== 'false') {
           this.addRatingsDate();
         }
       } catch (e) {
