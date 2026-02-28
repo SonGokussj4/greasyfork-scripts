@@ -448,22 +448,7 @@ export class Csfd {
   }
 
   clickableHeaderBoxes() {
-    const selectors = ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'];
-    selectors.forEach((sel) => {
-      const el = document.querySelector(sel);
-      if (el) {
-        el.style.cursor = 'pointer';
-        el.onclick = () => {
-          const hrefMap = {
-            '.user-link.wantsee': '/chci-videt/',
-            '.user-link.favorites': '/soukrome/oblibene/',
-            '.user-link.messages': '/posta/',
-          };
-          location.href = hrefMap[sel] || hrefMap['.user-link.wantsee'];
-        };
-      }
-    });
-
+    // Aplikujeme pouze na klasické boxy a hlavičky v rozbalovacích menu
     const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header, .updated-box-header'));
     headers.forEach((div) => {
       if (div.dataset.ccClickable === 'true') return;
@@ -536,15 +521,6 @@ export class Csfd {
 
         // Unwrap the div from the anchor
         wrapper.parentNode.replaceChild(div, wrapper);
-      }
-    });
-
-    // Remove clickable styles and handlers from user links
-    ['.user-link.wantsee', '.user-link.favorites', '.user-link.messages'].forEach((sel) => {
-      const el = document.querySelector(sel);
-      if (el) {
-        el.style.cursor = '';
-        el.onclick = null;
       }
     });
   }
