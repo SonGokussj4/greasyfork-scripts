@@ -7,6 +7,7 @@ import {
   HIDE_SELECTED_REVIEWS_KEY,
   SHOW_RATINGS_KEY,
   SHOW_RATINGS_IN_REVIEWS_KEY,
+  SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
 } from './config.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay, getFeatureState, getMovieIdFromUrl } from './utils.js'; // REFACTOR: imported from utils
@@ -158,7 +159,9 @@ export class Csfd {
     // LIVE DOM REFRESH LISTENER (Triggered by Settings Menu)
     window.addEventListener('cc-ratings-updated', async () => {
       // 1. Wipe old injected stars specific to your original code
-      document.querySelectorAll('.cc-own-rating, .cc-my-rating-col, .cc-my-rating-cell').forEach((el) => el.remove());
+      // TODO: Older, with design hopping around
+      // document.querySelectorAll('.cc-own-rating, .cc-my-rating-col, .cc-my-rating-cell').forEach((el) => el.remove());
+      document.querySelectorAll('.cc-own-rating').forEach((el) => el.remove());
       document.querySelectorAll('a[data-cc-star-added="true"]').forEach((el) => {
         delete el.dataset.ccStarAdded;
       });
@@ -729,7 +732,16 @@ export class Csfd {
 
   getCandidateFilmLinks() {
     const searchRoot = this.csfdPage || document;
+
     const showInReviews = getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
+    const showInForeignReviews = getFeatureState(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY, true);
+
+    const isCreatorPage = this.isOnCreatorPage();
+    const isUserReviewsPage = this.isOnUserReviewsPage();
+    const isUserOverviewPage = this.isOnUserOverviewPage();
+    const isOtherUser = this.isOnOtherUserProfilePage();
+    const isForeignProfile = isOtherUser && (isUserReviewsPage || isUserOverviewPage);
+    const isOwnProfile = this.isOnUserProfilePage() && !isOtherUser;
 
     // Links pointing to sections that are not actual film pages
     const ignorePathRegex = /\/(galerie|videa?|tvurci|obsahy?)\//;
@@ -737,9 +749,6 @@ export class Csfd {
     const ignoreParamRegex = /[?&](page|comment|modal)=/i;
     // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
     const validFilmRegex = /\/\d+-/;
-
-    const isCreatorPage = this.isOnCreatorPage();
-    const isUserReviewsPage = this.isOnUserReviewsPage();
 
     return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
       const href = link.getAttribute('href') || '';
@@ -765,20 +774,35 @@ export class Csfd {
         return link.classList.contains('film-title-name');
       }
 
-      // Exclude links in certain sections of the user profile overview page to avoid picking up non-film links
-      if (link.closest(BLOCKED_LINK_CLOSEST_SELECTORS) || this.shouldSkipProfileSectionLink(link)) {
-        return false;
-      }
-
-      // Check if ratings should be shown inside review texts
-      if (!showInReviews && link.closest('span.comment')) {
+      // Exclude links in the ratings comparison table (/profile/xxx/prehled) to not duplicate the title links
+      if (link.closest('.cc-compare-ratings-table')) {
         return false;
       }
 
       const linkText = link.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
       if (linkText === 'více' || linkText === 'viac') return false;
 
-      if (isUserReviewsPage && !link.classList.contains('film-title-name')) return false;
+      const isTitleLink = link.classList.contains('film-title-name');
+      const isReviewTextLink =
+        link.closest('span.comment') || link.closest('.diary-post') || (isUserReviewsPage && !isTitleLink);
+
+      if (isReviewTextLink) {
+        if (isForeignProfile) {
+          if (!showInForeignReviews) return false;
+        } else {
+          if (!showInReviews) return false;
+        }
+      }
+
+      if (isOwnProfile && isTitleLink) {
+        if (isUserReviewsPage) return false;
+        // On the overview page, we want to include the title links in the main sections but exclude those in the review/rating sections to avoid duplicates and false positives
+        if (this.shouldSkipProfileSectionLink(link)) return false;
+      }
+
+      if (link.closest(BLOCKED_LINK_CLOSEST_SELECTORS)) {
+        return false;
+      }
 
       return true;
     });
@@ -951,6 +975,43 @@ export class Csfd {
     return starRating;
   }
 
+  async addComparisonColumnOnOverviewPage() {
+    const table = document.querySelector('.last-ratings table');
+
+    if (!table) return;
+
+    console.debug('🔵 Found ratings table on overview page, adding comparison column');
+    table.classList.add('cc-compare-ratings-table');
+
+    const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
+      (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
+    );
+
+    for (const row of rows) {
+      if (row.querySelector('td.cc-my-rating-cell')) continue;
+
+      const nameLink = row.querySelector('td.name a[href*="/film/"]');
+      const ratingCell = row.querySelector('td.star-rating-only');
+      const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href'));
+      const ratingRecord = this.stars[movieId];
+
+      const myRatingCell = document.createElement('td');
+      myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+
+      if (ratingRecord && ratingRecord.deleted !== true) {
+        const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
+        const isComputed = ratingRecord?.computed === true;
+        // The 'true' at the end forces the outlined box style
+        const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
+        if (starElement) {
+          starElement.classList.remove('cc-own-rating');
+          myRatingCell.appendChild(starElement);
+        }
+      }
+      ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+    }
+  }
+
   async addStars() {
     if (!getFeatureState(SHOW_RATINGS_KEY)) {
       console.debug('🟣 Ratings not added: SHOW_RATINGS_KEY disabled');
@@ -973,6 +1034,12 @@ export class Csfd {
     if (this.isOnForeignRatingsPage()) {
       console.debug('🟣 Ratings not added: on foreign ratings page — adding comparison column instead');
       return this.addComparisonColumnOnForeignRatingsPage();
+    }
+
+    // Handle the header-less table on the Overview page
+    if (this.isOnUserOverviewPage() && this.isOnOtherUserProfilePage()) {
+      console.debug('🟣 On other user overview page — adding column to last ratings table');
+      await this.addComparisonColumnOnOverviewPage();
     }
 
     const links = this.getCandidateFilmLinks();

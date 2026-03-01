@@ -19,9 +19,10 @@ import {
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   CREATOR_PREVIEW_CACHE_HOURS_KEY,
-  SHOW_RATINGS_KEY, // Nové
-  SHOW_RATINGS_IN_REVIEWS_KEY, // Nové
-  SHOW_RATINGS_SECTION_COLLAPSED_KEY, // Nové
+  SHOW_RATINGS_KEY,
+  SHOW_RATINGS_IN_REVIEWS_KEY,
+  SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
+  SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
 import { refreshRatingsBadges } from './settings-badges.js';
@@ -276,9 +277,11 @@ async function addSettingsButton() {
   const updateShowRatingsUI = () => {
     const enabled = getBoolSetting(SHOW_RATINGS_KEY, true);
     const childToggle = settingsButton.querySelector('#cc-show-ratings-in-reviews');
+    const foreignChildToggle = settingsButton.querySelector('#cc-show-ratings-in-foreign-reviews');
     const body = settingsButton.querySelector('#cc-show-ratings-group-body');
 
     if (childToggle) childToggle.disabled = !enabled;
+    if (foreignChildToggle) foreignChildToggle.disabled = !enabled;
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
@@ -686,6 +689,7 @@ async function addSettingsButton() {
     localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
     localStorage.removeItem(SHOW_RATINGS_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
+    localStorage.removeItem(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY);
     localStorage.removeItem(SHOW_RATINGS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem('cc_hide_home_panels');
     localStorage.removeItem('cc_hidden_panels_list');

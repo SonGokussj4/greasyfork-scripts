@@ -14,6 +14,7 @@ import {
   CREATOR_PREVIEW_CACHE_HOURS_KEY,
   SHOW_RATINGS_KEY,
   SHOW_RATINGS_IN_REVIEWS_KEY,
+  SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 
@@ -96,6 +97,20 @@ export const MENU_CONFIG = [
             infoIcon: {
               url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
               text: 'Zobrazí hodnocení (hvězdičky) i u odkazů uvnitř textů recenzí a komentářů.\n\n👉 Klikni pro ukázku',
+            },
+            eventName: 'cc-ratings-updated',
+            callback: null,
+          },
+          {
+            type: 'toggle',
+            id: 'cc-show-ratings-in-foreign-reviews',
+            storageKey: SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
+            defaultValue: true,
+            label: 'Ukazovat v recenzích cizího profilu',
+            tooltip: '',
+            infoIcon: {
+              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+              text: 'Zobrazí hodnocení (hvězdičky) i u odkazů uvnitř textů a recenzí cizího profilu.\n\n👉 Klikni pro ukázku',
             },
             eventName: 'cc-ratings-updated',
             callback: null,
