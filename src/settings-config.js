@@ -95,7 +95,7 @@ export const MENU_CONFIG = [
             label: 'Ukazovat v recenzích',
             tooltip: '',
             infoIcon: {
-              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+              url: 'https://i.imgur.com/Bmisvc5.jpeg',
               text: 'Zobrazí hodnocení (hvězdičky) i u odkazů uvnitř textů recenzí a komentářů.\n\n👉 Klikni pro ukázku',
             },
             eventName: 'cc-ratings-updated',
@@ -109,7 +109,7 @@ export const MENU_CONFIG = [
             label: 'Ukazovat v recenzích cizího profilu',
             tooltip: '',
             infoIcon: {
-              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+              url: 'https://i.imgur.com/GB3H0JU.png',
               text: 'Zobrazí hodnocení (hvězdičky) i u odkazů uvnitř textů a recenzí cizího profilu.\n\n👉 Klikni pro ukázku',
             },
             eventName: 'cc-ratings-updated',
