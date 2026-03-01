@@ -5936,7 +5936,7 @@
         // Life details
         const details = Array.from(doc.querySelectorAll('.creator-profile-details p'));
         const birthP = details.find((p) => /nar\.|born|naroden/i.test(p.textContent));
-        const deathP = details.find((p) => /zem\.|zomr|died/i.test(p.textContent));
+        const deathP = details.find((p) => /zem\.|zom\.|died/i.test(p.textContent));
 
         // Clear out locations AND native CSFD age spans (.info) so we don't duplicate them
         const cleanLifeText = (el) => {
