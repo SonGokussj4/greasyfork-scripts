@@ -86,6 +86,12 @@ export class Csfd {
     return this.isLoggedIn;
   }
 
+  getFeatureState(key, defaultValue = true) {
+    const value = localStorage.getItem(key);
+    if (value === null) return defaultValue;
+    return value === 'true';
+  }
+
   async initialize() {
     this.userUrl = this.getCurrentUser();
     console.debug('🟣 User URL:', this.userUrl);
@@ -111,21 +117,11 @@ export class Csfd {
     await this.syncCurrentPageRatingWithIndexedDb();
 
     try {
-      if (localStorage.getItem('cc_show_all_creator_tabs') !== 'false') {
-        this.showAllCreatorTabs();
-      }
-      if (localStorage.getItem('cc_clickable_header_boxes') !== 'false') {
-        this.clickableHeaderBoxes();
-      }
-      if (localStorage.getItem('cc_ratings_estimate') !== 'false') {
-        this.ratingsEstimate();
-      }
-      if (localStorage.getItem('cc_ratings_from_favorites') !== 'false') {
-        this.ratingsFromFavorites();
-      }
-      if (localStorage.getItem('cc_add_ratings_date') !== 'false') {
-        this.addRatingsDate();
-      }
+      if (this.getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
+      if (this.getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
+      if (this.getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
+      if (this.getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
+      if (this.getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
     } catch (e) {
       // ignore silently
     }
@@ -161,7 +157,7 @@ export class Csfd {
     if (location.pathname !== '/' && location.pathname !== '') return;
 
     const syncVisibility = () => {
-      const enabled = localStorage.getItem('cc_hide_home_panels') !== 'false';
+      const enabled = this.getFeatureState('cc_hide_home_panels', true);
       let hiddenList = [];
       try {
         hiddenList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
@@ -560,7 +556,7 @@ export class Csfd {
     const avgEl = this._getOrInitRatingContainer();
     if (!avgEl) return;
 
-    // Počítáme odhad jen pokud je původní CSFD stav "? %"
+    // Count the estimate only if the original text contains "? %"
     if (!avgEl.dataset.ccOriginalText.includes('?')) return;
 
     const userRatings = Array.from(document.querySelectorAll('section.others-rating .star-rating'));
@@ -591,7 +587,6 @@ export class Csfd {
       mainSpan.textContent = avgEl.dataset.ccOriginalText;
     }
 
-    // Obnovení původní barvy, pozadí a titulku
     avgEl.style.color = avgEl.dataset.ccOriginalColor;
     avgEl.style.backgroundColor = avgEl.dataset.ccOriginalBg;
 
@@ -669,7 +664,7 @@ export class Csfd {
   }
 
   hideSelectedUserReviews() {
-    const enabled = localStorage.getItem(HIDE_SELECTED_REVIEWS_KEY) === 'true';
+    const enabled = this.getFeatureState(HIDE_SELECTED_REVIEWS_KEY, false); // Default is false for this feature!
     let list = [];
 
     if (enabled) {
@@ -743,7 +738,7 @@ export class Csfd {
         const tombstone = {
           ...existingRecord,
           rating: null,
-          deleted: true, // This is the magic flag
+          deleted: true,
           lastUpdate: new Date().toISOString(),
         };
         await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, tombstone);
@@ -800,7 +795,7 @@ export class Csfd {
 
   getCandidateFilmLinks() {
     const searchRoot = this.csfdPage || document;
-    const showInReviews = localStorage.getItem(SHOW_RATINGS_IN_REVIEWS_KEY) !== 'false';
+    const showInReviews = this.getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
 
     return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
       const href = link.getAttribute('href') || '';
@@ -1083,6 +1078,7 @@ export class Csfd {
 
     const links = this.getCandidateFilmLinks();
     console.debug(`🔵 Found ${links.length} candidate links for adding ratings`);
+    console.debug({ links });
     const outlinedOnThisPage = this.isOnOtherUserProfilePage();
 
     for (const link of links) {
