@@ -1,6 +1,5 @@
 import { Csfd } from './csfd.js';
 import { delay } from './utils.js';
-import './styles/alert-modal.css';
 import './styles/cc-menu.css';
 import './styles/general.css';
 import { addSettingsButton } from './settings.js';

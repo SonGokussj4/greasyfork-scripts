@@ -1048,8 +1048,19 @@ export class Csfd {
 
       if (!starElement) continue;
 
-      const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-      headingAncestor ? headingAncestor.appendChild(starElement) : link.insertAdjacentElement('afterend', starElement);
+      // Check if we are inside a list item that has a dedicated .time-rating block (TV program pages)
+      const listItem = link.closest('.program-item, .box-item, article, li, tr');
+      const timeRatingDiv = listItem ? listItem.querySelector('.time-rating') : null;
+
+      if (timeRatingDiv) {
+        timeRatingDiv.appendChild(starElement);
+      } else {
+        const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
+        headingAncestor
+          ? headingAncestor.appendChild(starElement)
+          : link.insertAdjacentElement('afterend', starElement);
+      }
+
       link.dataset.ccStarAdded = 'true';
     }
   }

@@ -623,3 +623,45 @@ body:not(.cc-dev-mode-active) .cc-dev-only {
 .alert-button:hover {
     background: #2980b9;
 }
+
+/* =========================================
+   TV PROGRAM AND TIPS - Smart Layout
+   ========================================= */
+
+/* 1. Common for all TV programs (keeps stars in one line with time) */
+.time-rating {
+    display: flex !important;
+    align-items: center !important;
+    white-space: nowrap !important;
+}
+
+.time-rating .cc-own-rating {
+    margin-left: 6px;
+    line-height: 1;
+}
+
+/* 2. VERTICAL PROGRAM AND TV TIPS - Change from "floating" layout to modern Flexbox */
+/* Uses :has() -> Applied ONLY when stars are rendered */
+/* Selector :not(.program) ensures that the HORIZONTAL grid layout is not affected! */
+
+:not(.program)>.program-item:has(.cc-own-rating),
+.box-item:has(.time-rating .cc-own-rating) {
+    display: flex !important;
+    align-items: flex-start !important;
+}
+
+:not(.program)>.program-item:has(.cc-own-rating)>.time-rating,
+.box-item:has(.time-rating .cc-own-rating) .time-rating {
+    float: none !important;
+    width: auto !important;
+    flex-shrink: 0 !important;
+    padding-right: 12px !important;
+}
+
+:not(.program)>.program-item:has(.cc-own-rating)>.inner,
+.box-item:has(.time-rating .cc-own-rating) .inner {
+    margin-left: 0 !important;
+    flex-grow: 1 !important;
+    /* Prevent text overflow off screen */
+    min-width: 0 !important;
+}
