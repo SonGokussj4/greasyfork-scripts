@@ -9,7 +9,7 @@ import {
   SHOW_RATINGS_IN_REVIEWS_KEY,
 } from './config.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
-import { delay } from './utils.js';
+import { delay, getFeatureState, getMovieIdFromUrl } from './utils.js'; // REFACTOR: imported from utils
 
 const PROFILE_LINK_SELECTOR =
   'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
@@ -53,6 +53,27 @@ export class Csfd {
     this.userRatingsUrl = undefined;
     this.isLoggedIn = false;
     this.userSlug = undefined;
+
+    // OPTIMIZATION: Cache parsed lists to avoid calling JSON.parse in high-frequency DOM operations
+    this.cachedHiddenPanelsList = [];
+    this.cachedHiddenReviewsList = [];
+    this.updateCachedLists();
+  }
+
+  // OPTIMIZATION: One method to update all memory-cached local storage lists
+  updateCachedLists() {
+    try {
+      this.cachedHiddenPanelsList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+    } catch (e) {
+      this.cachedHiddenPanelsList = [];
+    }
+
+    try {
+      const raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
+      this.cachedHiddenReviewsList = JSON.parse(raw).map((s) => s.toLowerCase());
+    } catch (e) {
+      this.cachedHiddenReviewsList = [];
+    }
   }
 
   getCurrentUser() {
@@ -86,12 +107,6 @@ export class Csfd {
     return this.isLoggedIn;
   }
 
-  getFeatureState(key, defaultValue = true) {
-    const value = localStorage.getItem(key);
-    if (value === null) return defaultValue;
-    return value === 'true';
-  }
-
   async initialize() {
     this.userUrl = this.getCurrentUser();
     console.debug('🟣 User URL:', this.userUrl);
@@ -117,11 +132,11 @@ export class Csfd {
     await this.syncCurrentPageRatingWithIndexedDb();
 
     try {
-      if (this.getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
-      if (this.getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
-      if (this.getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
-      if (this.getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
-      if (this.getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
+      if (getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
+      if (getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
+      if (getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
+      if (getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
+      if (getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
     } catch (e) {
       // ignore silently
     }
@@ -129,10 +144,15 @@ export class Csfd {
     // Dynamic Filter Trigger (runs immediately and whenever the list is updated)
     this.hideSelectedUserReviews();
     window.addEventListener('cc-hide-selected-reviews-updated', () => {
+      this.updateCachedLists(); // Update memory cache
       this.hideSelectedUserReviews();
     });
 
     // Initialize Home Panels Hiding
+    window.addEventListener('cc-hidden-panels-updated', () => {
+      this.updateCachedLists(); // Update memory cache
+      if (typeof this._syncVisibility === 'function') this._syncVisibility();
+    });
     this.initHomePanels();
 
     // LIVE DOM REFRESH LISTENER (Triggered by Settings Menu)
@@ -156,100 +176,73 @@ export class Csfd {
   initHomePanels() {
     if (location.pathname !== '/' && location.pathname !== '') return;
 
-    const syncVisibility = () => {
-      const enabled = this.getFeatureState('cc_hide_home_panels', true);
-      let hiddenList = [];
-      try {
-        hiddenList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
-      } catch (e) {}
+    // Save reference so event listeners can call it without recreating it
+    this._syncVisibility = () => {
+      const enabled = getFeatureState('cc_hide_home_panels', true);
+      const hiddenList = this.cachedHiddenPanelsList; // Use memory cache!
 
-      const headers = document.querySelectorAll(`
+      // REFACTOR: Removed Array.from(), modern NodeLists support .forEach natively
+      document
+        .querySelectorAll(
+          `
           .page-content .box-header > h2,
           .page-content .updated-box-header > h2,
           .page-content .updated-box-header > p,
           .updated-box-homepage-video,
           .page-content .updated-box-banner p,
           .page-content .updated-box-banner-mobile p
-        `);
+        `,
+        )
+        .forEach((headerEl) => {
+          const isVideoSlider = headerEl.classList.contains('updated-box-homepage-video');
+          let title = '';
 
-      headers.forEach((headerEl) => {
-        const isVideoSlider = headerEl.classList.contains('updated-box-homepage-video');
-        let title = '';
+          if (isVideoSlider) {
+            title = 'Trailery a Videa';
+          } else {
+            title = Array.from(headerEl.childNodes)
+              .filter((node) => node.nodeType === Node.TEXT_NODE)
+              .map((node) => node.textContent)
+              .join('')
+              .replace(/\s+/g, ' ')
+              .trim();
+          }
 
-        if (isVideoSlider) {
-          title = 'Trailery a Videa';
-        } else {
-          title = Array.from(headerEl.childNodes)
-            .filter((node) => node.nodeType === Node.TEXT_NODE)
-            .map((node) => node.textContent)
-            .join('')
-            .replace(/\s+/g, ' ')
-            .trim();
-        }
+          if (!title || title.length > 60) return;
 
-        if (!title || title.length > 60) return;
+          let wrapper =
+            headerEl.closest('.column') || headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
 
-        let wrapper =
-          headerEl.closest('.column') || headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
+          if (wrapper.classList.contains('column') && wrapper.children.length > 1) {
+            wrapper = headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
+          }
 
-        if (wrapper.classList.contains('column') && wrapper.children.length > 1) {
-          wrapper = headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
-        }
+          if (enabled && hiddenList.includes(title)) {
+            wrapper.style.display = 'none';
+          } else {
+            wrapper.style.display = '';
+          }
 
-        if (enabled && hiddenList.includes(title)) {
-          wrapper.style.display = 'none';
-        } else {
-          wrapper.style.display = '';
-        }
-
-        if (isVideoSlider) {
-          if (!headerEl.querySelector('.cc-hide-video-btn')) {
+          // Add hide buttons if they don't exist
+          const btnClass = isVideoSlider ? '.cc-hide-video-btn' : '.cc-hide-panel-btn';
+          if (!headerEl.querySelector(btnClass)) {
             const btn = document.createElement('button');
-            btn.className = 'cc-hide-video-btn';
-            btn.title = 'Skrýt Trailery';
-            btn.textContent = 'skrýt trailery';
+            btn.className = btnClass.replace('.', '');
+            btn.title = isVideoSlider ? 'Skrýt Trailery' : 'Skrýt tento panel';
+            btn.textContent = isVideoSlider ? 'skrýt trailery' : 'skrýt';
 
             btn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
-              let currentList = [];
-              try {
-                currentList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
-              } catch (err) {}
-
-              if (!currentList.includes(title)) {
-                currentList.push(title);
-                localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentList));
+              if (!this.cachedHiddenPanelsList.includes(title)) {
+                this.cachedHiddenPanelsList.push(title);
+                localStorage.setItem('cc_hidden_panels_list', JSON.stringify(this.cachedHiddenPanelsList));
                 window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
               }
             };
             headerEl.appendChild(btn);
           }
-        } else {
-          if (!headerEl.querySelector('.cc-hide-panel-btn')) {
-            const btn = document.createElement('button');
-            btn.className = 'cc-hide-panel-btn';
-            btn.title = 'Skrýt tento panel';
-            btn.textContent = 'skrýt';
-
-            btn.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              let currentList = [];
-              try {
-                currentList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
-              } catch (err) {}
-
-              if (!currentList.includes(title)) {
-                currentList.push(title);
-                localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentList));
-                window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
-              }
-            };
-            headerEl.appendChild(btn);
-          }
-        }
-      });
+        });
 
       // GROUP & ROW COLLAPSE ENGINE
       document.querySelectorAll('.page-content .updated-box-group').forEach((group) => {
@@ -278,18 +271,16 @@ export class Csfd {
       });
     };
 
-    syncVisibility();
-    window.addEventListener('cc-hidden-panels-updated', syncVisibility);
-    setTimeout(syncVisibility, 500);
-    setTimeout(syncVisibility, 1500);
+    this._syncVisibility();
+    setTimeout(this._syncVisibility, 500);
+    setTimeout(this._syncVisibility, 1500);
   }
 
   showAllCreatorTabs() {
     try {
-      const selectors = ['.creator-about nav.tab-nav', '.creator-profile nav.tab-nav', '.creator nav.tab-nav'].join(
-        ',',
+      const navs = document.querySelectorAll(
+        '.creator-about nav.tab-nav, .creator-profile nav.tab-nav, .creator nav.tab-nav',
       );
-      const navs = document.querySelectorAll(selectors);
       if (!navs.length) return;
 
       navs.forEach((nav) => {
@@ -300,12 +291,12 @@ export class Csfd {
 
         mainList.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
 
-        const dropdownItems = Array.from(dropdown.querySelectorAll('.tab-nav-item'));
+        const dropdownItems = dropdown.querySelectorAll('.tab-nav-item');
         const existingHrefs = new Set(
           Array.from(mainList.querySelectorAll('a.tab-link')).map((a) => a.getAttribute('href') || ''),
         );
 
-        for (const item of dropdownItems) {
+        dropdownItems.forEach((item) => {
           const href = item.querySelector('a.tab-link')?.getAttribute('href') || '';
           if (!existingHrefs.has(href)) {
             const clone = item.cloneNode(true);
@@ -314,7 +305,7 @@ export class Csfd {
             clone.style.display = '';
             mainList.appendChild(clone);
           }
-        }
+        });
 
         const more = nav.querySelector('.tab-nav-more');
         if (more) more.style.display = 'none';
@@ -328,19 +319,15 @@ export class Csfd {
 
   restoreCreatorTabs() {
     try {
-      const selectors = ['.creator-about nav.tab-nav', '.creator-profile nav.tab-nav', '.creator nav.tab-nav'].join(
-        ',',
-      );
-      const navs = document.querySelectorAll(selectors);
-      if (!navs.length) return;
-
-      navs.forEach((nav) => {
-        nav.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
-        const more = nav.querySelector('.tab-nav-more');
-        if (more) more.style.display = '';
-        nav.classList.remove('cc-show-all-tabs');
-        nav.style.paddingRight = '';
-      });
+      document
+        .querySelectorAll('.creator-about nav.tab-nav, .creator-profile nav.tab-nav, .creator nav.tab-nav')
+        .forEach((nav) => {
+          nav.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
+          const more = nav.querySelector('.tab-nav-more');
+          if (more) more.style.display = '';
+          nav.classList.remove('cc-show-all-tabs');
+          nav.style.paddingRight = '';
+        });
 
       window.dispatchEvent(new Event('resize'));
     } catch (err) {
@@ -430,6 +417,7 @@ export class Csfd {
   }
 
   _parseRatingFromStars(starElem) {
+    if (!starElem) return NaN;
     const clazz = starElem.className || '';
     const m = clazz.match(/stars-(\d)/);
     if (m) return parseInt(m[1], 10);
@@ -445,8 +433,7 @@ export class Csfd {
 
   clickableHeaderBoxes() {
     // Aplikujeme pouze na klasické boxy a hlavičky v rozbalovacích menu
-    const headers = Array.from(document.querySelectorAll('.dropdown-content-head, .box-header, .updated-box-header'));
-    headers.forEach((div) => {
+    document.querySelectorAll('.dropdown-content-head, .box-header, .updated-box-header').forEach((div) => {
       if (div.dataset.ccClickable === 'true') return;
 
       const btn = div.querySelector('a.button');
@@ -559,14 +546,19 @@ export class Csfd {
     // Count the estimate only if the original text contains "? %"
     if (!avgEl.dataset.ccOriginalText.includes('?')) return;
 
-    const userRatings = Array.from(document.querySelectorAll('section.others-rating .star-rating'));
-    if (!userRatings.length) return;
-    const numbers = userRatings
-      .map((ur) => this._parseRatingFromStars(ur.querySelector('.stars')))
-      .map((n) => (Number.isFinite(n) ? n * 20 : NaN))
-      .filter(Number.isFinite);
-    if (!numbers.length) return;
-    const average = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
+    // OPTIMIZATION: Replaced 3 array loops (.map.map.filter) with a single fast loop
+    let sum = 0;
+    let count = 0;
+    document.querySelectorAll('section.others-rating .star-rating .stars').forEach((starEl) => {
+      const num = this._parseRatingFromStars(starEl);
+      if (Number.isFinite(num)) {
+        sum += num * 20;
+        count++;
+      }
+    });
+
+    if (count === 0) return;
+    const average = Math.round(sum / count);
 
     const mainSpan = avgEl.querySelector('.cc-main-rating');
     if (mainSpan) {
@@ -575,7 +567,7 @@ export class Csfd {
 
     avgEl.style.color = '#fff';
     avgEl.style.backgroundColor = this._getRatingColor(average);
-    avgEl.setAttribute('title', `spočteno z hodnocení: ${numbers.length}`);
+    avgEl.setAttribute('title', `spočteno z hodnocení: ${count}`);
   }
 
   clearRatingsEstimate() {
@@ -598,19 +590,22 @@ export class Csfd {
   }
 
   ratingsFromFavorites() {
-    const spans = Array.from(document.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars'));
-    if (!spans.length) return;
-
-    const numbers = spans
-      .map((sp) => this._parseRatingFromStars(sp))
-      .map((n) => (Number.isFinite(n) ? n * 20 : NaN))
-      .filter(Number.isFinite);
-    if (!numbers.length) return;
-
-    const ratingAverage = Math.round(numbers.reduce((a, b) => a + b, 0) / numbers.length);
-
     const avgEl = this._getOrInitRatingContainer();
     if (!avgEl) return;
+
+    // OPTIMIZATION: Single loop instead of .map.map.filter chain
+    let sum = 0;
+    let count = 0;
+    document.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars').forEach((starEl) => {
+      const num = this._parseRatingFromStars(starEl);
+      if (Number.isFinite(num)) {
+        sum += num * 20;
+        count++;
+      }
+    });
+
+    if (count === 0) return;
+    const ratingAverage = Math.round(sum / count);
 
     const favSpan = avgEl.querySelector('.cc-fav-rating');
     const mainSpan = avgEl.querySelector('.cc-main-rating');
@@ -664,21 +659,10 @@ export class Csfd {
   }
 
   hideSelectedUserReviews() {
-    const enabled = this.getFeatureState(HIDE_SELECTED_REVIEWS_KEY, false); // Default is false for this feature!
-    let list = [];
+    const enabled = getFeatureState(HIDE_SELECTED_REVIEWS_KEY, false);
+    const hiddenList = this.cachedHiddenReviewsList; // OPTIMIZATION: Uses memory cache
 
-    if (enabled) {
-      try {
-        const raw = localStorage.getItem(HIDE_SELECTED_REVIEWS_LIST_KEY) || '[]';
-        // Map to lowercase for case-insensitive matching
-        list = JSON.parse(raw).map((s) => s.toLowerCase());
-      } catch (e) {
-        list = [];
-      }
-    }
-
-    const headers = Array.from(document.querySelectorAll('.article-header-review-name'));
-    headers.forEach((el) => {
+    document.querySelectorAll('.article-header-review-name').forEach((el) => {
       const title = el.querySelector('.user-title-name');
       if (!title) return;
 
@@ -686,10 +670,10 @@ export class Csfd {
       const article = el.closest('article');
 
       if (article) {
-        if (enabled && list.includes(name)) {
+        if (enabled && hiddenList.includes(name)) {
           article.style.display = 'none';
         } else {
-          article.style.display = ''; // Restore visibility instantly
+          article.style.display = '';
         }
       }
     });
@@ -795,35 +779,40 @@ export class Csfd {
 
   getCandidateFilmLinks() {
     const searchRoot = this.csfdPage || document;
-    const showInReviews = this.getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
+    const showInReviews = getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
+
+    // Links pointing to sections that are not actual film pages
+    const ignorePathRegex = /\/(galerie|videa?|tvurci|obsahy?)\//;
+    // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
+    const ignoreParamRegex = /[?&](page|comment|modal)=/i;
+    // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
+    const validFilmRegex = /\/\d+-/;
+
+    const isCreatorPage = this.isOnCreatorPage();
+    const isUserReviewsPage = this.isOnUserReviewsPage();
 
     return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
       const href = link.getAttribute('href') || '';
 
-      // Exclude links that don't have the typical "/12345-slug/" pattern or contain unwanted query parameters or paths
-      if (
-        // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
-        !/\/\d+-/.test(href) ||
-        // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
-        /[?&](page|comment)=\d+/i.test(href) ||
-        // Links containing 'modal' query parameter (usually opens a modal)
-        /[?&]modal=/i.test(href) ||
-        // Links pointing to sections that are not actual film pages
-        /\/(galerie|videa?|tvurci|obsahy?)\//.test(href)
-      ) {
+      if (!validFilmRegex.test(href) || ignoreParamRegex.test(href) || ignorePathRegex.test(href)) {
         return false;
       }
 
       // Exclude links in /tvurce/ (creator) pages except for those in the filmography section
-      if (this.isOnCreatorPage() && link.closest('.creator-filmography')) return false;
+      if (isCreatorPage && link.closest('.creator-filmography')) return false;
 
       // Exclude links that are likely for editing reviews (identified by classes or icons)
-      if (link.matches('.edit-review, [class*="edit-review"]') || link.querySelector('.icon-edit-square, img'))
+      if (
+        link.classList.contains('edit-review') ||
+        link.matches('[class*="edit-review"]') ||
+        link.querySelector('.icon-edit-square, img')
+      ) {
         return false;
+      }
 
       // Include links in related boxes only if they match the film title pattern
       if (link.closest('section.box-related, div.box-related, .box-related')) {
-        return link.matches('a.film-title-name[href*="/film/"]');
+        return link.classList.contains('film-title-name');
       }
 
       // Exclude links in certain sections of the user profile overview page to avoid picking up non-film links
@@ -839,7 +828,7 @@ export class Csfd {
       const linkText = link.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
       if (linkText === 'více' || linkText === 'viac') return false;
 
-      if (this.isOnUserReviewsPage() && !link.matches('a.film-title-name')) return false;
+      if (isUserReviewsPage && !link.classList.contains('film-title-name')) return false;
 
       return true;
     });
@@ -963,7 +952,7 @@ export class Csfd {
 
         const nameLink = row.querySelector('td.name a[href*="/film/"]');
         const ratingCell = row.querySelector('td.star-rating-only');
-        const movieId = await this.getMovieIdFromUrl(nameLink.getAttribute('href'));
+        const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href')); // REFACTOR: uses utils.js
         const ratingRecord = this.stars[movieId];
 
         const myRatingCell = document.createElement('td');
@@ -1013,7 +1002,7 @@ export class Csfd {
   }
 
   async addStars() {
-    if (!this.getFeatureState(SHOW_RATINGS_KEY)) {
+    if (!getFeatureState(SHOW_RATINGS_KEY)) {
       console.debug('🟣 Ratings not added: SHOW_RATINGS_KEY disabled');
       return;
     }
@@ -1022,12 +1011,10 @@ export class Csfd {
       console.debug('🟣 Ratings not added: on leaderboards page');
       return;
     }
-
     if (this.isOnUserReviewsPage() && !this.isOnOtherUserProfilePage()) {
       console.debug('🟣 Ratings not added: on user reviews page (not other user)');
       return;
     }
-
     if (this.isOnOwnRatingsPage()) {
       console.debug('🟣 Ratings not added: on own ratings page');
       return;
@@ -1046,7 +1033,7 @@ export class Csfd {
     for (const link of links) {
       if (link.dataset.ccStarAdded === 'true') continue;
 
-      const movieId = await this.getMovieIdFromUrl(link.getAttribute('href'));
+      const movieId = await getMovieIdFromUrl(link.getAttribute('href')); // REFACTOR: uses utils.js
       const ratingRecord = this.stars[movieId];
       if (!ratingRecord || ratingRecord.deleted === true) continue;
 
@@ -1072,7 +1059,7 @@ export class Csfd {
   }
 
   isGalleryImageLinksEnabled() {
-    return this.getFeatureState(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+    return getFeatureState(GALLERY_IMAGE_LINKS_ENABLED_KEY);
   }
 
   clearGalleryImageFormatLinks() {
@@ -1173,11 +1160,5 @@ export class Csfd {
       host.appendChild(linksWrapper);
       pictureEl.dataset.ccGalleryLinksBound = 'true';
     });
-  }
-
-  async getMovieIdFromUrl(url) {
-    if (!url) return NaN;
-    const matches = Array.from(url.matchAll(/\/(\d+)-/g));
-    return matches.length ? Number(matches[matches.length - 1][1]) : NaN;
   }
 }

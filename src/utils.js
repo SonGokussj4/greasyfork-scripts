@@ -67,3 +67,31 @@ export const escapeHtml = (str) =>
 export function isUserLoggedIn() {
   return document.querySelector('.user-logged') !== null;
 }
+
+/**
+ * Pure utility function for reading settings.
+ * @param {string} key - The localStorage key for the setting.
+ * @param {boolean} [defaultValue=true] - The default value if the setting is not set.
+ * @returns {boolean} The current state of the setting.
+ */
+export function getFeatureState(key, defaultValue = true) {
+  const value = localStorage.getItem(key);
+  if (value === null) return defaultValue;
+  return value === 'true';
+}
+
+/**
+ * Pure utility function for parsing IDs.
+ * @param {string} url - The URL to extract the movie ID from.
+ * @returns {number} The extracted movie ID, or NaN if it cannot be parsed.
+ */
+export async function getMovieIdFromUrl(url) {
+  if (!url) return NaN;
+  // OPTIMIZATION: matchAll is slower. A simple regex match with global flag is faster.
+  const matches = url.match(/\/(\d+)-/g);
+  if (!matches || matches.length === 0) return NaN;
+
+  // Extract numbers from the last match e.g., "/12345-" -> 12345
+  const lastMatch = matches[matches.length - 1];
+  return parseInt(lastMatch.replace(/\D/g, ''), 10);
+}
