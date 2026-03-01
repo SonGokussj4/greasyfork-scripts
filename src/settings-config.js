@@ -153,7 +153,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-ratings-from-favorites-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/ySdMhXt.png',
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
           text: 'Přidá doplňující průměrné hodnocení vypočítané z oblíbených uživatelů.\n\n👉 Klikni pro ukázku',
         },
       },
@@ -167,7 +167,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-add-ratings-date-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/ySdMhXt.png',
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
           text: 'Zobrazí datum, kdy jste film hodnotili.\n\n👉 Klikni pro ukázku',
         },
       },
@@ -179,7 +179,7 @@ export const MENU_CONFIG = [
         label: 'Skrýt recenze lidí',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/ySdMhXt.png',
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
           text: 'Skrýt komentáře a recenze uživatelů, které nechcete číst.\n\n👉 Klikni pro ukázku',
         },
         eventName: 'cc-hide-selected-reviews-updated',
@@ -213,7 +213,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-show-all-creator-tabs-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/aTrSU2X.png',
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
           text: 'Na profilu herce automaticky zobrazí všechny záložky (Videa, Galerie, Diskuze) vedle sebe bez klikání na "další 🔻".\n\n👉 Klikni pro ukázku',
         },
       },
@@ -242,7 +242,7 @@ export const MENU_CONFIG = [
             label: 'Zobrazovat datum narození',
             tooltip: '',
             infoIcon: {
-              url: 'https://i.imgur.com/aTrSU2X.png',
+              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
               text: 'Zobrazí datum narození/úmrtí a věk tvůrce.\n\n👉 Klikni pro ukázku',
             },
             callback: 'updateCreatorPreviewUI',
@@ -255,7 +255,7 @@ export const MENU_CONFIG = [
             label: 'Zobrazovat zdroj fotky',
             tooltip: '',
             infoIcon: {
-              url: 'https://i.imgur.com/aTrSU2X.png',
+              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
               text: 'Zobrazovat, z jakého filmu pochází fotka.\n\n👉 Klikni pro ukázku',
             },
             callback: 'updateCreatorPreviewUI',
