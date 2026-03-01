@@ -665,3 +665,56 @@ body:not(.cc-dev-mode-active) .cc-dev-only {
     /* Prevent text overflow off screen */
     min-width: 0 !important;
 }
+
+/* =========================================
+   CREATOR TABS - Show All Tabs (Auto-collapse to single line)
+   ========================================= */
+
+/* 1. Remove hard padding for "more" button */
+body.cc-show-all-tabs-enabled .creator nav.tab-nav,
+body.cc-show-all-tabs-enabled .creator-about nav.tab-nav,
+body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav {
+    padding-right: 0 !important;
+}
+
+/* 2. Main bar: Flexbox across full width, no wrapping or scrollbars */
+body.cc-show-all-tabs-enabled .creator nav.tab-nav .tab-nav-list,
+body.cc-show-all-tabs-enabled .creator-about nav.tab-nav .tab-nav-list,
+body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-list {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    overflow: hidden !important;
+}
+
+/* 3. Individual items: Force display and allow shrinking */
+body.cc-show-all-tabs-enabled .creator nav.tab-nav .tab-nav-list .tab-nav-item,
+body.cc-show-all-tabs-enabled .creator-about nav.tab-nav .tab-nav-list .tab-nav-item,
+body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-list .tab-nav-item {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+/* 4. Links: Reduce padding and center text */
+body.cc-show-all-tabs-enabled .creator nav.tab-nav .tab-nav-list .tab-link,
+body.cc-show-all-tabs-enabled .creator-about nav.tab-nav .tab-nav-list .tab-link,
+body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-list .tab-link {
+    display: block !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+/* 5. Hide "more" button and menu */
+body.cc-show-all-tabs-enabled .creator nav.tab-nav .tab-nav-more,
+body.cc-show-all-tabs-enabled .creator-about nav.tab-nav .tab-nav-more,
+body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-more {
+    display: none !important;
+}

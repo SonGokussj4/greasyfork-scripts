@@ -277,62 +277,12 @@ export class Csfd {
   }
 
   showAllCreatorTabs() {
-    try {
-      const navs = document.querySelectorAll(
-        '.creator-about nav.tab-nav, .creator-profile nav.tab-nav, .creator nav.tab-nav',
-      );
-      if (!navs.length) return;
-
-      navs.forEach((nav) => {
-        nav.style.paddingRight = '';
-        const mainList = nav.querySelector('.tab-nav-list');
-        const dropdown = nav.querySelector('.tab-nav-more .dropdown-content, .tab-nav-more > .dropdown-content');
-        if (!mainList || !dropdown) return;
-
-        mainList.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
-
-        const dropdownItems = dropdown.querySelectorAll('.tab-nav-item');
-        const existingHrefs = new Set(
-          Array.from(mainList.querySelectorAll('a.tab-link')).map((a) => a.getAttribute('href') || ''),
-        );
-
-        dropdownItems.forEach((item) => {
-          const href = item.querySelector('a.tab-link')?.getAttribute('href') || '';
-          if (!existingHrefs.has(href)) {
-            const clone = item.cloneNode(true);
-            clone.dataset.ccClone = '1';
-            clone.classList.remove('hidden');
-            clone.style.display = '';
-            mainList.appendChild(clone);
-          }
-        });
-
-        const more = nav.querySelector('.tab-nav-more');
-        if (more) more.style.display = 'none';
-
-        nav.classList.add('cc-show-all-tabs');
-      });
-    } catch (err) {
-      console.error('[CC] showAllCreatorTabs failed', err);
-    }
+    document.body.classList.add('cc-show-all-tabs-enabled');
   }
 
   restoreCreatorTabs() {
-    try {
-      document
-        .querySelectorAll('.creator-about nav.tab-nav, .creator-profile nav.tab-nav, .creator nav.tab-nav')
-        .forEach((nav) => {
-          nav.querySelectorAll('[data-cc-clone="1"]').forEach((n) => n.remove());
-          const more = nav.querySelector('.tab-nav-more');
-          if (more) more.style.display = '';
-          nav.classList.remove('cc-show-all-tabs');
-          nav.style.paddingRight = '';
-        });
-
-      window.dispatchEvent(new Event('resize'));
-    } catch (err) {
-      console.error('[CC] restoreCreatorTabs failed', err);
-    }
+    document.body.classList.remove('cc-show-all-tabs-enabled');
+    window.dispatchEvent(new Event('resize'));
   }
 
   getCurrentItemUrlAndIds() {
