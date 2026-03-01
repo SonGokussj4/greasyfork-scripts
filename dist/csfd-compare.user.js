@@ -234,6 +234,12 @@
       return this.isLoggedIn;
     }
 
+    getFeatureState(key, defaultValue = true) {
+      const value = localStorage.getItem(key);
+      if (value === null) return defaultValue;
+      return value === 'true';
+    }
+
     async initialize() {
       this.userUrl = this.getCurrentUser();
       console.debug('🟣 User URL:', this.userUrl);

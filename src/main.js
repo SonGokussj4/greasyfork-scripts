@@ -10,7 +10,12 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
 (async () => {
   'use strict';
   console.debug('🟣 Script started');
+
   await delay(20);
+
+  if (document.readyState === 'loading') {
+    await new Promise((resolve) => window.addEventListener('DOMContentLoaded', resolve));
+  }
 
   // Initialise the CSFD helper and add the settings button in parallel so neither
   // blocks the other — the button DOM insertion now happens immediately inside
