@@ -265,21 +265,11 @@
       await this.syncCurrentPageRatingWithIndexedDb();
 
       try {
-        if (localStorage.getItem('cc_show_all_creator_tabs') !== 'false') {
-          this.showAllCreatorTabs();
-        }
-        if (localStorage.getItem('cc_clickable_header_boxes') !== 'false') {
-          this.clickableHeaderBoxes();
-        }
-        if (localStorage.getItem('cc_ratings_estimate') !== 'false') {
-          this.ratingsEstimate();
-        }
-        if (localStorage.getItem('cc_ratings_from_favorites') !== 'false') {
-          this.ratingsFromFavorites();
-        }
-        if (localStorage.getItem('cc_add_ratings_date') !== 'false') {
-          this.addRatingsDate();
-        }
+        if (this.getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
+        if (this.getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
+        if (this.getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
+        if (this.getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
+        if (this.getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
       } catch (e) {
         // ignore silently
       }
@@ -315,7 +305,7 @@
       if (location.pathname !== '/' && location.pathname !== '') return;
 
       const syncVisibility = () => {
-        const enabled = localStorage.getItem('cc_hide_home_panels') !== 'false';
+        const enabled = this.getFeatureState('cc_hide_home_panels', true);
         let hiddenList = [];
         try {
           hiddenList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
@@ -714,7 +704,7 @@
       const avgEl = this._getOrInitRatingContainer();
       if (!avgEl) return;
 
-      // Počítáme odhad jen pokud je původní CSFD stav "? %"
+      // Count the estimate only if the original text contains "? %"
       if (!avgEl.dataset.ccOriginalText.includes('?')) return;
 
       const userRatings = Array.from(document.querySelectorAll('section.others-rating .star-rating'));
@@ -745,7 +735,6 @@
         mainSpan.textContent = avgEl.dataset.ccOriginalText;
       }
 
-      // Obnovení původní barvy, pozadí a titulku
       avgEl.style.color = avgEl.dataset.ccOriginalColor;
       avgEl.style.backgroundColor = avgEl.dataset.ccOriginalBg;
 
@@ -823,7 +812,7 @@
     }
 
     hideSelectedUserReviews() {
-      const enabled = localStorage.getItem(HIDE_SELECTED_REVIEWS_KEY) === 'true';
+      const enabled = this.getFeatureState(HIDE_SELECTED_REVIEWS_KEY, false); // Default is false for this feature!
       let list = [];
 
       if (enabled) {
@@ -897,7 +886,7 @@
           const tombstone = {
             ...existingRecord,
             rating: null,
-            deleted: true, // This is the magic flag
+            deleted: true,
             lastUpdate: new Date().toISOString(),
           };
           await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, tombstone);
@@ -954,7 +943,7 @@
 
     getCandidateFilmLinks() {
       const searchRoot = this.csfdPage || document;
-      const showInReviews = localStorage.getItem(SHOW_RATINGS_IN_REVIEWS_KEY) !== 'false';
+      const showInReviews = this.getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
 
       return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
         const href = link.getAttribute('href') || '';
@@ -1042,15 +1031,14 @@
     shouldSkipProfileSectionLink(link) {
       if (!this.isOnUserOverviewPage()) return false;
 
-      // Block the Ratings table container so standard link crawler ignores it
-      const explicitRatingContainer = link.closest(
-        '[id*="rating" i], [id*="hodnoc" i], [id*="hodnoten" i], [class*="rating" i], [class*="hodnoc" i], [class*="hodnoten" i]',
+      const explicitReviewOrRatingContainer = link.closest(
+        '[id*="review" i], [id*="recenz" i], [id*="rating" i], [id*="hodnoc" i], [id*="hodnoten" i], [class*="review" i], [class*="recenz" i], [class*="rating" i], [class*="hodnoc" i], [class*="hodnoten" i]',
       );
       const explicitDiaryContainer = link.closest(
         '[id*="diar" i], [id*="denik" i], [id*="denic" i], [class*="diar" i], [class*="denik" i], [class*="denic" i]',
       );
 
-      if (explicitRatingContainer && !explicitDiaryContainer) return true;
+      if (explicitReviewOrRatingContainer && !explicitDiaryContainer) return true;
 
       const searchRoot = this.csfdPage || document.body;
       let sectionNode = link;
@@ -1060,14 +1048,16 @@
           sectionNode = sectionNode.parentElement;
           continue;
         }
+
         const titleEl = sectionNode.querySelector(
           ':scope > .box-header h2, :scope > .box-header h3, :scope > header h2, :scope > header h3, :scope > h2, :scope > h3',
         );
         const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
 
         if (sectionTitle) {
-          if (sectionTitle.match(/poslední hodnocení|posledné hodnotenia/)) return true;
-          if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední deníček|posledny dennik/)) return false;
+          if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední hodnocení|posledné hodnotenia/))
+            return true;
+          if (sectionTitle.match(/poslední deníček|posledny dennik/)) return false;
         }
         sectionNode = sectionNode.parentElement;
       }
@@ -1170,42 +1160,8 @@
       return starRating;
     }
 
-    async addComparisonColumnOnOverviewPage() {
-      const table = document.querySelector('.last-ratings table');
-      if (!table) return;
-
-      table.classList.add('cc-compare-ratings-table');
-
-      const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
-        (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
-      );
-
-      for (const row of rows) {
-        if (row.querySelector('td.cc-my-rating-cell')) continue;
-
-        const nameLink = row.querySelector('td.name a[href*="/film/"]');
-        const ratingCell = row.querySelector('td.star-rating-only');
-        const movieId = await this.getMovieIdFromUrl(nameLink.getAttribute('href'));
-        const ratingRecord = this.stars[movieId];
-
-        const myRatingCell = document.createElement('td');
-        myRatingCell.className = 'cc-my-rating-cell star-rating-only';
-
-        if (ratingRecord && ratingRecord.deleted !== true) {
-          const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
-          const isComputed = ratingRecord?.computed === true;
-          // The 'true' at the end forces the outlined box style
-          const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
-          if (starElement) {
-            starElement.classList.remove('cc-own-rating');
-            myRatingCell.appendChild(starElement);
-          }
-        }
-        ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
-      }
-    }
     async addStars() {
-      if (localStorage.getItem(SHOW_RATINGS_KEY) === 'false') {
+      if (!this.getFeatureState(SHOW_RATINGS_KEY)) {
         console.debug('🟣 Ratings not added: SHOW_RATINGS_KEY disabled');
         return;
       }
@@ -1230,13 +1186,9 @@
         return this.addComparisonColumnOnForeignRatingsPage();
       }
 
-      // NEW: Handle the header-less table on the Overview page
-      if (this.isOnUserOverviewPage() && this.isOnOtherUserProfilePage()) {
-        await this.addComparisonColumnOnOverviewPage();
-      }
-
       const links = this.getCandidateFilmLinks();
       console.debug(`🔵 Found ${links.length} candidate links for adding ratings`);
+      console.debug({ links });
       const outlinedOnThisPage = this.isOnOtherUserProfilePage();
 
       for (const link of links) {
@@ -1257,27 +1209,8 @@
 
         if (!starElement) continue;
 
-        const tvProgramTimeRating = link.closest('.program-item')?.querySelector('.time-rating');
-        // Look for the info wrapper in Review headers
-        const reviewHeaderInfo = link.closest('.article-header')?.querySelector('.film-title-info');
-        // /diskuze/sledovane/ after the .film-title-info
-        const siblingTitleInfo = link.parentElement.querySelector(':scope > .film-title-info');
-
-        if (tvProgramTimeRating) {
-          starElement.classList.add('cc-own-rating-tv');
-          tvProgramTimeRating.appendChild(starElement);
-        } else if (reviewHeaderInfo) {
-          // Drop it at the end of the user's rating block
-          starElement.style.marginLeft = '12px';
-          reviewHeaderInfo.appendChild(starElement);
-        } else if (siblingTitleInfo) {
-          // Discussions and general lists: Drop it AFTER the (2022) (seriál) block
-          starElement.style.marginLeft = '8px';
-          siblingTitleInfo.insertAdjacentElement('afterend', starElement);
-        } else {
-          link.insertAdjacentElement('afterend', starElement);
-        }
-
+        const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
+        headingAncestor ? headingAncestor.appendChild(starElement) : link.insertAdjacentElement('afterend', starElement);
         link.dataset.ccStarAdded = 'true';
       }
     }
@@ -1287,7 +1220,7 @@
     }
 
     isGalleryImageLinksEnabled() {
-      return localStorage.getItem(GALLERY_IMAGE_LINKS_ENABLED_KEY) !== 'false';
+      return this.getFeatureState(GALLERY_IMAGE_LINKS_ENABLED_KEY);
     }
 
     clearGalleryImageFormatLinks() {
@@ -6371,7 +6304,12 @@
 
   (async () => {
     console.debug('🟣 Script started');
+
     await delay(20);
+
+    if (document.readyState === 'loading') {
+      await new Promise((resolve) => window.addEventListener('DOMContentLoaded', resolve));
+    }
 
     // Initialise the CSFD helper and add the settings button in parallel so neither
     // blocks the other — the button DOM insertion now happens immediately inside
