@@ -967,6 +967,27 @@ async function addSettingsButton() {
       performCloudSync();
     }, 2500);
   }
+
+  // ==========================================
+  // GLOBAL KEYBOARD SHORTCUTS
+  // ==========================================
+  document.addEventListener('keydown', (e) => {
+    // CTRL + ALT + R ==> "Zobrazit hodnocení"
+    if (e.ctrlKey && e.altKey && e.key.toLowerCase() === 'r') {
+      // Prevent default ctrl+alt+r behaviour if any
+      e.preventDefault();
+
+      const showRatingsToggle = settingsButton.querySelector('#cc-show-ratings');
+      if (showRatingsToggle && !showRatingsToggle.disabled) {
+        // Virtual click on the toggle like the user would.
+        // This ensures all the proper event handlers run and state is consistent.
+        showRatingsToggle.click();
+
+        const isEnabled = showRatingsToggle.checked;
+        showSettingsInfoToast(`Zobrazení hodnocení: ${isEnabled ? 'ZAPNUTO' : 'VYPNUTO'}`);
+      }
+    }
+  });
 }
 
 export { addSettingsButton };
