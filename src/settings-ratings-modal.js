@@ -20,6 +20,11 @@ function resolveRecordUrl(record) {
   return '';
 }
 
+/**
+ * Normalizes the raw type string from the rating record into a standardized format with a key and display label.
+ * @param {*} rawType The raw type string from the record, e.g. "movie", "seriál", "episode", etc.
+ * @returns {{key: string, label: string}}
+ */
 function normalizeModalType(rawType) {
   const normalized = String(rawType || '').toLowerCase();
   if (normalized.includes('epizoda') || normalized === 'episode') return { key: 'episode', label: 'Episode' };
@@ -75,15 +80,31 @@ function normalizeSearchText(text) {
     .replace(/[\u0300-\u036f]/g, '');
 }
 
+/**
+ * Converts raw records into a format suitable for display in the modal.
+ * Each record is normalized and enriched with computed properties for sorting and filtering.
+ * @param {*} records The array of raw records.
+ * @returns {Array} An array of formatted modal rows.
+ */
 function toModalRows(records) {
   if (!Array.isArray(records)) return [];
   return records.map((record) => {
+    // Normalize the type (e.g. "movie", "series", "episode") and derive display labels
     const normalizedType = normalizeModalType(record.type);
+
+    // Decide how to display the type, incorporating seriesToken or parentName if available
+    // E.g. "Series (The Office)", "Season (S01)", or just "Movie"
     let typeDisplay = normalizedType.label;
-    if (record.parentName) {
+    if (record.seriesToken) {
+      typeDisplay = `${normalizedType.label} (${record.seriesToken})`;
+    } else if (record.parentName) {
       typeDisplay = `${normalizedType.label} (${record.parentName})`;
     }
+
+    // Parse the year as a number for sorting, but keep the original string for display (in case of non-standard formats)
     const parsedYear = Number.parseInt(record.year, 10);
+
+    // Format the rating for display and determine if it's "odpad" (trash) or unknown and determine the CSS class for the rating square
     const ratingValue = Number.isFinite(record.rating) ? record.rating : NaN;
     const formattedRating = formatRatingForModal(ratingValue, record.deleted);
 
@@ -97,7 +118,7 @@ function toModalRows(records) {
       ratingText: formattedRating.stars,
       ratingIsOdpad: formattedRating.isOdpad,
       ratingValue,
-      ratingSquareClass: getRatingSquareClass(record.rating, record.deleted),
+      ratingSquareClass: getRatingSquareClass(ratingValue, record.deleted),
       date: (record.date || '').trim(),
       dateSortValue: parseCzechDateToSortableValue(record.date),
       isComputed: record.computed === true,
