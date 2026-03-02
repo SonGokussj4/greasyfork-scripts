@@ -30,14 +30,28 @@ function normalizeModalType(rawType) {
   return { key: 'movie', label: 'Movie' };
 }
 
-function formatRatingForModal(ratingValue) {
+/**
+ * Formats the rating value for display in the modal, handling special cases like deleted ratings and "odpad" (trash) ratings.
+ * @param {*} ratingValue The numeric rating value.
+ * @param {*} isDeleted Whether the rating is marked as deleted.
+ * @returns {{stars: string, isOdpad: boolean}}
+ */
+function formatRatingForModal(ratingValue, isDeleted) {
+  if (isDeleted) return { stars: 'SMAZÁNO', isOdpad: false };
   if (!Number.isFinite(ratingValue)) return { stars: 'odpad!', isOdpad: true };
   if (ratingValue === 0) return { stars: 'odpad!', isOdpad: true };
   const count = Math.min(5, Math.max(1, Math.round(ratingValue)));
   return { stars: '★'.repeat(count), isOdpad: false };
 }
 
-function getRatingSquareClass(ratingValue) {
+/**
+ * Returns the CSS class for the rating square based on the rating value and deletion status.
+ * @param {*} ratingValue The numeric rating value.
+ * @param {*} isDeleted Whether the rating is marked as deleted.
+ * @returns {string}
+ */
+function getRatingSquareClass(ratingValue, isDeleted) {
+  if (isDeleted) return 'is-unknown';
   if (!Number.isFinite(ratingValue)) return 'is-unknown';
   if (ratingValue === 0) return 'is-0';
   const r = Math.min(5, Math.max(1, Math.round(ratingValue)));
@@ -71,7 +85,7 @@ function toModalRows(records) {
     }
     const parsedYear = Number.parseInt(record.year, 10);
     const ratingValue = Number.isFinite(record.rating) ? record.rating : NaN;
-    const formattedRating = formatRatingForModal(ratingValue);
+    const formattedRating = formatRatingForModal(ratingValue, record.deleted);
 
     return {
       name: (record.name || '').trim(),
@@ -83,10 +97,11 @@ function toModalRows(records) {
       ratingText: formattedRating.stars,
       ratingIsOdpad: formattedRating.isOdpad,
       ratingValue,
-      ratingSquareClass: getRatingSquareClass(record.rating),
+      ratingSquareClass: getRatingSquareClass(record.rating, record.deleted),
       date: (record.date || '').trim(),
       dateSortValue: parseCzechDateToSortableValue(record.date),
       isComputed: record.computed === true,
+      isDeleted: record.deleted === true,
       rawRecord: { ...record },
     };
   });
@@ -230,6 +245,34 @@ function getRatingsTableModal() {
   overlay.id = 'cc-ratings-table-modal-overlay';
   overlay.className = 'cc-ratings-table-overlay';
   overlay.innerHTML = `
+    <style>
+      .cc-ratings-scope-dev-btn {
+        display: none; /* Řízeno přes JS */
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        color: #888;
+        border: 1px dashed #ccc;
+        border-radius: 4px;
+        padding: 0 10px;
+        height: 24px;
+        font-size: 11px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .cc-ratings-scope-dev-btn:hover {
+        border-color: #aa2c16;
+        color: #aa2c16;
+        background: rgba(170, 44, 22, 0.05);
+      }
+      .cc-ratings-scope-dev-btn.is-active {
+        border-color: #aa2c16;
+        color: #aa2c16;
+        background: rgba(170, 44, 22, 0.1);
+        border-style: solid;
+      }
+    </style>
     <div class="cc-ratings-table-modal" role="dialog" aria-modal="true" aria-labelledby="cc-ratings-table-title">
       <div class="cc-ratings-table-head">
         <h3 id="cc-ratings-table-title" style="flex: 1; margin: 0; font-size: 15px;">Přehled hodnocení</h3>
@@ -238,7 +281,8 @@ function getRatingsTableModal() {
           <button type="button" data-scope="direct">Přímo hodnocené</button>
           <button type="button" data-scope="computed">Spočtené</button>
         </div>
-        <div style="flex: 1; display: flex; justify-content: flex-end;">
+       <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding-right: 4px;">
+          <button type="button" class="cc-ratings-scope-dev-btn" data-scope="deleted">Smazané</button>
           <button type="button" class="cc-ratings-table-close" aria-label="Zavřít">×</button>
         </div>
       </div>
@@ -402,10 +446,20 @@ function getRatingsTableModal() {
     const renderToken = state.renderToken;
 
     const scopeFiltered = state.rows.filter((r) => {
+      // Show deleted only if "Smazané" scope is active
+      if (state.scopeFilter === 'deleted') return r.isDeleted;
+
+      // For other scopes, always hide deleted records
+      if (r.isDeleted) return false;
+
       if (state.scopeFilter === 'direct') return !r.isComputed;
       if (state.scopeFilter === 'computed') return r.isComputed;
       return true;
     });
+
+    console.log(
+      `[CC Debug] Scope: ${state.scopeFilter}, Smazaných v rows: ${state.rows.filter((r) => r.isDeleted).length}, Po prvním filtru: ${scopeFiltered.length}`,
+    );
 
     const typeFiltered = filterRowsByType(scopeFiltered, state.typeFilters);
     const filtered = filterRows(typeFiltered, state.search);
@@ -426,18 +480,27 @@ function getRatingsTableModal() {
   };
 
   const scopeBtns = overlay.querySelectorAll('.cc-ratings-scope-toggle button');
-  scopeBtns.forEach((btn) => {
+  const devBtn = overlay.querySelector('.cc-ratings-scope-dev-btn');
+  const allScopeBtns = [...Array.from(scopeBtns), devBtn];
+
+  // Scope buttons event listeners
+  allScopeBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       state.scopeFilter = btn.dataset.scope;
-      scopeBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
+      allScopeBtns.forEach((b) => b.classList.toggle('is-active', b === btn));
       render();
     });
   });
 
   overlay.openWithData = ({ rows, modalTitle, initialScope = 'all' }) => {
+    const isDev = localStorage.getItem('cc_dev_mode') === 'true';
+    devBtn.style.display = isDev ? 'flex' : 'none';
+
     if (exportBtn) exportBtn.disabled = rows.length === 0;
     state.scopeFilter = initialScope;
-    scopeBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.scope === initialScope));
+
+    // Activate the correct scope button based on initialScope
+    allScopeBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.scope === initialScope));
 
     state.rows = rows;
     state.search = '';
@@ -606,7 +669,6 @@ async function getCachedUserRecords(userSlug) {
 
   const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
   const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
-
   ratingsModalCache.userSlug = userSlug;
   ratingsModalCache.userRecords = userRecords;
   ratingsModalCache.allRows = null;
