@@ -168,6 +168,17 @@ function parseIdsFromUrl(relativeUrl) {
   return { id, parentId, parentName };
 }
 
+/**
+ * Parses a single rating row from the user's ratings table and extracts all relevant information into a structured record.
+ * Examples of rating rows:
+ * - Übel Blatt - Durch Bruch (Break Through)2025epizoda (E01)		11.01.2025
+ * - Stargate SG-1 - Bloodlines1997epizoda (S01E11)		26.02.2026
+ * - Stranger Things - Season 52025série (S05)		20.02.2026
+ * - May I Ask for One Final Thing?2025seriál		20.12.2025
+ * @param {*} row The table row element containing the rating information.
+ * @param {*} origin The origin URL to resolve relative links against.
+ * @returns {Object|undefined} Structured rating record or undefined if parsing fails.
+ */
 function parseRatingRow(row, origin) {
   const titleLink = row.querySelector('td.name a.film-title-name');
   if (!titleLink) {
@@ -177,27 +188,25 @@ function parseRatingRow(row, origin) {
   const relativeUrl = titleLink.getAttribute('href') || '';
   const name = titleLink.textContent?.trim() || '';
   const infoValues = Array.from(row.querySelectorAll('.film-title-info .info')).map((el) => el.textContent.trim());
-
   const yearValue = infoValues.find((value) => /^\d{4}$/.test(value));
-  // rawType is the first non-year info (e.g. "epizoda" or "seriál").
   const rawType = infoValues.find((value) => !/^\d{4}$/.test(value));
-  // try to pick up a season/episode token such as (S01E04) that appears as a
-  // separate info element; store it without parentheses so downstream code can
-  // display it correctly.
-  const tokenMatch = infoValues.find((value) => /^\(S\d{1,2}(?:E\d{1,2})?\)$/.test(value));
+  const tokenMatch = infoValues.find((value) => /^\((S\d{1,2}E\d{1,2}|S\d{1,2}|E\d{1,2})\)$/i.test(value));
+
   let seriesToken = tokenMatch ? tokenMatch.replace(/[()]/g, '') : '';
+
+  // If no explicit series token is found in the info values, attempt to extract it from the name using common patterns
   if (!seriesToken) {
-    const nameParen = name.match(/\(S\d{1,2}(?:E\d{1,2})?\)/i);
-    if (nameParen) {
-      seriesToken = nameParen[0].replace(/[()]/g, '');
+    const nameParent = name.match(/\((S\d{1,2}E\d{1,2}|S\d{1,2}|E\d{1,2})\)/i);
+    if (nameParent) {
+      seriesToken = nameParent[0].replace(/[()]/g, '');
     } else {
-      const nameSe = name.match(/S(\d{1,2})E(\d{1,2})/i);
-      if (nameSe) {
-        seriesToken = `S${nameSe[1].padStart(2, '0')}E${nameSe[2].padStart(2, '0')}`;
+      const nameSeason = name.match(/S(\d{1,2})E(\d{1,2})/i);
+      if (nameSeason) {
+        seriesToken = `S${nameSeason[1].padStart(2, '0')}E${nameSeason[2].padStart(2, '0')}`;
       } else {
-        const nameEp = name.match(/Episode\s*(\d{1,3})/i);
-        if (nameEp) {
-          seriesToken = `E${nameEp[1].padStart(2, '0')}`;
+        const nameEpisode = name.match(/Episode\s*(\d{1,3})/i);
+        if (nameEpisode) {
+          seriesToken = `E${nameEpisode[1].padStart(2, '0')}`;
         } else {
           const nameSeason = name.match(/Season\s*(\d{1,2})/i);
           if (nameSeason) {
