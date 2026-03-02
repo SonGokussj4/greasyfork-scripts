@@ -746,7 +746,7 @@ export class Csfd {
     // Links pointing to sections that are not actual film pages
     const ignorePathRegex = /\/(galerie|videa?|tvurci|obsahy?)\//;
     // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
-    const ignoreParamRegex = /[?&](page|comment|modal)=/i;
+    const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
     // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
     const validFilmRegex = /\/\d+-/;
 
