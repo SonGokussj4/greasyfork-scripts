@@ -29,6 +29,7 @@ export const MENU_CONFIG = [
         id: 'cc-hide-home-panels',
         storageKey: 'cc_hide_home_panels',
         defaultValue: true,
+        requiresLogin: false,
         label: 'Domácí stránka - skryté panely',
         tooltip: '',
         infoIcon: {
@@ -57,6 +58,7 @@ export const MENU_CONFIG = [
         id: 'cc-enable-clickable-header-boxes',
         storageKey: CLICKABLE_HEADER_BOXES_KEY,
         defaultValue: true,
+        requiresLogin: false,
         label: 'Boxy s tlačítkem "VÍCE" jsou klikatelné celé',
         infoIcon: {
           url: 'https://i.imgur.com/sV23XS2.png',
@@ -75,6 +77,7 @@ export const MENU_CONFIG = [
         id: 'cc-show-ratings',
         storageKey: SHOW_RATINGS_KEY,
         defaultValue: true,
+        requiresLogin: true,
         label: 'Ukázat hodnocení',
         tooltip: '',
         infoIcon: {
@@ -122,6 +125,7 @@ export const MENU_CONFIG = [
         id: 'cc-enable-gallery-image-links',
         storageKey: GALLERY_IMAGE_LINKS_ENABLED_KEY,
         defaultValue: true,
+        requiresLogin: false,
         label: 'Zobrazovat formáty obrázků v galerii',
         tooltip: '',
         eventName: 'cc-gallery-image-links-toggled',
@@ -135,6 +139,7 @@ export const MENU_CONFIG = [
         id: 'cc-ratings-estimate',
         storageKey: RATINGS_ESTIMATE_KEY,
         defaultValue: true,
+        requiresLogin: true,
         label: 'Vypočtení % při počtu hodnocení pod 10',
         tooltip: '',
         eventName: 'cc-ratings-estimate-toggled',
@@ -176,6 +181,7 @@ export const MENU_CONFIG = [
         id: 'cc-hide-selected-reviews',
         storageKey: HIDE_SELECTED_REVIEWS_KEY,
         defaultValue: false,
+        requiresLogin: false,
         label: 'Skrýt recenze lidí',
         tooltip: '',
         infoIcon: {
@@ -209,6 +215,7 @@ export const MENU_CONFIG = [
         id: 'cc-show-all-creator-tabs',
         storageKey: SHOW_ALL_CREATOR_TABS_KEY,
         defaultValue: true,
+        requiresLogin: false,
         label: 'Zobrazit všechny záložky tvůrce',
         tooltip: '',
         eventName: 'cc-show-all-creator-tabs-toggled',
@@ -222,6 +229,7 @@ export const MENU_CONFIG = [
         id: 'cc-enable-creator-preview',
         storageKey: CREATOR_PREVIEW_ENABLED_KEY,
         defaultValue: true,
+        requiresLogin: false,
         label: 'Náhledy fotek tvůrců',
         tooltip: '',
         infoIcon: {
