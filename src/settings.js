@@ -3,25 +3,26 @@ import { initializeRatingsLoader } from './ratings-loader.js';
 import { initializeRatingsSync, performCloudSync } from './ratings-sync.js';
 import { deleteIndexedDB } from './storage.js';
 import {
+  ADD_RATINGS_DATE_KEY,
+  CLICKABLE_HEADER_BOXES_KEY,
+  CREATOR_PREVIEW_CACHE_HOURS_KEY,
   CREATOR_PREVIEW_ENABLED_KEY,
   CREATOR_PREVIEW_SECTION_COLLAPSED_KEY,
   CREATOR_PREVIEW_SHOW_BIRTH_KEY,
   CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
-  SHOW_ALL_CREATOR_TABS_KEY,
-  INDEXED_DB_NAME,
-  SETTINGSNAME,
-  CLICKABLE_HEADER_BOXES_KEY,
-  RATINGS_ESTIMATE_KEY,
-  RATINGS_FROM_FAVORITES_KEY,
-  ADD_RATINGS_DATE_KEY,
+  HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
-  HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
-  CREATOR_PREVIEW_CACHE_HOURS_KEY,
-  SHOW_RATINGS_KEY,
-  SHOW_RATINGS_IN_REVIEWS_KEY,
+  INDEXED_DB_NAME,
+  RATINGS_ESTIMATE_KEY,
+  RATINGS_FROM_FAVORITES_KEY,
+  SETTINGSNAME,
+  SHOW_ALL_CREATOR_TABS_KEY,
+  SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
+  SHOW_RATINGS_IN_REVIEWS_KEY,
+  SHOW_RATINGS_KEY,
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
@@ -278,10 +279,12 @@ async function addSettingsButton() {
     const enabled = getBoolSetting(SHOW_RATINGS_KEY, true);
     const childToggle = settingsButton.querySelector('#cc-show-ratings-in-reviews');
     const foreignChildToggle = settingsButton.querySelector('#cc-show-ratings-in-foreign-reviews');
+    const diariesChildToggle = settingsButton.querySelector('#cc-show-ratings-in-diaries');
     const body = settingsButton.querySelector('#cc-show-ratings-group-body');
 
     if (childToggle) childToggle.disabled = !enabled;
     if (foreignChildToggle) foreignChildToggle.disabled = !enabled;
+    if (diariesChildToggle) diariesChildToggle.disabled = !enabled;
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
@@ -683,13 +686,14 @@ async function addSettingsButton() {
 
     togglesTracker.forEach((t) => localStorage.removeItem(t.storageKey));
 
-    localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
-    localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
-    localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
-    localStorage.removeItem(SHOW_RATINGS_KEY);
-    localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
+    localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
+    localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
+    localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
+    localStorage.removeItem(SHOW_RATINGS_IN_DIARIES_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY);
+    localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
+    localStorage.removeItem(SHOW_RATINGS_KEY);
     localStorage.removeItem(SHOW_RATINGS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem('cc_hide_home_panels');
     localStorage.removeItem('cc_hidden_panels_list');

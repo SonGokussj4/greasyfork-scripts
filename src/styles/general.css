@@ -206,9 +206,10 @@ div.plot-full .cc-own-rating {
 }
 
 
-h3.film-title-inline .cc-own-rating,
-h3.film-title-nooverflow .cc-own-rating {
+h3.film-title-inline .cc-own-rating {
+    /* h3.film-title-nooverflow .cc-own-rating { */
     transform: translateY(-1px);
+    margin-top: -10px;
 }
 
 /* Tables & Cells */

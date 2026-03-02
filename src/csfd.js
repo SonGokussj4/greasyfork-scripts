@@ -1,15 +1,16 @@
 import {
-  SETTINGSNAME,
+  GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  HIDE_SELECTED_REVIEWS_KEY,
+  HIDE_SELECTED_REVIEWS_LIST_KEY,
   INDEXED_DB_NAME,
   RATINGS_STORE_NAME,
-  GALLERY_IMAGE_LINKS_ENABLED_KEY,
-  HIDE_SELECTED_REVIEWS_LIST_KEY,
-  HIDE_SELECTED_REVIEWS_KEY,
-  SHOW_RATINGS_KEY,
-  SHOW_RATINGS_IN_REVIEWS_KEY,
+  SETTINGSNAME,
+  SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
+  SHOW_RATINGS_IN_REVIEWS_KEY,
+  SHOW_RATINGS_KEY,
 } from './config.js';
-import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
+import { getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay, getFeatureState, getMovieIdFromUrl } from './utils.js'; // REFACTOR: imported from utils
 
 const PROFILE_LINK_SELECTOR =
@@ -735,6 +736,7 @@ export class Csfd {
 
     const showInReviews = getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
     const showInForeignReviews = getFeatureState(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY, true);
+    const showInDiaries = getFeatureState(SHOW_RATINGS_IN_DIARIES_KEY, true); // ZDE
 
     const isCreatorPage = this.isOnCreatorPage();
     const isUserReviewsPage = this.isOnUserReviewsPage();
@@ -783,11 +785,15 @@ export class Csfd {
       if (linkText === 'více' || linkText === 'viac') return false;
 
       const isTitleLink = link.classList.contains('film-title-name');
-      const isReviewTextLink =
-        link.closest('span.comment') || link.closest('.diary-post') || (isUserReviewsPage && !isTitleLink);
+      const isDiaryLink = link.closest('.diary-post');
+      const isReviewTextLink = link.closest('span.comment') || (isUserReviewsPage && !isTitleLink);
 
-      if (isReviewTextLink) {
-        if (isForeignProfile) {
+      if (isDiaryLink) {
+        // Diaries should be treated differently
+        if (!showInDiaries) return false;
+      } else if (isReviewTextLink) {
+        // Review text links should be treated differently and also depend on whether it's own or foreign profile
+        if (isOtherUser) {
           if (!showInForeignReviews) return false;
         } else {
           if (!showInReviews) return false;
@@ -839,7 +845,7 @@ export class Csfd {
 
   /**
    * Determines if a given link on the user overview page should be skipped when looking for film links,
-   * based on its context in the DOM.
+   * based on its context in the DOM. Returns 'true' if the links should be skipped
    * @param {*} link
    * @returns {boolean}
    */
