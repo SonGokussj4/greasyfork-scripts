@@ -1,7 +1,6 @@
 import { Csfd } from './csfd.js';
 import { delay } from './utils.js';
-import './styles/cc-menu.css';
-import './styles/general.css';
+import './style.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
