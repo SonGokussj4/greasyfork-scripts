@@ -169,7 +169,10 @@ export async function refreshRatingsBadges(rootElement, options) {
     return;
   }
 
-  const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+  // Count how many ratings user has in total (including computed) but excluding deleted
+  const userRecords = records.filter(
+    (record) => record.userSlug === userSlug && Number.isFinite(record.movieId) && record.deleted !== true,
+  );
   const computedCount = userRecords.filter((record) => record.computed === true).length;
   const directRatingsCount = userRecords.length - computedCount;
   const fetchedTotalRatings = await fetchTotalRatingsForCurrentUser();
