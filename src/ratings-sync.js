@@ -35,51 +35,93 @@ function getActiveUserSlugFallback() {
  * Creates the Conflict Modal to display differences and allow manual overrides.
  */
 function openConflictModal(conflicts, localData, cloudData, accessKey, currentUserSlug, onResolved) {
-  // Map the raw conflict data into a clean, human-readable JSON object
-  const localDiff = {};
-  const cloudDiff = {};
-
-  for (const [id, item] of Object.entries(conflicts)) {
-    const title = item.local?.name || item.cloud?.name || id;
-
-    localDiff[title] =
-      item.local && !item.local.deleted ? { hodnoceni: item.local.rating, datum: item.local.date } : '--- SMAZÁNO ---';
-
-    cloudDiff[title] =
-      item.cloud && !item.cloud.deleted ? { hodnoceni: item.cloud.rating, datum: item.cloud.date } : '--- SMAZÁNO ---';
-  }
-
   const overlay = document.createElement('div');
   overlay.className = 'cc-sync-modal-overlay visible';
-  overlay.style.zIndex = '10050'; // Ensure it sits above the main sync modal
+  overlay.style.zIndex = '10050'; // Zaručí, že překryje i původní sync okno
+
+  // Helper pro krásné vykreslení hodnocení nebo "odpadu"
+  const formatRating = (record) => {
+    if (!record || record.deleted) {
+      return '<span style="color: #aa2c16; font-weight: 600;">Smazáno</span>';
+    }
+
+    let ratingDisplay = '';
+    if (record.rating === 0) {
+      ratingDisplay = '<strong style="color: #000;">Odpad!</strong>';
+    } else if (Number.isFinite(record.rating)) {
+      const r = Math.min(5, Math.max(1, Math.round(record.rating)));
+      const starsOn = '★'.repeat(r);
+      const starsOff = '★'.repeat(5 - r);
+      ratingDisplay = `<span style="color: #b8321d; font-size: 14px; letter-spacing: 1px;">${starsOn}<span style="color: #ddd;">${starsOff}</span></span>`;
+    } else {
+      ratingDisplay = '<span style="color: #888;">Neznámé</span>';
+    }
+
+    const dateDisplay = record.date
+      ? `<div style="color: #888; font-size: 10px; margin-top: 4px;">${record.date}</div>`
+      : '';
+
+    return `<div>${ratingDisplay}${dateDisplay}</div>`;
+  };
+
+  // Sestavení řádků do tabulky
+  const rowsHtml = Object.entries(conflicts)
+    .map(([id, item]) => {
+      const title = item.local?.name || item.cloud?.name || id;
+      return `
+      <tr style="border-bottom: 1px solid #f0f0f0;">
+        <td style="padding: 10px; font-size: 12px; color: #222; font-weight: 600; line-height: 1.3;">${title}</td>
+        <td style="padding: 10px; border-left: 1px solid #f0f0f0; background: #fffdfd; text-align: center; vertical-align: middle;">${formatRating(item.local)}</td>
+        <td style="padding: 10px; border-left: 1px solid #f0f0f0; background: #fbfbfb; text-align: center; vertical-align: middle;">${formatRating(item.cloud)}</td>
+      </tr>
+    `;
+    })
+    .join('');
 
   overlay.innerHTML = `
-    <div class="cc-sync-modal" style="width: 680px; max-width: 95vw;">
-      <div class="cc-sync-modal-head" style="border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 10px;">
-        <h3 style="color: #aa2c16;">Zjištěn konflikt v datech</h3>
-        <button type="button" class="cc-sync-close" aria-label="Zavřít">&times;</button>
+    <div class="cc-sync-modal" style="width: 680px; max-width: 95vw; border-radius: 12px; box-shadow: 0 16px 40px rgba(0,0,0,0.25); padding: 18px;">
+      <div class="cc-sync-modal-head" style="border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="color: #aa2c16; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Zjištěn konflikt v hodnoceních
+        </h3>
+        <button type="button" class="cc-sync-close" aria-label="Zavřít" style="font-size: 24px; border: 0; background: transparent; cursor: pointer; color: #666; line-height: 1;">&times;</button>
       </div>
-      <p style="font-size: 12px; color: #444; margin-bottom: 12px; line-height: 1.4;">
-        U následujících filmů se liší hodnocení mezi vaším prohlížečem a cloudem. Vyberte, která verze má přepsat tu druhou.
+
+      <p style="font-size: 13px; color: #444; margin-bottom: 16px; line-height: 1.5;">
+        Našli jsme rozdíly mezi tímto prohlížečem a zálohou v cloudu. Může to znamenat, že jste tyto filmy hodnotili na jiném zařízení. <strong>Kterou verzi si přejete zachovat?</strong>
       </p>
 
-      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-        <div style="flex: 1; display: flex; flex-direction: column;">
-          <strong style="font-size: 11px; margin-bottom: 4px; color: #222;">Lokální data (Tento prohlížeč)</strong>
-          <textarea readonly style="width: 100%; height: 220px; font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; background: #f5f5f5; resize: none; white-space: pre;">${JSON.stringify(localDiff, null, 2)}</textarea>
-        </div>
-        <div style="flex: 1; display: flex; flex-direction: column;">
-          <strong style="font-size: 11px; margin-bottom: 4px; color: #222;">Cloud data (Záloha na serveru)</strong>
-          <textarea readonly style="width: 100%; height: 220px; font-family: monospace; font-size: 11px; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; background: #f5f5f5; resize: none; white-space: pre;">${JSON.stringify(cloudDiff, null, 2)}</textarea>
-        </div>
+      <div style="max-height: 350px; max-height: 60vh; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 20px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+        <table style="width: 100%; border-collapse: collapse; text-align: left;">
+          <thead style="background: #f5f5f5; position: sticky; top: 0; box-shadow: 0 1px 2px rgba(0,0,0,0.1); z-index: 1;">
+            <tr>
+              <th style="padding: 10px; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase;">Název filmu / seriálu</th>
+              <th style="padding: 10px; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; border-left: 1px solid #e0e0e0; text-align: center; width: 28%;">Tento prohlížeč</th>
+              <th style="padding: 10px; font-size: 11px; font-weight: 700; color: #555; text-transform: uppercase; border-left: 1px solid #e0e0e0; text-align: center; width: 28%;">Záloha v cloudu</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
       </div>
 
-      <div style="display: flex; gap: 8px;">
-        <button type="button" id="cc-conflict-download" class="cc-button cc-button-black" style="flex: 1; font-size: 11px; padding: 8px;">
-          ↓ PŘEPSAT Z CLOUDU (Zrušit lokální změny)
+      <div style="display: flex; gap: 12px;">
+        <button type="button" id="cc-conflict-download" class="cc-button cc-button-black" style="flex: 1; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 8px; height: auto; transition: all 0.2s;">
+          <span style="font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Přijmout cloudovou zálohu
+          </span>
+          <span style="font-size: 11px; color: #aaa; font-weight: normal;">Zahodí lokální úpravy a stáhne data z cloudu</span>
         </button>
-        <button type="button" id="cc-conflict-upload" class="cc-button cc-button-black" style="flex: 1; font-size: 11px; padding: 8px;">
-          ↑ PŘEPSAT DO CLOUDU (Potvrdit lokální změny)
+
+        <button type="button" id="cc-conflict-upload" class="cc-button cc-button-red" style="flex: 1; padding: 12px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-radius: 8px; height: auto; transition: all 0.2s;">
+          <span style="font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            Ponechat lokální změny
+          </span>
+          <span style="font-size: 11px; color: rgba(255,255,255,0.7); font-weight: normal;">Nahraje tyto novější úpravy do cloudu</span>
         </button>
       </div>
     </div>
@@ -90,13 +132,12 @@ function openConflictModal(conflicts, localData, cloudData, accessKey, currentUs
   const closeModal = () => overlay.remove();
   overlay.querySelector('.cc-sync-close')?.addEventListener('click', closeModal);
 
-  // Manual Download Overwrite (Mirrors cloud exactly)
+  // Manual Download Overwrite
   overlay.querySelector('#cc-conflict-download')?.addEventListener('click', async (e) => {
-    const btn = e.target;
+    const btn = e.target.closest('button');
     btn.disabled = true;
-    btn.textContent = 'Stahuji...';
+    btn.querySelector('span').textContent = 'Stahuji...';
     try {
-      // For any item in cloud, if it's a tombstone, delete locally. Otherwise save it.
       for (const record of Object.values(cloudData)) {
         if (record.deleted) {
           await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, record.id);
@@ -108,24 +149,24 @@ function openConflictModal(conflicts, localData, cloudData, accessKey, currentUs
       onResolved('✅ Konflikt vyřešen: Data úspěšně přepsána z cloudu.');
       closeModal();
     } catch (err) {
-      btn.textContent = 'Chyba stahování';
+      btn.querySelector('span').textContent = 'Chyba stahování';
       btn.style.background = '#aa2c16';
     }
   });
 
   // Manual Upload Overwrite
   overlay.querySelector('#cc-conflict-upload')?.addEventListener('click', async (e) => {
-    const btn = e.target;
+    const btn = e.target.closest('button');
     btn.disabled = true;
-    btn.textContent = 'Nahrávám...';
+    btn.querySelector('span').textContent = 'Nahrávám...';
     try {
       const activeSlug = currentUserSlug || Object.values(localData)[0]?.userSlug;
       await uploadToCloud(accessKey, localData, activeSlug);
       onResolved('✅ Konflikt vyřešen: Cloud úspěšně přepsán lokálními daty.');
       closeModal();
     } catch (err) {
-      btn.textContent = 'Chyba nahrávání';
-      btn.style.background = '#aa2c16';
+      btn.querySelector('span').textContent = 'Chyba nahrávání';
+      btn.style.background = '#222';
     }
   });
 }
