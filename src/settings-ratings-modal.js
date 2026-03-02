@@ -108,6 +108,14 @@ function toModalRows(records) {
     const ratingValue = Number.isFinite(record.rating) ? record.rating : NaN;
     const formattedRating = formatRatingForModal(ratingValue, record.deleted);
 
+    // For better search optimization, save all relevant fields as normalized text to one string
+    const nameNorm = normalizeSearchText(record.name);
+    const urlNorm = normalizeSearchText(record.url);
+    const typeNorm = normalizeSearchText(typeDisplay);
+    const typeLabelNorm = normalizeSearchText(normalizedType.label);
+    const dateNorm = normalizeSearchText(record.date);
+    const searchString = `${nameNorm} ${urlNorm} ${typeNorm} ${typeLabelNorm} ${parsedYear} ${dateNorm} ${formattedRating.isOdpad ? 'odpad' : ''}`;
+
     return {
       name: (record.name || '').trim(),
       url: resolveRecordUrl(record),
@@ -123,6 +131,7 @@ function toModalRows(records) {
       dateSortValue: parseCzechDateToSortableValue(record.date),
       isComputed: record.computed === true,
       isDeleted: record.deleted === true,
+      searchString,
       rawRecord: { ...record },
     };
   });
@@ -133,9 +142,13 @@ function filterRowsByType(rows, typeFilters) {
   return rows.filter((row) => typeFilters.has(row.typeKey));
 }
 
+// Create Intl.Collator instances once for efficient string comparison during sorting
+const csCollator = new Intl.Collator('cs', { sensitivity: 'base' });
+const enCollator = new Intl.Collator('en', { sensitivity: 'base' });
+
 function sortRows(rows, sortKey, sortDir) {
-  const sorted = [...rows].sort((a, b) => {
-    if (sortKey === 'type') return a.typeDisplay.localeCompare(b.typeDisplay, 'en', { sensitivity: 'base' });
+  const sorted = rows.sort((a, b) => {
+    if (sortKey === 'type') return enCollator.compare(a.typeDisplay, b.typeDisplay);
 
     if (sortKey === 'year') {
       const aYear = Number.isFinite(a.yearValue) ? a.yearValue : -Infinity;
@@ -146,7 +159,8 @@ function sortRows(rows, sortKey, sortDir) {
     if (sortKey === 'rating') return a.ratingValue - b.ratingValue;
     if (sortKey === 'date') return a.dateSortValue - b.dateSortValue;
 
-    return a.name.localeCompare(b.name, 'cs', { sensitivity: 'base' });
+    // Extremely fast string comparison
+    return csCollator.compare(a.name, b.name);
   });
 
   return sortDir === 'desc' ? sorted.reverse() : sorted;
@@ -156,17 +170,18 @@ function filterRows(rows, search) {
   const query = normalizeSearchText(search).trim();
   if (!query) return rows;
 
-  return rows.filter((row) => {
-    return (
-      normalizeSearchText(row.name).includes(query) ||
-      normalizeSearchText(row.url).includes(query) ||
-      normalizeSearchText(row.typeLabel).includes(query) ||
-      normalizeSearchText(row.typeDisplay).includes(query) ||
-      normalizeSearchText(row.yearValue).includes(query) ||
-      normalizeSearchText(row.date).includes(query) ||
-      (row.ratingIsOdpad && query.includes('odpad'))
-    );
-  });
+  // return rows.filter((row) => {
+  //   return (
+  //     normalizeSearchText(row.name).includes(query) ||
+  //     normalizeSearchText(row.url).includes(query) ||
+  //     normalizeSearchText(row.typeLabel).includes(query) ||
+  //     normalizeSearchText(row.typeDisplay).includes(query) ||
+  //     normalizeSearchText(row.yearValue).includes(query) ||
+  //     normalizeSearchText(row.date).includes(query) ||
+  //     (row.ratingIsOdpad && query.includes('odpad'))
+  //   );
+  // });
+  return rows.filter((row) => row.searchString.includes(query));
 }
 
 // ============================================================================
@@ -361,8 +376,53 @@ function getRatingsTableModal() {
     sortKey: 'name',
     sortDir: 'asc',
     scopeFilter: 'all',
-    renderToken: 0,
+    renderedCount: 0, // number of lines rendered in the table (for performance optimization)
   };
+
+  const RENDER_CHUNK_SIZE = 100;
+  const tableWrap = overlay.querySelector('.cc-ratings-table-wrap');
+
+  // Initial render of few rows to show the modal faster, the rest will be rendered asynchronously in chunks
+  const renderInitialRows = (rows) => {
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="cc-ratings-table-empty">Žádná data</td></tr>';
+      return;
+    }
+    state.renderedCount = Math.min(RENDER_CHUNK_SIZE, rows.length);
+    const html = rows
+      .slice(0, state.renderedCount)
+      .map((r, i) => buildRowHtml(r, i))
+      .join('');
+    tbody.innerHTML = html;
+  };
+
+  // Render next chung, when user scrolls to the end
+  const renderMoreRows = () => {
+    if (state.renderedCount >= state.visibleRows.length) return;
+
+    const end = Math.min(state.renderedCount + RENDER_CHUNK_SIZE, state.visibleRows.length);
+    const html = state.visibleRows
+      .slice(state.renderedCount, end)
+      .map((r, i) => buildRowHtml(r, state.renderedCount + i))
+      .join('');
+
+    tbody.insertAdjacentHTML('beforeend', html);
+    state.renderedCount = end;
+  };
+
+  // Simple scroll handler with debounce to trigger rendering more rows when user scrolls near the end of the table
+  let isScrolling = false;
+  tableWrap.addEventListener('scroll', () => {
+    if (!isScrolling) {
+      window.requestAnimationFrame(() => {
+        if (tableWrap.scrollTop + tableWrap.clientHeight >= tableWrap.scrollHeight - 400) {
+          renderMoreRows();
+        }
+        isScrolling = false;
+      });
+      isScrolling = true;
+    }
+  });
 
   const detailsController = createRatingDetailsController();
 
@@ -428,44 +488,7 @@ function getRatingsTableModal() {
     `;
   };
 
-  const renderRowsFast = (rows, renderToken) => {
-    if (rows.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="cc-ratings-table-empty">Žádná data</td></tr>';
-      return;
-    }
-
-    if (rows.length <= MODAL_RENDER_SYNC_THRESHOLD) {
-      // OPTIMIZATION: Array.map.join('') is faster than string += concatenation inside loops
-      const html = rows.map((r, i) => buildRowHtml(r, i)).join('');
-      if (state.renderToken === renderToken) tbody.innerHTML = html;
-      return;
-    }
-
-    tbody.innerHTML = '';
-    let index = 0;
-
-    const renderChunk = () => {
-      if (state.renderToken !== renderToken) return;
-
-      const end = Math.min(index + MODAL_RENDER_CHUNK_SIZE, rows.length);
-      const chunkRows = rows.slice(index, end);
-      // Let's preserve the original index for the details button data-attribute
-      const html = chunkRows.map((r, i) => buildRowHtml(r, index + i)).join('');
-
-      if (index === 0) tbody.innerHTML = html;
-      else tbody.insertAdjacentHTML('beforeend', html);
-
-      index = end;
-      if (index < rows.length) setTimeout(renderChunk, 0);
-    };
-
-    renderChunk();
-  };
-
   const render = () => {
-    state.renderToken += 1;
-    const renderToken = state.renderToken;
-
     const scopeFiltered = state.rows.filter((r) => {
       // Show deleted only if "Smazané" scope is active
       if (state.scopeFilter === 'deleted') return r.isDeleted;
@@ -489,7 +512,10 @@ function getRatingsTableModal() {
 
     summary.textContent = `${sorted.length} položek`;
     if (exportBtn) exportBtn.disabled = sorted.length === 0;
-    renderRowsFast(sorted, renderToken);
+
+    // renderRowsFast(sorted, renderToken);  // Old render method
+    tableWrap.scrollTop = 0;
+    renderInitialRows(sorted);
 
     for (const button of sortButtons) {
       const key = button.dataset.sortKey;
@@ -569,9 +595,14 @@ function getRatingsTableModal() {
     detailsController.open(state.visibleRows[rowIndex]);
   });
 
+  // Render debounce for search input to avoid rendering on every keystroke
+  let searchTimeout;
   searchInput.addEventListener('input', () => {
-    state.search = searchInput.value;
-    render();
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      state.search = searchInput.value;
+      render();
+    }, 200); // TODO: Move to config as constant
   });
 
   if (exportBtn) {
