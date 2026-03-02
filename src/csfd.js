@@ -959,6 +959,7 @@ export class Csfd {
 
     if (ratingValue === 0) {
       stars.classList.add('trash');
+      stars.textContent = 'odpad!';
     } else {
       stars.classList.add(`stars-${Math.min(5, Math.max(1, ratingValue))}`);
     }
