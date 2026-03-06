@@ -894,6 +894,45 @@ export class Csfd {
     return Boolean(ratingsPageSlug && this.userSlug && ratingsPageSlug !== this.userSlug);
   }
 
+  async addComparisonColumnOnOverviewPage() {
+    const table = document.querySelector('.last-ratings table');
+
+    if (!table) return;
+
+    console.debug('🔵 Found ratings table on overview page, adding comparison column');
+    table.classList.add('cc-compare-ratings-table');
+
+    const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
+      (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
+    );
+
+    for (const row of rows) {
+      if (row.querySelector('td.cc-my-rating-cell')) continue;
+
+      const nameLink = row.querySelector('td.name a[href*="/film/"]');
+      const ratingCell = row.querySelector('td.star-rating-only');
+      const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href'));
+      const ratingRecord = this.stars[movieId];
+
+      const myRatingCell = document.createElement('td');
+      myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+      myRatingCell.style.textAlign = 'right';
+
+      if (ratingRecord && ratingRecord.deleted !== true) {
+        const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
+        const isComputed = ratingRecord?.computed === true;
+        // The 'true' at the end forces the outlined box style
+        const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
+        if (starElement) {
+          starElement.classList.remove('cc-own-rating');
+          myRatingCell.appendChild(starElement);
+        }
+      }
+      // ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+      ratingCell.insertAdjacentElement('afterend', myRatingCell);
+    }
+  }
+
   async addComparisonColumnOnForeignRatingsPage() {
     const getRatingsTables = () =>
       Array.from(
@@ -923,8 +962,10 @@ export class Csfd {
         const colHeader = document.createElement('th');
         colHeader.className = 'cc-my-rating-col';
         colHeader.textContent = 'Moje';
+        colHeader.style.textAlign = 'right';
         const ratingHeader = headerRow.querySelector('th.star-rating-only');
-        ratingHeader ? ratingHeader.insertAdjacentElement('beforebegin', colHeader) : headerRow.appendChild(colHeader);
+        // ratingHeader ? ratingHeader.insertAdjacentElement('beforebegin', colHeader) : headerRow.appendChild(colHeader);
+        ratingHeader ? ratingHeader.insertAdjacentElement('afterend', colHeader) : headerRow.appendChild(colHeader);
       }
 
       for (const row of rows) {
@@ -937,6 +978,7 @@ export class Csfd {
 
         const myRatingCell = document.createElement('td');
         myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+        myRatingCell.style.textAlign = 'right';
 
         if (ratingRecord) {
           const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
@@ -947,7 +989,8 @@ export class Csfd {
             myRatingCell.appendChild(starElement);
           }
         }
-        ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+        // ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+        ratingCell.insertAdjacentElement('afterend', myRatingCell);
       }
     }
   }
@@ -980,43 +1023,6 @@ export class Csfd {
     }
 
     return starRating;
-  }
-
-  async addComparisonColumnOnOverviewPage() {
-    const table = document.querySelector('.last-ratings table');
-
-    if (!table) return;
-
-    console.debug('🔵 Found ratings table on overview page, adding comparison column');
-    table.classList.add('cc-compare-ratings-table');
-
-    const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
-      (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
-    );
-
-    for (const row of rows) {
-      if (row.querySelector('td.cc-my-rating-cell')) continue;
-
-      const nameLink = row.querySelector('td.name a[href*="/film/"]');
-      const ratingCell = row.querySelector('td.star-rating-only');
-      const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href'));
-      const ratingRecord = this.stars[movieId];
-
-      const myRatingCell = document.createElement('td');
-      myRatingCell.className = 'cc-my-rating-cell star-rating-only';
-
-      if (ratingRecord && ratingRecord.deleted !== true) {
-        const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
-        const isComputed = ratingRecord?.computed === true;
-        // The 'true' at the end forces the outlined box style
-        const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
-        if (starElement) {
-          starElement.classList.remove('cc-own-rating');
-          myRatingCell.appendChild(starElement);
-        }
-      }
-      ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
-    }
   }
 
   async addStars() {
