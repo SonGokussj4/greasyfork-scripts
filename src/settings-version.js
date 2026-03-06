@@ -1,18 +1,10 @@
 import { GREASYFORK_URL } from './config.js';
+import { escapeHtml } from './utils.js';
 
 const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
 const VERSION_DETAILS_CACHE_KEY = 'cc_version_details_cache_v1';
 const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
 const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
-
-function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function parseVersionParts(version) {
   return String(version || '')

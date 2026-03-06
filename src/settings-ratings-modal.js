@@ -1,18 +1,11 @@
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
 import { getAllFromIndexedDB } from './storage.js';
+import { createDetailsModalController, formatDetailValue } from './ui-utils.js';
+import { escapeHtml } from './utils.js';
 
 // ============================================================================
 // 1. DATA PROCESSING & HELPERS (Private)
 // ============================================================================
-
-function escapeHtml(value) {
-  return String(value || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function resolveRecordUrl(record) {
   if (record.fullUrl) return record.fullUrl;
@@ -169,18 +162,6 @@ function sortRows(rows, sortKey, sortDir) {
 function filterRows(rows, search) {
   const query = normalizeSearchText(search).trim();
   if (!query) return rows;
-
-  // return rows.filter((row) => {
-  //   return (
-  //     normalizeSearchText(row.name).includes(query) ||
-  //     normalizeSearchText(row.url).includes(query) ||
-  //     normalizeSearchText(row.typeLabel).includes(query) ||
-  //     normalizeSearchText(row.typeDisplay).includes(query) ||
-  //     normalizeSearchText(row.yearValue).includes(query) ||
-  //     normalizeSearchText(row.date).includes(query) ||
-  //     (row.ratingIsOdpad && query.includes('odpad'))
-  //   );
-  // });
   return rows.filter((row) => row.searchString.includes(query));
 }
 
@@ -189,22 +170,6 @@ function filterRows(rows, search) {
 // ============================================================================
 
 function createRatingDetailsController() {
-  const detailsOverlay = document.createElement('div');
-  detailsOverlay.className = 'cc-rating-detail-overlay';
-  detailsOverlay.innerHTML = `
-    <div class="cc-rating-detail-card" role="dialog" aria-modal="true" aria-labelledby="cc-rating-detail-title">
-      <div class="cc-rating-detail-head">
-        <h4 id="cc-rating-detail-title">Detail záznamu</h4>
-        <button type="button" class="cc-rating-detail-close" aria-label="Zavřít">×</button>
-      </div>
-      <div class="cc-rating-detail-body"></div>
-    </div>
-  `;
-
-  const detailsBody = detailsOverlay.querySelector('.cc-rating-detail-body');
-  const detailsTitle = detailsOverlay.querySelector('#cc-rating-detail-title');
-  const closeDetailsBtn = detailsOverlay.querySelector('.cc-rating-detail-close');
-
   const orderedKeys = [
     'id',
     'userSlug',
@@ -224,46 +189,31 @@ function createRatingDetailsController() {
     'lastUpdate',
   ];
 
+  const controller = createDetailsModalController({
+    defaultTitle: 'Detail záznamu',
+    titleId: 'cc-rating-detail-title',
+  });
+
   const open = (row) => {
     const record = row?.rawRecord || {};
     const keys = new Set([...orderedKeys, ...Object.keys(record)]);
 
-    detailsTitle.textContent = row?.name ? `Detail: ${row.name}` : 'Detail záznamu';
-    detailsBody.innerHTML = '';
-
-    for (const key of keys) {
-      const value = record[key];
-      const rowEl = document.createElement('div');
-      rowEl.className = 'cc-rating-detail-row';
-
-      const keyEl = document.createElement('div');
-      keyEl.className = 'cc-rating-detail-key';
-      keyEl.textContent = key;
-
-      const valueEl = document.createElement('div');
-      valueEl.className = 'cc-rating-detail-value';
-
-      if (value === null) valueEl.textContent = 'null';
-      else if (typeof value === 'undefined') valueEl.textContent = 'undefined';
-      else if (typeof value === 'object') valueEl.textContent = JSON.stringify(value);
-      else if (typeof value === 'number' && Number.isNaN(value)) valueEl.textContent = 'NaN';
-      else valueEl.textContent = String(value);
-
-      rowEl.appendChild(keyEl);
-      rowEl.appendChild(valueEl);
-      detailsBody.appendChild(rowEl);
-    }
-    detailsOverlay.classList.add('is-open');
+    controller.open(
+      row?.name ? `Detail: ${row.name}` : 'Detail záznamu',
+      Array.from(keys).map((key) => ({
+        key,
+        value:
+          record[key] !== null && typeof record[key] === 'object'
+            ? JSON.stringify(record[key])
+            : formatDetailValue(record[key]),
+      })),
+    );
   };
 
-  const close = () => detailsOverlay.classList.remove('is-open');
-
-  closeDetailsBtn.addEventListener('click', close);
-  detailsOverlay.addEventListener('click', (event) => {
-    if (event.target === detailsOverlay) close();
-  });
-
-  return { overlay: detailsOverlay, open, close, isOpen: () => detailsOverlay.classList.contains('is-open') };
+  return {
+    ...controller,
+    open,
+  };
 }
 
 // ============================================================================

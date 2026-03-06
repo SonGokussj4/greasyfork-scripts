@@ -29,6 +29,8 @@ import { initializeVersionUi, openVersionInfoModal } from './settings-version.js
 import { refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
 import { initializeSettingsMenuHover } from './settings-hover.js';
+import { buildStructuredDetailItems, createDetailsModalController } from './ui-utils.js';
+import { escapeHtml } from './utils.js';
 import MENU_CONFIG from './settings-config.js';
 
 let infoToastTimeoutId;
@@ -109,15 +111,6 @@ function showSettingsInfoToast(message) {
   }, 1800);
 }
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 function getManagedLocalStorageEntries() {
   const entries = [];
   for (let i = 0; i < localStorage.length; i++) {
@@ -138,6 +131,47 @@ function formatLocalStorageValue(value, maxLength = 120) {
     .replace(/\s+/g, ' ')
     .trim();
   return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 1)}…`;
+}
+
+function isCreatorCacheKey(key) {
+  return /^cc_creator_v\d+_/i.test(String(key || ''));
+}
+
+function getLocalStorageValueDetailRows(value) {
+  const rawValue = String(value ?? '');
+
+  try {
+    const parsed = JSON.parse(rawValue);
+    const rows = buildStructuredDetailItems(parsed);
+    if (rows.length > 0) return rows;
+  } catch (error) {}
+
+  return [{ key: 'value', value: rawValue }];
+}
+
+function buildManagedLocalStorageRows(entries) {
+  const rows = [];
+  let creatorGroupAdded = false;
+  const creatorEntries = entries.filter((entry) => isCreatorCacheKey(entry.key));
+
+  entries.forEach((entry) => {
+    if (isCreatorCacheKey(entry.key)) {
+      if (!creatorGroupAdded) {
+        rows.push({
+          type: 'group',
+          id: 'creator-cache',
+          label: 'cc_creator* cache',
+          entries: creatorEntries,
+        });
+        creatorGroupAdded = true;
+      }
+      return;
+    }
+
+    rows.push({ type: 'entry', entry, grouped: false });
+  });
+
+  return rows;
 }
 
 // ==========================================
@@ -752,6 +786,15 @@ async function addSettingsButton() {
   const ensureLocalStorageModal = () => {
     if (localStorageModal) return localStorageModal;
 
+    const detailsController = createDetailsModalController({
+      overlayClass: 'cc-generic-detail-overlay',
+      defaultTitle: 'Detail',
+      titleId: 'cc-generic-detail-title',
+    });
+    const modalState = {
+      collapsedGroups: new Set(['creator-cache']),
+    };
+
     const overlay = document.createElement('div');
     overlay.className = 'cc-lc-modal-overlay';
     overlay.hidden = true;
@@ -778,25 +821,84 @@ async function addSettingsButton() {
       overlay.classList.remove('is-open');
       overlay.hidden = true;
     };
+
+    const syncAfterLocalStorageChange = () => {
+      syncControlsFromStorage();
+      window.dispatchEvent(
+        new CustomEvent('cc-gallery-image-links-toggled', {
+          detail: {
+            enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
+          },
+        }),
+      );
+    };
+
+    const buildEntryRowHtml = (key, value, options = {}) => {
+      const isGroupedChild = options.grouped === true;
+      const rowClass = isGroupedChild ? 'cc-lc-entry-row is-group-child' : 'cc-lc-entry-row';
+      const keyClass = isGroupedChild ? 'cc-lc-key cc-lc-key-child' : 'cc-lc-key';
+
+      return `
+        <tr class="${rowClass}">
+          <td class="${keyClass}" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
+          <td class="cc-lc-value" title="${escapeHtml(String(value))}">
+            <div class="cc-lc-value-content">
+              <span class="cc-lc-value-text">${escapeHtml(formatLocalStorageValue(value))}</span>
+              <button type="button" class="cc-lc-value-info" data-key="${escapeHtml(key)}" aria-label="Zobrazit detail hodnoty">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                  <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="2" />
+                  <path d="M12 11.5V15.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <circle cx="12" cy="8.2" r="1" fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+          </td>
+          <td class="cc-lc-action">
+             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
+          </td>
+        </tr>`;
+    };
+
     const refreshTable = () => {
       const tableBody = overlay.querySelector('#cc-lc-table-body');
       if (!tableBody) return;
       const entries = getManagedLocalStorageEntries();
-      if (!entries.length) {
+      const rows = buildManagedLocalStorageRows(entries);
+
+      if (!rows.length) {
         tableBody.innerHTML = '<tr><td colspan="3" class="cc-lc-table-empty">Žádné relevantní položky.</td></tr>';
         return;
       }
-      tableBody.innerHTML = entries
-        .map(
-          ({ key, value }) => `
-        <tr>
-          <td class="cc-lc-key" title="${escapeHtml(key)}">${escapeHtml(key)}</td>
-          <td class="cc-lc-value" title="${escapeHtml(String(value))}">${escapeHtml(formatLocalStorageValue(value))}</td>
-          <td class="cc-lc-action">
-             <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-one" data-key="${escapeHtml(key)}">Smazat</button>
-          </td>
-        </tr>`,
-        )
+
+      tableBody.innerHTML = rows
+        .map((row) => {
+          if (row.type === 'entry') {
+            return buildEntryRowHtml(row.entry.key, row.entry.value, { grouped: false });
+          }
+
+          const isCollapsed = modalState.collapsedGroups.has(row.id);
+          const toggleSymbol = isCollapsed ? '▸' : '▾';
+          const summaryLabel = `${row.entries.length} položek`;
+          const groupRowHtml = `
+            <tr class="cc-lc-group-row" data-group-id="${row.id}" aria-expanded="${isCollapsed ? 'false' : 'true'}">
+              <td class="cc-lc-key cc-lc-group-key">
+                <button type="button" class="cc-lc-group-toggle" data-group-id="${row.id}" aria-expanded="${isCollapsed ? 'false' : 'true'}">
+                  <span class="cc-lc-group-chevron" aria-hidden="true">${toggleSymbol}</span>
+                  <span class="cc-lc-group-label">${escapeHtml(row.label)}</span>
+                </button>
+              </td>
+              <td class="cc-lc-value cc-lc-group-summary">${summaryLabel}</td>
+              <td class="cc-lc-action">
+                 <button type="button" class="cc-button cc-button-red cc-button-small cc-lc-delete-group" data-group-id="${row.id}">Smazat vše</button>
+              </td>
+            </tr>`;
+
+          if (isCollapsed) return groupRowHtml;
+
+          return `${groupRowHtml}${row.entries
+            .map((entry) => buildEntryRowHtml(entry.key, entry.value, { grouped: true }))
+            .join('')}`;
+        })
         .join('');
     };
 
@@ -808,30 +910,45 @@ async function addSettingsButton() {
 
     overlay.querySelector('#cc-lc-delete-all-btn')?.addEventListener('click', () => {
       getManagedLocalStorageEntries().forEach((entry) => localStorage.removeItem(entry.key));
-      syncControlsFromStorage();
-      window.dispatchEvent(
-        new CustomEvent('cc-gallery-image-links-toggled', {
-          detail: {
-            enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
-          },
-        }),
-      );
+      syncAfterLocalStorageChange();
+      detailsController.close();
       refreshTable();
       showSettingsInfoToast('Relevantní LocalStorage klíče byly smazány.');
     });
 
     overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (e) => {
+      const groupDeleteBtn = e.target.closest('.cc-lc-delete-group');
+      if (groupDeleteBtn?.dataset.groupId === 'creator-cache') {
+        getManagedLocalStorageEntries()
+          .filter((entry) => isCreatorCacheKey(entry.key))
+          .forEach((entry) => localStorage.removeItem(entry.key));
+        syncAfterLocalStorageChange();
+        detailsController.close();
+        refreshTable();
+        showSettingsInfoToast('Smazány všechny cc_creator cache položky.');
+        return;
+      }
+
+      const groupRow = e.target.closest('.cc-lc-group-row');
+      if (groupRow?.dataset.groupId && !e.target.closest('.cc-lc-delete-group')) {
+        const { groupId } = groupRow.dataset;
+        if (modalState.collapsedGroups.has(groupId)) modalState.collapsedGroups.delete(groupId);
+        else modalState.collapsedGroups.add(groupId);
+        refreshTable();
+        return;
+      }
+
+      const infoBtn = e.target.closest('.cc-lc-value-info');
+      if (infoBtn?.dataset.key) {
+        const key = infoBtn.dataset.key;
+        detailsController.open(`Hodnota: ${key}`, getLocalStorageValueDetailRows(localStorage.getItem(key) ?? ''));
+        return;
+      }
+
       const deleteBtn = e.target.closest('.cc-lc-delete-one');
       if (!deleteBtn || !deleteBtn.dataset.key) return;
       localStorage.removeItem(deleteBtn.dataset.key);
-      syncControlsFromStorage();
-      window.dispatchEvent(
-        new CustomEvent('cc-gallery-image-links-toggled', {
-          detail: {
-            enabled: getBoolSetting(GALLERY_IMAGE_LINKS_ENABLED_KEY, true),
-          },
-        }),
-      );
+      syncAfterLocalStorageChange();
       refreshTable();
       showSettingsInfoToast(`Smazán klíč: ${deleteBtn.dataset.key}`);
     });
@@ -843,6 +960,7 @@ async function addSettingsButton() {
     });
 
     document.body.appendChild(overlay);
+    document.body.appendChild(detailsController.overlay);
     return (localStorageModal = overlay);
   };
 
