@@ -11,6 +11,7 @@ import {
   HIDE_SELECTED_REVIEWS_KEY,
   RATINGS_ESTIMATE_KEY,
   RATINGS_FROM_FAVORITES_KEY,
+  SELF_REPLY_IN_DISCUSSIONS_KEY,
   SHOW_ALL_CREATOR_TABS_KEY,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
@@ -67,6 +68,20 @@ export const MENU_CONFIG = [
         },
         tooltip: '',
         eventName: 'cc-clickable-header-boxes-toggled',
+      },
+      {
+        type: 'toggle',
+        id: 'cc-enable-self-reply',
+        storageKey: SELF_REPLY_IN_DISCUSSIONS_KEY,
+        defaultValue: true,
+        requiresLogin: true, // Only makes sense if logged in
+        label: 'Tlačítko "Reagovat" u vlastních příspěvků v diskuzi',
+        infoIcon: {
+          url: '', // Add an Imgur link here later if you make a preview gif!
+          text: 'Vrátí možnost reagovat na vlastní příspěvky v diskuzích (přidá CC tag do textového pole).',
+        },
+        tooltip: '',
+        eventName: 'cc-self-reply-toggled',
       },
     ],
   },

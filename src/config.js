@@ -23,6 +23,7 @@ export const CREATOR_PREVIEW_ENABLED_KEY = 'cc_creator_preview_enabled';
 export const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
 export const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
 export const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
+export const SELF_REPLY_IN_DISCUSSIONS_KEY = 'cc_self_reply_discussions';
 export const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
 export const SHOW_RATINGS_KEY = 'cc_show_ratings';
 export const SHOW_RATINGS_IN_REVIEWS_KEY = 'cc_show_ratings_in_reviews';

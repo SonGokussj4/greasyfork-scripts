@@ -30,6 +30,7 @@
   const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
   const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
   const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
+  const SELF_REPLY_IN_DISCUSSIONS_KEY$1 = 'cc_self_reply_discussions';
   const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
   const SHOW_RATINGS_KEY = 'cc_show_ratings';
   const SHOW_RATINGS_IN_REVIEWS_KEY = 'cc_show_ratings_in_reviews';
@@ -351,6 +352,7 @@
         if (getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
         if (getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
         if (getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
+        if (getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY$1, true)) this.enableSelfReplyInDiscussions();
       } catch (e) {
         // ignore silently
       }
@@ -1105,6 +1107,45 @@
       return Boolean(ratingsPageSlug && this.userSlug && ratingsPageSlug !== this.userSlug);
     }
 
+    async addComparisonColumnOnOverviewPage() {
+      const table = document.querySelector('.last-ratings table');
+
+      if (!table) return;
+
+      console.debug('🔵 Found ratings table on overview page, adding comparison column');
+      table.classList.add('cc-compare-ratings-table');
+
+      const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
+        (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
+      );
+
+      for (const row of rows) {
+        if (row.querySelector('td.cc-my-rating-cell')) continue;
+
+        const nameLink = row.querySelector('td.name a[href*="/film/"]');
+        const ratingCell = row.querySelector('td.star-rating-only');
+        const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href'));
+        const ratingRecord = this.stars[movieId];
+
+        const myRatingCell = document.createElement('td');
+        myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+        myRatingCell.style.textAlign = 'right';
+
+        if (ratingRecord && ratingRecord.deleted !== true) {
+          const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
+          const isComputed = ratingRecord?.computed === true;
+          // The 'true' at the end forces the outlined box style
+          const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
+          if (starElement) {
+            starElement.classList.remove('cc-own-rating');
+            myRatingCell.appendChild(starElement);
+          }
+        }
+        // ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+        ratingCell.insertAdjacentElement('afterend', myRatingCell);
+      }
+    }
+
     async addComparisonColumnOnForeignRatingsPage() {
       const getRatingsTables = () =>
         Array.from(
@@ -1134,8 +1175,10 @@
           const colHeader = document.createElement('th');
           colHeader.className = 'cc-my-rating-col';
           colHeader.textContent = 'Moje';
+          colHeader.style.textAlign = 'right';
           const ratingHeader = headerRow.querySelector('th.star-rating-only');
-          ratingHeader ? ratingHeader.insertAdjacentElement('beforebegin', colHeader) : headerRow.appendChild(colHeader);
+          // ratingHeader ? ratingHeader.insertAdjacentElement('beforebegin', colHeader) : headerRow.appendChild(colHeader);
+          ratingHeader ? ratingHeader.insertAdjacentElement('afterend', colHeader) : headerRow.appendChild(colHeader);
         }
 
         for (const row of rows) {
@@ -1148,6 +1191,7 @@
 
           const myRatingCell = document.createElement('td');
           myRatingCell.className = 'cc-my-rating-cell star-rating-only';
+          myRatingCell.style.textAlign = 'right';
 
           if (ratingRecord) {
             const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
@@ -1158,7 +1202,8 @@
               myRatingCell.appendChild(starElement);
             }
           }
-          ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+          // ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
+          ratingCell.insertAdjacentElement('afterend', myRatingCell);
         }
       }
     }
@@ -1191,43 +1236,6 @@
       }
 
       return starRating;
-    }
-
-    async addComparisonColumnOnOverviewPage() {
-      const table = document.querySelector('.last-ratings table');
-
-      if (!table) return;
-
-      console.debug('🔵 Found ratings table on overview page, adding comparison column');
-      table.classList.add('cc-compare-ratings-table');
-
-      const rows = Array.from(table.querySelectorAll('tbody tr')).filter(
-        (row) => row.querySelector('td.name a[href*="/film/"]') && row.querySelector('td.star-rating-only'),
-      );
-
-      for (const row of rows) {
-        if (row.querySelector('td.cc-my-rating-cell')) continue;
-
-        const nameLink = row.querySelector('td.name a[href*="/film/"]');
-        const ratingCell = row.querySelector('td.star-rating-only');
-        const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href'));
-        const ratingRecord = this.stars[movieId];
-
-        const myRatingCell = document.createElement('td');
-        myRatingCell.className = 'cc-my-rating-cell star-rating-only';
-
-        if (ratingRecord && ratingRecord.deleted !== true) {
-          const ratingValue = typeof ratingRecord === 'number' ? ratingRecord : ratingRecord?.rating;
-          const isComputed = ratingRecord?.computed === true;
-          // The 'true' at the end forces the outlined box style
-          const starElement = this.createStarElement(ratingValue, isComputed, ratingRecord?.computedCount, true);
-          if (starElement) {
-            starElement.classList.remove('cc-own-rating');
-            myRatingCell.appendChild(starElement);
-          }
-        }
-        ratingCell.insertAdjacentElement('beforebegin', myRatingCell);
-      }
     }
 
     async addStars() {
@@ -1406,6 +1414,103 @@
         host.appendChild(linksWrapper);
         pictureEl.dataset.ccGalleryLinksBound = 'true';
       });
+    }
+
+    /**
+     * Adds a "Reagovat" button to the logged-in user's own discussion posts.
+     * Uses a Vanilla JS proxy-click to trigger the native ČSFD UI.
+     */
+    enableSelfReplyInDiscussions() {
+      if (!window.location.pathname.includes('/diskuze/')) return;
+      if (!getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY$1, true)) return;
+
+      const posts = document.querySelectorAll('article.article-forum');
+
+      posts.forEach((post) => {
+        const actionsContainer = post.querySelector('.icon-control');
+        if (!actionsContainer) return;
+
+        const hasReplyBtn = actionsContainer.querySelector('.reply-add');
+
+        // If missing, it's your post. Let's inject our proxy button.
+        if (!hasReplyBtn) {
+          const authorLink = post.querySelector('.article-header-message a.user-title-name');
+          if (!authorLink) return;
+
+          // Extract your user info and post ID
+          const href = authorLink.getAttribute('href') || '';
+          const userMatch = href.match(/\/uzivatel\/(\d+)-([^/]+)\//);
+          if (!userMatch) return;
+
+          const userId = userMatch[1];
+          const username = authorLink.textContent.trim();
+
+          const articleId = post.getAttribute('id') || '';
+          const postMatch = articleId.match(/highlight-post-(\d+)/);
+          if (!postMatch) return;
+
+          const postId = postMatch[1];
+
+          // Create our visual button
+          const replyBtn = document.createElement('a');
+          replyBtn.href = '#';
+          replyBtn.className = 'button button-circle reply-add cc-self-reply';
+          replyBtn.title = 'Odpovědět (CC)';
+          replyBtn.innerHTML = '<i class="icon icon-reply"></i>';
+
+          // The magic: Proxy the click to an existing native button
+          replyBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Find any valid native button on the page from another user
+            const nativeBtn = document.querySelector('a.reply-add:not(.cc-self-reply)');
+
+            if (nativeBtn) {
+              console.debug(`[CC] Proxying reply click to native button for ${username}`);
+
+              // 1. Backup the native button's original values
+              const origNick = nativeBtn.getAttribute('data-nick');
+              const origId = nativeBtn.getAttribute('data-id');
+              const origPost = nativeBtn.getAttribute('data-post');
+
+              // 2. Override with your post's values
+              nativeBtn.setAttribute('data-nick', username);
+              nativeBtn.setAttribute('data-id', userId);
+              nativeBtn.setAttribute('data-post', postId);
+
+              // 3. Dispatch the native click (this triggers ČSFD's UI formatting)
+              nativeBtn.click();
+
+              // 4. Restore the native button immediately so it isn't permanently broken
+              nativeBtn.setAttribute('data-nick', origNick);
+              nativeBtn.setAttribute('data-id', origId);
+              nativeBtn.setAttribute('data-post', origPost);
+            } else {
+              console.debug('[CC] No native button found. Using simple fallback.');
+
+              // Fallback just in case you are the ONLY person in the discussion
+              const textToInsert = `@${username} `;
+              if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
+                tinymce.activeEditor.execCommand('mceInsertContent', false, textToInsert);
+                tinymce.activeEditor.focus();
+              } else {
+                const textarea = document.querySelector('form textarea#frm-forum-postForm-text');
+                if (textarea) {
+                  textarea.value = textarea.value ? `${textarea.value} ${textToInsert}` : textToInsert;
+                  textarea.focus();
+                }
+              }
+            }
+          });
+
+          // Insert our button into the actions bar
+          actionsContainer.insertBefore(replyBtn, actionsContainer.firstChild);
+        }
+      });
+    }
+
+    clearSelfReplyInDiscussions() {
+      document.querySelectorAll('.cc-self-reply').forEach((btn) => btn.remove());
     }
   }
 
@@ -4942,6 +5047,20 @@
           tooltip: '',
           eventName: 'cc-clickable-header-boxes-toggled',
         },
+        {
+          type: 'toggle',
+          id: 'cc-enable-self-reply',
+          storageKey: SELF_REPLY_IN_DISCUSSIONS_KEY$1,
+          defaultValue: true,
+          requiresLogin: true, // Only makes sense if logged in
+          label: 'Tlačítko "Reagovat" u vlastních příspěvků v diskuzi',
+          infoIcon: {
+            url: '', // Add an Imgur link here later if you make a preview gif!
+            text: 'Vrátí možnost reagovat na vlastní příspěvky v diskuzích (přidá CC tag do textového pole).',
+          },
+          tooltip: '',
+          eventName: 'cc-self-reply-toggled',
+        },
       ],
     },
     {
@@ -6522,10 +6641,12 @@
     window.setTimeout(rerunStars, 1500);
 
     // Watch for content injected into the DOM after initial load (e.g. pagination
-    // clicks, lazy-loaded boxes) and add stars to any new film links.
+    // clicks, lazy-loaded boxes and AJAX-replies in discussions) and add stars to any new film links.
     // Debounced so that the star elements addStars() itself inserts don't trigger
     // an infinite loop of observer → addStars → insert → observer → ...
     let starObserverTimer = null;
+    let forumObserverTimer = null;
+
     const mutationContainsFilmLink = (mutationList) => {
       for (const mutation of mutationList) {
         if (!mutation.addedNodes || mutation.addedNodes.length === 0) {
@@ -6546,19 +6667,46 @@
       return false;
     };
 
-    const starObserver = new MutationObserver((mutationList) => {
-      if (!mutationContainsFilmLink(mutationList)) {
-        return;
+    // Helper to detect when ČSFD injects new discussion posts
+    const mutationContainsForumPost = (mutationList) => {
+      for (const mutation of mutationList) {
+        if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          if (
+            node.matches?.('.article-forum-item, article.article-forum') ||
+            node.querySelector?.('.article-forum-item, article.article-forum')
+          ) {
+            return true;
+          }
+        }
+      }
+      return false;
+    };
+
+    const contentObserver = new MutationObserver((mutationList) => {
+      if (mutationContainsFilmLink(mutationList)) {
+        if (starObserverTimer === null) {
+          starObserverTimer = window.setTimeout(() => {
+            starObserverTimer = null;
+            rerunStars();
+          }, 200);
+        }
       }
 
-      if (starObserverTimer !== null) return;
-      starObserverTimer = window.setTimeout(() => {
-        starObserverTimer = null;
-        rerunStars();
-      }, 200);
+      // If the DOM update contained a forum post, redraw the self-reply buttons!
+      if (mutationContainsForumPost(mutationList)) {
+        if (forumObserverTimer === null) {
+          forumObserverTimer = window.setTimeout(() => {
+            forumObserverTimer = null;
+            csfd.enableSelfReplyInDiscussions();
+          }, 200);
+        }
+      }
     });
+
     const pageContent = document.querySelector('div.page-content') || document.body;
-    starObserver.observe(pageContent, { childList: true, subtree: true });
+    contentObserver.observe(pageContent, { childList: true, subtree: true });
 
     window.addEventListener('cc-gallery-image-links-toggled', () => {
       csfd.addGalleryImageFormatLinks().catch((error) => {
@@ -6597,6 +6745,14 @@
     });
     window.addEventListener('cc-hide-selected-reviews-updated', () => {
       csfd.hideSelectedUserReviews();
+    });
+
+    window.addEventListener('cc-self-reply-toggled', (ev) => {
+      if (ev?.detail?.enabled) {
+        csfd.enableSelfReplyInDiscussions();
+      } else {
+        csfd.clearSelfReplyInDiscussions();
+      }
     });
 
     // Disable Option 2 if not logged in (now using utility)

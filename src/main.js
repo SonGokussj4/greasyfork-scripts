@@ -75,10 +75,12 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   window.setTimeout(rerunStars, 1500);
 
   // Watch for content injected into the DOM after initial load (e.g. pagination
-  // clicks, lazy-loaded boxes) and add stars to any new film links.
+  // clicks, lazy-loaded boxes and AJAX-replies in discussions) and add stars to any new film links.
   // Debounced so that the star elements addStars() itself inserts don't trigger
   // an infinite loop of observer → addStars → insert → observer → ...
   let starObserverTimer = null;
+  let forumObserverTimer = null;
+
   const mutationContainsFilmLink = (mutationList) => {
     for (const mutation of mutationList) {
       if (!mutation.addedNodes || mutation.addedNodes.length === 0) {
@@ -99,19 +101,46 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
     return false;
   };
 
-  const starObserver = new MutationObserver((mutationList) => {
-    if (!mutationContainsFilmLink(mutationList)) {
-      return;
+  // Helper to detect when ČSFD injects new discussion posts
+  const mutationContainsForumPost = (mutationList) => {
+    for (const mutation of mutationList) {
+      if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (
+          node.matches?.('.article-forum-item, article.article-forum') ||
+          node.querySelector?.('.article-forum-item, article.article-forum')
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const contentObserver = new MutationObserver((mutationList) => {
+    if (mutationContainsFilmLink(mutationList)) {
+      if (starObserverTimer === null) {
+        starObserverTimer = window.setTimeout(() => {
+          starObserverTimer = null;
+          rerunStars();
+        }, 200);
+      }
     }
 
-    if (starObserverTimer !== null) return;
-    starObserverTimer = window.setTimeout(() => {
-      starObserverTimer = null;
-      rerunStars();
-    }, 200);
+    // If the DOM update contained a forum post, redraw the self-reply buttons!
+    if (mutationContainsForumPost(mutationList)) {
+      if (forumObserverTimer === null) {
+        forumObserverTimer = window.setTimeout(() => {
+          forumObserverTimer = null;
+          csfd.enableSelfReplyInDiscussions();
+        }, 200);
+      }
+    }
   });
+
   const pageContent = document.querySelector('div.page-content') || document.body;
-  starObserver.observe(pageContent, { childList: true, subtree: true });
+  contentObserver.observe(pageContent, { childList: true, subtree: true });
 
   window.addEventListener('cc-gallery-image-links-toggled', () => {
     csfd.addGalleryImageFormatLinks().catch((error) => {
@@ -150,6 +179,14 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   });
   window.addEventListener('cc-hide-selected-reviews-updated', () => {
     csfd.hideSelectedUserReviews();
+  });
+
+  window.addEventListener('cc-self-reply-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.enableSelfReplyInDiscussions();
+    } else {
+      csfd.clearSelfReplyInDiscussions();
+    }
   });
 
   // Disable Option 2 if not logged in (now using utility)
