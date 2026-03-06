@@ -2100,31 +2100,15 @@ body:not(.cc-panels-feature-enabled) .cc-hide-video-btn {
    ========================================= */
 
 /* https://www.csfd.cz/diskuze/sledovane/ */
-/* Fix for discussion list titles wrapping to two lines when ratings are present */
+/* Keep long discussion titles inside the table while leaving enough room for inline meta and rating */
 .discussion-list .td-title {
-    width: 75%;
+    width: 90% !important;
 }
 
-.discussion-list .td-title-film h3.film-title-nooverflow {
-    display: flex !important;
-    align-items: center;
-    flex-wrap: nowrap;
-}
-
-/* Movie title text: Prevent wrapping and add ellipsis if too long, while keeping the rating stars visible */
-.discussion-list .td-title-film h3.film-title-nooverflow .film-title-name {
+.discussion-list .td-info {
+    width: 30% !important;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex-shrink: 1;
-}
-
-/* Keep icons, info, and ratings visible without shrinking */
-.discussion-list .td-title-film h3.film-title-nooverflow .icon,
-.discussion-list .td-title-film h3.film-title-nooverflow .film-title-info {
-    flex-shrink: 0;
-    white-space: nowrap;
-    padding-left: 5px;
+    text-align: right;
 }
 
 /* https://www.csfd.cz/televize/ */
