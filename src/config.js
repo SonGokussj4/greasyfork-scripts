@@ -1,7 +1,7 @@
 /*
  * Config and constants for CSFD-Compare
  */
-export const VERSION = '0.8.23';
+export const VERSION = '0.8.24';
 export const SCRIPTNAME = 'CSFD-Compare';
 export const SETTINGSNAME = 'CSFD-Compare-settings';
 export const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -18,11 +18,27 @@ export const SUPABASE_ANON_KEY_STORAGE_KEY = 'cc_supabase_anon_key';
 export const DEV_PANEL_ALWAYS_VISIBLE = false;
 export const DEV_PERFORMANCE_METRICS = false;
 export const GALLERY_IMAGE_LINKS_ENABLED_KEY = 'cc_gallery_image_links_enabled';
-export const CREATOR_PREVIEW_CACHE_HOURS_KEY = 'cc_creator_preview_cache_hours';
-export const CREATOR_PREVIEW_ENABLED_KEY = 'cc_creator_preview_enabled';
-export const CREATOR_PREVIEW_SHOW_BIRTH_KEY = 'cc_creator_preview_show_birth';
-export const CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY = 'cc_creator_preview_show_photo_from';
-export const CREATOR_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_creator_preview_section_collapsed';
+export const LINK_ICONS_ENABLED_KEY = 'cc_link_icons_enabled';
+export const LINK_ICONS_FILM_ENABLED_KEY = 'cc_link_icons_film_enabled';
+export const LINK_ICONS_CREATOR_ENABLED_KEY = 'cc_link_icons_creator_enabled';
+export const LINK_ICONS_USER_ENABLED_KEY = 'cc_link_icons_user_enabled';
+export const LINK_ICONS_YOUTUBE_ENABLED_KEY = 'cc_link_icons_youtube_enabled';
+export const LINK_ICONS_STEAM_ENABLED_KEY = 'cc_link_icons_steam_enabled';
+export const LINK_ICONS_WIKIPEDIA_ENABLED_KEY = 'cc_link_icons_wikipedia_enabled';
+export const LINK_ICONS_ANIDB_ENABLED_KEY = 'cc_link_icons_anidb_enabled';
+export const LINK_ICONS_MAL_ENABLED_KEY = 'cc_link_icons_myanimelist_enabled';
+export const LINK_ICONS_POSITION_KEY = 'cc_link_icons_position';
+export const LINK_ICONS_SECTION_COLLAPSED_KEY = 'cc_link_icons_section_collapsed';
+export const LINK_ICONS_UPDATED_EVENT = 'cc-link-icons-updated';
+export const HOVER_PREVIEW_CACHE_GROUP_PREFIX = 'cc_hover_cache_';
+export const HOVER_PREVIEW_CACHE_PREFIX = 'cc_hover_cache_v1_';
+export const HOVER_PREVIEW_CACHE_HOURS_KEY = 'cc_hover_preview_cache_hours';
+export const HOVER_PREVIEW_ENABLED_KEY = 'cc_hover_preview_enabled';
+export const HOVER_PREVIEW_CREATOR_ENABLED_KEY = 'cc_hover_preview_creator_enabled';
+export const HOVER_PREVIEW_USER_ENABLED_KEY = 'cc_hover_preview_user_enabled';
+export const HOVER_PREVIEW_FILM_ENABLED_KEY = 'cc_hover_preview_film_enabled';
+export const HOVER_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_hover_preview_section_collapsed';
+export const HOVER_PREVIEW_SETTINGS_CHANGED_EVENT = 'cc-hover-preview-settings-changed';
 export const SELF_REPLY_IN_DISCUSSIONS_KEY = 'cc_self_reply_discussions';
 export const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
 export const SHOW_RATINGS_KEY = 'cc_show_ratings';

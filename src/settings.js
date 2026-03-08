@@ -1,20 +1,24 @@
 import htmlContent from './settings-button-content.html';
 import { initializeRatingsLoader } from './ratings-loader.js';
 import { initializeRatingsSync, performCloudSync } from './ratings-sync.js';
-import { deleteIndexedDB } from './storage.js';
+import { deleteAllDataFromIndexedDB } from './storage.js';
 import {
   ADD_RATINGS_DATE_KEY,
   CLICKABLE_HEADER_BOXES_KEY,
-  CREATOR_PREVIEW_CACHE_HOURS_KEY,
-  CREATOR_PREVIEW_ENABLED_KEY,
-  CREATOR_PREVIEW_SECTION_COLLAPSED_KEY,
-  CREATOR_PREVIEW_SHOW_BIRTH_KEY,
-  CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
+  HOVER_PREVIEW_CACHE_HOURS_KEY,
+  HOVER_PREVIEW_CACHE_GROUP_PREFIX,
+  HOVER_PREVIEW_ENABLED_KEY,
+  HOVER_PREVIEW_SECTION_COLLAPSED_KEY,
+  HOVER_PREVIEW_SETTINGS_CHANGED_EVENT,
   INDEXED_DB_NAME,
+  RATINGS_STORE_NAME,
+  LINK_ICONS_ENABLED_KEY,
+  LINK_ICONS_UPDATED_EVENT,
+  LINK_ICONS_POSITION_KEY,
   RATINGS_ESTIMATE_KEY,
   RATINGS_FROM_FAVORITES_KEY,
   SETTINGSNAME,
@@ -80,6 +84,15 @@ function getMostFrequentUserSlug(records) {
   return bestSlug;
 }
 
+function findMenuConfigItem(itemId) {
+  for (const category of MENU_CONFIG) {
+    const match = category.items.find((item) => item.id === itemId);
+    if (match) return match;
+  }
+
+  return null;
+}
+
 function showSettingsInfoToast(message) {
   let toastEl = document.querySelector('#cc-settings-info-toast');
   if (!toastEl) {
@@ -133,8 +146,10 @@ function formatLocalStorageValue(value, maxLength = 120) {
   return normalized.length <= maxLength ? normalized : `${normalized.slice(0, maxLength - 1)}…`;
 }
 
-function isCreatorCacheKey(key) {
-  return /^cc_creator_v\d+_/i.test(String(key || ''));
+function isHoverPreviewCacheKey(key) {
+  return String(key || '')
+    .toLowerCase()
+    .startsWith(HOVER_PREVIEW_CACHE_GROUP_PREFIX.toLowerCase());
 }
 
 function getLocalStorageValueDetailRows(value) {
@@ -151,19 +166,19 @@ function getLocalStorageValueDetailRows(value) {
 
 function buildManagedLocalStorageRows(entries) {
   const rows = [];
-  let creatorGroupAdded = false;
-  const creatorEntries = entries.filter((entry) => isCreatorCacheKey(entry.key));
+  let hoverPreviewGroupAdded = false;
+  const hoverPreviewEntries = entries.filter((entry) => isHoverPreviewCacheKey(entry.key));
 
   entries.forEach((entry) => {
-    if (isCreatorCacheKey(entry.key)) {
-      if (!creatorGroupAdded) {
+    if (isHoverPreviewCacheKey(entry.key)) {
+      if (!hoverPreviewGroupAdded) {
         rows.push({
           type: 'group',
-          id: 'creator-cache',
-          label: 'cc_creator* cache',
-          entries: creatorEntries,
+          id: 'hover-preview-cache',
+          label: 'cc_hover_cache* cache',
+          entries: hoverPreviewEntries,
         });
-        creatorGroupAdded = true;
+        hoverPreviewGroupAdded = true;
       }
       return;
     }
@@ -255,12 +270,41 @@ async function addSettingsButton() {
   }
 
   const dropdown = settingsButton.querySelector('.dropdown-content');
+  const queryMenu = (selector) => dropdown?.querySelector(selector) || settingsButton.querySelector(selector);
   if (dropdown) {
     const blockEvent = (e) => e.stopPropagation();
-    ['pointermove', 'mousemove', 'mouseover', 'mouseenter', 'wheel', 'touchmove'].forEach((evt) => {
+    ['pointermove', 'mousemove', 'mouseover', 'mouseenter'].forEach((evt) => {
       dropdown.addEventListener(evt, blockEvent, true);
     });
   }
+
+  const closeSettingsShortcutMenu = () => {
+    const controller = settingsButton.__ccSettingsMenuController;
+    if (controller?.isPinnedOpen()) {
+      controller.closePinned();
+      return;
+    }
+
+    settingsButton.classList.remove('hovered', 'active');
+    document.body.classList.remove('cc-menu-open');
+  };
+
+  const toggleSettingsShortcutMenu = () => {
+    const controller = settingsButton.__ccSettingsMenuController;
+    if (controller?.togglePinned) {
+      controller.togglePinned();
+      return;
+    }
+
+    const opened = !settingsButton.classList.contains('active');
+    settingsButton.classList.toggle('hovered', opened);
+    settingsButton.classList.toggle('active', opened);
+    document.body.classList.toggle('cc-menu-open', opened);
+  };
+
+  queryMenu('#cc-settings-pinned-close-btn')?.addEventListener('click', () => {
+    closeSettingsShortcutMenu();
+  });
 
   const headerBar = document.querySelector('.header-bar');
   if (headerBar) {
@@ -271,31 +315,39 @@ async function addSettingsButton() {
     else headerBar.prepend(settingsButton);
   }
 
-  const updateCreatorPreviewUI = () => {
-    const enabled = getBoolSetting(CREATOR_PREVIEW_ENABLED_KEY, true);
-    const showBirth = getBoolSetting(CREATOR_PREVIEW_SHOW_BIRTH_KEY, true);
-    const showPhoto = getBoolSetting(CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY, true);
-    const body = settingsButton.querySelector('#cc-creator-preview-group-body');
-    const birthToggle = settingsButton.querySelector('#cc-creator-preview-show-birth');
-    const photoToggle = settingsButton.querySelector('#cc-creator-preview-show-photo-from');
-
-    if (birthToggle) birthToggle.disabled = !enabled;
-    if (photoToggle) photoToggle.disabled = !enabled;
+  const updateHoverPreviewUI = () => {
+    const enabled = getBoolSetting(HOVER_PREVIEW_ENABLED_KEY, true);
+    const groupConfig = findMenuConfigItem('cc-enable-hover-previews');
+    const body = queryMenu('#cc-hover-preview-group-body');
+    for (const child of groupConfig?.childrenItems || []) {
+      const childToggle = queryMenu(`#${child.id}`);
+      if (childToggle) childToggle.disabled = !enabled;
+    }
     if (body) body.classList.toggle('is-disabled', !enabled);
 
+    const providerStates = Object.fromEntries(
+      (groupConfig?.childrenItems || []).map((child) => [
+        child.id,
+        getBoolSetting(child.storageKey, child.defaultValue ?? true),
+      ]),
+    );
+
     window.dispatchEvent(
-      new CustomEvent('cc-creator-preview-toggled', {
-        detail: { enabled, showBirth, showPhotoFrom: showPhoto },
+      new CustomEvent(HOVER_PREVIEW_SETTINGS_CHANGED_EVENT, {
+        detail: {
+          enabled,
+          providerStates,
+        },
       }),
     );
   };
 
   const updateHideReviewsUI = () => {
     const enabled = getBoolSetting(HIDE_SELECTED_REVIEWS_KEY, false);
-    const pillInput = settingsButton.querySelector('#cc-hide-reviews-pill-input');
-    const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
-    const pillContainer = settingsButton.querySelector('#cc-hide-reviews-pill-container');
-    const body = settingsButton.querySelector('#cc-hide-reviews-group-body');
+    const pillInput = queryMenu('#cc-hide-reviews-pill-input');
+    const hideApplyBtn = queryMenu('#cc-hide-reviews-apply');
+    const pillContainer = queryMenu('#cc-hide-reviews-pill-container');
+    const body = queryMenu('#cc-hide-reviews-group-body');
 
     if (pillInput) pillInput.disabled = !enabled;
     if (hideApplyBtn) hideApplyBtn.disabled = !enabled;
@@ -305,16 +357,16 @@ async function addSettingsButton() {
 
   const updateHidePanelsUI = () => {
     const enabled = getBoolSetting('cc_hide_home_panels', true);
-    const body = settingsButton.querySelector('#cc-hide-panels-group-body');
+    const body = queryMenu('#cc-hide-panels-group-body');
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
   const updateShowRatingsUI = () => {
     const enabled = getBoolSetting(SHOW_RATINGS_KEY, true);
-    const childToggle = settingsButton.querySelector('#cc-show-ratings-in-reviews');
-    const foreignChildToggle = settingsButton.querySelector('#cc-show-ratings-in-foreign-reviews');
-    const diariesChildToggle = settingsButton.querySelector('#cc-show-ratings-in-diaries');
-    const body = settingsButton.querySelector('#cc-show-ratings-group-body');
+    const childToggle = queryMenu('#cc-show-ratings-in-reviews');
+    const foreignChildToggle = queryMenu('#cc-show-ratings-in-foreign-reviews');
+    const diariesChildToggle = queryMenu('#cc-show-ratings-in-diaries');
+    const body = queryMenu('#cc-show-ratings-group-body');
 
     if (childToggle) childToggle.disabled = !enabled;
     if (foreignChildToggle) foreignChildToggle.disabled = !enabled;
@@ -322,11 +374,41 @@ async function addSettingsButton() {
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
+  const updateLinkIconsUI = () => {
+    const enabled = getBoolSetting(LINK_ICONS_ENABLED_KEY, true);
+    const position = localStorage.getItem(LINK_ICONS_POSITION_KEY) === 'after' ? 'after' : 'before';
+    const groupConfig = findMenuConfigItem('cc-enable-link-icons');
+    const positionSelect = queryMenu('#cc-link-icons-position');
+    const body = queryMenu('#cc-link-icons-group-body');
+
+    for (const child of groupConfig?.childrenItems || []) {
+      const childToggle = queryMenu(`#${child.id}`);
+      if (childToggle) childToggle.disabled = !enabled;
+    }
+    if (positionSelect) positionSelect.disabled = !enabled;
+    if (body) {
+      body.classList.toggle('is-disabled', !enabled);
+      body.classList.toggle('cc-link-icons-preview-before', position === 'before');
+      body.classList.toggle('cc-link-icons-preview-after', position === 'after');
+    }
+  };
+
+  const syncSelectControlsFromStorage = () => {
+    if (cacheSelect) {
+      cacheSelect.value = localStorage.getItem(HOVER_PREVIEW_CACHE_HOURS_KEY) || '24';
+    }
+
+    if (linkIconsPositionSelect) {
+      linkIconsPositionSelect.value = localStorage.getItem(LINK_ICONS_POSITION_KEY) || 'before';
+    }
+  };
+
   // Resolve callback name strings (from settings-config) to the actual functions defined above.
   const CALLBACK_MAP = {
     updateHidePanelsUI,
     updateShowRatingsUI,
-    updateCreatorPreviewUI,
+    updateLinkIconsUI,
+    updateHoverPreviewUI,
     updateHideReviewsUI,
   };
 
@@ -350,6 +432,15 @@ async function addSettingsButton() {
 
   resolveCallbacksInConfig(MENU_CONFIG);
 
+  const renderLeadingIconHtml = (item) => {
+    if (!item.leadingIconSvg) return '';
+
+    return `
+      <span class="cc-setting-leading-icon" aria-hidden="true">
+        ${item.leadingIconSvg.trim()}
+      </span>`;
+  };
+
   const buildToggleHtml = (item) => {
     const isDisabled = item.requiresLogin && !loggedIn;
     const wrapperClass = isDisabled ? 'cc-requires-login' : '';
@@ -362,7 +453,12 @@ async function addSettingsButton() {
               <input type="checkbox" id="${item.id}" ${disabledAttr} />
               <span class="cc-switch-bg"></span>
           </label>
-          <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">${escapeHtml(item.label)}</span>
+          <span class="cc-setting-label ${item.infoIcon ? 'cc-grow' : ''}">
+            <span class="cc-setting-label-content ${item.leadingIconSvg ? 'cc-setting-label-content-with-leading-icon' : ''}">
+              ${renderLeadingIconHtml(item)}
+              <span>${escapeHtml(item.label)}</span>
+            </span>
+          </span>
           ${
             item.infoIcon
               ? `
@@ -411,7 +507,7 @@ async function addSettingsButton() {
       </div>`;
   };
 
-  const dynamicContainer = settingsButton.querySelector('#cc-dynamic-settings-container');
+  const dynamicContainer = queryMenu('#cc-dynamic-settings-container');
   if (dynamicContainer) {
     let generatedHtml = '';
     MENU_CONFIG.forEach((cat, idx) => {
@@ -428,7 +524,7 @@ async function addSettingsButton() {
 
   const togglesTracker = [];
   function bindToggle(selector, storageKey, defaultValue, eventName, toastOn, toastOff, callback = null) {
-    const element = settingsButton.querySelector(selector);
+    const element = queryMenu(selector);
     if (!element) return;
 
     element.checked = getBoolSetting(storageKey, defaultValue);
@@ -449,12 +545,22 @@ async function addSettingsButton() {
   }
 
   function bindGroupCollapse(groupId, toggleId, bodyId, storageKey) {
-    const group = settingsButton.querySelector(`#${groupId}`);
-    const toggle = settingsButton.querySelector(`#${toggleId}`);
-    const body = settingsButton.querySelector(`#${bodyId}`);
+    const group = queryMenu(`#${groupId}`);
+    const toggle = queryMenu(`#${toggleId}`);
+    const body = queryMenu(`#${bodyId}`);
     if (!toggle || !body) return;
 
+    const syncExpandedHeight = () => {
+      const wasHidden = body.hidden;
+      if (wasHidden) body.hidden = false;
+      body.style.setProperty('--cc-setting-sub-max-height', `${body.scrollHeight}px`);
+      if (wasHidden) body.hidden = true;
+    };
+
     const setCollapsed = (collapsed) => {
+      if (!collapsed) {
+        syncExpandedHeight();
+      }
       if (group) group.classList.toggle('is-collapsed', collapsed);
       toggle.setAttribute('aria-expanded', String(!collapsed));
       body.hidden = collapsed;
@@ -489,19 +595,34 @@ async function addSettingsButton() {
   initializeRatingsLoader(settingsButton);
   initializeRatingsSync(settingsButton, getCurrentUserSlug);
 
-  const cacheSelect = settingsButton.querySelector('#cc-creator-preview-cache-hours');
+  const cacheSelect = queryMenu('#cc-hover-preview-cache-hours');
   if (cacheSelect) {
-    cacheSelect.value = localStorage.getItem(CREATOR_PREVIEW_CACHE_HOURS_KEY) || '24';
+    cacheSelect.value = localStorage.getItem(HOVER_PREVIEW_CACHE_HOURS_KEY) || '24';
     cacheSelect.addEventListener('change', () => {
-      localStorage.setItem(CREATOR_PREVIEW_CACHE_HOURS_KEY, cacheSelect.value);
+      localStorage.setItem(HOVER_PREVIEW_CACHE_HOURS_KEY, cacheSelect.value);
       showSettingsInfoToast('Délka mezipaměti uložena.');
     });
   }
 
-  const pillInput = settingsButton.querySelector('#cc-hide-reviews-pill-input');
-  const pillsWrapper = settingsButton.querySelector('#cc-hide-reviews-pills');
-  const pillContainer = settingsButton.querySelector('#cc-hide-reviews-pill-container');
-  const hideApplyBtn = settingsButton.querySelector('#cc-hide-reviews-apply');
+  const linkIconsPositionSelect = queryMenu('#cc-link-icons-position');
+  if (linkIconsPositionSelect) {
+    linkIconsPositionSelect.value = localStorage.getItem(LINK_ICONS_POSITION_KEY) || 'before';
+    updateLinkIconsUI();
+    linkIconsPositionSelect.addEventListener('change', () => {
+      localStorage.setItem(LINK_ICONS_POSITION_KEY, linkIconsPositionSelect.value);
+      updateLinkIconsUI();
+      window.dispatchEvent(
+        new CustomEvent(LINK_ICONS_UPDATED_EVENT, {
+          detail: { position: linkIconsPositionSelect.value, skipSync: true },
+        }),
+      );
+    });
+  }
+
+  const pillInput = queryMenu('#cc-hide-reviews-pill-input');
+  const pillsWrapper = queryMenu('#cc-hide-reviews-pills');
+  const pillContainer = queryMenu('#cc-hide-reviews-pill-container');
+  const hideApplyBtn = queryMenu('#cc-hide-reviews-apply');
 
   let currentPills = [];
   try {
@@ -569,9 +690,10 @@ async function addSettingsButton() {
   }
 
   renderPills();
-  updateCreatorPreviewUI();
+  updateHoverPreviewUI();
   updateHideReviewsUI();
   updateHidePanelsUI();
+  updateLinkIconsUI();
   updateShowRatingsUI();
 
   let currentPanelPills = [];
@@ -581,8 +703,8 @@ async function addSettingsButton() {
   } catch (e) {}
 
   const renderPanelPills = () => {
-    const wrapper = settingsButton.querySelector('#cc-hide-panels-pills');
-    const emptyText = settingsButton.querySelector('#cc-hide-panels-empty');
+    const wrapper = queryMenu('#cc-hide-panels-pills');
+    const emptyText = queryMenu('#cc-hide-panels-empty');
     if (!wrapper || !emptyText) return;
 
     wrapper.innerHTML = '';
@@ -621,7 +743,7 @@ async function addSettingsButton() {
     renderPanelPills();
   });
 
-  const restoreAllPanelsBtn = settingsButton.querySelector('#cc-restore-all-panels-btn');
+  const restoreAllPanelsBtn = queryMenu('#cc-restore-all-panels-btn');
   if (restoreAllPanelsBtn) {
     restoreAllPanelsBtn.addEventListener('click', () => {
       if (currentPanelPills.length > 0) {
@@ -636,7 +758,7 @@ async function addSettingsButton() {
     });
   }
 
-  const devBtn = settingsButton.querySelector('#cc-maint-dev-btn');
+  const devBtn = queryMenu('#cc-maint-dev-btn');
 
   const updateDevState = () => {
     // 1. Get the current state
@@ -683,6 +805,38 @@ async function addSettingsButton() {
     });
   }
 
+  document.addEventListener('keydown', (event) => {
+    if (!event.ctrlKey || !event.altKey || event.shiftKey || event.metaKey) return;
+    if (event.repeat) return;
+
+    const controller = settingsButton.__ccSettingsMenuController;
+    const isPinnedOpen = controller?.isPinnedOpen?.() === true;
+
+    const activeTag = document.activeElement?.tagName;
+    const isTypingContext =
+      document.activeElement?.isContentEditable ||
+      activeTag === 'INPUT' ||
+      activeTag === 'TEXTAREA' ||
+      activeTag === 'SELECT';
+
+    const key = (event.key || '').toLowerCase();
+    if (key !== 'c') return;
+
+    if (isTypingContext && !isPinnedOpen) return;
+
+    event.preventDefault();
+    toggleSettingsShortcutMenu();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+
+    const controller = settingsButton.__ccSettingsMenuController;
+    if (!controller?.isPinnedOpen?.()) return;
+
+    closeSettingsShortcutMenu();
+  });
+
   // --------------------------------------------------------
   // Homepage Panels Visibility Logic
   // --------------------------------------------------------
@@ -707,9 +861,11 @@ async function addSettingsButton() {
 
   const syncControlsFromStorage = () => {
     togglesTracker.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
-    updateCreatorPreviewUI();
+    syncSelectControlsFromStorage();
+    updateHoverPreviewUI();
     updateHideReviewsUI();
     updateHidePanelsUI();
+    updateLinkIconsUI();
     updateShowRatingsUI();
     updateDevState();
   };
@@ -720,10 +876,11 @@ async function addSettingsButton() {
 
     togglesTracker.forEach((t) => localStorage.removeItem(t.storageKey));
 
-    localStorage.removeItem(CREATOR_PREVIEW_CACHE_HOURS_KEY);
-    localStorage.removeItem(CREATOR_PREVIEW_SECTION_COLLAPSED_KEY);
+    localStorage.removeItem(HOVER_PREVIEW_CACHE_HOURS_KEY);
+    localStorage.removeItem(HOVER_PREVIEW_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
+    localStorage.removeItem(LINK_ICONS_POSITION_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_DIARIES_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
@@ -733,6 +890,11 @@ async function addSettingsButton() {
     localStorage.removeItem('cc_hidden_panels_list');
     localStorage.removeItem('cc_hide_panels_collapsed');
     localStorage.removeItem('cc_dev_mode');
+    localStorage.removeItem('cc_creator_preview_cache_hours');
+    localStorage.removeItem('cc_creator_preview_enabled');
+    localStorage.removeItem('cc_creator_preview_show_birth');
+    localStorage.removeItem('cc_creator_preview_show_photo_from');
+    localStorage.removeItem('cc_creator_preview_section_collapsed');
 
     currentPills = [];
     renderPills();
@@ -741,6 +903,12 @@ async function addSettingsButton() {
     renderPanelPills();
 
     syncControlsFromStorage();
+
+    window.dispatchEvent(
+      new CustomEvent(LINK_ICONS_UPDATED_EVENT, {
+        detail: { position: localStorage.getItem(LINK_ICONS_POSITION_KEY) || 'before', skipSync: true },
+      }),
+    );
 
     window.dispatchEvent(
       new CustomEvent('cc-gallery-image-links-toggled', {
@@ -763,17 +931,17 @@ async function addSettingsButton() {
       dbDeleteBtn.style.pointerEvents = 'none';
 
       try {
-        await deleteIndexedDB(INDEXED_DB_NAME);
+        await deleteAllDataFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
         invalidateRatingsModalCache();
         window.dispatchEvent(
           new CustomEvent('cc-ratings-updated', {
             detail: { skipSync: true },
           }),
         );
-        showSettingsInfoToast('IndexedDB byla smazána.');
+        showSettingsInfoToast('Uložená hodnocení byla smazána.');
       } catch (error) {
-        console.error('[CC] Failed to delete IndexedDB:', error);
-        showSettingsInfoToast('Smazání DB selhalo.');
+        console.error('[CC] Failed to clear ratings store:', error);
+        showSettingsInfoToast('Smazání uložených hodnocení selhalo.');
       } finally {
         dbDeleteBtn.textContent = originalText;
         dbDeleteBtn.style.opacity = '';
@@ -792,7 +960,7 @@ async function addSettingsButton() {
       titleId: 'cc-generic-detail-title',
     });
     const modalState = {
-      collapsedGroups: new Set(['creator-cache']),
+      collapsedGroups: new Set(['hover-preview-cache']),
     };
 
     const overlay = document.createElement('div');
@@ -918,14 +1086,14 @@ async function addSettingsButton() {
 
     overlay.querySelector('#cc-lc-table-body')?.addEventListener('click', (e) => {
       const groupDeleteBtn = e.target.closest('.cc-lc-delete-group');
-      if (groupDeleteBtn?.dataset.groupId === 'creator-cache') {
+      if (groupDeleteBtn?.dataset.groupId === 'hover-preview-cache') {
         getManagedLocalStorageEntries()
-          .filter((entry) => isCreatorCacheKey(entry.key))
+          .filter((entry) => isHoverPreviewCacheKey(entry.key))
           .forEach((entry) => localStorage.removeItem(entry.key));
         syncAfterLocalStorageChange();
         detailsController.close();
         refreshTable();
-        showSettingsInfoToast('Smazány všechny cc_creator cache položky.');
+        showSettingsInfoToast('Smazány všechny cache položky náhledů.');
         return;
       }
 

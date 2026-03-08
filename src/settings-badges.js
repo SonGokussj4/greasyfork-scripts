@@ -1,4 +1,5 @@
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 
 const PROFILE_LINK_SELECTOR =
@@ -170,8 +171,8 @@ export async function refreshRatingsBadges(rootElement, options) {
   }
 
   // Count how many ratings user has in total (including computed) but excluding deleted
-  const userRecords = records.filter(
-    (record) => record.userSlug === userSlug && Number.isFinite(record.movieId) && record.deleted !== true,
+  const userRecords = reconcileUserRatingRecords(records, userSlug).normalizedRecords.filter(
+    (record) => record.deleted !== true,
   );
   const computedCount = userRecords.filter((record) => record.computed === true).length;
   const directRatingsCount = userRecords.length - computedCount;

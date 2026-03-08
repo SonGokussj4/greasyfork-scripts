@@ -1,5 +1,6 @@
 import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, RATINGS_STORE_NAME } from './config.js';
-import { getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
+import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
+import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
 
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
@@ -134,7 +135,14 @@ function normalizeType(rawType) {
 }
 
 // helpers exported for tests
-export { parseRatingsFromDocument, normalizeType, parseRatingRow, createRecordFingerprint, hasRecordChanged };
+export {
+  parseRatingsFromDocument,
+  normalizeType,
+  parseRatingRow,
+  createRecordFingerprint,
+  hasRecordChanged,
+  buildStorageRecordId,
+};
 
 function parseRating(starElement) {
   if (!starElement) {
@@ -260,15 +268,18 @@ function getStoreNameForUser() {
   return RATINGS_STORE_NAME;
 }
 
+function buildStorageRecordId(userSlug, movieId) {
+  return buildRatingRecordId(userSlug, movieId);
+}
+
 function toStorageRecord(record, userSlug) {
   const movieId = record.id;
-  const uniqueKeyPart = record.url || record.fullUrl || `${record.name}-${record.date}`;
 
   return {
     ...record,
     movieId,
     userSlug,
-    id: `${userSlug}:${uniqueKeyPart}`,
+    id: buildStorageRecordId(userSlug, movieId),
   };
 }
 
@@ -509,7 +520,7 @@ function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord
 
   return {
     ...(existingRecord || {}),
-    id: `${userSlug}:${parentSlug}`,
+    id: buildStorageRecordId(userSlug, parentId),
     userSlug,
     movieId: parentId,
     url: parentSlug,
@@ -544,7 +555,16 @@ async function loadComputedParentRatingsForCurrentUser({
   }
 
   const allRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-  const userRecords = allRecords.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+  const reconciledRecords = reconcileUserRatingRecords(allRecords, userSlug);
+  if (reconciledRecords.hasChanges) {
+    await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, reconciledRecords.normalizedRecords);
+    await Promise.all(
+      reconciledRecords.staleRecordIds.map((recordId) =>
+        deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, recordId),
+      ),
+    );
+  }
+  const userRecords = reconciledRecords.normalizedRecords;
 
   let parentCandidatesCount = 0;
   let unresolvedParents = [];
@@ -773,9 +793,16 @@ async function loadRatingsForCurrentUser(
   const paginationMode = detectPaginationModeFromDocument(firstDoc);
 
   const allExistingRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-  const userExistingRecords = allExistingRecords.filter(
-    (record) => record.userSlug === userSlug && Number.isFinite(record.movieId),
-  );
+  const reconciledRecords = reconcileUserRatingRecords(allExistingRecords, userSlug);
+  if (reconciledRecords.hasChanges) {
+    await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, reconciledRecords.normalizedRecords);
+    await Promise.all(
+      reconciledRecords.staleRecordIds.map((recordId) =>
+        deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, recordId),
+      ),
+    );
+  }
+  const userExistingRecords = reconciledRecords.normalizedRecords;
   const existingRecordsById = new Map(userExistingRecords.map((record) => [record.id, record]));
   let directRatingsCount = userExistingRecords.filter((record) => record.computed !== true).length;
 

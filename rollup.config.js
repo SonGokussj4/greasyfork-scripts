@@ -14,6 +14,29 @@ import nested from 'postcss-nested';
 import cssnext from 'postcss-cssnext';
 import cssnano from 'cssnano';
 
+function buildUserscriptBanner() {
+  return `// ==UserScript==
+// @name         ČSFD Compare V2
+// @version      ${readScriptVersion()}
+// @namespace    csfd.cz
+// @description  Show your own ratings on other users ratings list
+// @author       Jan Verner <SonGokussj4@centrum.cz>
+// @license      GNU GPLv3
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @include      *csfd.cz/*
+// @include      *csfd.sk/*
+// @require      https://greasyfork.org/scripts/449554-csfd-compare-utils/code/csfd-compare-utils.js?version=1100309
+// @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
+// @connect      myanimelist.net
+// @connect      www.myanimelist.net
+// @connect      anidb.net
+// @connect      cdn-eu.anidb.net
+// @run-at       document-start
+// ==/UserScript==`;
+}
+
 function readScriptVersion() {
   const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
   return packageJson.version || '0.0.0';
@@ -100,20 +123,7 @@ export default {
     format: 'iife',
     name: 'CsfdCompare',
     assetFileNames: '[name]-[hash][extname]',
-    banner: () => `// ==UserScript==
-// @name         ČSFD Compare V2
-// @version      ${readScriptVersion()}
-// @namespace    csfd.cz
-// @description  Show your own ratings on other users ratings list
-// @author       Jan Verner <SonGokussj4@centrum.cz>
-// @license      GNU GPLv3
-// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
-// @include      *csfd.cz/*
-// @include      *csfd.sk/*
-// @require      https://greasyfork.org/scripts/449554-csfd-compare-utils/code/csfd-compare-utils.js?version=1100309
-// @grant        GM_addStyle
-// @run-at       document-start
-// ==/UserScript==\n`,
+    banner: () => `${buildUserscriptBanner()}\n`,
   },
   watch: {
     include: ['src/**', 'package.json', 'rollup.config.js'],

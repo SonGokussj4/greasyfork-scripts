@@ -1,14 +1,16 @@
 import {
   ADD_RATINGS_DATE_KEY,
   CLICKABLE_HEADER_BOXES_KEY,
-  CREATOR_PREVIEW_CACHE_HOURS_KEY,
-  CREATOR_PREVIEW_ENABLED_KEY,
-  CREATOR_PREVIEW_SECTION_COLLAPSED_KEY,
-  CREATOR_PREVIEW_SHOW_BIRTH_KEY,
-  CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   HIDE_SELECTED_REVIEWS_KEY,
+  HOVER_PREVIEW_CACHE_HOURS_KEY,
+  HOVER_PREVIEW_ENABLED_KEY,
+  HOVER_PREVIEW_SECTION_COLLAPSED_KEY,
+  LINK_ICONS_ENABLED_KEY,
+  LINK_ICONS_POSITION_KEY,
+  LINK_ICONS_SECTION_COLLAPSED_KEY,
+  LINK_ICONS_UPDATED_EVENT,
   RATINGS_ESTIMATE_KEY,
   RATINGS_FROM_FAVORITES_KEY,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
@@ -19,6 +21,8 @@ import {
   SHOW_RATINGS_KEY,
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
+import { getLinkIconSettingsItems } from './link-icons.js';
+import { getHoverPreviewSettingsItems } from './hover-preview-providers.js';
 
 // Export a pure data-driven MENU_CONFIG. Callback handlers are exported as
 // string names so the main module can resolve them to actual function refs.
@@ -82,6 +86,35 @@ export const MENU_CONFIG = [
         },
         tooltip: '',
         eventName: 'cc-self-reply-toggled',
+      },
+      {
+        type: 'group',
+        id: 'cc-enable-link-icons',
+        storageKey: LINK_ICONS_ENABLED_KEY,
+        defaultValue: true,
+        requiresLogin: false,
+        label: 'Ikony u odkazů',
+        tooltip: '',
+        infoIcon: {
+          url: '',
+          text: 'Přidá malé ikonky před vybrané odkazy v textu recenzí, komentářů a diskuzí. Podporuje odkazy na filmy, tvůrce, uživatele, YouTube, Steam, Wikipedii, AniDB a MyAnimeList.',
+        },
+        eventName: LINK_ICONS_UPDATED_EVENT,
+        groupToggleId: 'cc-link-icons-group-toggle',
+        groupBodyId: 'cc-link-icons-group-body',
+        collapsedKey: LINK_ICONS_SECTION_COLLAPSED_KEY,
+        callback: 'updateLinkIconsUI',
+        childrenItems: getLinkIconSettingsItems(),
+        childrenHtml: `
+            <div class="cc-form-field cc-sub-inline-field">
+              <div class="cc-sub-inline-control">
+                <label for="cc-link-icons-position" class="cc-sub-inline-label">Pozice ikon</label>
+                <select id="cc-link-icons-position" class="cc-select-compact">
+                  <option value="before">Před odkazem</option>
+                  <option value="after">Za odkazem</option>
+                </select>
+              </div>
+            </div>`,
       },
     ],
   },
@@ -238,6 +271,40 @@ export const MENU_CONFIG = [
     ],
   },
   {
+    category: 'Náhledy po najetí',
+    items: [
+      {
+        type: 'group',
+        id: 'cc-enable-hover-previews',
+        storageKey: HOVER_PREVIEW_ENABLED_KEY,
+        defaultValue: true,
+        requiresLogin: false,
+        label: 'Náhledy odkazů po najetí myší',
+        tooltip: '',
+        infoIcon: {
+          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          text: 'Po najetí myší zobrazí náhled u vybraných odkazů na tvůrce, uživatele a filmy / seriály / epizody.\n\n👉 Klikni pro ukázku',
+        },
+        eventName: null,
+        groupToggleId: 'cc-hover-preview-group-toggle',
+        groupBodyId: 'cc-hover-preview-group-body',
+        collapsedKey: HOVER_PREVIEW_SECTION_COLLAPSED_KEY,
+        callback: 'updateHoverPreviewUI',
+        childrenItems: getHoverPreviewSettingsItems(),
+        childrenHtml: `
+            <div class="cc-setting-row" style="margin-top: 2px;" title="Určuje, jak dlouho si prohlížeč bude pamatovat stažené náhledy. Delší čas šetří data a zrychluje web.">
+                <span class="cc-setting-label cc-grow">Délka mezipaměti (Cache)</span>
+                <select id="cc-hover-preview-cache-hours" class="cc-select-compact">
+                    <option value="1">1 hodina</option>
+                    <option value="24">24 hodin</option>
+                    <option value="168">7 dní</option>
+                    <option value="720">1 měsíc</option>
+                </select>
+            </div>`,
+      },
+    ],
+  },
+  {
     category: 'Herci a tvůrci',
     items: [
       {
@@ -253,62 +320,6 @@ export const MENU_CONFIG = [
           url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
           text: 'Na profilu herce automaticky zobrazí všechny záložky (Videa, Galerie, Diskuze) vedle sebe bez klikání na "další 🔻".\n\n👉 Klikni pro ukázku',
         },
-      },
-      {
-        type: 'group',
-        id: 'cc-enable-creator-preview',
-        storageKey: CREATOR_PREVIEW_ENABLED_KEY,
-        defaultValue: true,
-        requiresLogin: false,
-        label: 'Náhledy fotek tvůrců',
-        tooltip: '',
-        infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-          text: 'Po najetí myší na jméno herce/tvůrce se objeví panel s jeho fotografií a detaily.\n\n👉 Klikni pro ukázku',
-        },
-        eventName: null,
-        groupToggleId: 'cc-creator-preview-group-toggle',
-        groupBodyId: 'cc-creator-preview-group-body',
-        collapsedKey: CREATOR_PREVIEW_SECTION_COLLAPSED_KEY,
-        callback: 'updateCreatorPreviewUI',
-        childrenItems: [
-          {
-            type: 'toggle',
-            id: 'cc-creator-preview-show-birth',
-            storageKey: CREATOR_PREVIEW_SHOW_BIRTH_KEY,
-            defaultValue: true,
-            label: 'Zobrazovat datum narození',
-            tooltip: '',
-            infoIcon: {
-              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-              text: 'Zobrazí datum narození/úmrtí a věk tvůrce.\n\n👉 Klikni pro ukázku',
-            },
-            callback: 'updateCreatorPreviewUI',
-          },
-          {
-            type: 'toggle',
-            id: 'cc-creator-preview-show-photo-from',
-            storageKey: CREATOR_PREVIEW_SHOW_PHOTO_FROM_KEY,
-            defaultValue: true,
-            label: 'Zobrazovat zdroj fotky',
-            tooltip: '',
-            infoIcon: {
-              url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-              text: 'Zobrazovat, z jakého filmu pochází fotka.\n\n👉 Klikni pro ukázku',
-            },
-            callback: 'updateCreatorPreviewUI',
-          },
-        ],
-        childrenHtml: `
-            <div class="cc-setting-row" style="margin-top: 2px;" title="Určuje, jak dlouho si prohlížeč bude pamatovat stažené fotky tvůrců. Delší čas šetří data a zrychluje web.">
-                <span class="cc-setting-label cc-grow">Délka mezipaměti (Cache)</span>
-                <select id="cc-creator-preview-cache-hours" class="cc-select-compact">
-                    <option value="1">1 hodina</option>
-                    <option value="24">24 hodin</option>
-                    <option value="168">7 dní</option>
-                    <option value="720">1 měsíc</option>
-                </select>
-            </div>`,
       },
     ],
   },

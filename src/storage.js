@@ -3,6 +3,30 @@ import { INDEXED_DB_VERSION, INDEXED_DB_NAME } from './config.js';
 // Cache for the IndexedDB instance to avoid multiple openings of the same database during the session.
 let dbInstance = null;
 
+function configureDbInstance(db) {
+  db.onversionchange = () => {
+    closeCachedDbInstance();
+  };
+
+  dbInstance = db;
+  return dbInstance;
+}
+
+function closeCachedDbInstance() {
+  if (!dbInstance) {
+    return;
+  }
+
+  try {
+    dbInstance.onversionchange = null;
+    dbInstance.close();
+  } catch {
+    // Ignore close errors during teardown.
+  } finally {
+    dbInstance = null;
+  }
+}
+
 /**
  * Utility function to convert an IndexedDB request into a Promise, allowing for easier async/await usage.
  * @param {*} request - The IndexedDB request to convert.
@@ -77,8 +101,7 @@ export async function initIndexedDB(dbName, storeName) {
           }
         };
         upgradeRequest.onsuccess = function () {
-          dbInstance = upgradeRequest.result;
-          resolve(dbInstance);
+          resolve(configureDbInstance(upgradeRequest.result));
         };
         upgradeRequest.onerror = function () {
           reject(upgradeRequest.error);
@@ -86,8 +109,7 @@ export async function initIndexedDB(dbName, storeName) {
         return;
       }
 
-      dbInstance = db;
-      resolve(dbInstance);
+      resolve(configureDbInstance(db));
     };
 
     openRequest.onerror = function () {
@@ -222,14 +244,17 @@ export async function deleteAllDataFromIndexedDB(dbName, storeName) {
 }
 
 export async function deleteIndexedDB(dbName) {
-  // When deleting the database, we need to clear the cached instance too,
-  // otherwise the next call to initIndexedDB will return the old instance which might be in an invalid state after deletion.
-  dbInstance = null;
+  // A live IndexedDB connection in this page will block deleteDatabase() forever,
+  // so explicitly close the cached handle before issuing the delete request.
+  closeCachedDbInstance();
 
-  // return new Promise((resolve, reject) => {
-  //   const req = indexedDB.deleteDatabase(dbName);
-  //   req.onsuccess = () => resolve(true);
-  //   req.onerror = () => reject(req.error);
-  // });
-  return await idbRequestToPromise(indexedDB.deleteDatabase(dbName));
+  return await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(dbName);
+
+    request.onsuccess = () => resolve(true);
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => {
+      reject(new Error('IndexedDB deletion was blocked by an open connection.'));
+    };
+  });
 }
