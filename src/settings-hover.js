@@ -275,7 +275,7 @@ export function initializeSettingsMenuHover(menuButton) {
         marginRight: '10px',
         cursor: 'pointer',
       });
-      checkboxLabel.textContent = 'sticK';
+      checkboxLabel.textContent = 'stick';
 
       checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
