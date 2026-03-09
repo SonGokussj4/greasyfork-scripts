@@ -53,6 +53,7 @@
   const HOVER_PREVIEW_CREATOR_ENABLED_KEY = 'cc_hover_preview_creator_enabled';
   const HOVER_PREVIEW_USER_ENABLED_KEY = 'cc_hover_preview_user_enabled';
   const HOVER_PREVIEW_FILM_ENABLED_KEY = 'cc_hover_preview_film_enabled';
+  const HOVER_PREVIEW_EXTERNAL_ENABLED_KEY = 'cc_hover_preview_external_enabled';
   const HOVER_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_hover_preview_section_collapsed';
   const HOVER_PREVIEW_SETTINGS_CHANGED_EVENT = 'cc-hover-preview-settings-changed';
   const SELF_REPLY_IN_DISCUSSIONS_KEY = 'cc_self_reply_discussions';
@@ -7580,15 +7581,27 @@
     });
   }
 
+  const EXTERNAL_HOVER_PREVIEW_SETTINGS = {
+    settingsId: 'cc-hover-preview-external',
+    settingsLabel: 'Náhledy externích odkazů',
+    settingsInfoIcon: {
+      url: 'https://i.imgur.com/wsMMjOo.png',
+      text: 'Zobrazí náhledy externích odkazů. Aktuálně podporuje:\n - 🟢 AniDB a MyAnimeList\n - 🔴 Wiki, Steam\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
+    },
+  };
+
   const HOVER_PREVIEW_PROVIDERS = [
+    // =====================================
+    // Internal providers for CSFD entities
+    // =====================================
     {
       id: 'creator',
       storageKey: HOVER_PREVIEW_CREATOR_ENABLED_KEY,
       settingsId: 'cc-hover-preview-creators',
-      settingsLabel: 'Náhledy tvůrců',
+      settingsLabel: 'Náhledy csfd tvůrců',
       settingsInfoIcon: {
-        url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-        text: 'Zobrazí fotku a základní informace o herci nebo tvůrci.\n\n👉 Klikni pro ukázku',
+        url: 'https://i.imgur.com/oX5vYjZ.png',
+        text: 'Zobrazí fotku a základní informace o herci nebo tvůrci.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
       },
       matches(anchor) {
         const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
@@ -7609,10 +7622,10 @@
       id: 'user',
       storageKey: HOVER_PREVIEW_USER_ENABLED_KEY,
       settingsId: 'cc-hover-preview-users',
-      settingsLabel: 'Náhledy uživatelů',
+      settingsLabel: 'Náhledy csfd uživatelů',
       settingsInfoIcon: {
-        url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-        text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\n\n👉 Klikni pro ukázku',
+        url: 'https://i.imgur.com/jg6bUCM.png',
+        text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
       },
       matches(anchor) {
         if (isUserLinkInsideAccountDropdown(anchor)) {
@@ -7647,10 +7660,10 @@
       id: 'film',
       storageKey: HOVER_PREVIEW_FILM_ENABLED_KEY,
       settingsId: 'cc-hover-preview-films',
-      settingsLabel: 'Náhledy filmů / seriálů / epizod',
+      settingsLabel: 'Náhledy csfd filmů / seriálů / epizod',
       settingsInfoIcon: {
-        url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-        text: 'Zobrazí plakát a stručné informace o filmu, seriálu nebo epizodě.\n\n👉 Klikni pro ukázku',
+        url: 'https://i.imgur.com/aejN8f7.png',
+        text: 'Zobrazí plakát a stručné informace o filmu, seriálu nebo epizodě.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
       },
       matches(anchor) {
         const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
@@ -7684,7 +7697,8 @@
     },
     {
       id: 'myanimelist-character',
-      storageKey: HOVER_PREVIEW_ENABLED_KEY,
+      storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+      ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
       matches(anchor) {
         const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
         return Boolean(
@@ -7704,7 +7718,8 @@
     },
     {
       id: 'myanimelist-anime',
-      storageKey: HOVER_PREVIEW_ENABLED_KEY,
+      storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+      ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
       matches(anchor) {
         const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
         return Boolean(
@@ -7724,7 +7739,8 @@
     },
     {
       id: 'anidb-character',
-      storageKey: HOVER_PREVIEW_ENABLED_KEY,
+      storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+      ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
       matches(anchor) {
         const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
         return Boolean(
@@ -7742,7 +7758,8 @@
     },
     {
       id: 'anidb-anime',
-      storageKey: HOVER_PREVIEW_ENABLED_KEY,
+      storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+      ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
       matches(anchor) {
         const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
         return Boolean(
@@ -7761,16 +7778,26 @@
   ];
 
   function getHoverPreviewSettingsItems() {
-    return HOVER_PREVIEW_PROVIDERS.filter((provider) => provider.settingsId).map((provider) => ({
-      type: 'toggle',
-      id: provider.settingsId,
-      storageKey: provider.storageKey,
-      defaultValue: true,
-      label: provider.settingsLabel,
-      tooltip: '',
-      infoIcon: provider.settingsInfoIcon,
-      callback: 'updateHoverPreviewUI',
-    }));
+    const settingsItems = new Map();
+
+    HOVER_PREVIEW_PROVIDERS.filter((provider) => provider.settingsId).forEach((provider) => {
+      if (settingsItems.has(provider.settingsId)) {
+        return;
+      }
+
+      settingsItems.set(provider.settingsId, {
+        type: 'toggle',
+        id: provider.settingsId,
+        storageKey: provider.storageKey,
+        defaultValue: true,
+        label: provider.settingsLabel,
+        tooltip: '',
+        infoIcon: provider.settingsInfoIcon,
+        callback: 'updateHoverPreviewUI',
+      });
+    });
+
+    return Array.from(settingsItems.values());
   }
 
   // Export a pure data-driven MENU_CONFIG. Callback handlers are exported as
@@ -7879,7 +7906,7 @@
           label: 'Ukázat hodnocení',
           tooltip: '',
           infoIcon: {
-            url: 'https://i.imgur.com/aTrSU2X.png',
+            url: 'https://i.imgur.com/X23QwLN.png',
             text: 'Zobrazí hodnocení (hvězdičky) filmů vedle jejich názvů.\n\n👉 Klikni pro ukázku',
           },
           eventName: 'cc-ratings-updated',
@@ -7924,7 +7951,7 @@
               label: 'Ukazovat v deníčcích',
               tooltip: '',
               infoIcon: {
-                url: '',
+                url: 'https://i.imgur.com/QanJiLQ.png',
                 text: 'Zobrazí hodnocení (hvězdičky) i u odkazů na filmy uvnitř textů deníčků.\n\n👉 Klikni pro ukázku',
               },
               eventName: 'cc-ratings-updated',
@@ -7970,7 +7997,7 @@
           tooltip: '',
           eventName: 'cc-ratings-from-favorites-toggled',
           infoIcon: {
-            url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+            url: 'https://i.imgur.com/99jlBJd.png',
             text: 'Přidá doplňující průměrné hodnocení vypočítané z oblíbených uživatelů.\n\n👉 Klikni pro ukázku',
           },
         },
@@ -7984,7 +8011,7 @@
           tooltip: '',
           eventName: 'cc-add-ratings-date-toggled',
           infoIcon: {
-            url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+            url: 'https://i.imgur.com/B5evwT4.png',
             text: 'Zobrazí datum, kdy jste film hodnotili.\n\n👉 Klikni pro ukázku',
           },
         },
@@ -7997,7 +8024,7 @@
           label: 'Skrýt recenze lidí',
           tooltip: '',
           infoIcon: {
-            url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+            url: 'https://i.imgur.com/bk53rbW.png',
             text: 'Skrýt komentáře a recenze uživatelů, které nechcete číst.\n\n👉 Klikni pro ukázku',
           },
           eventName: 'cc-hide-selected-reviews-updated',
@@ -8031,8 +8058,8 @@
           label: 'Náhledy odkazů po najetí myší',
           tooltip: '',
           infoIcon: {
-            url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-            text: 'Po najetí myší zobrazí náhled u vybraných odkazů na tvůrce, uživatele a filmy / seriály / epizody.\n\n👉 Klikni pro ukázku',
+            url: 'https://i.imgur.com/HNJ2TiA.png',
+            text: 'Po najetí myší zobrazí náhled u vybraných ČSFD i externích odkazů.\n\n👉 Klikni pro ukázku',
           },
           eventName: null,
           groupToggleId: 'cc-hover-preview-group-toggle',
@@ -8066,7 +8093,7 @@
           tooltip: '',
           eventName: 'cc-show-all-creator-tabs-toggled',
           infoIcon: {
-            url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+            url: 'https://i.imgur.com/4VxTL3j.png',
             text: 'Na profilu herce automaticky zobrazí všechny záložky (Videa, Galerie, Diskuze) vedle sebe bez klikání na "další 🔻".\n\n👉 Klikni pro ukázku',
           },
         },

@@ -130,7 +130,7 @@ export const MENU_CONFIG = [
         label: 'Ukázat hodnocení',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/aTrSU2X.png',
+          url: 'https://i.imgur.com/X23QwLN.png',
           text: 'Zobrazí hodnocení (hvězdičky) filmů vedle jejich názvů.\n\n👉 Klikni pro ukázku',
         },
         eventName: 'cc-ratings-updated',
@@ -175,7 +175,7 @@ export const MENU_CONFIG = [
             label: 'Ukazovat v deníčcích',
             tooltip: '',
             infoIcon: {
-              url: '',
+              url: 'https://i.imgur.com/QanJiLQ.png',
               text: 'Zobrazí hodnocení (hvězdičky) i u odkazů na filmy uvnitř textů deníčků.\n\n👉 Klikni pro ukázku',
             },
             eventName: 'cc-ratings-updated',
@@ -221,7 +221,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-ratings-from-favorites-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/99jlBJd.png',
           text: 'Přidá doplňující průměrné hodnocení vypočítané z oblíbených uživatelů.\n\n👉 Klikni pro ukázku',
         },
       },
@@ -235,7 +235,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-add-ratings-date-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/B5evwT4.png',
           text: 'Zobrazí datum, kdy jste film hodnotili.\n\n👉 Klikni pro ukázku',
         },
       },
@@ -248,7 +248,7 @@ export const MENU_CONFIG = [
         label: 'Skrýt recenze lidí',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/bk53rbW.png',
           text: 'Skrýt komentáře a recenze uživatelů, které nechcete číst.\n\n👉 Klikni pro ukázku',
         },
         eventName: 'cc-hide-selected-reviews-updated',
@@ -282,8 +282,8 @@ export const MENU_CONFIG = [
         label: 'Náhledy odkazů po najetí myší',
         tooltip: '',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-          text: 'Po najetí myší zobrazí náhled u vybraných odkazů na tvůrce, uživatele a filmy / seriály / epizody.\n\n👉 Klikni pro ukázku',
+          url: 'https://i.imgur.com/HNJ2TiA.png',
+          text: 'Po najetí myší zobrazí náhled u vybraných ČSFD i externích odkazů.\n\n👉 Klikni pro ukázku',
         },
         eventName: null,
         groupToggleId: 'cc-hover-preview-group-toggle',
@@ -317,7 +317,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-show-all-creator-tabs-toggled',
         infoIcon: {
-          url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
+          url: 'https://i.imgur.com/4VxTL3j.png',
           text: 'Na profilu herce automaticky zobrazí všechny záložky (Videa, Galerie, Diskuze) vedle sebe bez klikání na "další 🔻".\n\n👉 Klikni pro ukázku',
         },
       },

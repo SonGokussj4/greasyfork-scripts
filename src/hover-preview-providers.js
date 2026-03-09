@@ -1,6 +1,7 @@
 import {
   HOVER_PREVIEW_CREATOR_ENABLED_KEY,
   HOVER_PREVIEW_ENABLED_KEY,
+  HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
   HOVER_PREVIEW_FILM_ENABLED_KEY,
   HOVER_PREVIEW_USER_ENABLED_KEY,
 } from './config.js';
@@ -959,15 +960,27 @@ function renderMyAnimeListAnimePreview(data) {
   });
 }
 
+const EXTERNAL_HOVER_PREVIEW_SETTINGS = {
+  settingsId: 'cc-hover-preview-external',
+  settingsLabel: 'Náhledy externích odkazů',
+  settingsInfoIcon: {
+    url: 'https://i.imgur.com/wsMMjOo.png',
+    text: 'Zobrazí náhledy externích odkazů. Aktuálně podporuje:\n - 🟢 AniDB a MyAnimeList\n - 🔴 Wiki, Steam\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
+  },
+};
+
 export const HOVER_PREVIEW_PROVIDERS = [
+  // =====================================
+  // Internal providers for CSFD entities
+  // =====================================
   {
     id: 'creator',
     storageKey: HOVER_PREVIEW_CREATOR_ENABLED_KEY,
     settingsId: 'cc-hover-preview-creators',
-    settingsLabel: 'Náhledy tvůrců',
+    settingsLabel: 'Náhledy csfd tvůrců',
     settingsInfoIcon: {
-      url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-      text: 'Zobrazí fotku a základní informace o herci nebo tvůrci.\n\n👉 Klikni pro ukázku',
+      url: 'https://i.imgur.com/oX5vYjZ.png',
+      text: 'Zobrazí fotku a základní informace o herci nebo tvůrci.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
     },
     matches(anchor) {
       const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
@@ -988,10 +1001,10 @@ export const HOVER_PREVIEW_PROVIDERS = [
     id: 'user',
     storageKey: HOVER_PREVIEW_USER_ENABLED_KEY,
     settingsId: 'cc-hover-preview-users',
-    settingsLabel: 'Náhledy uživatelů',
+    settingsLabel: 'Náhledy csfd uživatelů',
     settingsInfoIcon: {
-      url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-      text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\n\n👉 Klikni pro ukázku',
+      url: 'https://i.imgur.com/jg6bUCM.png',
+      text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
     },
     matches(anchor) {
       if (isUserLinkInsideAccountDropdown(anchor)) {
@@ -1026,10 +1039,10 @@ export const HOVER_PREVIEW_PROVIDERS = [
     id: 'film',
     storageKey: HOVER_PREVIEW_FILM_ENABLED_KEY,
     settingsId: 'cc-hover-preview-films',
-    settingsLabel: 'Náhledy filmů / seriálů / epizod',
+    settingsLabel: 'Náhledy csfd filmů / seriálů / epizod',
     settingsInfoIcon: {
-      url: 'https://i.imgur.com/sN9Aq4Y.jpeg',
-      text: 'Zobrazí plakát a stručné informace o filmu, seriálu nebo epizodě.\n\n👉 Klikni pro ukázku',
+      url: 'https://i.imgur.com/aejN8f7.png',
+      text: 'Zobrazí plakát a stručné informace o filmu, seriálu nebo epizodě.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
     },
     matches(anchor) {
       const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
@@ -1063,7 +1076,8 @@ export const HOVER_PREVIEW_PROVIDERS = [
   },
   {
     id: 'myanimelist-character',
-    storageKey: HOVER_PREVIEW_ENABLED_KEY,
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
     matches(anchor) {
       const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
       return Boolean(
@@ -1083,7 +1097,8 @@ export const HOVER_PREVIEW_PROVIDERS = [
   },
   {
     id: 'myanimelist-anime',
-    storageKey: HOVER_PREVIEW_ENABLED_KEY,
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
     matches(anchor) {
       const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
       return Boolean(
@@ -1103,7 +1118,8 @@ export const HOVER_PREVIEW_PROVIDERS = [
   },
   {
     id: 'anidb-character',
-    storageKey: HOVER_PREVIEW_ENABLED_KEY,
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
     matches(anchor) {
       const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
       return Boolean(
@@ -1121,7 +1137,8 @@ export const HOVER_PREVIEW_PROVIDERS = [
   },
   {
     id: 'anidb-anime',
-    storageKey: HOVER_PREVIEW_ENABLED_KEY,
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
     matches(anchor) {
       const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
       return Boolean(
@@ -1140,14 +1157,24 @@ export const HOVER_PREVIEW_PROVIDERS = [
 ];
 
 export function getHoverPreviewSettingsItems() {
-  return HOVER_PREVIEW_PROVIDERS.filter((provider) => provider.settingsId).map((provider) => ({
-    type: 'toggle',
-    id: provider.settingsId,
-    storageKey: provider.storageKey,
-    defaultValue: true,
-    label: provider.settingsLabel,
-    tooltip: '',
-    infoIcon: provider.settingsInfoIcon,
-    callback: 'updateHoverPreviewUI',
-  }));
+  const settingsItems = new Map();
+
+  HOVER_PREVIEW_PROVIDERS.filter((provider) => provider.settingsId).forEach((provider) => {
+    if (settingsItems.has(provider.settingsId)) {
+      return;
+    }
+
+    settingsItems.set(provider.settingsId, {
+      type: 'toggle',
+      id: provider.settingsId,
+      storageKey: provider.storageKey,
+      defaultValue: true,
+      label: provider.settingsLabel,
+      tooltip: '',
+      infoIcon: provider.settingsInfoIcon,
+      callback: 'updateHoverPreviewUI',
+    });
+  });
+
+  return Array.from(settingsItems.values());
 }
