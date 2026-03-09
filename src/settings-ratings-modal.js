@@ -1,4 +1,5 @@
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 import { createDetailsModalController, formatDetailValue } from './ui-utils.js';
 import { escapeHtml } from './utils.js';
@@ -670,7 +671,7 @@ async function getCachedUserRecords(userSlug) {
   }
 
   const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-  const userRecords = records.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+  const userRecords = reconcileUserRatingRecords(records, userSlug).normalizedRecords;
   ratingsModalCache.userSlug = userSlug;
   ratingsModalCache.userRecords = userRecords;
   ratingsModalCache.allRows = null;

@@ -3,7 +3,7 @@ import { delay } from './utils.js';
 import './style.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
-import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
+import { initializeHoverPreviews } from './hover-preview.js';
 
 (async () => {
   'use strict';
@@ -42,13 +42,15 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();
-  initializeCreatorHoverPreview();
+  csfd.addConfiguredLinkIcons();
+  initializeHoverPreviews();
 
   // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
   // etc.).  Re-run addStars once the page is fully loaded and once more a bit
   // later to catch any sections that arrive after the load event.
   let addStarsRunning = false;
   let addStarsQueued = false;
+  let linkIconObserverTimer = null;
   const rerunStars = () => {
     if (addStarsRunning) {
       addStarsQueued = true;
@@ -118,6 +120,29 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
     return false;
   };
 
+  const mutationContainsLinkIconTarget = (mutationList) => {
+    for (const mutation of mutationList) {
+      if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
+
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+
+        if (
+          node.matches?.(
+            'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment',
+          ) ||
+          node.querySelector?.(
+            'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment',
+          )
+        ) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
   const contentObserver = new MutationObserver((mutationList) => {
     if (mutationContainsFilmLink(mutationList)) {
       if (starObserverTimer === null) {
@@ -137,6 +162,15 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
         }, 200);
       }
     }
+
+    if (mutationContainsLinkIconTarget(mutationList)) {
+      if (linkIconObserverTimer === null) {
+        linkIconObserverTimer = window.setTimeout(() => {
+          linkIconObserverTimer = null;
+          csfd.addConfiguredLinkIcons(pageContent);
+        }, 200);
+      }
+    }
   });
 
   const pageContent = document.querySelector('div.page-content') || document.body;
@@ -146,6 +180,10 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
     csfd.addGalleryImageFormatLinks().catch((error) => {
       console.error('[CC] Failed to toggle gallery image format links:', error);
     });
+  });
+
+  window.addEventListener('cc-link-icons-updated', () => {
+    csfd.refreshLinkIcons(pageContent);
   });
 
   // wire up legacy‑style toggles

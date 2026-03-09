@@ -22,6 +22,11 @@ function clearNormalListeners() {
   normalListeners = [];
 }
 
+function clearPendingTimeouts(timeoutState) {
+  clearTimeout(timeoutState.hoverTimeout);
+  clearTimeout(timeoutState.hideTimeout);
+}
+
 function bindHoverHandlers(menuButton, timeoutState) {
   clearNormalListeners();
 
@@ -60,16 +65,160 @@ export function initializeSettingsMenuHover(menuButton) {
 
   let hoverTimeout;
   let hideTimeout;
+  let pinnedOpen = false;
+  let dragCleanup;
+  const dropdown = menuButton.querySelector('.dropdown-content.cc-settings');
+  const menuLink = menuButton.querySelector('.csfd-compare-menu');
+  const originalDropdownParent = dropdown?.parentNode;
+  const originalDropdownNextSibling = dropdown?.nextSibling || null;
 
-  console.log('🟣 DEBUG:', DEBUG);
+  const timeoutState = {
+    get hoverTimeout() {
+      return hoverTimeout;
+    },
+    set hoverTimeout(value) {
+      hoverTimeout = value;
+    },
+    get hideTimeout() {
+      return hideTimeout;
+    },
+    set hideTimeout(value) {
+      hideTimeout = value;
+    },
+  };
+
+  const enableNormalHover = () => {
+    if (pinnedOpen) return;
+    bindHoverHandlers(menuButton, timeoutState);
+  };
+
+  const resetPinnedPosition = () => {
+    if (!dropdown) return;
+    dropdown.style.left = '';
+    dropdown.style.right = '30px';
+    dropdown.style.top = '30px';
+  };
+
+  const attachDropdownToBody = () => {
+    if (!dropdown || dropdown.parentNode === document.body) return;
+    document.body.appendChild(dropdown);
+  };
+
+  const restoreDropdownToMenu = () => {
+    if (!dropdown || !originalDropdownParent || dropdown.parentNode === originalDropdownParent) return;
+
+    if (originalDropdownNextSibling && originalDropdownNextSibling.parentNode === originalDropdownParent) {
+      originalDropdownParent.insertBefore(dropdown, originalDropdownNextSibling);
+      return;
+    }
+
+    originalDropdownParent.appendChild(dropdown);
+  };
+
+  const destroyDragBehavior = () => {
+    if (typeof dragCleanup === 'function') {
+      dragCleanup();
+      dragCleanup = undefined;
+    }
+  };
+
+  const enablePinnedDragging = () => {
+    if (!dropdown) return;
+
+    destroyDragBehavior();
+
+    const dragHandle = dropdown.querySelector('.left-head');
+    if (!dragHandle) return;
+
+    const onMouseDown = (event) => {
+      if (!pinnedOpen) return;
+      if (event.button !== 0) return;
+      if (event.target instanceof Element && event.target.closest('a, button, input, select, textarea, label')) return;
+
+      event.preventDefault();
+      const rect = dropdown.getBoundingClientRect();
+      const startOffsetX = event.clientX - rect.left;
+      const startOffsetY = event.clientY - rect.top;
+
+      dropdown.style.right = 'auto';
+      dropdown.style.left = `${rect.left}px`;
+      dropdown.style.top = `${rect.top}px`;
+
+      const onMouseMove = (moveEvent) => {
+        const maxLeft = Math.max(0, window.innerWidth - rect.width);
+        const maxTop = Math.max(0, window.innerHeight - rect.height);
+        const nextLeft = Math.min(maxLeft, Math.max(0, moveEvent.clientX - startOffsetX));
+        const nextTop = Math.min(maxTop, Math.max(0, moveEvent.clientY - startOffsetY));
+
+        dropdown.style.left = `${nextLeft}px`;
+        dropdown.style.top = `${nextTop}px`;
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove, true);
+        window.removeEventListener('mouseup', onMouseUp, true);
+      };
+
+      window.addEventListener('mousemove', onMouseMove, true);
+      window.addEventListener('mouseup', onMouseUp, true);
+    };
+
+    dragHandle.addEventListener('mousedown', onMouseDown);
+    dragCleanup = () => {
+      dragHandle.removeEventListener('mousedown', onMouseDown);
+    };
+  };
+
+  const openPinned = () => {
+    pinnedOpen = true;
+    clearPendingTimeouts(timeoutState);
+    clearNormalListeners();
+    attachDropdownToBody();
+    dropdown?.classList.add('cc-settings-pinned-root');
+    resetPinnedPosition();
+    enablePinnedDragging();
+    setHoverState(menuButton, true);
+  };
+
+  const closePinned = () => {
+    pinnedOpen = false;
+    clearPendingTimeouts(timeoutState);
+    destroyDragBehavior();
+    dropdown?.classList.remove('cc-settings-pinned-root');
+    resetPinnedPosition();
+    restoreDropdownToMenu();
+    setHoverState(menuButton, false);
+    enableNormalHover();
+  };
+
+  const togglePinned = () => {
+    if (pinnedOpen) {
+      closePinned();
+      return false;
+    }
+
+    openPinned();
+    return true;
+  };
+
+  menuButton.__ccSettingsMenuController = {
+    openPinned,
+    closePinned,
+    togglePinned,
+    isPinnedOpen() {
+      return pinnedOpen;
+    },
+  };
+
   if (DEBUG) {
     // Place the debug toggle inside the settings menu next to the DEV button.
     // Fallback: if the settings menu isn't available yet, create a simple floating control.
     const maintActions = menuButton.querySelector('.cc-maint-actions');
+    const stickLabel = 'stick';
     let checkbox;
     if (maintActions) {
       const wrapper = document.createElement('div');
-      wrapper.className = 'cc-setting-row cc-dev-only';
+      wrapper.className = 'cc-maint-dev-control cc-dev-only';
       wrapper.title = 'Při aktivaci nechá CC menu trvale otevřené.';
 
       const switchLabel = document.createElement('label');
@@ -88,7 +237,7 @@ export function initializeSettingsMenuHover(menuButton) {
 
       const labelText = document.createElement('span');
       labelText.className = 'cc-setting-label';
-      labelText.textContent = 'Hovered';
+      labelText.textContent = stickLabel;
 
       wrapper.appendChild(switchLabel);
       wrapper.appendChild(labelText);
@@ -127,7 +276,7 @@ export function initializeSettingsMenuHover(menuButton) {
         marginRight: '10px',
         cursor: 'pointer',
       });
-      checkboxLabel.textContent = 'Hovered';
+      checkboxLabel.textContent = stickLabel;
 
       checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -136,8 +285,6 @@ export function initializeSettingsMenuHover(menuButton) {
       checkboxLabel.prepend(checkbox);
       controlsContainer.appendChild(checkboxLabel);
     }
-
-    const menuLink = menuButton.querySelector('.csfd-compare-menu');
 
     function debugClickHandler(e) {
       e.stopPropagation();
@@ -153,30 +300,17 @@ export function initializeSettingsMenuHover(menuButton) {
       }
     }
 
-    function enableNormalHover() {
+    function enableDebugNormalHover() {
       if (menuLink) {
         menuLink.removeEventListener('click', debugClickHandler);
       }
-      bindHoverHandlers(menuButton, {
-        get hoverTimeout() {
-          return hoverTimeout;
-        },
-        set hoverTimeout(value) {
-          hoverTimeout = value;
-        },
-        get hideTimeout() {
-          return hideTimeout;
-        },
-        set hideTimeout(value) {
-          hideTimeout = value;
-        },
-      });
+      enableNormalHover();
     }
 
     if (checkbox && checkbox.checked) {
       enableDebugHover();
     } else if (checkbox) {
-      enableNormalHover();
+      enableDebugNormalHover();
     }
 
     if (checkbox) {
@@ -186,24 +320,11 @@ export function initializeSettingsMenuHover(menuButton) {
           enableDebugHover();
         } else {
           localStorage.setItem(HEADER_HOVER_STORAGE_KEY, 'false');
-          enableNormalHover();
+          enableDebugNormalHover();
         }
       });
     }
   } else {
-    bindHoverHandlers(menuButton, {
-      get hoverTimeout() {
-        return hoverTimeout;
-      },
-      set hoverTimeout(value) {
-        hoverTimeout = value;
-      },
-      get hideTimeout() {
-        return hideTimeout;
-      },
-      set hideTimeout(value) {
-        hideTimeout = value;
-      },
-    });
+    enableNormalHover();
   }
 }

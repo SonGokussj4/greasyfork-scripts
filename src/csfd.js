@@ -3,6 +3,8 @@ import {
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   INDEXED_DB_NAME,
+  LINK_ICONS_ENABLED_KEY,
+  LINK_ICONS_POSITION_KEY,
   RATINGS_STORE_NAME,
   SETTINGSNAME,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
@@ -11,40 +13,17 @@ import {
   SHOW_RATINGS_IN_REVIEWS_KEY,
   SHOW_RATINGS_KEY,
 } from './config.js';
-import { getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
+import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
+import {
+  applyConfiguredLinkIcons,
+  LINK_ICON_BLOCKED_LINK_CLOSEST_SELECTORS,
+  refreshConfiguredLinkIcons,
+} from './link-icons.js';
+import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import { delay, getFeatureState, getMovieIdFromUrl } from './utils.js'; // REFACTOR: imported from utils
 
 const PROFILE_LINK_SELECTOR =
   'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
-
-// Consolidated blocked selectors for the film link candidate search
-const BLOCKED_LINK_CLOSEST_SELECTORS = [
-  '.article-header-review-action',
-  '.article-header-review',
-  '.article-more',
-  '.aside-movie-profile',
-  '.box-more-bar',
-  '.box-pagination',
-  '.box-video',
-  '.cc-rating-detail-overlay',
-  '.cc-ratings-table-modal',
-  '.cc-ratings-table-overlay',
-  '.film-header-name-control',
-  '.film-header-name',
-  '.film-posters',
-  '.gallery',
-  '.label-simple',
-  '.more',
-  '.page-navigation',
-  '.pages',
-  '.pagination',
-  '.paginator',
-  '.reference.down.reply',
-  '.span-more-small',
-  '.tab-nav-item',
-  '#cc-ratings-table-modal-overlay',
-  '#snippet--boxButtonCollection',
-].join(', ');
 
 export class Csfd {
   constructor(pageContent) {
@@ -164,6 +143,7 @@ export class Csfd {
       // 1. Wipe old injected stars specific to your original code
       // TODO: Older, with design hopping around
       // document.querySelectorAll('.cc-own-rating, .cc-my-rating-col, .cc-my-rating-cell').forEach((el) => el.remove());
+      document.querySelectorAll('.cc-own-rating-inline').forEach((el) => el.remove());
       document.querySelectorAll('.cc-own-rating').forEach((el) => el.remove());
       document.querySelectorAll('a[data-cc-star-added="true"]').forEach((el) => {
         delete el.dataset.ccStarAdded;
@@ -639,7 +619,7 @@ export class Csfd {
     const computedInfo = this.getCurrentPageComputedInfo();
     return {
       ...(existingRecord || {}),
-      id: `${this.userSlug}:${urlSlug}`,
+      id: buildRatingRecordId(this.userSlug, movieId),
       userSlug: this.userSlug,
       movieId,
       url: urlSlug,
@@ -671,17 +651,21 @@ export class Csfd {
     }
 
     const existingRecord = this.stars[pageInfo.movieId];
-    const storageId = `${this.userSlug}:${pageInfo.urlSlug}`;
+    const storageId = buildRatingRecordId(this.userSlug, pageInfo.movieId);
 
     if (pageRating === null) {
       if (existingRecord) {
         const tombstone = {
           ...existingRecord,
+          id: storageId,
           rating: null,
           deleted: true,
           lastUpdate: new Date().toISOString(),
         };
         await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, tombstone);
+        if (existingRecord.id && existingRecord.id !== storageId) {
+          await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, existingRecord.id);
+        }
         this.stars[pageInfo.movieId] = tombstone;
         window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
       }
@@ -714,6 +698,9 @@ export class Csfd {
     });
 
     await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, newRecord);
+    if (existingRecord?.id && existingRecord.id !== storageId) {
+      await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, existingRecord.id);
+    }
     this.stars[pageInfo.movieId] = newRecord;
     window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
   }
@@ -723,7 +710,18 @@ export class Csfd {
 
     try {
       const records = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-      const userRecords = records.filter((r) => r.userSlug === this.userSlug && Number.isFinite(r.movieId));
+      const reconciledRecords = reconcileUserRatingRecords(records, this.userSlug);
+
+      if (reconciledRecords.hasChanges) {
+        await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, reconciledRecords.normalizedRecords);
+        await Promise.all(
+          reconciledRecords.staleRecordIds.map((recordId) =>
+            deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, recordId),
+          ),
+        );
+      }
+
+      const userRecords = reconciledRecords.normalizedRecords;
 
       for (const record of userRecords) {
         this.stars[record.movieId] = record;
@@ -808,7 +806,7 @@ export class Csfd {
         if (this.shouldSkipProfileSectionLink(link)) return false;
       }
 
-      if (link.closest(BLOCKED_LINK_CLOSEST_SELECTORS)) {
+      if (link.closest(LINK_ICON_BLOCKED_LINK_CLOSEST_SELECTORS)) {
         return false;
       }
 
@@ -1027,6 +1025,63 @@ export class Csfd {
     return starRating;
   }
 
+  isInlineTextRatingLink(link) {
+    if (!(link instanceof Element)) return false;
+
+    return Boolean(
+      link.closest('[data-film-review-content], span.comment') ||
+      link.closest(
+        '.diary-post .article-content.article-content-justify p, .diary-post .article-content.article-content-justify li',
+      ) ||
+      link.closest(
+        'article.article-forum .article-content.article-content-icons p, article.article-forum .article-content.article-content-icons li',
+      ) ||
+      link.closest('.article-news-content.article-content-justify p, .article-news-content.article-content-justify li'),
+    );
+  }
+
+  createInlineRatingGroup(link, starElement) {
+    const group = document.createElement('span');
+    group.className = 'cc-own-rating-inline';
+    group.append(document.createTextNode('\u00A0'), starElement);
+    link.after(group);
+    return group;
+  }
+
+  makeTrailingHyphenUnbreakable(link) {
+    if (!(link instanceof Element)) return;
+
+    const walker = document.createTreeWalker(link, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        return node.textContent?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+      },
+    });
+
+    const textNodes = [];
+    while (walker.nextNode()) {
+      textNodes.push(walker.currentNode);
+    }
+
+    const lastTextNode = textNodes.at(-1);
+    if (!lastTextNode?.textContent) return;
+
+    const text = lastTextNode.textContent;
+    const trailingWhitespaceMatch = text.match(/\s*$/);
+    const trailingWhitespace = trailingWhitespaceMatch?.[0] || '';
+    const contentEnd = text.length - trailingWhitespace.length;
+    if (contentEnd <= 0) return;
+
+    const content = text.slice(0, contentEnd);
+    const lastWhitespaceIndex = content.search(/\s+[^\s]*$/);
+    const tokenStart = lastWhitespaceIndex >= 0 ? lastWhitespaceIndex + 1 : 0;
+    const prefix = content.slice(0, tokenStart);
+    const token = content.slice(tokenStart);
+
+    if (!token.includes('-')) return;
+
+    lastTextNode.textContent = `${prefix}${token.replace(/-/g, '\u2011')}${trailingWhitespace}`;
+  }
+
   async addStars() {
     if (!getFeatureState(SHOW_RATINGS_KEY)) {
       console.debug('🟣 Ratings not added: SHOW_RATINGS_KEY disabled');
@@ -1088,9 +1143,14 @@ export class Csfd {
         timeRatingDiv.appendChild(starElement);
       } else {
         const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-        headingAncestor
-          ? headingAncestor.appendChild(starElement)
-          : link.insertAdjacentElement('afterend', starElement);
+        if (headingAncestor) {
+          headingAncestor.appendChild(starElement);
+        } else if (this.isInlineTextRatingLink(link)) {
+          this.makeTrailingHyphenUnbreakable(link);
+          this.createInlineRatingGroup(link, starElement);
+        } else {
+          link.insertAdjacentElement('afterend', starElement);
+        }
       }
 
       link.dataset.ccStarAdded = 'true';
@@ -1103,6 +1163,30 @@ export class Csfd {
 
   isGalleryImageLinksEnabled() {
     return getFeatureState(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+  }
+
+  areLinkIconsEnabled() {
+    return getFeatureState(LINK_ICONS_ENABLED_KEY, true);
+  }
+
+  getLinkIconsPosition() {
+    return localStorage.getItem(LINK_ICONS_POSITION_KEY) === 'after' ? 'after' : 'before';
+  }
+
+  addConfiguredLinkIcons(root = this.csfdPage || document) {
+    applyConfiguredLinkIcons(root, {
+      iconsEnabled: this.areLinkIconsEnabled(),
+      position: this.getLinkIconsPosition(),
+      isProviderEnabled: (provider) => getFeatureState(provider.storageKey, true),
+    });
+  }
+
+  refreshLinkIcons(root = this.csfdPage || document) {
+    refreshConfiguredLinkIcons(root, {
+      iconsEnabled: this.areLinkIconsEnabled(),
+      position: this.getLinkIconsPosition(),
+      isProviderEnabled: (provider) => getFeatureState(provider.storageKey, true),
+    });
   }
 
   clearGalleryImageFormatLinks() {
