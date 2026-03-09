@@ -785,8 +785,9 @@ export class Csfd {
       if (linkText === 'více' || linkText === 'viac') return false;
 
       const isTitleLink = link.classList.contains('film-title-name');
-      const isDiaryLink = link.closest('.diary-post');
-      const isReviewTextLink = link.closest('span.comment') || (isUserReviewsPage && !isTitleLink);
+      const inlineRatingContext = this.getInlineRatingContext(link);
+      const isDiaryLink = inlineRatingContext === 'diary';
+      const isReviewTextLink = inlineRatingContext === 'review';
 
       if (isDiaryLink) {
         // Diaries should be treated differently
@@ -1036,8 +1037,57 @@ export class Csfd {
       link.closest(
         'article.article-forum .article-content.article-content-icons p, article.article-forum .article-content.article-content-icons li',
       ) ||
-      link.closest('.article-news-content.article-content-justify p, .article-news-content.article-content-justify li'),
+      link.closest(
+        '.article-news-content.article-content-justify p, .article-news-content.article-content-justify li',
+      ) ||
+      this.getInlineRatingContext(link),
     );
+  }
+
+  getInlineRatingContext(link) {
+    if (!(link instanceof Element)) return undefined;
+
+    if (
+      link.closest(
+        '.diary-post .article-content.article-content-justify p, .diary-post .article-content.article-content-justify li',
+      )
+    ) {
+      return 'diary';
+    }
+
+    if (
+      link.closest('[data-film-review-content], span.comment') ||
+      link.closest(
+        'article.article-forum .article-content.article-content-icons p, article.article-forum .article-content.article-content-icons li',
+      ) ||
+      link.closest('.article-news-content.article-content-justify p, .article-news-content.article-content-justify li')
+    ) {
+      return 'review';
+    }
+
+    const favoritesActivityTextContainer = link.closest('.favorite-users-ratings .article-content-reviewtext');
+    const favoritesInlineTextNode = link.closest(
+      '.favorite-users-ratings .article-content-reviewtext p, .favorite-users-ratings .article-content-reviewtext li',
+    );
+
+    if (favoritesActivityTextContainer && favoritesInlineTextNode && !link.closest('h1, h2, h3, h4, h5, h6')) {
+      const activityLeadText =
+        favoritesActivityTextContainer.querySelector('p')?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
+
+      if (/(den[ií]čku|den[ií]k)/i.test(activityLeadText)) {
+        return 'diary';
+      }
+
+      if (/(recenzoval|komentoval|diskutoval)/i.test(activityLeadText)) {
+        return 'review';
+      }
+    }
+
+    if (this.isOnUserReviewsPage() && !link.classList.contains('film-title-name')) {
+      return 'review';
+    }
+
+    return undefined;
   }
 
   createInlineRatingGroup(link, starElement) {
@@ -1115,7 +1165,8 @@ export class Csfd {
     const links = this.getCandidateFilmLinks();
     console.debug(`🔵 Found ${links.length} candidate links for adding ratings`);
     console.debug({ links });
-    const outlinedOnThisPage = this.isOnOtherUserProfilePage();
+    const outlinedOnThisPage =
+      this.isOnOtherUserProfilePage() || /^\/soukrome\/oblibeni-uzivatele\/(\?|$)/i.test(location.pathname || '');
 
     for (const link of links) {
       if (link.dataset.ccStarAdded === 'true') continue;

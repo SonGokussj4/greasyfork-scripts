@@ -447,6 +447,11 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     flex-direction: row-reverse;
 }
 
+.cc-link-icons-preview-before .cc-setting-row,
+.cc-link-icons-preview-after .cc-setting-row {
+    min-height: 24px;
+}
+
 .cc-setting-leading-icon {
     display: inline-flex;
     align-items: center;
@@ -2427,6 +2432,7 @@ span.comment .cc-own-rating,
 .cc-own-rating-foreign-profile {
     border: 1px solid rgb(53, 52, 52, 0.5);
     border-radius: 6px;
+    box-sizing: border-box;
     padding: 0px 5px;
     margin-right: 3px;
     height: 20px;
@@ -2445,7 +2451,19 @@ span.comment .cc-own-rating,
 span.comment .cc-own-rating,
 span.comment .cc-own-rating-foreign-profile,
 .diary-post p .cc-own-rating,
-.diary-post p .cc-own-rating-foreign-profile {
+.diary-post p .cc-own-rating-foreign-profile,
+article.article-forum .article-content.article-content-icons p .cc-own-rating,
+article.article-forum .article-content.article-content-icons p .cc-own-rating-foreign-profile,
+article.article-forum .article-content.article-content-icons li .cc-own-rating,
+article.article-forum .article-content.article-content-icons li .cc-own-rating-foreign-profile,
+.article-news-content.article-content-justify p .cc-own-rating,
+.article-news-content.article-content-justify p .cc-own-rating-foreign-profile,
+.article-news-content.article-content-justify li .cc-own-rating,
+.article-news-content.article-content-justify li .cc-own-rating-foreign-profile,
+.favorite-users-ratings .article-content-reviewtext p .cc-own-rating,
+.favorite-users-ratings .article-content-reviewtext p .cc-own-rating-foreign-profile,
+.favorite-users-ratings .article-content-reviewtext li .cc-own-rating,
+.favorite-users-ratings .article-content-reviewtext li .cc-own-rating-foreign-profile {
     margin-top: -3px;
 }
 
