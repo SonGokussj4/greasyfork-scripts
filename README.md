@@ -1,11 +1,60 @@
 # CSFD-Compare
 
-## Dev
+## DEVELOPMENT
 
-- Login into github with VSCode
-- Then: [https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
+### Chrome / Opera
+
+```js
+// ==UserScript==
+// @name         [DEV] ČSFD Compare
+// @include      *csfd.cz/*
+// @include      *csfd.sk/*
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @require      file:///C:/PATH/TO/YOUR/REPO/dist/csfd-compare.user.js
+// @grant        GM_addStyle
+// @run-at       document-start
+// ==/UserScript==
+```
+
+### Firefox
+
+There has to be more steps for Firefox
+
+1. Navigate to the `dist` folder where the `csfd-compare.user.js` file is located.
+2. Run a local server in that directory. You can use Python's built-in HTTP server for this:
+   - python: `python3 -m http.server 8080`
+   - node: `npx http-server -p 8080`
+3. Important: Open the Tampermonkey Dashboard, go to
+   - Settings -> Externals -> Update Interval and set it to Always.
+   - Otherwise, Tampermonkey will cache your code and your saves won't show up on refresh.
+4. Create a new script in Tampermonkey and use the following header:
+
+```js
+// ==UserScript==
+// @name         [DEV] ČSFD Compare
+// @include      *csfd.cz/*
+// @include      *csfd.sk/*
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @require      http://localhost:8080/csfd-compare.user.js
+// @grant        GM_addStyle
+// @run-at       document-start
+// ==/UserScript==
+```
 
 ## Changelog
+
+> **v0.6.0.3** _(2025-03-29)_
+
+### FIX
+
+- Upraven design tlačítek, rozšířen panel  
+
+> **v0.6.0.2** _(2022-12-28)_
+
+### FIX
+
+- Opraveno ukládání správného uživatelského jména do LocalStorage, i když má mezery.  
+  Doteď se ukládalo bez mezer.
 
 > **v0.6.0.1** _(2022-12-28)_
 
@@ -18,47 +67,47 @@
 "Menší" vánoční update :-)
 
 - NEW
-  - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
-  - Přidána tlačítka pro `reset nastavení` a `reset přidaných filmů` ([#16](../../issues/16))
-  - V CC menu jsou nyní obrázkové nápovědy v sekci `Film/Seriál`, `Uživatelé` a `Herci` ([#4](../../issues/4))
-  - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
-    - ! OMEZENÍ:
+    - Přidána ikona pro IMDb link (tlačítko) u filmů/seriálů ([#18](../../issues/18))
+    - Přidána tlačítka pro `reset nastavení` a `reset přidaných filmů` ([#16](../../issues/16))
+    - V CC menu jsou nyní obrázkové nápovědy v sekci `Film/Seriál`, `Uživatelé` a `Herci` ([#4](../../issues/4))
+    - V diskuzích je nyní možné reagovat na sebe, nejen na ostatní uživatele ([#2](../../issues/2))
+        - ! OMEZENÍ:
       1) nelze pak reagovat na první příspěvek
       2) nelze reagovat na více "svých" příspěvků najednou
-  - CC menu je trochu přepracováno, aby šetřilo místo:
-    - Snížen padding, je to více na sobě
-    - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
-    - Počet načtených filmů je nyní zobrazeno v titulku
-  - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
-  - Přidáno nové načítání filmů, je to "experimentální", dělá to víc stránek naráz
-    - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
-  - Při ohodnocení nebo odstranění hodnocení se nyní CC menu aktualizuje okamžitě, netřeba refreshovat stránku
-  - Dočasná vánoční výzdoba
+    - CC menu je trochu přepracováno, aby šetřilo místo:
+        - Snížen padding, je to více na sobě
+        - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
+        - Počet načtených filmů je nyní zobrazeno v titulku
+    - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
+    - Přidáno nové načítání filmů, je to "experimentální", dělá to víc stránek naráz
+        - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+    - Při ohodnocení nebo odstranění hodnocení se nyní CC menu aktualizuje okamžitě, netřeba refreshovat stránku
+    - Dočasná vánoční výzdoba
 - FIX
-  - Ukládání filmů by mělo být stabilnější
-  - Opraveno pár okrajových případů, kdy script celý spadl
-  - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
-  - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
-  - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
-  - Zobrazování prvků v CC menu pro nepřihlášené uživatele
-  - Opraven update dopočítaných hodnocení ([#3](../../issues/3))
+    - Ukládání filmů by mělo být stabilnější
+    - Opraveno pár okrajových případů, kdy script celý spadl
+    - Opraveno zobrazování nabídky odkazů na obrázky v několika případech
+    - Csfd opět někde změnilo styl a v případě, kdy byly skryty sekce hlavní stránky bylo CC menu zbytečně široké
+    - Zobrazení "vypočtených" hodnocení - zobrazí se jako černé hvězdičky - by mělo být stabilnější
+    - Zobrazování prvků v CC menu pro nepřihlášené uživatele
+    - Opraven update dopočítaných hodnocení ([#3](../../issues/3))
 
 > **v0.5.12** _(2022-10-xx)_  
 
 - NEW
-  - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
-  - Přidána kapota nových informací do individuálně uložených dat v Local Storage
+    - Pokud je seriál ohodnocen vypočtením průměrů episod, zobrazí se jako černé hvězdičky
+    - Přidána kapota nových informací do individuálně uložených dat v Local Storage
 - FIX
-  - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
-  - Opraveno zobrazování srovnání hodnocení u jiného uživatele
+    - Srovnání hodnocených/uložených hodnocení nyní správně respektuje nová "vypočtené" hodnocení
+    - Opraveno zobrazování srovnání hodnocení u jiného uživatele
 
 > **v0.5.12** _(2022-10-01)_  
 
 - FIX
-  - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
-  - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  
-  - Hodnocení: znovu ukazuje % hodnocení i když hodnotilo méně jak 10 lidí  
-  - Hodnocení: znovu ukazuje dodatečné hodnocení jako průměr od oblíbených uživatelů  
+    - Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](/../../issues/12)) ([#1](/../../issues/1))  
+    - Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](/../../issues/10))  
+    - Hodnocení: znovu ukazuje % hodnocení i když hodnotilo méně jak 10 lidí  
+    - Hodnocení: znovu ukazuje dodatečné hodnocení jako průměr od oblíbených uživatelů  
 
 > **v0.5.11.1** _(2021-11-24)_  
 

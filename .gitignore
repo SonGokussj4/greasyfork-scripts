@@ -1,2 +1,19 @@
 node_modules/
 examples/*
+
+csfd-extended.js
+csfd-MoviePreview.js
+csfd-StarNames.js
+
+package-lock.json
+.jshintrc
+
+logs/
+.vscode/
+coverage/
+
+.VSCodeCounter/*
+
+# TEMP
+csfd-compare-new.js
+test-results/*
