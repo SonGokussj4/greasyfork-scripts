@@ -17,14 +17,20 @@
 
 ## 0.8.23 - 2026-03-07
 
-### Fixed
+### Added
 
-- Obnoveny ikony odkazu v diskuzich a textovych blocich.
-- Opraveno sdileni selektoru mezi hodnocenim a ikonami odkazu.
+- Detailni nahled hodnot v modalnim okne Sprava LocalStorage, vcetne rozbaleni strukturovanych dat.
+- Seskupeni cache polozek v LocalStorage a moznost hromadne smazat celou skupinu `cc_creator` cache.
 
 ### Changed
 
-- Stabilizovano chovani hover preview a menu nastaveni.
+- Prepracovan modal Sprava LocalStorage pro lepsi citelnost, vetsi pracovni plochu a prehlednejsi tabulku hodnot.
+- Sjednocena znovupouzitelna detailni modal logika pro zobrazovani vnorenych dat v nastaveni.
+
+### Fixed
+
+- Po mazani jednotlivych nebo vsech LocalStorage polozek se znovu synchronizuji prepinace a navazany stav nastaveni.
+- Opraveno propisovani navazanych UI aktualizaci po zmenach v LocalStorage, napr. u galerie obrazkovych odkazu a dalsich prvku nastaveni.
 
 ## 0.8.22 - 2026-03-05
 

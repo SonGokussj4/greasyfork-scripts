@@ -2472,11 +2472,6 @@ div.plot-full .cc-own-rating {
     margin-top: -4px;
 }
 
-/* Own "border" setting for computed (black) stars */
-/* .cc-own-rating-computed {
-    border: 1px solid rgba(61, 60, 60, 0.7);
-    } */
-
 .cc-own-rating-computed .stars:before {
     color: var(--color-grey-dark2, #d2d2d2);
 }
