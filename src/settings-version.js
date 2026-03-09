@@ -9,6 +9,7 @@ const PREVIOUS_WHATS_NEW_VERSION_KEY = 'CC-whats-new-version';
 const LEGACY_INSTALLED_VERSION_KEY = 'cc_installed_script_version_v1';
 const LEGACY_SHOWN_VERSION_KEY = 'cc_update_modal_shown_version_v1';
 const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
+const CHANGELOG_CACHE_MAX_AGE_MS = 1000 * 60 * 5;
 const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
 const GITHUB_CHANGELOG_URL =
   'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/feature/class-rework/CHANGELOG.md';
@@ -228,11 +229,11 @@ async function fetchLatestVersionDetails() {
 function getCachedChangelogData() {
   try {
     const parsed = JSON.parse(localStorage.getItem(CHANGELOG_CACHE_KEY) || 'null');
-    if (!parsed || !parsed.checkedAt || !parsed.markdown) {
+    if (!parsed || !parsed.checkedAt || !parsed.markdown || parsed.scriptVersion !== VERSION) {
       return undefined;
     }
 
-    if (Date.now() - Number(parsed.checkedAt) > UPDATE_CHECK_MAX_AGE_MS) {
+    if (Date.now() - Number(parsed.checkedAt) > CHANGELOG_CACHE_MAX_AGE_MS) {
       return undefined;
     }
 
@@ -247,6 +248,7 @@ function setCachedChangelogData(changelogData) {
     CHANGELOG_CACHE_KEY,
     JSON.stringify({
       ...changelogData,
+      scriptVersion: VERSION,
       checkedAt: Date.now(),
     }),
   );
@@ -254,7 +256,7 @@ function setCachedChangelogData(changelogData) {
 
 async function fetchRepoChangelogData() {
   try {
-    const response = await fetch(GITHUB_CHANGELOG_URL, { method: 'GET' });
+    const response = await fetch(GITHUB_CHANGELOG_URL, { method: 'GET', cache: 'no-store' });
     if (response.ok) {
       const markdown = await response.text();
       if (String(markdown || '').trim()) {

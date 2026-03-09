@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.9.0 - 2026-03-09
+
+### Added
+
+- Nova samostatna volba `Nahledy externich odkazu` pro zapinani externich hover preview provideru jako AniDB a MyAnimeList.
+- Doplneny nove ulozene stranky pro aktualni CSFD strukturu tvurcu a serialu pro presnejsi vyvoj a testovani.
+
+### Changed
+
+- Prejmenovany polozky hover preview v menu na jasnejsi varianty pro `csfd` tvurce, uzivatele a filmy / serialy / epizody.
+- Tooltipy informacnich ikon v CC-menu se vykresluji mimo scrollovatelne telo menu, takze zustavaji citelne i u hlavicky a paticky.
+- Changelog z GitHubu se po zmene verze nebo po kratke dobe nacita znovu, aby se nove release poznamky propsaly rychleji.
+
+### Fixed
+
+- Opraveno klikani na info ikony se screenshoty v pripnutem CC-menu otevrenem pres `Ctrl+Alt+C`.
+- Opraveno skryvani tooltipu informacnich ikon za pevnou hlavickou a patickou CC-menu.
+- Zpresneno rozpoznani inline hodnoceni u vice CSFD kontextu, hlavne u serialovych a odvozenych stranek.
+
 ## 0.8.24 - 2026-03-08
 
 ### Added
