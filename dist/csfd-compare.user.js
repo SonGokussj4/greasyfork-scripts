@@ -7817,7 +7817,7 @@
           label: 'Boxy s tlačítkem "VÍCE" jsou klikatelné celé',
           infoIcon: {
             url: 'https://i.imgur.com/sV23XS2.png',
-            text: 'Boxy obsahující tlačítko "více" jsou klikatelné celé. Není potřeba mířit přesně na tlačítko.\n\n👉 Klikni pro ukázku',
+            text: 'Boxy obsahující tlačítko "více" jsou klikatelné celé, ne jen "VÍCE".\n\n👉 Klikni pro ukázku',
           },
           tooltip: '',
           eventName: 'cc-clickable-header-boxes-toggled',
@@ -7827,11 +7827,11 @@
           id: 'cc-enable-self-reply',
           storageKey: SELF_REPLY_IN_DISCUSSIONS_KEY,
           defaultValue: true,
-          requiresLogin: true, // Only makes sense if logged in
+          requiresLogin: true,
           label: 'Tlačítko "Reagovat" u vlastních příspěvků v diskuzi',
           infoIcon: {
-            url: '', // Add an Imgur link here later if you make a preview gif!
-            text: 'Vrátí možnost reagovat na vlastní příspěvky v diskuzích (přidá CC tag do textového pole).',
+            url: 'https://i.imgur.com/1U1Zz5z.jpeg',
+            text: 'Možnost reagovat na vlastní příspěvky v diskuzích.',
           },
           tooltip: '',
           eventName: 'cc-self-reply-toggled',
@@ -7845,8 +7845,8 @@
           label: 'Ikony u odkazů',
           tooltip: '',
           infoIcon: {
-            url: '',
-            text: 'Přidá malé ikonky před vybrané odkazy v textu recenzí, komentářů a diskuzí. Podporuje odkazy na filmy, tvůrce, uživatele, YouTube, Steam, Wikipedii, AniDB a MyAnimeList.',
+            url: 'https://i.imgur.com/rmx1u8n.jpeg',
+            text: 'Přidá ikonky před vybrané odkazy v textu recenzí, komentářů a diskuzí. Podporuje odkazy na filmy, tvůrce, uživatele, YouTube, Steam, Wikipedii, AniDB a MyAnimeList.\n\n👉 Klikni pro ukázku',
           },
           eventName: LINK_ICONS_UPDATED_EVENT,
           groupToggleId: 'cc-link-icons-group-toggle',
