@@ -214,6 +214,7 @@ export function initializeSettingsMenuHover(menuButton) {
     // Place the debug toggle inside the settings menu next to the DEV button.
     // Fallback: if the settings menu isn't available yet, create a simple floating control.
     const maintActions = menuButton.querySelector('.cc-maint-actions');
+    const stickLabel = 'stick';
     let checkbox;
     if (maintActions) {
       const wrapper = document.createElement('div');
@@ -236,7 +237,7 @@ export function initializeSettingsMenuHover(menuButton) {
 
       const labelText = document.createElement('span');
       labelText.className = 'cc-setting-label';
-      labelText.textContent = 'stick';
+      labelText.textContent = stickLabel;
 
       wrapper.appendChild(switchLabel);
       wrapper.appendChild(labelText);
@@ -275,7 +276,7 @@ export function initializeSettingsMenuHover(menuButton) {
         marginRight: '10px',
         cursor: 'pointer',
       });
-      checkboxLabel.textContent = 'stick';
+      checkboxLabel.textContent = stickLabel;
 
       checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
