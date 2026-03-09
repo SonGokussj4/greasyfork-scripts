@@ -1,3 +1,6 @@
+node_modules/
+examples/*
+
 csfd-extended.js
 csfd-MoviePreview.js
 csfd-StarNames.js
@@ -5,10 +8,11 @@ csfd-StarNames.js
 package-lock.json
 .jshintrc
 
-node_modules/
 logs/
 .vscode/
 coverage/
+
+.VSCodeCounter/*
 
 # TEMP
 csfd-compare-new.js

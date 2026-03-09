@@ -1,0 +1,1180 @@
+import {
+  HOVER_PREVIEW_CREATOR_ENABLED_KEY,
+  HOVER_PREVIEW_ENABLED_KEY,
+  HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+  HOVER_PREVIEW_FILM_ENABLED_KEY,
+  HOVER_PREVIEW_USER_ENABLED_KEY,
+} from './config.js';
+import { escapeHtml } from './utils.js';
+
+const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+function createUrl(href) {
+  try {
+    return new URL(href, location.origin);
+  } catch {
+    return null;
+  }
+}
+
+function isUserLinkInsideAccountDropdown(anchor) {
+  return anchor instanceof Element && anchor.closest('.dropdown-content.main-menu') !== null;
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function formatCount(value) {
+  const numericValue = Number.parseInt(String(value || '').replace(/[^\d]/g, ''), 10);
+  return Number.isFinite(numericValue) ? new Intl.NumberFormat('cs-CZ').format(numericValue) : normalizeText(value);
+}
+
+function resolveAssetUrl(url) {
+  if (!url) return null;
+  try {
+    return new URL(url, location.origin).href;
+  } catch {
+    return url;
+  }
+}
+
+function resolveUrlAgainst(url, baseHref) {
+  if (!url) return null;
+  try {
+    return new URL(url, baseHref).href;
+  } catch {
+    return url;
+  }
+}
+
+function getOverviewSegment(url) {
+  return url.hostname.endsWith('.sk') ? 'prehlad' : 'prehled';
+}
+
+function normalizeCreatorUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/(tvurce|tvorca)\/(\d+-[^/]+)/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/${match[1]}/${match[2]}/${getOverviewSegment(url)}/`;
+  return url.toString();
+}
+
+function normalizeUserUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/uzivatel\/(\d+-[^/]+)/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/uzivatel/${match[1]}/${getOverviewSegment(url)}/`;
+  return url.toString();
+}
+
+function getUserReviewsUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/uzivatel\/(\d+-[^/]+)/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/uzivatel/${match[1]}/recenze/`;
+  return url.toString();
+}
+
+function normalizeFilmUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getOverviewSegment(url)}/`;
+  return url.toString();
+}
+
+/**
+ * Normalizes a MyAnimeList character URL into a stable cache key URL.
+ *
+ * Example:
+ * - `/character/233866/Klein_Moretti/pics?x=1` -> `/character/233866/Klein_Moretti`
+ */
+function normalizeMyAnimeListCharacterUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/character\/(\d+)(?:\/([^/?#]+))?/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/character/${match[1]}${match[2] ? `/${match[2]}` : ''}`;
+  return url.toString();
+}
+
+/**
+ * Normalizes a MyAnimeList anime URL so direct detail links share one cache entry.
+ */
+function normalizeMyAnimeListAnimeUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/anime\/(\d+)(?:\/([^/?#]+))?/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/anime/${match[1]}${match[2] ? `/${match[2]}` : ''}`;
+  return url.toString();
+}
+
+/**
+ * Normalizes an AniDB character URL so all supported links map to one canonical target.
+ */
+function normalizeAniDbCharacterUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/character\/(\d+)/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/character/${match[1]}`;
+  return url.toString();
+}
+
+/**
+ * Normalizes an AniDB anime URL so nested hovers for related anime reuse one cache entry.
+ */
+function normalizeAniDbAnimeUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/anime\/(\d+)/i);
+  if (!url || !match) return null;
+
+  url.search = '';
+  url.hash = '';
+  url.pathname = `/anime/${match[1]}`;
+  return url.toString();
+}
+
+function getCreatorEntityKey(url) {
+  return createUrl(url)?.pathname.match(/^\/(?:tvurce|tvorca)\/(\d+-[^/]+)/i)?.[1] || null;
+}
+
+function getUserEntityKey(url) {
+  return createUrl(url)?.pathname.match(/^\/uzivatel\/(\d+-[^/]+)/i)?.[1] || null;
+}
+
+function getFilmEntityKey(url) {
+  const match = createUrl(url)?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+  if (!match) return null;
+  return match[2] ? `${match[1]}__${match[2]}` : match[1];
+}
+
+/**
+ * Extracts the MAL character id used for cache grouping and request deduplication.
+ */
+function getMyAnimeListCharacterEntityKey(url) {
+  return createUrl(url)?.pathname.match(/^\/character\/(\d+)(?:\/[^/]+)?\/?$/i)?.[1] || null;
+}
+
+/**
+ * Extracts the MAL anime id used for cache grouping and request deduplication.
+ */
+function getMyAnimeListAnimeEntityKey(url) {
+  return createUrl(url)?.pathname.match(/^\/anime\/(\d+)(?:\/[^/]+)?\/?$/i)?.[1] || null;
+}
+
+/**
+ * Extracts the AniDB character id used for cache grouping and request deduplication.
+ */
+function getAniDbCharacterEntityKey(url) {
+  return createUrl(url)?.pathname.match(/^\/character\/(\d+)\/?$/i)?.[1] || null;
+}
+
+/**
+ * Extracts the AniDB anime id used for cache grouping and request deduplication.
+ */
+function getAniDbAnimeEntityKey(url) {
+  return createUrl(url)?.pathname.match(/^\/anime\/(\d+)\/?$/i)?.[1] || null;
+}
+
+function isCurrentFilmEntity(url) {
+  if (!/^\/film\//i.test(location.pathname || '')) return false;
+  return getFilmEntityKey(url) === getFilmEntityKey(location.href);
+}
+
+function isCurrentCreatorEntity(url) {
+  if (!/^\/(?:tvurce|tvorca)\//i.test(location.pathname || '')) return false;
+  return getCreatorEntityKey(url) === getCreatorEntityKey(location.href);
+}
+
+function isCurrentUserEntity(url) {
+  if (!/^\/uzivatel\//i.test(location.pathname || '')) return false;
+  return getUserEntityKey(url) === getUserEntityKey(location.href);
+}
+
+function cloneWithout(selectorList, element) {
+  if (!element) return null;
+  const clone = element.cloneNode(true);
+  selectorList.forEach((selector) => {
+    clone.querySelectorAll(selector).forEach((node) => node.remove());
+  });
+  return normalizeText(clone.textContent);
+}
+
+function parseJsonLd(doc) {
+  const scripts = Array.from(doc.querySelectorAll('script[type="application/ld+json"]'));
+
+  for (const script of scripts) {
+    try {
+      const parsed = JSON.parse(script.textContent || 'null');
+      if (parsed && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Ignore malformed embedded JSON-LD blocks.
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Loads raw HTML for same-site and external hover previews.
+ *
+ * For external sites we prefer userscript requests because they bypass normal
+ * page CORS limits. If that API is not available, we fall back to regular `fetch()`.
+ */
+async function requestHtml(url) {
+  const gmRequest = globalThis.GM_xmlhttpRequest || globalThis.GM?.xmlHttpRequest;
+
+  if (typeof gmRequest === 'function') {
+    try {
+      return await new Promise((resolve, reject) => {
+        gmRequest({
+          method: 'GET',
+          url,
+          onload: (response) => {
+            if (response?.status >= 200 && response?.status < 400) {
+              resolve(response.responseText || '');
+              return;
+            }
+
+            reject(new Error(`Request failed with status ${response?.status || 'unknown'}`));
+          },
+          onerror: reject,
+        });
+      });
+    } catch {
+      // Fall back to fetch when a userscript request is unavailable.
+    }
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) return null;
+
+  return response.text();
+}
+
+/**
+ * Convenience wrapper around `requestHtml()` that returns a parsed HTML document.
+ */
+async function requestHtmlDocument(url) {
+  const html = await requestHtml(url);
+  return html ? new DOMParser().parseFromString(html, 'text/html') : null;
+}
+
+function countCareerTitles(table) {
+  return Array.from(table?.querySelectorAll('tr') || []).filter((row) => row.querySelector('td.name a.film-title-name'))
+    .length;
+}
+
+function calculateAge(birthStr, deathStr) {
+  const extractDate = (value) => {
+    const match = String(value || '').match(/(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/);
+    return match ? new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1])) : null;
+  };
+
+  const birthDate = extractDate(birthStr);
+  if (!birthDate) return null;
+
+  const endDate = extractDate(deathStr) || new Date();
+  let age = endDate.getFullYear() - birthDate.getFullYear();
+  if (
+    endDate.getMonth() < birthDate.getMonth() ||
+    (endDate.getMonth() === birthDate.getMonth() && endDate.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  return age;
+}
+
+function renderImage(imageUrl, altText) {
+  if (imageUrl) {
+    return `<img class="cc-hover-preview-image" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(altText || '')}" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='${EMPTY_IMAGE_SRC}';this.classList.add('empty-image');" />`;
+  }
+
+  return `<img class="cc-hover-preview-image empty-image" src="${EMPTY_IMAGE_SRC}" alt="" referrerpolicy="no-referrer" />`;
+}
+
+function renderCard({ providerClass, imageUrl, title, titleExtraHtml = '', metaHtml = '' }) {
+  return `
+    <div class="cc-hover-preview-card ${providerClass}">
+      ${renderImage(imageUrl, title)}
+      <div class="cc-hover-preview-title">
+        <span>${escapeHtml(title)}</span>
+        ${titleExtraHtml}
+      </div>
+      <div class="cc-hover-preview-meta" ${metaHtml ? '' : 'hidden'}>
+        ${metaHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderCardWithTop({ providerClass, topHtml = '', imageUrl, title, titleExtraHtml = '', metaHtml = '' }) {
+  return `
+    <div class="cc-hover-preview-card ${providerClass}">
+      ${topHtml ? `<div class="cc-hover-preview-top">${topHtml}</div>` : ''}
+      ${renderImage(imageUrl, title)}
+      <div class="cc-hover-preview-title">
+        <span>${escapeHtml(title)}</span>
+        ${titleExtraHtml}
+      </div>
+      <div class="cc-hover-preview-meta" ${metaHtml ? '' : 'hidden'}>
+        ${metaHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderLine(text, className = '') {
+  if (!text) return '';
+  return `<div class="cc-hover-preview-line ${className}">${text}</div>`;
+}
+
+function renderLabelValue(label, value, className = '') {
+  if (!value) return '';
+  return renderLine(
+    `<span class="cc-hover-preview-label-strong">${escapeHtml(label)}</span> ${escapeHtml(value)}`,
+    className,
+  );
+}
+
+export function parseCreatorPreviewDocument(doc) {
+  const name = normalizeText(doc.querySelector('h1')?.textContent) || 'Tvůrce';
+  const imageElement = doc.querySelector('.creator-profile figure img, .creator-profile-header figure img');
+  let imageUrl = resolveAssetUrl(imageElement?.getAttribute('src'));
+
+  if (imageUrl && (imageUrl.startsWith('data:image') || imageElement?.classList.contains('empty-image'))) {
+    imageUrl = null;
+  }
+
+  const flagUrl = resolveAssetUrl(doc.querySelector('.creator-profile-details img.flag')?.getAttribute('src'));
+  const details = Array.from(doc.querySelectorAll('.creator-profile-details p'));
+  const birthElement = details.find((item) => /nar\.|born|naroden/i.test(item.textContent));
+  const deathElement = details.find((item) => /zem\.|zom\.|died/i.test(item.textContent));
+  const birthText = cloneWithout(['.info-place', '.info'], birthElement);
+  const deathText = cloneWithout(['.info-place', '.info'], deathElement);
+
+  const footer = doc.querySelector('.creator-profile-footer');
+  const movieLink = footer?.querySelector('a.item-movie');
+  const copyrightText = normalizeText(footer?.querySelector('.item-text')?.textContent);
+  const fanclubCount = normalizeText(
+    doc.querySelector('#snippet--fanclubCountDesktop, #snippet--fanclubCountMobile')?.textContent,
+  ).replace(/[()]/g, '');
+  const careerTables = Array.from(doc.querySelectorAll('.updated-box-table'));
+  const moviesTable = careerTables.find(
+    (table) => normalizeText(table.querySelector('thead th')?.textContent).toLowerCase() === 'filmy',
+  );
+  const seriesTable = careerTables.find(
+    (table) => normalizeText(table.querySelector('thead th')?.textContent).toLowerCase() === 'seriály',
+  );
+
+  let photoSource = null;
+  let photoType = null;
+
+  if (movieLink) {
+    photoSource = normalizeText(`${movieLink.textContent} ${movieLink.nextElementSibling?.textContent || ''}`);
+    photoType = 'movie';
+  } else if (copyrightText) {
+    photoSource = copyrightText.replace(/^(?:photo|foto|copyright|\(c\)|©|:|-|\s)+/gi, '').trim();
+    photoType = 'copyright';
+  }
+
+  return {
+    name,
+    imageUrl,
+    flagUrl,
+    birthText,
+    deathText,
+    photoSource,
+    photoType,
+    photoSourceHref: resolveAssetUrl(movieLink?.getAttribute('href')),
+    fanclubCount,
+    movieCount: countCareerTitles(moviesTable),
+    seriesCount: countCareerTitles(seriesTable),
+  };
+}
+
+export function parseUserPreviewDocument(doc) {
+  const profile = doc.querySelector('.user-profile');
+  if (!profile) return null;
+
+  const imageUrl = resolveAssetUrl(
+    profile.querySelector('.user-profile-header figure img, .user-profile-header img')?.src,
+  );
+  const name = normalizeText(profile.querySelector('.user-profile-header h1')?.textContent) || 'Uživatel';
+  const contentParagraph = profile.querySelector('.user-profile-content p');
+  const realName = normalizeText(contentParagraph?.querySelector('strong')?.textContent);
+
+  const stats = Array.from(profile.querySelectorAll('.fans-box-mobile-count p'))
+    .map((item) => ({
+      label: normalizeText(
+        Array.from(item.childNodes)
+          .filter((node) => node.nodeType === Node.TEXT_NODE)
+          .map((node) => node.textContent)
+          .join(' '),
+      ),
+      value: normalizeText(item.querySelector('strong')?.textContent),
+    }))
+    .filter((item) => item.label || item.value);
+
+  const fans = stats.find((item) => /^fanoušk/i.test(item.label));
+  const points = stats.find((item) => /^bod/i.test(item.label));
+
+  const footer = profile.querySelector('.user-profile-footer');
+  const memberSince = normalizeText(
+    Array.from(footer?.childNodes || [])
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent)
+      .join(' '),
+  );
+  const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
+  const reviewCount = normalizeText(
+    Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
+      .find((heading) => /^Recenze\b/i.test(normalizeText(heading.textContent)))
+      ?.querySelector('.count')?.textContent,
+  ).replace(/[()]/g, '');
+
+  return {
+    name,
+    imageUrl,
+    realName,
+    fans,
+    points,
+    memberSince,
+    lastLogin,
+    reviewCount,
+  };
+}
+
+export function parseFilmPreviewDocument(doc) {
+  const schemaData = parseJsonLd(doc);
+  const title = normalizeText(doc.querySelector('h1')?.textContent) || 'Film';
+  const imageUrl =
+    resolveAssetUrl(doc.querySelector('.film-posters img, #poster img')?.getAttribute('src')) ||
+    resolveAssetUrl(schemaData?.image);
+  const rating = normalizeText(doc.querySelector('.film-rating-average')?.textContent);
+  const genres = normalizeText(doc.querySelector('.genres')?.textContent);
+  const origin = normalizeText(doc.querySelector('.origin')?.textContent);
+  const ratingCount = schemaData?.aggregateRating?.ratingCount || null;
+  const reviewCount = schemaData?.aggregateRating?.reviewCount || null;
+  const actorsBlock = Array.from(doc.querySelectorAll('#creators > div')).find(
+    (block) => normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '') === 'Hrají',
+  );
+  const actors = Array.from(actorsBlock?.querySelectorAll('a') || [])
+    .slice(0, 18)
+    .map((link) => ({
+      name: normalizeText(link.textContent),
+      href: resolveAssetUrl(link.getAttribute('href')),
+    }))
+    .filter((actor) => actor.name && actor.href);
+
+  return {
+    title,
+    imageUrl,
+    rating,
+    ratingCount,
+    reviewCount,
+    genres,
+    origin,
+    actors,
+    posters: imageUrl ? [{ imageUrl, label: title }] : [],
+  };
+}
+
+export function parseFilmPosterGalleryDocument(doc) {
+  return Array.from(doc.querySelectorAll('.gallery-item .box.box-media.poster'))
+    .map((item) => {
+      const bestLink = item.querySelector('.cc-gallery-size-links a[href]');
+      const imageUrl = resolveAssetUrl(
+        bestLink?.getAttribute('href') || item.querySelector('picture img')?.getAttribute('src'),
+      );
+      const label = normalizeText(item.querySelector('.figcaption-poster-title h3')?.textContent);
+      return imageUrl ? { imageUrl, label } : null;
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Reads the minimum data needed for a MAL character hover card.
+ *
+ * Current v1 behavior is intentionally simple: title + portrait image.
+ */
+export function parseMyAnimeListCharacterPreviewDocument(doc) {
+  const imageUrl =
+    resolveAssetUrl(doc.querySelector('meta[property="og:image"]')?.getAttribute('content')) ||
+    resolveAssetUrl(
+      doc.querySelector('#content img.portrait-225x350, #content a[href*="/pics"] img')?.getAttribute('src'),
+    ) ||
+    resolveAssetUrl(
+      doc.querySelector('#content img.portrait-225x350, #content a[href*="/pics"] img')?.getAttribute('data-src'),
+    );
+  const title =
+    normalizeText(doc.querySelector('meta[property="og:title"]')?.getAttribute('content')) ||
+    normalizeText(doc.querySelector('#content h1, #content h2')?.textContent) ||
+    normalizeText(doc.querySelector('#content img[alt]')?.getAttribute('alt')) ||
+    'Character';
+
+  const animeographyTable = doc.querySelector('#content .character-anime + table');
+  const animeography = Array.from(animeographyTable?.querySelectorAll('tr') || [])
+    .map((row) => {
+      const link = Array.from(row.querySelectorAll('a[href*="/anime/"]')).find((candidate) =>
+        normalizeText(candidate.textContent),
+      );
+      const name = normalizeText(link?.textContent);
+      const href = link?.href || resolveUrlAgainst(link?.getAttribute('href'), 'https://myanimelist.net');
+      const role = normalizeText(row.querySelector('small')?.textContent);
+
+      return name && href ? { name, href, role } : null;
+    })
+    .filter(Boolean)
+    .slice(0, 5);
+
+  return { title, imageUrl, animeography };
+}
+
+/**
+ * Reads the main poster and a few compact stats for a MAL anime hover card.
+ */
+export function parseMyAnimeListAnimePreviewDocument(doc) {
+  const imageUrl =
+    resolveAssetUrl(doc.querySelector('meta[property="og:image"]')?.getAttribute('content')) ||
+    resolveAssetUrl(doc.querySelector('#content td img[itemprop="image"], #content td img')?.getAttribute('src')) ||
+    resolveAssetUrl(doc.querySelector('#content td img[itemprop="image"], #content td img')?.getAttribute('data-src'));
+  const title =
+    normalizeText(doc.querySelector('meta[property="og:title"]')?.getAttribute('content')) ||
+    normalizeText(doc.querySelector('#content h1, #content h2')?.textContent) ||
+    normalizeText(doc.querySelector('#content img[itemprop="image"]')?.getAttribute('alt')) ||
+    'Anime';
+  const score =
+    normalizeText(doc.querySelector('.score-label')?.textContent) ||
+    normalizeText(doc.querySelector('[itemprop="ratingValue"]')?.textContent);
+  const scoreCount =
+    normalizeText(doc.querySelector('[itemprop="ratingCount"]')?.getAttribute('content')) ||
+    normalizeText(doc.querySelector('.score[data-user]')?.getAttribute('data-user')).replace(/\s*users?$/i, '');
+
+  const infoRows = Array.from(doc.querySelectorAll('#content .leftside .spaceit_pad'));
+  const getInfoValue = (label) => {
+    const row = infoRows.find(
+      (item) => normalizeText(item.querySelector('.dark_text')?.textContent).replace(/:$/, '') === label,
+    );
+    if (!row) return '';
+
+    const clone = row.cloneNode(true);
+    clone.querySelectorAll('.dark_text').forEach((node) => node.remove());
+    return normalizeText(clone.textContent).replace(/^:\s*/, '');
+  };
+
+  return {
+    title,
+    imageUrl,
+    score,
+    scoreCount,
+    episodes: getInfoValue('Episodes'),
+    type: getInfoValue('Type'),
+    aired: getInfoValue('Aired'),
+  };
+}
+
+/**
+ * Reads the minimum data needed for an AniDB character hover card.
+ *
+ * We prefer `og:image` when present because it is usually the most stable image source.
+ */
+export function parseAniDbCharacterPreviewDocument(doc) {
+  const imageUrl =
+    resolveAssetUrl(doc.querySelector('meta[property="og:image"]')?.getAttribute('content')) ||
+    resolveAssetUrl(
+      doc
+        .querySelector('.g_section.info picture img[itemprop="image"], .g_section.info picture img')
+        ?.getAttribute('src'),
+    );
+  const title =
+    normalizeText(doc.querySelector('.mainname [itemprop="name"]')?.textContent) ||
+    normalizeText(doc.querySelector('h1')?.textContent).replace(/^Character:\s*/i, '') ||
+    normalizeText(doc.querySelector('img[itemprop="image"]')?.getAttribute('alt')) ||
+    'Character';
+  const relatedAnime = Array.from(
+    doc.querySelectorAll(
+      '#tab_main_2_1_pane table.animelist tbody tr, .pane.anime_appearance table.animelist tbody tr',
+    ),
+  )
+    .map((row) => {
+      const link = row.querySelector('td.name.anime a[href^="/anime/"]');
+      const name = normalizeText(link?.textContent);
+      const href = resolveUrlAgainst(link?.getAttribute('href'), 'https://anidb.net');
+      const rating = normalizeText(row.querySelector('td.rating')?.childNodes?.[0]?.textContent);
+
+      return name && href
+        ? {
+            name,
+            href,
+            rating,
+          }
+        : null;
+    })
+    .filter(Boolean)
+    .slice(0, 4);
+
+  return { title, imageUrl, relatedAnime };
+}
+
+/**
+ * Reads the minimum data needed for an AniDB anime hover card.
+ *
+ * Current v1 shows poster, title, rating and a short year/type summary.
+ */
+export function parseAniDbAnimePreviewDocument(doc) {
+  const imageUrl =
+    resolveAssetUrl(doc.querySelector('meta[property="og:image"]')?.getAttribute('content')) ||
+    resolveAssetUrl(
+      doc
+        .querySelector('.g_section.info picture img[itemprop="image"], .g_section.info picture img')
+        ?.getAttribute('src'),
+    );
+  const title =
+    normalizeText(doc.querySelector('.romaji [itemprop="name"]')?.textContent) ||
+    normalizeText(doc.querySelector('h1')?.textContent).replace(/^Anime:\s*/i, '') ||
+    normalizeText(doc.querySelector('img[itemprop="image"]')?.getAttribute('alt')) ||
+    'Anime';
+  const type = normalizeText(doc.querySelector('tr.type td.value')?.textContent).replace(/\s+/g, ' ');
+  const year = normalizeText(doc.querySelector('tr.year td.value')?.textContent).replace(/\s+/g, ' ');
+  const rating = normalizeText(doc.querySelector('tr.rating .value .value, tr.rating td.value .value')?.textContent);
+
+  return {
+    title,
+    imageUrl,
+    rating,
+    type,
+    year,
+  };
+}
+
+function getFilmPosterGalleryUrl(url) {
+  const parsed = createUrl(url);
+  const match = parsed?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+  if (!parsed || !match) return null;
+
+  parsed.search = '';
+  parsed.hash = '';
+  parsed.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}galerie/plakaty/`;
+  return parsed.toString();
+}
+
+async function fetchFilmPosterGallery(url) {
+  const galleryUrl = getFilmPosterGalleryUrl(url);
+  if (!galleryUrl) return [];
+
+  try {
+    const galleryResponse = await fetch(galleryUrl);
+    if (!galleryResponse.ok) return [];
+
+    const galleryHtml = await galleryResponse.text();
+    const galleryDocument = new DOMParser().parseFromString(galleryHtml, 'text/html');
+    return parseFilmPosterGalleryDocument(galleryDocument);
+  } catch {
+    return [];
+  }
+}
+
+function renderCreatorPreview(data) {
+  const age = calculateAge(data.birthText, data.deathText);
+
+  let lifeHtml = '';
+  const birthDate = data.birthText?.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4}|\d{4})/)?.[1]?.replace(/\s/g, '');
+  const deathDate = data.deathText?.match(/(\d{1,2}\.\s*\d{1,2}\.\s*\d{4}|\d{4})/)?.[1]?.replace(/\s/g, '');
+
+  if (data.deathText && birthDate) {
+    lifeHtml = [
+      renderLine(`nar. ${escapeHtml(birthDate)} → ${escapeHtml(deathDate || '?')}`, 'is-primary is-center'),
+      age ? renderLine(`(${escapeHtml(String(age))} let)`, 'is-center') : '',
+    ].join('');
+  } else if (data.birthText) {
+    lifeHtml = renderLine(
+      `${escapeHtml(data.birthText)}${!data.deathText && age ? ` <span class="cc-hover-preview-inline-note">(${escapeHtml(String(age))} let)</span>` : ''}`,
+      'is-primary',
+    );
+  }
+
+  const photoHtml = data.photoSource
+    ? renderLine(
+        data.photoType === 'movie' && data.photoSourceHref
+          ? `<a class="cc-hover-preview-link cc-hover-preview-photo-source" href="${escapeHtml(data.photoSourceHref)}">${escapeHtml(data.photoSource)}</a>`
+          : `<span class="cc-hover-preview-photo-source">${escapeHtml(data.photoSource)}</span>`,
+        `is-photo ${data.photoType === 'movie' ? 'is-movie' : 'is-copyright'}`,
+      )
+    : '';
+
+  const topHtml =
+    data.movieCount || data.seriesCount
+      ? `
+      <div class="cc-hover-preview-stats">
+        <div class="cc-hover-preview-stat is-primary">
+          <span class="cc-hover-preview-stat-value">${escapeHtml(formatCount(data.movieCount || '0'))}</span>
+          <span class="cc-hover-preview-stat-label">filmů</span>
+        </div>
+        <div class="cc-hover-preview-stat is-secondary">
+          <span class="cc-hover-preview-stat-value">${escapeHtml(formatCount(data.seriesCount || '0'))}</span>
+          <span class="cc-hover-preview-stat-label">seriálů</span>
+        </div>
+      </div>
+    `
+      : data.fanclubCount
+        ? `
+      <div class="cc-hover-preview-stats">
+        <div class="cc-hover-preview-stat is-primary is-wide">
+          <span class="cc-hover-preview-stat-value">${escapeHtml(formatCount(data.fanclubCount))}</span>
+          <span class="cc-hover-preview-stat-label">fanoušků</span>
+        </div>
+      </div>
+    `
+        : '';
+
+  return renderCardWithTop({
+    providerClass: 'is-creator',
+    topHtml,
+    imageUrl: data.imageUrl,
+    title: data.name,
+    titleExtraHtml: data.flagUrl
+      ? `<img class="cc-hover-preview-title-flag" src="${escapeHtml(data.flagUrl)}" alt="" />`
+      : '',
+    metaHtml: `${lifeHtml}${photoHtml}`,
+  });
+}
+
+function renderUserPreview(data) {
+  const topHtml =
+    data.points?.value || data.fans?.value
+      ? `
+      <div class="cc-hover-preview-stats">
+        <div class="cc-hover-preview-stat is-primary">
+          <span class="cc-hover-preview-stat-value">${escapeHtml(formatCount(data.points?.value || '0'))}</span>
+          <span class="cc-hover-preview-stat-label">bodů</span>
+        </div>
+        <div class="cc-hover-preview-stat is-secondary">
+          <span class="cc-hover-preview-stat-value">${escapeHtml(formatCount(data.fans?.value || '0'))}</span>
+          <span class="cc-hover-preview-stat-label">fanoušků</span>
+        </div>
+      </div>
+    `
+      : '';
+
+  const lines = [
+    data.realName ? renderLine(escapeHtml(data.realName), 'is-strong') : '',
+    data.lastLogin
+      ? renderLabelValue('Viděn', data.lastLogin.replace(/^Poslední\s+přihlášení\s*/i, ''), 'is-muted')
+      : '',
+    data.lastLogin && (data.memberSince || data.reviewCount)
+      ? '<div class="cc-hover-preview-divider is-subtle"></div>'
+      : '',
+    data.memberSince
+      ? renderLabelValue('Na ČSFD od', data.memberSince.replace(/^Na\s+ČSFD\s+od\s*/i, ''), 'is-muted')
+      : '',
+    data.reviewCount ? renderLabelValue('Recenzí', formatCount(data.reviewCount), 'is-muted') : '',
+  ].join('');
+
+  return renderCardWithTop({
+    providerClass: 'is-user',
+    topHtml,
+    imageUrl: data.imageUrl,
+    title: data.name,
+    metaHtml: lines,
+  });
+}
+
+function renderFilmPreview(data) {
+  const actorsHtml = Array.isArray(data.actors)
+    ? data.actors
+        .map(
+          (actor) => `<a class="cc-hover-preview-link" href="${escapeHtml(actor.href)}">${escapeHtml(actor.name)}</a>`,
+        )
+        .join(', ')
+    : '';
+
+  const topHtml = [
+    data.rating || data.ratingCount
+      ? renderLine(
+          [
+            data.rating ? escapeHtml(data.rating) : '',
+            data.ratingCount
+              ? `<span class="cc-hover-preview-inline-note">(${escapeHtml(formatCount(data.ratingCount))})</span>`
+              : '',
+          ]
+            .filter(Boolean)
+            .join(' '),
+          'is-rating',
+        )
+      : '',
+    data.reviewCount ? renderLine(`${escapeHtml(formatCount(data.reviewCount))} recenzí`, 'is-muted is-center') : '',
+  ].join('');
+
+  const lines = [
+    data.genres ? renderLine(escapeHtml(data.genres), 'is-primary') : '',
+    data.origin ? renderLine(escapeHtml(data.origin), 'is-muted') : '',
+    actorsHtml ? '<div class="cc-hover-preview-divider"></div>' : '',
+    actorsHtml
+      ? renderLine(
+          `<span class="cc-hover-preview-clamp-2"><span class="cc-hover-preview-label">Hrají:</span> ${actorsHtml}</span>`,
+        )
+      : '',
+  ].join('');
+
+  return renderCardWithTop({
+    providerClass: 'is-film',
+    topHtml,
+    imageUrl: data.posters?.[0]?.imageUrl || data.imageUrl,
+    title: data.title,
+    titleExtraHtml:
+      Array.isArray(data.posters) && data.posters.length > 1
+        ? `
+          <button type="button" class="cc-hover-preview-poster-nav is-prev" data-cc-hover-poster-dir="-1" aria-label="Předchozí plakát"><i class="icon icon-arrow-left"></i></button>
+          <span class="cc-hover-preview-poster-index">1/${escapeHtml(String(data.posters.length))}</span>
+          <button type="button" class="cc-hover-preview-poster-nav is-next" data-cc-hover-poster-dir="1" aria-label="Další plakát"><i class="icon icon-arrow-right"></i></button>
+        `
+        : '',
+    metaHtml: lines,
+  });
+}
+
+function renderMyAnimeListCharacterPreview(data) {
+  const animeographyHtml = Array.isArray(data.animeography)
+    ? data.animeography
+        .map((item) =>
+          renderLine(
+            `<a class="cc-hover-preview-link" href="${escapeHtml(item.href)}">${escapeHtml(item.name)}</a>${item.role ? ` <span class="cc-hover-preview-inline-note">(${escapeHtml(item.role)})</span>` : ''}`,
+            'is-muted',
+          ),
+        )
+        .join('')
+    : '';
+
+  return renderCardWithTop({
+    providerClass: 'is-external-character is-myanimelist-character',
+    topHtml: `
+      <div class="cc-hover-preview-stats">
+        <div class="cc-hover-preview-stat is-primary is-wide">
+          <span class="cc-hover-preview-stat-label">myanimelist.net</span>
+        </div>
+      </div>
+    `,
+    imageUrl: data.imageUrl,
+    title: data.title || 'Character',
+    metaHtml: animeographyHtml ? `<div class="cc-hover-preview-divider"></div>${animeographyHtml}` : '',
+  });
+}
+
+function renderAniDbCharacterPreview(data) {
+  const relatedAnimeHtml = Array.isArray(data.relatedAnime)
+    ? data.relatedAnime
+        .map((item) => {
+          const ratingSuffix = item.rating ? ` - ${escapeHtml(item.rating)}/10` : '';
+          return renderLine(
+            `<a class="cc-hover-preview-link" href="${escapeHtml(item.href)}">${escapeHtml(item.name)}</a>${ratingSuffix}`,
+            'is-muted',
+          );
+        })
+        .join('')
+    : '';
+
+  return renderCardWithTop({
+    providerClass: 'is-external-character is-anidb-character',
+    topHtml: `
+      <div class="cc-hover-preview-stats">
+        <div class="cc-hover-preview-stat is-primary is-wide">
+          <span class="cc-hover-preview-stat-label">anidb.net</span>
+        </div>
+      </div>
+    `,
+    imageUrl: data.imageUrl,
+    title: data.title || 'Character',
+    metaHtml: relatedAnimeHtml ? `<div class="cc-hover-preview-divider"></div>${relatedAnimeHtml}` : '',
+  });
+}
+
+function renderAniDbAnimePreview(data) {
+  const topHtml = data.rating ? renderLine(`${escapeHtml(data.rating)}/10`, 'is-rating') : '';
+  const metaHtml = [
+    data.year ? renderLine(escapeHtml(data.year), 'is-muted') : '',
+    data.type ? renderLine(escapeHtml(data.type), 'is-primary') : '',
+  ].join('');
+
+  return renderCardWithTop({
+    providerClass: 'is-external-anime is-anidb-anime',
+    topHtml,
+    imageUrl: data.imageUrl,
+    title: data.title || 'Anime',
+    metaHtml,
+  });
+}
+
+function renderMyAnimeListAnimePreview(data) {
+  const topHtml = data.score
+    ? renderLine(
+        [
+          `${escapeHtml(data.score)}/10`,
+          data.scoreCount
+            ? `<span class="cc-hover-preview-inline-note">(${escapeHtml(formatCount(data.scoreCount))})</span>`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+        'is-rating',
+      )
+    : '';
+  const metaHtml = [
+    data.episodes ? renderLabelValue('Episodes', data.episodes, 'is-muted') : '',
+    data.type ? renderLabelValue('Type', data.type, 'is-primary') : '',
+    data.aired ? renderLabelValue('Aired', data.aired, 'is-muted') : '',
+  ].join('');
+
+  return renderCardWithTop({
+    providerClass: 'is-external-anime is-myanimelist-anime',
+    topHtml,
+    imageUrl: data.imageUrl,
+    title: data.title || 'Anime',
+    metaHtml,
+  });
+}
+
+const EXTERNAL_HOVER_PREVIEW_SETTINGS = {
+  settingsId: 'cc-hover-preview-external',
+  settingsLabel: 'Náhledy externích odkazů',
+  settingsInfoIcon: {
+    url: 'https://i.imgur.com/wsMMjOo.png',
+    text: 'Zobrazí náhledy externích odkazů. Aktuálně podporuje:\n - 🟢 AniDB a MyAnimeList\n - 🔴 Wiki, Steam\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
+  },
+};
+
+export const HOVER_PREVIEW_PROVIDERS = [
+  // =====================================
+  // Internal providers for CSFD entities
+  // =====================================
+  {
+    id: 'creator',
+    storageKey: HOVER_PREVIEW_CREATOR_ENABLED_KEY,
+    settingsId: 'cc-hover-preview-creators',
+    settingsLabel: 'Náhledy csfd tvůrců',
+    settingsInfoIcon: {
+      url: 'https://i.imgur.com/oX5vYjZ.png',
+      text: 'Zobrazí fotku a základní informace o herci nebo tvůrci.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
+    },
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url &&
+        !url.search &&
+        !url.hash &&
+        !isCurrentCreatorEntity(url) &&
+        /^\/(tvurce|tvorca)\/\d+-[^/]+(?:\/(?:prehled|prehlad))?\/?$/i.test(url.pathname || ''),
+      );
+    },
+    normalizeUrl: normalizeCreatorUrl,
+    getEntityKey: getCreatorEntityKey,
+    parseDocument: parseCreatorPreviewDocument,
+    render: renderCreatorPreview,
+  },
+  {
+    id: 'user',
+    storageKey: HOVER_PREVIEW_USER_ENABLED_KEY,
+    settingsId: 'cc-hover-preview-users',
+    settingsLabel: 'Náhledy csfd uživatelů',
+    settingsInfoIcon: {
+      url: 'https://i.imgur.com/jg6bUCM.png',
+      text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
+    },
+    matches(anchor) {
+      if (isUserLinkInsideAccountDropdown(anchor)) {
+        return false;
+      }
+
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url &&
+        !url.search &&
+        !url.hash &&
+        !isCurrentUserEntity(url) &&
+        /^\/uzivatel\/\d+-[^/]+(?:\/(?:prehled|prehlad|o-mne|denicek|dennik|seznamy|filmoteka|komentare|komentare-filmy|diskuze|fanclub|videa|galerie|zajimavosti|biografie|obsahy|videa-fotky)|\/oblibene(?:\/[^/]+)*)?\/?$/i.test(
+          url.pathname || '',
+        ),
+      );
+    },
+    normalizeUrl: normalizeUserUrl,
+    getEntityKey: getUserEntityKey,
+    async fetchData({ url }) {
+      const response = await fetch(getUserReviewsUrl(url) || url);
+      if (!response.ok) return null;
+
+      const html = await response.text();
+      const documentNode = new DOMParser().parseFromString(html, 'text/html');
+      return parseUserPreviewDocument(documentNode);
+    },
+    parseDocument: parseUserPreviewDocument,
+    render: renderUserPreview,
+  },
+  {
+    id: 'film',
+    storageKey: HOVER_PREVIEW_FILM_ENABLED_KEY,
+    settingsId: 'cc-hover-preview-films',
+    settingsLabel: 'Náhledy csfd filmů / seriálů / epizod',
+    settingsInfoIcon: {
+      url: 'https://i.imgur.com/aejN8f7.png',
+      text: 'Zobrazí plakát a stručné informace o filmu, seriálu nebo epizodě.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
+    },
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(url && /^\/film\//i.test(url.pathname || '') && !isCurrentFilmEntity(url));
+    },
+    normalizeUrl: normalizeFilmUrl,
+    getEntityKey: getFilmEntityKey,
+    async fetchData({ url }) {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+
+      const html = await response.text();
+      const detailDocument = new DOMParser().parseFromString(html, 'text/html');
+      return parseFilmPreviewDocument(detailDocument);
+    },
+    async loadDeferredData({ url, data }) {
+      if (!data || (Array.isArray(data.posters) && data.posters.length > 1)) {
+        return data;
+      }
+
+      const posters = await fetchFilmPosterGallery(url);
+      if (posters.length === 0) return data;
+
+      return {
+        ...data,
+        posters,
+      };
+    },
+    parseDocument: parseFilmPreviewDocument,
+    render: renderFilmPreview,
+  },
+  {
+    id: 'myanimelist-character',
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url &&
+        /^([^.]+\.)?myanimelist\.net$/i.test(url.hostname || '') &&
+        /^\/character\/\d+(?:\/[^/?#]+)?\/?$/i.test(url.pathname || ''),
+      );
+    },
+    normalizeUrl: normalizeMyAnimeListCharacterUrl,
+    getEntityKey: getMyAnimeListCharacterEntityKey,
+    async fetchData({ url }) {
+      const documentNode = await requestHtmlDocument(url);
+      return documentNode ? parseMyAnimeListCharacterPreviewDocument(documentNode) : null;
+    },
+    parseDocument: parseMyAnimeListCharacterPreviewDocument,
+    render: renderMyAnimeListCharacterPreview,
+  },
+  {
+    id: 'myanimelist-anime',
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url &&
+        /^([^.]+\.)?myanimelist\.net$/i.test(url.hostname || '') &&
+        /^\/anime\/\d+(?:\/[^/?#]+)?\/?$/i.test(url.pathname || ''),
+      );
+    },
+    normalizeUrl: normalizeMyAnimeListAnimeUrl,
+    getEntityKey: getMyAnimeListAnimeEntityKey,
+    async fetchData({ url }) {
+      const documentNode = await requestHtmlDocument(url);
+      return documentNode ? parseMyAnimeListAnimePreviewDocument(documentNode) : null;
+    },
+    parseDocument: parseMyAnimeListAnimePreviewDocument,
+    render: renderMyAnimeListAnimePreview,
+  },
+  {
+    id: 'anidb-character',
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url && /^([^.]+\.)?anidb\.net$/i.test(url.hostname || '') && /^\/character\/\d+\/?$/i.test(url.pathname || ''),
+      );
+    },
+    normalizeUrl: normalizeAniDbCharacterUrl,
+    getEntityKey: getAniDbCharacterEntityKey,
+    async fetchData({ url }) {
+      const documentNode = await requestHtmlDocument(url);
+      return documentNode ? parseAniDbCharacterPreviewDocument(documentNode) : null;
+    },
+    parseDocument: parseAniDbCharacterPreviewDocument,
+    render: renderAniDbCharacterPreview,
+  },
+  {
+    id: 'anidb-anime',
+    storageKey: HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
+    ...EXTERNAL_HOVER_PREVIEW_SETTINGS,
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url && /^([^.]+\.)?anidb\.net$/i.test(url.hostname || '') && /^\/anime\/\d+\/?$/i.test(url.pathname || ''),
+      );
+    },
+    normalizeUrl: normalizeAniDbAnimeUrl,
+    getEntityKey: getAniDbAnimeEntityKey,
+    async fetchData({ url }) {
+      const documentNode = await requestHtmlDocument(url);
+      return documentNode ? parseAniDbAnimePreviewDocument(documentNode) : null;
+    },
+    parseDocument: parseAniDbAnimePreviewDocument,
+    render: renderAniDbAnimePreview,
+  },
+];
+
+export function getHoverPreviewSettingsItems() {
+  const settingsItems = new Map();
+
+  HOVER_PREVIEW_PROVIDERS.filter((provider) => provider.settingsId).forEach((provider) => {
+    if (settingsItems.has(provider.settingsId)) {
+      return;
+    }
+
+    settingsItems.set(provider.settingsId, {
+      type: 'toggle',
+      id: provider.settingsId,
+      storageKey: provider.storageKey,
+      defaultValue: true,
+      label: provider.settingsLabel,
+      tooltip: '',
+      infoIcon: provider.settingsInfoIcon,
+      callback: 'updateHoverPreviewUI',
+    });
+  });
+
+  return Array.from(settingsItems.values());
+}

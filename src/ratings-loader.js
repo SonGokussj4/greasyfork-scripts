@@ -1,5 +1,6 @@
 import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, RATINGS_STORE_NAME } from './config.js';
-import { getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
+import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
+import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay } from './utils.js';
 
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
@@ -133,6 +134,16 @@ function normalizeType(rawType) {
   return normalized;
 }
 
+// helpers exported for tests
+export {
+  parseRatingsFromDocument,
+  normalizeType,
+  parseRatingRow,
+  createRecordFingerprint,
+  hasRecordChanged,
+  buildStorageRecordId,
+};
+
 function parseRating(starElement) {
   if (!starElement) {
     return NaN;
@@ -165,6 +176,17 @@ function parseIdsFromUrl(relativeUrl) {
   return { id, parentId, parentName };
 }
 
+/**
+ * Parses a single rating row from the user's ratings table and extracts all relevant information into a structured record.
+ * Examples of rating rows:
+ * - Übel Blatt - Durch Bruch (Break Through)2025epizoda (E01)		11.01.2025
+ * - Stargate SG-1 - Bloodlines1997epizoda (S01E11)		26.02.2026
+ * - Stranger Things - Season 52025série (S05)		20.02.2026
+ * - May I Ask for One Final Thing?2025seriál		20.12.2025
+ * @param {*} row The table row element containing the rating information.
+ * @param {*} origin The origin URL to resolve relative links against.
+ * @returns {Object|undefined} Structured rating record or undefined if parsing fails.
+ */
 function parseRatingRow(row, origin) {
   const titleLink = row.querySelector('td.name a.film-title-name');
   if (!titleLink) {
@@ -174,9 +196,34 @@ function parseRatingRow(row, origin) {
   const relativeUrl = titleLink.getAttribute('href') || '';
   const name = titleLink.textContent?.trim() || '';
   const infoValues = Array.from(row.querySelectorAll('.film-title-info .info')).map((el) => el.textContent.trim());
-
   const yearValue = infoValues.find((value) => /^\d{4}$/.test(value));
   const rawType = infoValues.find((value) => !/^\d{4}$/.test(value));
+  const tokenMatch = infoValues.find((value) => /^\((S\d{1,2}E\d{1,2}|S\d{1,2}|E\d{1,2})\)$/i.test(value));
+
+  let seriesToken = tokenMatch ? tokenMatch.replace(/[()]/g, '') : '';
+
+  // If no explicit series token is found in the info values, attempt to extract it from the name using common patterns
+  if (!seriesToken) {
+    const nameParent = name.match(/\((S\d{1,2}E\d{1,2}|S\d{1,2}|E\d{1,2})\)/i);
+    if (nameParent) {
+      seriesToken = nameParent[0].replace(/[()]/g, '');
+    } else {
+      const nameSeason = name.match(/S(\d{1,2})E(\d{1,2})/i);
+      if (nameSeason) {
+        seriesToken = `S${nameSeason[1].padStart(2, '0')}E${nameSeason[2].padStart(2, '0')}`;
+      } else {
+        const nameEpisode = name.match(/Episode\s*(\d{1,3})/i);
+        if (nameEpisode) {
+          seriesToken = `E${nameEpisode[1].padStart(2, '0')}`;
+        } else {
+          const nameSeason = name.match(/Season\s*(\d{1,2})/i);
+          if (nameSeason) {
+            seriesToken = `S${nameSeason[1].padStart(2, '0')}`;
+          }
+        }
+      }
+    }
+  }
 
   const starRatingWrapper = row.querySelector('td.star-rating-only .star-rating');
   const starEl = starRatingWrapper?.querySelector('.stars');
@@ -207,6 +254,7 @@ function parseRatingRow(row, origin) {
     computed,
     computedCount,
     computedFromText,
+    seriesToken,
     lastUpdate: new Date().toISOString(),
   };
 }
@@ -220,26 +268,31 @@ function getStoreNameForUser() {
   return RATINGS_STORE_NAME;
 }
 
+function buildStorageRecordId(userSlug, movieId) {
+  return buildRatingRecordId(userSlug, movieId);
+}
+
 function toStorageRecord(record, userSlug) {
   const movieId = record.id;
-  const uniqueKeyPart = record.url || record.fullUrl || `${record.name}-${record.date}`;
 
   return {
     ...record,
     movieId,
     userSlug,
-    id: `${userSlug}:${uniqueKeyPart}`,
+    id: buildStorageRecordId(userSlug, movieId),
   };
 }
 
 function createRecordFingerprint(record) {
   const computedCount = Number.isFinite(record?.computedCount) ? String(record.computedCount) : '';
+  const token = record?.seriesToken || '';
   return [
     Number.isFinite(record?.rating) ? String(record.rating) : '',
     record?.date || '',
     record?.computed === true ? '1' : '0',
     computedCount,
     record?.computedFromText || '',
+    token,
   ].join('|');
 }
 
@@ -249,6 +302,19 @@ function hasRecordChanged(existingRecord, nextRecord) {
   }
 
   return createRecordFingerprint(existingRecord) !== createRecordFingerprint(nextRecord);
+}
+
+// expose early-stop predicate for testing
+export function evaluateShouldStopEarly({
+  incremental,
+  page,
+  totalRatings,
+  directRatingsCount,
+  consecutiveStablePages,
+}) {
+  return (
+    !incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1
+  );
 }
 
 function updateProgressUI(progress, state) {
@@ -295,7 +361,7 @@ function setLoadButtonMode(button, mode) {
   }
 
   button.disabled = false;
-  labelEl.textContent = 'Načíst moje hodnocení';
+  labelEl.textContent = 'Načíst hodnocení';
 }
 
 function getPersistedLoaderState() {
@@ -454,7 +520,7 @@ function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord
 
   return {
     ...(existingRecord || {}),
-    id: `${userSlug}:${parentSlug}`,
+    id: buildStorageRecordId(userSlug, parentId),
     userSlug,
     movieId: parentId,
     url: parentSlug,
@@ -489,7 +555,16 @@ async function loadComputedParentRatingsForCurrentUser({
   }
 
   const allRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-  const userRecords = allRecords.filter((record) => record.userSlug === userSlug && Number.isFinite(record.movieId));
+  const reconciledRecords = reconcileUserRatingRecords(allRecords, userSlug);
+  if (reconciledRecords.hasChanges) {
+    await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, reconciledRecords.normalizedRecords);
+    await Promise.all(
+      reconciledRecords.staleRecordIds.map((recordId) =>
+        deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, recordId),
+      ),
+    );
+  }
+  const userRecords = reconciledRecords.normalizedRecords;
 
   let parentCandidatesCount = 0;
   let unresolvedParents = [];
@@ -718,9 +793,16 @@ async function loadRatingsForCurrentUser(
   const paginationMode = detectPaginationModeFromDocument(firstDoc);
 
   const allExistingRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
-  const userExistingRecords = allExistingRecords.filter(
-    (record) => record.userSlug === userSlug && Number.isFinite(record.movieId),
-  );
+  const reconciledRecords = reconcileUserRatingRecords(allExistingRecords, userSlug);
+  if (reconciledRecords.hasChanges) {
+    await saveToIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, reconciledRecords.normalizedRecords);
+    await Promise.all(
+      reconciledRecords.staleRecordIds.map((recordId) =>
+        deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, recordId),
+      ),
+    );
+  }
+  const userExistingRecords = reconciledRecords.normalizedRecords;
   const existingRecordsById = new Map(userExistingRecords.map((record) => [record.id, record]));
   let directRatingsCount = userExistingRecords.filter((record) => record.computed !== true).length;
 
@@ -864,8 +946,18 @@ async function loadRatingsForCurrentUser(
       incremental,
     });
 
+    // previously we stopped early during incremental runs once the count
+    // reached totalRatings and we saw a stable page.  this was efficient when
+    // we only cared about new entries, but it meant that metadata-only changes
+    // (like adding a seriesToken) on later pages would never be detected.  by
+    // requiring non-incremental mode we ensure full scans when the user explicitly
+    // requests updates, while still allowing non-incremental callers to abort.
     const shouldStopEarly =
-      incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1;
+      !incremental &&
+      page >= 2 &&
+      totalRatings > 0 &&
+      directRatingsCount >= totalRatings &&
+      consecutiveStablePages >= 1;
 
     if (shouldStopEarly) {
       stoppedEarly = true;
@@ -952,7 +1044,7 @@ export function initializeRatingsLoader(rootElement) {
     }
 
     computedButton.disabled = false;
-    labelEl.textContent = 'Dopočítat seriály';
+    labelEl.textContent = 'Načíst spočtené';
   };
 
   const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {

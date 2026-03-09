@@ -1,18 +1,19 @@
 import { Csfd } from './csfd.js';
 import { delay } from './utils.js';
-import './styles/fancy-alert.css';
-import './styles/alert-modal.css';
-import './styles/cc-menu.css';
-import './styles/general.css';
+import './style.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
-import { fancyAlert } from './fancy-alert.js';
-import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
+import { initializeHoverPreviews } from './hover-preview.js';
 
 (async () => {
   'use strict';
   console.debug('🟣 Script started');
+
   await delay(20);
+
+  if (document.readyState === 'loading') {
+    await new Promise((resolve) => window.addEventListener('DOMContentLoaded', resolve));
+  }
 
   // Initialise the CSFD helper and add the settings button in parallel so neither
   // blocks the other — the button DOM insertion now happens immediately inside
@@ -21,16 +22,35 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   console.debug('🟣 Adding main button + initialising CSFD-Compare in parallel');
   await Promise.all([addSettingsButton(), csfd.initialize()]);
 
+  // The stored preference is honoured inside csfd.initialize(); no need
+  // to invoke showAllCreatorTabs here unconditionally.  The toggle listener
+  // below will react if the user changes the setting later.
+
+  window.addEventListener('cc-show-all-creator-tabs-toggled', (ev) => {
+    try {
+      const enabled = !!ev?.detail?.enabled;
+      if (enabled) {
+        csfd.showAllCreatorTabs();
+      } else {
+        csfd.restoreCreatorTabs();
+      }
+    } catch (err) {
+      console.error('[CC] show-all-creator-tabs toggle handler failed:', err);
+    }
+  });
+
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();
-  initializeCreatorHoverPreview();
+  csfd.addConfiguredLinkIcons();
+  initializeHoverPreviews();
 
   // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
   // etc.).  Re-run addStars once the page is fully loaded and once more a bit
   // later to catch any sections that arrive after the load event.
   let addStarsRunning = false;
   let addStarsQueued = false;
+  let linkIconObserverTimer = null;
   const rerunStars = () => {
     if (addStarsRunning) {
       addStarsQueued = true;
@@ -57,10 +77,12 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
   window.setTimeout(rerunStars, 1500);
 
   // Watch for content injected into the DOM after initial load (e.g. pagination
-  // clicks, lazy-loaded boxes) and add stars to any new film links.
+  // clicks, lazy-loaded boxes and AJAX-replies in discussions) and add stars to any new film links.
   // Debounced so that the star elements addStars() itself inserts don't trigger
   // an infinite loop of observer → addStars → insert → observer → ...
   let starObserverTimer = null;
+  let forumObserverTimer = null;
+
   const mutationContainsFilmLink = (mutationList) => {
     for (const mutation of mutationList) {
       if (!mutation.addedNodes || mutation.addedNodes.length === 0) {
@@ -81,19 +103,78 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
     return false;
   };
 
-  const starObserver = new MutationObserver((mutationList) => {
-    if (!mutationContainsFilmLink(mutationList)) {
-      return;
+  // Helper to detect when ČSFD injects new discussion posts
+  const mutationContainsForumPost = (mutationList) => {
+    for (const mutation of mutationList) {
+      if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+        if (
+          node.matches?.('.article-forum-item, article.article-forum') ||
+          node.querySelector?.('.article-forum-item, article.article-forum')
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  };
+
+  const mutationContainsLinkIconTarget = (mutationList) => {
+    for (const mutation of mutationList) {
+      if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
+
+      for (const node of mutation.addedNodes) {
+        if (!(node instanceof Element)) continue;
+
+        if (
+          node.matches?.(
+            'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment',
+          ) ||
+          node.querySelector?.(
+            'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment',
+          )
+        ) {
+          return true;
+        }
+      }
     }
 
-    if (starObserverTimer !== null) return;
-    starObserverTimer = window.setTimeout(() => {
-      starObserverTimer = null;
-      rerunStars();
-    }, 200);
+    return false;
+  };
+
+  const contentObserver = new MutationObserver((mutationList) => {
+    if (mutationContainsFilmLink(mutationList)) {
+      if (starObserverTimer === null) {
+        starObserverTimer = window.setTimeout(() => {
+          starObserverTimer = null;
+          rerunStars();
+        }, 200);
+      }
+    }
+
+    // If the DOM update contained a forum post, redraw the self-reply buttons!
+    if (mutationContainsForumPost(mutationList)) {
+      if (forumObserverTimer === null) {
+        forumObserverTimer = window.setTimeout(() => {
+          forumObserverTimer = null;
+          csfd.enableSelfReplyInDiscussions();
+        }, 200);
+      }
+    }
+
+    if (mutationContainsLinkIconTarget(mutationList)) {
+      if (linkIconObserverTimer === null) {
+        linkIconObserverTimer = window.setTimeout(() => {
+          linkIconObserverTimer = null;
+          csfd.addConfiguredLinkIcons(pageContent);
+        }, 200);
+      }
+    }
   });
+
   const pageContent = document.querySelector('div.page-content') || document.body;
-  starObserver.observe(pageContent, { childList: true, subtree: true });
+  contentObserver.observe(pageContent, { childList: true, subtree: true });
 
   window.addEventListener('cc-gallery-image-links-toggled', () => {
     csfd.addGalleryImageFormatLinks().catch((error) => {
@@ -101,18 +182,51 @@ import { initializeCreatorHoverPreview } from './creator-hover-preview.js';
     });
   });
 
+  window.addEventListener('cc-link-icons-updated', () => {
+    csfd.refreshLinkIcons(pageContent);
+  });
+
+  // wire up legacy‑style toggles
+  window.addEventListener('cc-clickable-header-boxes-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.clickableHeaderBoxes();
+    } else {
+      csfd.clearClickableHeaderBoxes();
+    }
+  });
+  window.addEventListener('cc-ratings-estimate-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.ratingsEstimate();
+    } else {
+      csfd.clearRatingsEstimate();
+    }
+  });
+  window.addEventListener('cc-ratings-from-favorites-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.ratingsFromFavorites();
+    } else {
+      csfd.clearRatingsFromFavorites();
+    }
+  });
+  window.addEventListener('cc-add-ratings-date-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.addRatingsDate();
+    } else {
+      csfd.clearRatingsDate();
+    }
+  });
+  window.addEventListener('cc-hide-selected-reviews-updated', () => {
+    csfd.hideSelectedUserReviews();
+  });
+
+  window.addEventListener('cc-self-reply-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.enableSelfReplyInDiscussions();
+    } else {
+      csfd.clearSelfReplyInDiscussions();
+    }
+  });
+
   // Disable Option 2 if not logged in (now using utility)
   setControlsDisabledByLoginState(csfd.getIsLoggedIn(), ['option2']);
-
-  // Add fancy alert
-  let alertButton = document.querySelector('.fancy-alert-button');
-  if (!alertButton) {
-    alertButton = document.createElement('button');
-    alertButton.textContent = 'Show Fancy Alert';
-    alertButton.className = 'fancy-alert-button';
-    document.body.appendChild(alertButton);
-  }
-  alertButton.addEventListener('click', () => {
-    fancyAlert();
-  });
 })();

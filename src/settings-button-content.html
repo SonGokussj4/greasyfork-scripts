@@ -1,149 +1,192 @@
-<a href="javascript:void(0)" rel="dropdownContent" class="user-link csfd-compare-menu initialized">
-    <svg class="cc-menu-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true" focusable="false">
+<svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="cc-icon-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="16" x2="12" y2="12"></line>
+        <line x1="12" y1="8" x2="12.01" y2="8"></line>
+    </symbol>
+    <symbol id="cc-icon-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <polyline points="21 15 16 10 5 21"></polyline>
+    </symbol>
+    <symbol id="cc-icon-menu-logo" viewBox="0 0 24 24" fill="none">
         <text x="12" y="12" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-size="11"
             font-weight="800" letter-spacing="0.2">CC</text>
+    </symbol>
+    <symbol id="cc-icon-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+        <polyline points="7 10 12 15 17 10"></polyline>
+        <line x1="12" y1="15" x2="12" y2="3"></line>
+    </symbol>
+    <symbol id="cc-icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+        </polygon>
+    </symbol>
+    <symbol id="cc-icon-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
+    </symbol>
+    <symbol id="cc-icon-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+    </symbol>
+</svg>
+
+<a href="javascript:void(0)" rel="dropdownContent" class="user-link csfd-compare-menu initialized">
+    <svg class="cc-menu-icon" width="24" height="24">
+        <use href="#cc-icon-menu-logo"></use>
     </svg>
 </a>
-<div class="dropdown-content cc-settings">
 
-    <div class="dropdown-content-head">
-        <div class="left-head">
-            <h2>CSFD-Compare</h2>
-            <div class="cc-version-row">
-                <span class="cc-version-link" id="cc-version-value">v0.8.3</span>
-                <span class="cc-version-status" id="cc-version-status" aria-hidden="true"></span>
-            </div>
-        </div>
-        <div class="right-head ml-auto cc-head-right">
-            <span class="cc-badge cc-badge-red" id="cc-badge-red" title="Uloženo / Celkem">0 / 0</span>
-            <span class="cc-badge cc-badge-black" id="cc-badge-black" title="Spočtená hodnocení">0</span>
-            <div class="cc-head-tools">
-                <button id="cc-sync-cloud-btn" class="cc-sync-icon-btn" title="Cloud sync" aria-label="Cloud sync">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true" focusable="false">
-                        <path
-                            d="M16.5 18H6.2C4.43 18 3 16.57 3 14.8C3 13.03 4.43 11.6 6.2 11.6C6.27 8.52 8.76 6 11.85 6C14.16 6 16.19 7.43 17 9.54C18.67 9.75 20 11.18 20 12.9C20 14.76 18.49 16.27 16.63 16.27"
-                            stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M18.5 18V22" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
-                        <path d="M16.5 20H20.5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
-                    </svg>
-                </button>
-                <button id="cc-version-info-btn" class="cc-sync-icon-btn cc-version-info-btn" title="Informace o verzi"
-                    aria-label="Informace o verzi">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true" focusable="false">
-                        <circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.9" />
-                        <path d="M12 11V15" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
-                        <circle cx="12" cy="8.4" r="1" fill="currentColor" />
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <article class="article cc-settings-section">
-        <div class="article-content">
-            <div class="cc-settings-actions">
-                <button id="cc-load-ratings-btn" class="cc-button cc-button-red grow cc-button-iconed">
-                    <span class="cc-button-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 4V14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                            <path d="M8 10L12 14L16 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                            <path d="M5 19H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-                        </svg>
-                    </span>
-                    <span>Načíst moje hodnocení</span>
-                </button>
-                <button id="cc-load-computed-btn" class="cc-button cc-button-black cc-button-iconed">
-                    <span class="cc-button-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M12 6L13.8 9.6L17.8 10.2L14.9 13L15.6 17L12 15.2L8.4 17L9.1 13L6.2 10.2L10.2 9.6L12 6Z"
-                                stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
-                        </svg>
-                    </span>
-                    <span>Dopočítat seriály</span>
-                </button>
-            </div>
-        </div>
-    </article>
-
-    <article class="article cc-settings-section">
-        <div class="article-content">
-            <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>
-                <div class="cc-ratings-progress-head">
-                    <span id="cc-ratings-progress-label">Připravuji načítání…</span>
-                    <span id="cc-ratings-progress-count">0 / 0</span>
+<div id="dropdown-compare-menu" class="dropdown-content cc-settings">
+    <div class="cc-settings-shell">
+        <div class="cc-settings-shell-head">
+            <div class="dropdown-content-head">
+                <div class="left-head">
+                    <h2>CSFD-Compare</h2>
+                    <div class="cc-version-row">
+                        <a class="cc-version-link" id="cc-version-value"
+                            href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare" target="_blank"
+                            rel="noopener noreferrer">v0.9.0</a>
+                        <span class="cc-version-status" id="cc-version-status" aria-hidden="true"></span>
+                    </div>
                 </div>
-                <div class="cc-ratings-progress-track">
-                    <div id="cc-ratings-progress-bar" class="cc-ratings-progress-bar" style="width: 0%"></div>
-                </div>
-                <div class="cc-ratings-progress-actions">
-                    <button id="cc-cancel-ratings-loader-btn" class="cc-ratings-cancel-link" hidden>Zrušit
-                        načítání</button>
+                <div class="right-head cc-ml-auto cc-head-right">
+                    <div class="cc-head-tools">
+                        <div class="cc-badges-pill" title="Tvá uložená hodnocení">
+                            <span id="cc-badge-red" class="cc-badge cc-badge-red" tabindex="0" role="button"
+                                title="Uloženo / Celkem: Počet přímo načtených hodnocení">0 / 0</span>
+                            <span id="cc-badge-black" class="cc-badge cc-badge-black" tabindex="0" role="button"
+                                title="Spočtená hodnocení: Počet hodnocení automaticky dopočítaných pro seriály">0</span>
+                        </div>
+
+                        <button type="button" class="cc-sync-icon-btn" id="cc-open-ratings-btn"
+                            aria-label="Tabulka hodnocení" title="Zobrazit tabulku všech hodnocení">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="8" y1="6" x2="21" y2="6"></line>
+                                <line x1="8" y1="12" x2="21" y2="12"></line>
+                                <line x1="8" y1="18" x2="21" y2="18"></line>
+                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                            </svg>
+                        </button>
+
+                        <button type="button" class="cc-sync-icon-btn" id="cc-sync-cloud-btn"
+                            title="Synchronizace s cloudem">
+                            <svg width="14" height="14">
+                                <use href="#cc-icon-cloud"></use>
+                            </svg>
+                        </button>
+
+                        <button type="button" class="cc-sync-icon-btn cc-version-info-btn" id="cc-version-info-btn"
+                            title="Informace o verzi">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </button>
+
+                        <button type="button" class="cc-sync-icon-btn cc-settings-pin-close"
+                            id="cc-settings-pinned-close-btn" title="Zavřít připnuté menu"
+                            aria-label="Zavřít připnuté menu">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </article>
 
-    <article class="article cc-settings-section">
-        <div class="article-content">
-            <h3 class="cc-section-title">Konfigurace</h3>
-            <form class="cc-settings-form">
-                <label class="cc-form-check">
-                    <input type="checkbox" id="cc-enable-gallery-image-links" name="cc-enable-gallery-image-links" />
-                    Zobrazovat formáty obrázků v galerii
-                </label>
-                <div class="cc-preview-group" id="cc-creator-preview-group">
-                    <button type="button" class="cc-preview-group-toggle" id="cc-creator-preview-group-toggle"
-                        aria-expanded="false" aria-controls="cc-creator-preview-group-body">
-                        <span class="cc-preview-group-toggle-left">
-                            <span class="cc-preview-group-chevron" aria-hidden="true"></span>
-                            <span class="cc-preview-group-title">Náhledy fotek tvůrců</span>
-                        </span>
-                        <span class="cc-preview-group-count" id="cc-creator-preview-count">0/2</span>
-                    </button>
-                    <div class="cc-preview-group-body" id="cc-creator-preview-group-body">
-                        <label class="cc-form-check cc-preview-group-main">
-                            <input type="checkbox" id="cc-enable-creator-preview" name="cc-enable-creator-preview" />
-                            Zobrazovat náhled fotky tvůrce při najetí
-                        </label>
-                        <div class="cc-preview-group-extra" id="cc-creator-preview-settings-extra">
-                            <label class="cc-form-check cc-preview-group-sub">
-                                <input type="checkbox" id="cc-creator-preview-show-birth"
-                                    name="cc-creator-preview-show-birth" />
-                                Zobrazovat datum narození
-                            </label>
-                            <label class="cc-form-check cc-preview-group-sub">
-                                <input type="checkbox" id="cc-creator-preview-show-photo-from"
-                                    name="cc-creator-preview-show-photo-from" />
-                                Zobrazovat „Photo from“
-                            </label>
+            <div class="cc-settings-section">
+                <div class="cc-settings-section-content">
+                    <div class="cc-settings-actions">
+                        <button id="cc-load-ratings-btn" class="cc-button cc-button-red cc-grow cc-button-iconed"
+                            title="Projde váš profil a stáhne všechna vaše hodnocení do lokální databáze (nutné pro správné fungování ostatních funkcí).">
+                            <span class="cc-button-icon" aria-hidden="true"><svg width="14" height="14">
+                                    <use href="#cc-icon-download"></use>
+                                </svg></span>
+                            <span>Načíst hodnocení</span>
+                        </button>
+                        <button id="cc-load-computed-btn" class="cc-button cc-button-black cc-button-iconed"
+                            title="Z načtených hodnocení automaticky vypočítá a doplní hodnocení pro celé seriály nebo jejich série.">
+                            <span class="cc-button-icon" aria-hidden="true"><svg width="14" height="14">
+                                    <use href="#cc-icon-star"></use>
+                                </svg></span>
+                            <span>Načíst spočtené</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="cc-settings-shell-body">
+            <div class="cc-settings-scroll-region">
+                <div class="cc-settings-section" hidden>
+                    <div class="cc-settings-section-content">
+                        <div id="cc-ratings-progress" class="cc-ratings-progress" hidden>
+                            <div class="cc-ratings-progress-head">
+                                <span id="cc-ratings-progress-label">Připravuji načítání…</span>
+                                <span id="cc-ratings-progress-count">0 / 0</span>
+                            </div>
+                            <div class="cc-ratings-progress-track">
+                                <div id="cc-ratings-progress-bar" class="cc-ratings-progress-bar" style="width: 0%">
+                                </div>
+                            </div>
+                            <div class="cc-ratings-progress-actions">
+                                <button id="cc-cancel-ratings-loader-btn" class="cc-ratings-cancel-link" hidden>Zrušit
+                                    načítání</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <label class="cc-form-check">
-                    <input type="checkbox" name="option2" /> Povolit automatickou aktualizaci dat
-                </label>
-                <label class="cc-form-field">
-                    <span>Vlastní štítek sekce</span>
-                    <input type="text" name="sectionLabel" placeholder="Např. Můj CSFD Compare" />
-                </label>
-            </form>
-        </div>
-    </article>
 
-    <article class="article cc-settings-section">
-        <div class="article-content">
-            <h3 class="cc-section-title">Další akce</h3>
-            <div class="cc-maint-actions">
-                <button type="button" class="cc-maint-btn" id="cc-maint-reset-btn">Reset</button>
-                <button type="button" class="cc-maint-btn" id="cc-maint-clear-lc-btn">Smazat LC</button>
-                <button type="button" class="cc-maint-btn" id="cc-maint-clear-db-btn">Smazat DB</button>
+                <div class="cc-settings-section">
+                    <div class="cc-settings-section-content" style="padding-top: 8px;"
+                        id="cc-dynamic-settings-container">
+                    </div>
+                </div>
             </div>
         </div>
-    </article>
+
+        <div class="cc-settings-shell-foot">
+            <div class="cc-settings-section">
+                <div class="cc-settings-section-content">
+                    <h3 class="cc-section-title" style="margin-top: 0;">Další akce</h3>
+                    <div class="cc-maint-actions" style="width: 100%;">
+                        <button type="button" class="cc-button cc-button-black cc-button-small" id="cc-maint-reset-btn"
+                            title="Vrátí veškeré přepínače a nastavení tohoto doplňku (včetně skrytých uživatelů) do původního, výchozího stavu.">
+                            Reset
+                        </button>
+                        <button type="button" class="cc-button cc-button-red cc-button-small cc-dev-only"
+                            id="cc-maint-clear-lc-btn" title="Otevře okno pro manuální smazání dat z LocalStorage.">
+                            LC
+                        </button>
+                        <button type="button" class="cc-button cc-button-red cc-button-small cc-dev-only"
+                            id="cc-maint-clear-db-btn"
+                            title="Smaže lokální CC hodnocení (IndexedDB). CSFD.cz hodnocení zůstanou nedotčena.">
+                            Smazat DB
+                        </button>
+
+                        <div style="flex-grow: 1;"></div>
+
+                        <button type="button" class="cc-button cc-button-black cc-button-small" id="cc-maint-dev-btn"
+                            title="Zapne/vypne vývojářský režim (skryje nebo zobrazí testovací prvky).">DEV:
+                            OFF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 </div>

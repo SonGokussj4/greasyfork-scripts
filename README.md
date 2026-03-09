@@ -1,42 +1,45 @@
 # CSFD-Compare
 
-## Dev
+## DEVELOPMENT
 
-- Login into github with VSCode
-- Then: [https://stackoverflow.com/a/55568568](https://stackoverflow.com/a/55568568)
-
-## Supabase sync (minimal setup)
-
-Script now supports cloud sync of ratings (PC1 <-> PC2) via Supabase.
-
-### 1) Create table in Supabase SQL editor
-
-```sql
-create table if not exists public.cc_ratings (
-    id text primary key,
-    user_slug text not null,
-    movie_id bigint null,
-    updated_at timestamptz not null default now(),
-    payload jsonb not null
-);
-
-create index if not exists cc_ratings_user_slug_idx on public.cc_ratings (user_slug);
-```
-
-### 2) Set RLS policy (simple owner-like by user_slug value)
-
-For minimal setup you can start with permissive policy for authenticated/anon key usage in your own project and tighten later.
-
-### 3) Configure each browser/PC once
-
-Run in browser console (on csfd page):
+### Chrome / Opera
 
 ```js
-localStorage.setItem('cc_supabase_url', 'https://YOUR_PROJECT.supabase.co');
-localStorage.setItem('cc_supabase_anon_key', 'YOUR_SUPABASE_ANON_KEY');
+// ==UserScript==
+// @name         [DEV] ČSFD Compare
+// @include      *csfd.cz/*
+// @include      *csfd.sk/*
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @require      file:///C:/PATH/TO/YOUR/REPO/dist/csfd-compare.user.js
+// @grant        GM_addStyle
+// @run-at       document-start
+// ==/UserScript==
 ```
 
-Then open CC menu and use `Sync cloud (Supabase)` button.
+### Firefox
+
+There has to be more steps for Firefox
+
+1. Navigate to the `dist` folder where the `csfd-compare.user.js` file is located.
+2. Run a local server in that directory. You can use Python's built-in HTTP server for this:
+   - python: `python3 -m http.server 8080`
+   - node: `npx http-server -p 8080`
+3. Important: Open the Tampermonkey Dashboard, go to
+   - Settings -> Externals -> Update Interval and set it to Always.
+   - Otherwise, Tampermonkey will cache your code and your saves won't show up on refresh.
+4. Create a new script in Tampermonkey and use the following header:
+
+```js
+// ==UserScript==
+// @name         [DEV] ČSFD Compare
+// @include      *csfd.cz/*
+// @include      *csfd.sk/*
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @require      http://localhost:8080/csfd-compare.user.js
+// @grant        GM_addStyle
+// @run-at       document-start
+// ==/UserScript==
+```
 
 ## Changelog
 

@@ -5,12 +5,37 @@ import commonjs from '@rollup/plugin-commonjs';
 import { string } from 'rollup-plugin-string';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
+import { basename } from 'node:path';
 
 // PostCSS plugins
 import simplevars from 'postcss-simple-vars';
 import nested from 'postcss-nested';
 import cssnext from 'postcss-cssnext';
 import cssnano from 'cssnano';
+
+function buildUserscriptBanner() {
+  return `// ==UserScript==
+// @name         ČSFD Compare V2
+// @version      ${readScriptVersion()}
+// @namespace    csfd.cz
+// @description  Show your own ratings on other users ratings list
+// @author       Jan Verner <SonGokussj4@centrum.cz>
+// @license      GNU GPLv3
+// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
+// @include      *csfd.cz/*
+// @include      *csfd.sk/*
+// @require      https://greasyfork.org/scripts/449554-csfd-compare-utils/code/csfd-compare-utils.js?version=1100309
+// @grant        GM_addStyle
+// @grant        GM_xmlhttpRequest
+// @grant        GM.xmlHttpRequest
+// @connect      myanimelist.net
+// @connect      www.myanimelist.net
+// @connect      anidb.net
+// @connect      cdn-eu.anidb.net
+// @run-at       document-start
+// ==/UserScript==`;
+}
 
 function readScriptVersion() {
   const packageJson = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'));
@@ -74,6 +99,22 @@ function injectScriptVersion() {
   };
 }
 
+function runSyncVersionOnChange() {
+  return {
+    name: 'run-sync-version-on-change',
+    watchChange(id) {
+      try {
+        if (basename(id) === 'package.json') {
+          // Run the sync script before Rollup rebuilds the project.
+          execSync('node scripts/sync-version.mjs', { stdio: 'inherit' });
+        }
+      } catch (err) {
+        console.error('Failed to run sync-version.mjs on package.json change', err);
+      }
+    },
+  };
+}
+
 // Rollup configuration
 export default {
   input: 'src/main.js',
@@ -82,37 +123,39 @@ export default {
     format: 'iife',
     name: 'CsfdCompare',
     assetFileNames: '[name]-[hash][extname]',
-    banner: () => `// ==UserScript==
-// @name         ČSFD Compare V2
-// @version      ${readScriptVersion()}
-// @namespace    csfd.cz
-// @description  Show your own ratings on other users ratings list
-// @author       Jan Verner <SonGokussj4@centrum.cz>
-// @license      GNU GPLv3
-// @icon         http://img.csfd.cz/assets/b1733/images/apple_touch_icon.png
-// @include      *csfd.cz/*
-// @include      *csfd.sk/*
-// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js
-// @require      https://greasyfork.org/scripts/449554-csfd-compare-utils/code/csfd-compare-utils.js?version=1100309
-// @grant        GM_addStyle
-// @run-at       document-start
-// ==/UserScript==\n`,
+    banner: () => `${buildUserscriptBanner()}\n`,
   },
   watch: {
-    include: ['src/**', 'package.json'],
+    include: ['src/**', 'package.json', 'rollup.config.js'],
   },
   plugins: [
     // css({
     //   output: 'bundle.css', // Output CSS file
     // }),
     postcss({
-      plugins: [simplevars(), nested(), cssnext({ warnForDuplicates: false }), cssnano()],
+      plugins: [
+        simplevars(),
+        nested(),
+        cssnext({ warnForDuplicates: false }),
+        cssnano({
+          preset: [
+            'default',
+            {
+              svgo: false,
+            },
+          ],
+        }),
+      ],
       extensions: ['.css'],
     }),
     injectScriptVersion(),
     string({
       include: '**/*.html',
     }),
-    commonjs(),
+    commonjs({
+      exclude: ['src/**'], // don't convert our own ES modules
+    }),
+    // Ensure package.json changes trigger the sync-version script during watch
+    runSyncVersionOnChange(),
   ],
 };
