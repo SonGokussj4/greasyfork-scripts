@@ -229,6 +229,52 @@ function getOrCreateImageModal() {
   return overlay;
 }
 
+function getOrCreateSettingsTooltip() {
+  let tooltip = document.getElementById('cc-settings-info-tooltip');
+  if (tooltip) return tooltip;
+
+  tooltip = document.createElement('div');
+  tooltip.id = 'cc-settings-info-tooltip';
+  tooltip.className = 'cc-settings-info-tooltip';
+  tooltip.innerHTML = '<div class="cc-settings-info-tooltip-body"></div>';
+  document.body.appendChild(tooltip);
+
+  return tooltip;
+}
+
+function showSettingsTooltip(anchor, text) {
+  if (!(anchor instanceof Element) || !text) return;
+
+  const tooltip = getOrCreateSettingsTooltip();
+  const tooltipBody = tooltip.querySelector('.cc-settings-info-tooltip-body');
+  if (!tooltipBody) return;
+
+  tooltipBody.textContent = text;
+  tooltip.classList.add('is-open');
+  tooltip.style.left = '0px';
+  tooltip.style.top = '0px';
+
+  const anchorRect = anchor.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const viewportPadding = 8;
+  const preferredTop = anchorRect.top - tooltipRect.height - 10;
+  const top = Math.max(viewportPadding, preferredTop);
+  const preferredLeft = anchorRect.right - tooltipRect.width - 5;
+  const maxLeft = Math.max(viewportPadding, window.innerWidth - tooltipRect.width - viewportPadding);
+  const left = Math.min(maxLeft, Math.max(viewportPadding, preferredLeft));
+  const anchorCenter = anchorRect.left + anchorRect.width / 2;
+  const arrowLeft = Math.min(tooltipRect.width - 14, Math.max(14, anchorCenter - left));
+
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+  tooltip.style.setProperty('--cc-settings-tooltip-arrow-left', `${arrowLeft}px`);
+}
+
+function hideSettingsTooltip() {
+  const tooltip = document.getElementById('cc-settings-info-tooltip');
+  tooltip?.classList.remove('is-open');
+}
+
 // ==========================================
 // MAIN INITIALIZATION
 // ==========================================
@@ -1211,12 +1257,39 @@ async function addSettingsButton() {
   refreshBadgesSafely();
   window.setTimeout(refreshBadgesSafely, 1200);
 
-  settingsButton.addEventListener('click', (e) => {
+  const handleInfoIconMouseOver = (e) => {
+    const infoIcon = e.target.closest('.cc-info-icon');
+    if (!infoIcon || !dropdown.contains(infoIcon)) return;
+
+    const tooltipText = infoIcon.getAttribute('aria-label') || '';
+    showSettingsTooltip(infoIcon, tooltipText);
+  };
+
+  const handleInfoIconMouseOut = (e) => {
+    const infoIcon = e.target.closest('.cc-info-icon');
+    if (!infoIcon || !dropdown.contains(infoIcon)) return;
+    if (infoIcon.contains(e.relatedTarget)) return;
+
+    hideSettingsTooltip();
+  };
+
+  dropdown?.addEventListener('mouseover', handleInfoIconMouseOver, true);
+  dropdown?.addEventListener('mouseout', handleInfoIconMouseOut, true);
+
+  queryMenu('.cc-settings-scroll-region')?.addEventListener('scroll', () => {
+    hideSettingsTooltip();
+  });
+
+  window.addEventListener('resize', hideSettingsTooltip);
+
+  dropdown?.addEventListener('click', (e) => {
     const infoIcon = e.target.closest('.cc-info-icon[data-image-url]');
     if (!infoIcon) return;
 
     e.preventDefault();
     e.stopPropagation();
+
+    hideSettingsTooltip();
 
     const url = infoIcon.getAttribute('data-image-url');
     const titleText =

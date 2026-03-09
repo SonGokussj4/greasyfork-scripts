@@ -689,13 +689,31 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     color: var(--cc-color-red);
 }
 
-/* Hover Bubble */
-.cc-info-icon::after {
-    content: attr(aria-label);
-    position: absolute;
-    bottom: calc(100% + 8px);
-    right: -5px;
+.cc-info-icon::after,
+.cc-info-icon::before {
+    content: none;
+}
+
+.cc-settings-info-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10031;
+    opacity: 0;
+    visibility: hidden;
     transform: translateY(4px);
+    transition: opacity 0.18s ease, transform 0.18s ease;
+    pointer-events: none;
+}
+
+.cc-settings-info-tooltip.is-open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.cc-settings-info-tooltip-body {
+    position: relative;
     background-color: #242424;
     color: #ffffff;
     padding: 8px 12px;
@@ -707,34 +725,18 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     text-align: left;
     width: max-content;
     max-width: 240px;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, transform 0.2s ease;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    pointer-events: none;
 }
 
-/* Triangle Pointer */
-.cc-info-icon::before {
+.cc-settings-info-tooltip-body::after {
     content: '';
     position: absolute;
-    bottom: calc(100% + 3px);
-    right: 2px;
-    transform: translateY(4px);
+    top: 100%;
+    left: var(--cc-settings-tooltip-arrow-left, 20px);
+    transform: translateX(-50%);
     border-width: 5px 5px 0 5px;
     border-style: solid;
     border-color: #242424 transparent transparent transparent;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.2s ease, transform 0.2s ease;
-    pointer-events: none;
-}
-
-.cc-info-icon:hover::after,
-.cc-info-icon:hover::before {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
 }
 
 /* =========================================================
