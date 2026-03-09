@@ -1,7 +1,7 @@
 /*
  * Config and constants for CSFD-Compare
  */
-export const VERSION = '0.8.24';
+export const VERSION = '0.9.0';
 export const SCRIPTNAME = 'CSFD-Compare';
 export const SETTINGSNAME = 'CSFD-Compare-settings';
 export const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
