@@ -291,6 +291,9 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     border: none;
     border-radius: 7px;
     padding: 6px 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     font-size: 12px;
     transition: background 0.2s, transform 0.12s;
@@ -873,6 +876,7 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
     box-sizing: border-box;
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
+    overscroll-behavior: contain;
 }
 
 .cc-version-info-overlay.is-open {
@@ -880,8 +884,8 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
 }
 
 .cc-version-info-modal {
-    width: min(560px, 100%);
-    max-height: 80vh;
+    width: min(750px, 100%);
+    max-height: min(86vh, 920px);
     overflow: hidden;
     border-radius: 10px;
     background: #fff;
@@ -897,6 +901,16 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
     justify-content: space-between;
     padding: 12px 14px;
     border-bottom: 1px solid #ececec;
+}
+
+.cc-version-info-head.is-title-hidden {
+    justify-content: flex-end;
+    padding-bottom: 0;
+    border-bottom: 0;
+}
+
+.cc-version-info-title-wrap {
+    min-width: 0;
 }
 
 .cc-version-info-head h3 {
@@ -924,9 +938,392 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
 
 .cc-version-info-body {
     overflow: auto;
-    padding: 12px 14px;
+    padding: 18px 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    overscroll-behavior: contain;
+}
+
+.cc-version-info-modal.is-whats-new-modal .cc-version-info-body {
+    padding-top: 10px;
+}
+
+.cc-version-info-foot {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 10px 14px 14px;
+    border-top: 1px solid #efefef;
+    margin-top: 0;
+}
+
+.cc-version-info-meta {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.cc-version-info-key {
+    color: #666;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.cc-version-info-value {
+    color: #222;
+    min-width: 0;
+    font-size: 14px;
+}
+
+.cc-version-info-meta-cards {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cc-version-info-card {
+    min-width: 150px;
+    flex: 1 1 150px;
+    padding: 10px 12px;
+    border: 1px solid #ececec;
+    border-radius: 10px;
+    background: #fafafa;
+}
+
+.cc-version-info-card .cc-version-info-value {
+    margin-top: 4px;
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.cc-version-info-status-row {
+    display: flex;
+    align-items: center;
+    min-height: 20px;
+}
+
+.cc-version-shortcuts {
+    margin: 0 0 22px;
+}
+
+.cc-version-shortcuts-list {
+    display: grid;
+    gap: 8px;
+}
+
+.cc-version-shortcut-item {
+    display: grid;
+    grid-template-columns: minmax(180px, auto) minmax(0, 1fr);
+    gap: 10px 14px;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #efefef;
+}
+
+.cc-version-shortcut-item:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+}
+
+.cc-version-shortcut-keys {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    color: #444;
+}
+
+.cc-version-shortcut-keys kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 3px 8px;
+    border: 1px solid #d6d6d6;
+    border-bottom-width: 2px;
+    border-radius: 7px;
+    background: #fff;
+    color: #222;
+    font-family: inherit;
     font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
+}
+
+.cc-version-shortcut-text {
+    color: #444;
     line-height: 1.5;
+}
+
+.cc-version-info-section-title {
+    margin: 0 0 14px;
+    color: #222;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.cc-version-info-loading,
+.cc-version-info-empty {
+    color: #666;
+    margin: 0 0 12px;
+}
+
+.cc-version-info-warning {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border: 1px solid #f0d2a8;
+    border-radius: 10px;
+    background: #fff6e8;
+    color: #8a5a14;
+}
+
+.cc-version-info-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+}
+
+.cc-version-info-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #8f8f8f;
+}
+
+.cc-version-info-status.is-update .cc-version-info-status-dot {
+    background: var(--cc-color-red);
+}
+
+.cc-version-changelog-section+.cc-version-changelog-section {
+    margin-top: 28px;
+    padding-top: 28px;
+    border-top: 1px solid #e7e7e7;
+}
+
+.cc-version-changelog-section {
+    padding: 2px 0 0;
+}
+
+.cc-version-update-summary {
+    margin-bottom: 22px;
+}
+
+.cc-version-update-title {
+    margin: 0 0 10px;
+    color: #202020;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.cc-version-update-text {
+    margin: 0;
+    color: #555;
+    font-size: 14px;
+}
+
+.cc-version-markdown-heading-version {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 0 0 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.cc-version-markdown-version {
+    color: #202020;
+    font-weight: 700;
+    font-size: 20px;
+}
+
+.cc-version-markdown-date {
+    color: #8a8a8a;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.cc-version-markdown-kind-item-icon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    margin-top: 0.15em;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cc-version-markdown-kind-item-icon svg {
+    width: 16px;
+    height: 16px;
+    display: block;
+}
+
+.cc-version-markdown-kind-list {
+    list-style: none;
+    margin: 0 0 12px;
+    padding: 0;
+}
+
+.cc-version-markdown-kind-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    color: #333;
+}
+
+.cc-version-markdown-kind-item+.cc-version-markdown-kind-item {
+    margin-top: 8px;
+}
+
+.cc-version-markdown-kind-item.is-added .cc-version-markdown-kind-item-icon {
+    color: #2ba24c;
+}
+
+.cc-version-markdown-kind-item.is-changed .cc-version-markdown-kind-item-icon {
+    color: #3b78c2;
+}
+
+.cc-version-markdown-kind-item.is-fixed .cc-version-markdown-kind-item-icon {
+    color: #d98d19;
+}
+
+.cc-version-markdown-kind-item-text {
+    min-width: 0;
+    padding-top: 1px;
+}
+
+.cc-version-markdown-heading {
+    margin: 0 0 12px;
+    color: #202020;
+    line-height: 1.3;
+}
+
+.cc-version-markdown-heading-1 {
+    font-size: 21px;
+}
+
+.cc-version-markdown-heading-2 {
+    font-size: 18px;
+    margin-top: 8px;
+}
+
+.cc-version-markdown-heading-3,
+.cc-version-markdown-heading-4 {
+    font-size: 15px;
+    color: #333;
+}
+
+.cc-version-markdown-paragraph {
+    margin: 0 0 14px;
+    color: #333;
+}
+
+.cc-version-markdown-list {
+    margin: 0 0 16px 22px;
+    padding: 0;
+}
+
+.cc-version-markdown-list li+li {
+    margin-top: 8px;
+}
+
+.cc-version-markdown-rule {
+    border: 0;
+    border-top: 1px solid #ececec;
+    margin: 14px 0;
+}
+
+.cc-version-markdown-pre {
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #f6f6f6;
+    overflow: auto;
+}
+
+.cc-version-markdown-pre code,
+.cc-version-markdown-paragraph code,
+.cc-version-markdown-list code,
+.cc-version-markdown-heading code {
+    font-family: Consolas, "Courier New", monospace;
+}
+
+.cc-version-markdown-paragraph code,
+.cc-version-markdown-list code,
+.cc-version-markdown-heading code {
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: #f1f1f1;
+    color: #333;
+    font-size: 0.95em;
+}
+
+.cc-version-info-body a {
+    color: var(--cc-color-blue);
+    text-decoration: none;
+}
+
+.cc-version-info-body a:hover {
+    text-decoration: underline;
+}
+
+.cc-version-markdown-image {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 16px auto 6px;
+    border-radius: 8px;
+    border: 1px solid #ececec;
+    background: #fff;
+}
+
+.cc-version-markdown-paragraph-image {
+    text-align: center;
+}
+
+body.cc-version-info-open {
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .cc-version-info-body {
+        padding: 16px;
+        font-size: 12.5px;
+    }
+
+    .cc-version-info-meta {
+        gap: 10px;
+    }
+
+    .cc-version-info-meta-cards {
+        gap: 10px;
+    }
+
+    .cc-version-info-card {
+        min-width: 0;
+    }
+
+    .cc-version-shortcut-item {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .cc-version-changelog-section {
+        padding: 2px 0 0;
+    }
+
+    .cc-version-markdown-heading-version {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
 }
 
 .cc-badge[role="button"] {

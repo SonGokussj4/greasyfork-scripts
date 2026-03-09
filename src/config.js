@@ -5,6 +5,7 @@ export const VERSION = '0.8.24';
 export const SCRIPTNAME = 'CSFD-Compare';
 export const SETTINGSNAME = 'CSFD-Compare-settings';
 export const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
+export const WHATS_NEW_VERSION_KEY = 'cc_whats_new_version';
 export const NUM_RATINGS_PER_PAGE = 50;
 export const INDEXED_DB_VERSION = 1;
 export const INDEXED_DB_NAME = 'CC-Ratings';
