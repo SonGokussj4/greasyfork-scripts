@@ -4190,9 +4190,8 @@
   const CHANGELOG_CACHE_MAX_AGE_MS = 1000 * 60 * 5;
   const GREASYFORK_SCRIPT_API_URL = 'https://greasyfork.org/scripts/425054.json';
   const GITHUB_CHANGELOG_URL =
-    'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/feature/class-rework/CHANGELOG.md';
-  const GITHUB_CHANGELOG_BASE_URL =
-    'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/feature/class-rework/';
+    'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/master/CHANGELOG.md';
+  const GITHUB_CHANGELOG_BASE_URL = 'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/master/';
   const CHANGELOG_KIND_HEADINGS = new Map([
     ['added', 'is-added'],
     ['changed', 'is-changed'],
