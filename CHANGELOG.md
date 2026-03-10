@@ -5,6 +5,8 @@
 ### Added
 
 - Notifikace o nové verzi skriptu nad CC menu
+- Nový náhled: Odkaz na přímou recenzi na CSFD, včetně hodnocení, data a odkazu na recenzi
+  ![Recenze](images/changelog/0.9.1-nahledy-recenze.png)
 
 ### Changed
 
