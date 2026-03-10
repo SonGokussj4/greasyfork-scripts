@@ -77,6 +77,162 @@ describe('hover preview parsers', () => {
     expect(data.actors[0].href).toContain('/tvurce/');
   });
 
+  test('parses review preview data from snippet and keeps full review links clickable', () => {
+    const doc = new DOMParser().parseFromString(
+      `
+        <html>
+          <body>
+            <h1>Jedna bitva za druhou</h1>
+            <div class="tabs tabs-review-content" data-highlight="review-13725984">
+              <article id="review-13725984" class="article article-white highlight" data-film-review>
+                <div class="article-content article-content-justify article-review">
+                  <header class="article-header article-header-review">
+                    <div class="article-header-review-name">
+                      <h3 class="user-title"><a class="user-title-name" href="/uzivatel/95-golfista/prehled/">golfista</a></h3>
+                    </div>
+                    <div class="review-date"><span class="info"><time>08.03.2026</time></span></div>
+                    <div class="star-rating"><span class="stars stars-3"></span></div>
+                  </header>
+                  <p>
+                    <span class="comment" data-film-review-content>
+                      Tohle je <strong>recenze</strong> s <a href="/film/9499-the-matrix/">odkazem na Matrix</a> a dalším textem, který je delší než krátká ukázka.
+                    </span>
+                  </p>
+                </div>
+              </article>
+            </div>
+          </body>
+        </html>
+      `,
+      'text/html',
+    );
+
+    const data = hoverPreviewProviders.parseReviewPreviewDocument(
+      doc,
+      'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984',
+    );
+
+    expect(data.filmTitle).toBe('Jedna bitva za druhou');
+    expect(data.authorName).toBe('golfista');
+    expect(data.authorUrl).toBe('https://www.csfd.cz/uzivatel/95-golfista/prehled/');
+    expect(data.dateText).toBe('08.03.2026');
+    expect(data.rating).toBe(3);
+    expect(data.excerptText).toContain('Tohle je recenze');
+    expect(data.previewReviewHtml).toContain('class="cc-hover-preview-link"');
+    expect(data.fullReviewHtml).toContain('class="cc-hover-preview-link"');
+    expect(data.fullReviewHtml).toContain('href="https://www.csfd.cz/film/9499-the-matrix/"');
+
+    const reviewProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'review');
+    const html = reviewProvider.render({ ...data, deferredLoaded: false });
+
+    expect(html).toContain('cc-hover-preview-review-header');
+    expect(html).toContain('cc-hover-preview-review-stars');
+    expect(html).toContain('08.03.2026');
+    expect(html).toContain('<strong>');
+  });
+
+  test('parses review preview date from comment-date markup without parentheses', () => {
+    const doc = new DOMParser().parseFromString(
+      `
+        <html>
+          <body>
+            <h1>Jedna bitva za druhou</h1>
+            <article id="review-13725984" class="article article-white highlight" data-film-review>
+              <div class="article-content article-content-justify article-review">
+                <header class="article-header article-header-review">
+                  <div class="article-header-review-name">
+                    <h3 class="user-title"><a class="user-title-name" href="/uzivatel/95-golfista/prehled/">golfista</a></h3>
+                  </div>
+                  <span class="comment-date info">(<time>27.09.2025</time>)</span>
+                  <div class="star-rating"><span class="stars stars-3"></span></div>
+                </header>
+                <p><span class="comment" data-film-review-content>Text recenze.</span></p>
+              </div>
+            </article>
+          </body>
+        </html>
+      `,
+      'text/html',
+    );
+
+    const data = hoverPreviewProviders.parseReviewPreviewDocument(
+      doc,
+      'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984',
+    );
+
+    expect(data.dateText).toBe('27.09.2025');
+
+    const reviewProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'review');
+    const html = reviewProvider.render({ ...data, deferredLoaded: false });
+
+    expect(html).toContain('cc-hover-preview-review-date">27.09.2025<');
+  });
+
+  test('parses review preview date from title metadata when no visible date node exists', () => {
+    const doc = new DOMParser().parseFromString(
+      `
+        <html>
+          <body>
+            <h1>One Battle After Another</h1>
+            <article id="review-13725984" class="article article-white highlight" data-film-review>
+              <div class="article-content article-content-justify article-review">
+                <header class="article-header article-header-review">
+                  <div class="article-header-review-name">
+                    <h3 class="user-title">
+                      <a class="user-title-name" href="/uzivatel/95-golfista/prehled/">golfista</a>
+                      <span class="user-title-info">
+                        <span title="Vloženo v 27.09.2025"><span class="star-rating"><span class="stars stars-3"></span></span></span>
+                      </span>
+                    </h3>
+                  </div>
+                </header>
+                <p><span class="comment" data-film-review-content>Text recenze.</span></p>
+              </div>
+            </article>
+          </body>
+        </html>
+      `,
+      'text/html',
+    );
+
+    const data = hoverPreviewProviders.parseReviewPreviewDocument(
+      doc,
+      'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984',
+    );
+
+    expect(data.dateText).toBe('27.09.2025');
+
+    const reviewProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'review');
+    const html = reviewProvider.render({ ...data, deferredLoaded: false });
+
+    expect(html).toContain('cc-hover-preview-review-date">27.09.2025<');
+  });
+
+  test('review provider matches review permalinks and ignores current review entity', () => {
+    const reviewProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'review');
+    const currentReviewLink = document.createElement('a');
+    const otherReviewLink = document.createElement('a');
+    const filmReviewsLink = document.createElement('a');
+    const originalUrl = window.location.href;
+
+    window.history.replaceState(
+      {},
+      '',
+      'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984',
+    );
+    currentReviewLink.href = 'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984';
+    otherReviewLink.href = 'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725985';
+    filmReviewsLink.href = 'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/';
+
+    try {
+      expect(reviewProvider.matches(currentReviewLink)).toBe(false);
+      expect(reviewProvider.matches(otherReviewLink)).toBe(true);
+      expect(reviewProvider.matches(filmReviewsLink)).toBe(false);
+    } finally {
+      window.history.replaceState({}, '', originalUrl);
+    }
+  });
+
   test('parses poster gallery links from gallery snippet', () => {
     const doc = new DOMParser().parseFromString(
       `
@@ -365,6 +521,46 @@ describe('hover preview parsers', () => {
       expect(global.fetch).toHaveBeenNthCalledWith(2, 'https://www.csfd.cz/film/123-example/galerie/plakaty/');
       expect(deferredData.posters).toHaveLength(1);
       expect(deferredData.posters[0].imageUrl).toBe('https://image.test/poster-gallery-full.jpg');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  test('review provider re-renders the full text on the deferred step without refetching', async () => {
+    const reviewProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'review');
+    const originalFetch = global.fetch;
+
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      text: async () => `
+        <html>
+          <body>
+            <h1>Jedna bitva za druhou</h1>
+            <article id="review-13725984" data-film-review>
+              <div class="article-content article-content-justify article-review">
+                <header class="article-header article-header-review">
+                  <div class="article-header-review-name">
+                    <h3 class="user-title"><a class="user-title-name" href="/uzivatel/95-golfista/prehled/">golfista</a></h3>
+                  </div>
+                  <div class="review-date"><span class="info"><time>08.03.2026</time></span></div>
+                  <div class="star-rating"><span class="stars stars-4"></span></div>
+                </header>
+                <p><span class="comment" data-film-review-content>První věta. Druhá věta. Třetí věta s <a href="/film/9499-the-matrix/">odkazem</a>.</span></p>
+              </div>
+            </article>
+          </body>
+        </html>
+      `,
+    });
+
+    try {
+      const url = 'https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984';
+      const data = await reviewProvider.fetchData({ url });
+      const deferredData = await reviewProvider.loadDeferredData({ url, data });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(data.fullReviewHtml).toContain('cc-hover-preview-link');
+      expect(deferredData).toBe(data);
     } finally {
       global.fetch = originalFetch;
     }

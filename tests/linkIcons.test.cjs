@@ -16,8 +16,9 @@ beforeEach(() => {
 });
 
 describe('link icons', () => {
-  test('prepends film, creator, user, YouTube, Steam, Wikipedia, AniDB and MyAnimeList icons inside review text links', () => {
+  test('prepends review, film, creator, user, YouTube, Steam, Wikipedia, AniDB and MyAnimeList icons inside review text links', () => {
     localStorage.setItem(config.LINK_ICONS_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_REVIEW_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_FILM_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_CREATOR_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_USER_ENABLED_KEY, 'true');
@@ -31,6 +32,7 @@ describe('link icons', () => {
       <div class="article-content article-content-justify">
         <p>
           <span class="comment" data-film-review-content>
+            Odkaz na <a href="/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984">recenzi</a>,
             Odkaz na <a href="/film/9499-the-matrix/">Matrix</a>,
             tvůrce <a href="https://www.csfd.cz/tvurce/270-sean-penn/">Sean Penn</a>,
             uživatele <a href="https://www.csfd.cz/uzivatel/503990-jeoffrey/prehled/">Jeoffrey</a>,
@@ -48,16 +50,17 @@ describe('link icons', () => {
     csfd.addConfiguredLinkIcons();
 
     const links = Array.from(document.querySelectorAll('.article-content.article-content-justify a'));
-    expect(document.querySelectorAll('.cc-link-icon')).toHaveLength(8);
+    expect(document.querySelectorAll('.cc-link-icon')).toHaveLength(9);
     expect(links[0].closest('.cc-link-icon-inline')).not.toBeNull();
-    expect(links[0].previousElementSibling?.dataset.ccLinkIconProvider).toBe('film');
-    expect(links[1].previousElementSibling?.dataset.ccLinkIconProvider).toBe('creator');
-    expect(links[2].previousElementSibling?.dataset.ccLinkIconProvider).toBe('user');
-    expect(links[3].previousElementSibling?.dataset.ccLinkIconProvider).toBe('youtube');
-    expect(links[4].previousElementSibling?.dataset.ccLinkIconProvider).toBe('steam');
-    expect(links[5].previousElementSibling?.dataset.ccLinkIconProvider).toBe('wikipedia');
-    expect(links[6].previousElementSibling?.dataset.ccLinkIconProvider).toBe('anidb');
-    expect(links[7].previousElementSibling?.dataset.ccLinkIconProvider).toBe('myanimelist');
+    expect(links[0].previousElementSibling?.dataset.ccLinkIconProvider).toBe('review');
+    expect(links[1].previousElementSibling?.dataset.ccLinkIconProvider).toBe('film');
+    expect(links[2].previousElementSibling?.dataset.ccLinkIconProvider).toBe('creator');
+    expect(links[3].previousElementSibling?.dataset.ccLinkIconProvider).toBe('user');
+    expect(links[4].previousElementSibling?.dataset.ccLinkIconProvider).toBe('youtube');
+    expect(links[5].previousElementSibling?.dataset.ccLinkIconProvider).toBe('steam');
+    expect(links[6].previousElementSibling?.dataset.ccLinkIconProvider).toBe('wikipedia');
+    expect(links[7].previousElementSibling?.dataset.ccLinkIconProvider).toBe('anidb');
+    expect(links[8].previousElementSibling?.dataset.ccLinkIconProvider).toBe('myanimelist');
   });
 
   test('does not add icons to review title links, permalinks, or unrelated header actions', () => {
@@ -122,6 +125,7 @@ describe('link icons', () => {
 
   test('respects provider-specific toggles under the master switch', () => {
     localStorage.setItem(config.LINK_ICONS_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_REVIEW_ENABLED_KEY, 'false');
     localStorage.setItem(config.LINK_ICONS_FILM_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_CREATOR_ENABLED_KEY, 'false');
     localStorage.setItem(config.LINK_ICONS_USER_ENABLED_KEY, 'false');
@@ -154,6 +158,7 @@ describe('link icons', () => {
 
   test('refresh remains idempotent and clears icons when the master toggle is off', () => {
     localStorage.setItem(config.LINK_ICONS_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_REVIEW_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_FILM_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_ANIDB_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_MAL_ENABLED_KEY, 'true');
@@ -258,6 +263,7 @@ describe('link icons', () => {
 
   test('adds icons for direct anchor children inside forum content blocks', () => {
     localStorage.setItem(config.LINK_ICONS_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_REVIEW_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_FILM_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_CREATOR_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_USER_ENABLED_KEY, 'true');
@@ -295,6 +301,7 @@ describe('link icons', () => {
 
   test('adds icons for the current discussion post markup from the live site', () => {
     localStorage.setItem(config.LINK_ICONS_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_REVIEW_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_FILM_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_CREATOR_ENABLED_KEY, 'true');
     localStorage.setItem(config.LINK_ICONS_USER_ENABLED_KEY, 'true');
@@ -347,6 +354,30 @@ describe('link icons', () => {
     expect(links[5].previousElementSibling?.dataset.ccLinkIconProvider).toBe('user');
     expect(links[6].previousElementSibling?.dataset.ccLinkIconProvider).toBe('creator');
     expect(links[7].previousElementSibling?.dataset.ccLinkIconProvider).toBe('film');
+  });
+
+  test('uses the review icon instead of the film icon for review permalinks', () => {
+    localStorage.setItem(config.LINK_ICONS_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_REVIEW_ENABLED_KEY, 'true');
+    localStorage.setItem(config.LINK_ICONS_FILM_ENABLED_KEY, 'true');
+
+    document.body.innerHTML = `
+      <div class="article-content article-content-justify">
+        <p>
+          <span class="comment" data-film-review-content>
+            Tady je <a href="https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/recenze/?review=13725984">konkrétní recenze</a>
+            a tady <a href="https://www.csfd.cz/film/1476388-jedna-bitva-za-druhou/">film</a>.
+          </span>
+        </p>
+      </div>
+    `;
+
+    const csfd = new Csfd(document.body);
+    csfd.addConfiguredLinkIcons();
+
+    const links = Array.from(document.querySelectorAll('.comment a'));
+    expect(links[0].previousElementSibling?.dataset.ccLinkIconProvider).toBe('review');
+    expect(links[1].previousElementSibling?.dataset.ccLinkIconProvider).toBe('film');
   });
 
   test('supports placing icons after the link globally', () => {

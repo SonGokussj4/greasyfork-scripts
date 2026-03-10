@@ -3,6 +3,7 @@ import {
   HOVER_PREVIEW_ENABLED_KEY,
   HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
   HOVER_PREVIEW_FILM_ENABLED_KEY,
+  HOVER_PREVIEW_REVIEW_ENABLED_KEY,
   HOVER_PREVIEW_USER_ENABLED_KEY,
 } from './config.js';
 import { escapeHtml } from './utils.js';
@@ -98,6 +99,19 @@ function normalizeFilmUrl(href) {
   return url.toString();
 }
 
+function normalizeReviewUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/recenze\/?$/i);
+  const reviewId = url?.searchParams.get('review') || '';
+  if (!url || !match || !/^\d+$/.test(reviewId)) return null;
+
+  url.hash = '';
+  url.search = '';
+  url.searchParams.set('review', reviewId);
+  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}recenze/`;
+  return url.toString();
+}
+
 /**
  * Normalizes a MyAnimeList character URL into a stable cache key URL.
  *
@@ -171,6 +185,14 @@ function getFilmEntityKey(url) {
   return match[2] ? `${match[1]}__${match[2]}` : match[1];
 }
 
+function getReviewEntityKey(url) {
+  const normalizedUrl = createUrl(url);
+  const reviewId = normalizedUrl?.searchParams.get('review') || '';
+  const filmEntityKey = getFilmEntityKey(url);
+  if (!filmEntityKey || !/^\d+$/.test(reviewId)) return null;
+  return `${filmEntityKey}__review__${reviewId}`;
+}
+
 /**
  * Extracts the MAL character id used for cache grouping and request deduplication.
  */
@@ -212,6 +234,11 @@ function isCurrentCreatorEntity(url) {
 function isCurrentUserEntity(url) {
   if (!/^\/uzivatel\//i.test(location.pathname || '')) return false;
   return getUserEntityKey(url) === getUserEntityKey(location.href);
+}
+
+function isCurrentReviewEntity(url) {
+  if (!/^\/film\//i.test(location.pathname || '') || !/\/recenze\/?$/i.test(location.pathname || '')) return false;
+  return getReviewEntityKey(url) === getReviewEntityKey(location.href);
 }
 
 function cloneWithout(selectorList, element) {
@@ -363,6 +390,79 @@ function renderLabelValue(label, value, className = '') {
   );
 }
 
+function getReviewExcerpt(text, maxLength = 320) {
+  const normalized = normalizeText(text);
+  if (!normalized) return '';
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).replace(/[\s,.!?;:-]+$/u, '')}...`;
+}
+
+function getReviewRatingValue(article) {
+  const starsClassName = article?.querySelector('.star-rating .stars')?.className || '';
+  const match = starsClassName.match(/\bstars-(\d)\b/);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function renderReviewRating(rating) {
+  if (!Number.isInteger(rating) || rating < 0) return '';
+
+  const clampedRating = Math.max(0, Math.min(5, rating));
+  return `
+    <span class="cc-hover-preview-review-stars" aria-label="${escapeHtml(String(clampedRating))} z 5 hvězdiček">
+      <span class="is-filled">${'★'.repeat(clampedRating)}</span><span class="is-empty">${'☆'.repeat(5 - clampedRating)}</span>
+    </span>
+  `;
+}
+
+function sanitizeReviewContent(contentNode, baseHref) {
+  if (!contentNode) return '';
+
+  const clone = contentNode.cloneNode(true);
+  const allowedTags = new Set([
+    'A',
+    'B',
+    'BLOCKQUOTE',
+    'BR',
+    'DIV',
+    'EM',
+    'I',
+    'LI',
+    'OL',
+    'P',
+    'SPAN',
+    'STRONG',
+    'UL',
+  ]);
+
+  Array.from(clone.querySelectorAll('*'))
+    .reverse()
+    .forEach((node) => {
+      const tagName = node.tagName;
+
+      if (tagName === 'A') {
+        const href = resolveUrlAgainst(node.getAttribute('href'), baseHref);
+        if (!href) {
+          node.replaceWith(...node.childNodes);
+          return;
+        }
+
+        Array.from(node.attributes).forEach((attribute) => node.removeAttribute(attribute.name));
+        node.setAttribute('href', href);
+        node.className = 'cc-hover-preview-link';
+        return;
+      }
+
+      if (allowedTags.has(tagName)) {
+        Array.from(node.attributes).forEach((attribute) => node.removeAttribute(attribute.name));
+        return;
+      }
+
+      node.replaceWith(...node.childNodes);
+    });
+
+  return clone.innerHTML.trim();
+}
+
 export function parseCreatorPreviewDocument(doc) {
   const name = normalizeText(doc.querySelector('h1')?.textContent) || 'Tvůrce';
   const imageElement = doc.querySelector('.creator-profile figure img, .creator-profile-header figure img');
@@ -503,6 +603,56 @@ export function parseFilmPreviewDocument(doc) {
     origin,
     actors,
     posters: imageUrl ? [{ imageUrl, label: title }] : [],
+  };
+}
+
+/**
+ * Reads the main content of a film review, along with some basic metadata about the review and its author.
+ */
+export function parseReviewPreviewDocument(doc, reviewUrl = location.href) {
+  const normalizedUrl = createUrl(reviewUrl);
+  const reviewId = normalizedUrl?.searchParams.get('review') || '';
+  const articleId = /^\d+$/.test(reviewId) ? `review-${reviewId}` : '';
+  const article =
+    (articleId ? doc.getElementById(articleId) : null) ||
+    doc.querySelector(`.tabs-review-content[data-highlight="${articleId}"] article[data-film-review]`) ||
+    doc.querySelector('article[data-film-review].highlight') ||
+    doc.querySelector('article[data-film-review]');
+
+  if (!article) return null;
+
+  const authorLink = article.querySelector(
+    'h3.user-title a.user-title-name, .article-header-review-name .user-title-name',
+  );
+  const authorName = normalizeText(authorLink?.textContent) || 'Uživatel';
+  const authorUrl = resolveAssetUrl(authorLink?.getAttribute('href'));
+  const titleDateText = normalizeText(article.querySelector('[title*="Vloženo v "]')?.getAttribute('title')).replace(
+    /^.*Vloženo v\s*/i,
+    '',
+  );
+  const dateText = normalizeText(
+    article.querySelector(
+      '.review-date time, .review-date, .comment-date time, .comment-date, .header-right-info .info time, .header-right-info time',
+    )?.textContent || titleDateText,
+  ).replace(/^\((.*)\)$/, '$1');
+  const reviewContentNode = article.querySelector(
+    '[data-film-review-content], .article-review .comment, .comment[data-film-review-content]',
+  );
+  const reviewText = normalizeText(reviewContentNode?.textContent);
+  const filmTitle = normalizeText(doc.querySelector('h1')?.textContent) || 'Recenze';
+  const filmUrl = normalizeFilmUrl(reviewUrl);
+
+  return {
+    filmTitle,
+    filmUrl,
+    authorName,
+    authorUrl,
+    reviewId,
+    dateText,
+    rating: getReviewRatingValue(article),
+    excerptText: getReviewExcerpt(reviewText),
+    previewReviewHtml: sanitizeReviewContent(reviewContentNode, normalizedUrl?.href || reviewUrl),
+    fullReviewHtml: sanitizeReviewContent(reviewContentNode, normalizedUrl?.href || reviewUrl),
   };
 }
 
@@ -860,6 +1010,37 @@ function renderFilmPreview(data) {
   });
 }
 
+function renderReviewPreview(data) {
+  const authorHtml = data.authorUrl
+    ? `<a class="cc-hover-preview-link" href="${escapeHtml(data.authorUrl)}">${escapeHtml(data.authorName)}</a>`
+    : escapeHtml(data.authorName || 'Uživatel');
+  const isDeferred = Boolean(data.deferredLoaded);
+  const bodyHtml = isDeferred
+    ? data.fullReviewHtml || data.previewReviewHtml || escapeHtml(data.excerptText || '')
+    : data.previewReviewHtml || data.fullReviewHtml || escapeHtml(data.excerptText || '');
+  const bodyClassName = isDeferred ? 'is-full' : 'is-compact';
+
+  return `
+    <div class="cc-hover-preview-card is-review ${isDeferred ? 'is-expanded' : ''}">
+      <div class="cc-hover-preview-title">
+        ${data.filmUrl ? `<a class="cc-hover-preview-link" href="${escapeHtml(data.filmUrl)}">${escapeHtml(data.filmTitle || 'Recenze')}</a>` : `<span>${escapeHtml(data.filmTitle || 'Recenze')}</span>`}
+      </div>
+      <div class="cc-hover-preview-meta">
+        <div class="cc-hover-preview-review-header">
+          <div class="cc-hover-preview-review-author-wrap">
+            <span class="cc-hover-preview-line is-primary">${authorHtml}</span>
+            ${renderReviewRating(data.rating)}
+          </div>
+          ${data.dateText ? `<span class="cc-hover-preview-line is-muted cc-hover-preview-review-date">${escapeHtml(data.dateText)}</span>` : ''}
+        </div>
+        <div class="cc-hover-preview-divider"></div>
+        <div class="cc-hover-preview-review-body ${bodyClassName}">${bodyHtml}</div>
+        ${!isDeferred && data.fullReviewHtml ? renderLine('CTRL pro celou recenzi', 'is-muted is-small is-center') : ''}
+      </div>
+    </div>
+  `;
+}
+
 function renderMyAnimeListCharacterPreview(data) {
   const animeographyHtml = Array.isArray(data.animeography)
     ? data.animeography
@@ -1034,6 +1215,41 @@ export const HOVER_PREVIEW_PROVIDERS = [
     },
     parseDocument: parseUserPreviewDocument,
     render: renderUserPreview,
+  },
+  {
+    id: 'review',
+    storageKey: HOVER_PREVIEW_REVIEW_ENABLED_KEY,
+    settingsId: 'cc-hover-preview-reviews',
+    settingsLabel: 'Náhledy csfd recenzí',
+    settingsInfoIcon: {
+      url: 'https://i.imgur.com/aejN8f7.png',
+      text: 'Zobrazí autora, hodnocení, datum a ukázku z konkrétní recenze ČSFD. CTRL ukotví náhled a rozbalí celou recenzi.',
+    },
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url &&
+        /^\/film\//i.test(url.pathname || '') &&
+        /\/recenze\/?$/i.test(url.pathname || '') &&
+        /^\d+$/.test(url.searchParams.get('review') || '') &&
+        !isCurrentReviewEntity(url),
+      );
+    },
+    normalizeUrl: normalizeReviewUrl,
+    getEntityKey: getReviewEntityKey,
+    async fetchData({ url }) {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+
+      const html = await response.text();
+      const detailDocument = new DOMParser().parseFromString(html, 'text/html');
+      return parseReviewPreviewDocument(detailDocument, url);
+    },
+    async loadDeferredData({ data }) {
+      return data;
+    },
+    parseDocument: parseReviewPreviewDocument,
+    render: renderReviewPreview,
   },
   {
     id: 'film',

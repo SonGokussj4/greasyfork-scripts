@@ -4,7 +4,10 @@ import {
   HOVER_PREVIEW_CACHE_PREFIX,
   HOVER_PREVIEW_ENABLED_KEY,
   HOVER_PREVIEW_SETTINGS_CHANGED_EVENT,
+  LINK_ICONS_ENABLED_KEY,
+  LINK_ICONS_POSITION_KEY,
 } from './config.js';
+import { applyConfiguredLinkIcons } from './link-icons.js';
 import { getFeatureState } from './utils.js';
 import { HOVER_PREVIEW_PROVIDERS } from './hover-preview-providers.js';
 
@@ -175,20 +178,31 @@ async function updateFrozenFilmPoster(root, direction) {
   }
 }
 
+function getPreviewPosition(root, pointerX, pointerY, xOffset, yOffset) {
+  const rect = root.getBoundingClientRect();
+  const viewportMargin = 10;
+  const preferredRight = pointerX + xOffset;
+  const preferredLeft = pointerX - rect.width - xOffset;
+  const shouldFlipLeft =
+    preferredRight + rect.width + viewportMargin > window.innerWidth && preferredLeft >= viewportMargin;
+  const x = shouldFlipLeft
+    ? Math.max(viewportMargin, preferredLeft)
+    : Math.min(window.innerWidth - rect.width - viewportMargin, Math.max(viewportMargin, preferredRight));
+  const y = Math.min(window.innerHeight - rect.height - viewportMargin, Math.max(viewportMargin, pointerY + yOffset));
+
+  return { x, y };
+}
+
 function positionPreview() {
   if (previewRoot?.classList.contains('is-visible')) {
-    const rect = previewRoot.getBoundingClientRect();
-    const x = Math.min(window.innerWidth - rect.width - 10, Math.max(10, mouseX + 18));
-    const y = Math.min(window.innerHeight - rect.height - 10, Math.max(10, mouseY + 18));
+    const { x, y } = getPreviewPosition(previewRoot, mouseX, mouseY, 18, 18);
 
     previewRoot.style.left = `${x}px`;
     previewRoot.style.top = `${y}px`;
   }
 
   if (secondaryPreviewRoot?.classList.contains('is-visible')) {
-    const rect = secondaryPreviewRoot.getBoundingClientRect();
-    const x = Math.min(window.innerWidth - rect.width - 10, Math.max(10, mouseX + 28));
-    const y = Math.min(window.innerHeight - rect.height - 10, Math.max(10, mouseY + 16));
+    const { x, y } = getPreviewPosition(secondaryPreviewRoot, mouseX, mouseY, 28, 16);
 
     secondaryPreviewRoot.style.left = `${x}px`;
     secondaryPreviewRoot.style.top = `${y}px`;
@@ -246,8 +260,40 @@ function getProviderForAnchor(anchor) {
   return HOVER_PREVIEW_PROVIDERS.find((provider) => provider.matches(anchor));
 }
 
+function shouldIgnoreAnchor(anchor) {
+  if (!(anchor instanceof Element)) return true;
+
+  if (
+    anchor.closest(
+      '.tabs-review-content nav.tab-nav, .tabs-review-content .box-more-bar, .tabs-review-content .pagination',
+    )
+  ) {
+    return true;
+  }
+
+  const reviewArticle = anchor.closest('article[data-film-review]');
+  if (!reviewArticle) return false;
+
+  if (anchor.closest('.article-header-review-action')) return true;
+  if (anchor.matches('.a-edit-review, [data-open-review-form], .permanent-link')) return true;
+
+  return false;
+}
+
 function getProviderById(providerId) {
   return HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === providerId) || null;
+}
+
+function applyPreviewLinkIcons(root) {
+  if (!root) return;
+
+  applyConfiguredLinkIcons(root, {
+    iconsEnabled: getFeatureState(LINK_ICONS_ENABLED_KEY, true),
+    position: localStorage.getItem(LINK_ICONS_POSITION_KEY) === 'after' ? 'after' : 'before',
+    isProviderEnabled: (provider) => getFeatureState(provider.storageKey, true),
+    selectors: '.cc-hover-preview-review-body a[href]',
+    blockedClosestSelectors: '.cc-hover-preview-review-no-block',
+  });
 }
 
 async function loadProviderData(provider, url) {
@@ -341,6 +387,7 @@ async function ensureDeferredPreviewData(root) {
     root.__ccPreviewData = nextData;
     root.dataset.provider = provider.id;
     root.setAttribute('aria-hidden', root.classList.contains('is-visible') ? 'false' : 'true');
+    applyPreviewLinkIcons(root);
     positionPreview();
     return nextData;
   })().finally(() => {
@@ -379,6 +426,7 @@ async function showPreviewForAnchorInRoot(anchor, provider, token, root, isSecon
   root.dataset.provider = provider.id;
   root.classList.add('is-visible');
   root.setAttribute('aria-hidden', 'false');
+  applyPreviewLinkIcons(root);
   positionPreview();
 }
 
@@ -462,6 +510,8 @@ function resetHoverPreviewStateForTests() {
 export const __hoverPreviewTestApi = {
   clearActivePreview,
   ensureLoadingIndicator,
+  getPreviewPosition,
+  shouldIgnoreAnchor,
   hideLoadingIndicator,
   resetHoverPreviewStateForTests,
   showLoadingIndicator,
@@ -490,6 +540,7 @@ export function initializeHoverPreviews() {
 
       const anchor = getAnchorFromTarget(event.target);
       if (!anchor) return;
+      if (!insideFrozenPreview && shouldIgnoreAnchor(anchor)) return;
 
       const provider = getProviderForAnchor(anchor);
       if (!provider || !isProviderEnabled(provider)) return;

@@ -2790,6 +2790,15 @@ h3.film-title-inline .cc-own-rating {
     width: 230px;
 }
 
+.cc-hover-preview-card.is-review {
+    width: 320px;
+}
+
+.cc-hover-preview-card.is-review.is-expanded {
+    width: 640px;
+    max-width: min(640px, calc(100vw - 24px));
+}
+
 .cc-hover-preview-top {
     padding: 6px 8px 4px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -2921,6 +2930,109 @@ h3.film-title-inline .cc-own-rating {
 
 .cc-hover-preview-line.is-small {
     font-size: 10px;
+}
+
+.cc-hover-preview-review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 20px;
+}
+
+.cc-hover-preview-review-author-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.cc-hover-preview-review-author-wrap .cc-hover-preview-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-hover-preview-review-date {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    margin-left: auto;
+    text-align: right;
+}
+
+.cc-hover-preview-review-stars {
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.cc-hover-preview-review-stars .is-filled {
+    color: #ba0305;
+}
+
+.cc-hover-preview-review-stars .is-empty {
+    color: #c6b5a3;
+}
+
+.cc-hover-preview-review-body {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #353535;
+    white-space: normal;
+}
+
+.cc-hover-preview-review-body.is-compact {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cc-hover-preview-review-body.is-compact a,
+.cc-hover-preview-review-body.is-compact strong,
+.cc-hover-preview-review-body.is-compact b,
+.cc-hover-preview-review-body.is-compact em,
+.cc-hover-preview-review-body.is-compact i {
+    display: inline;
+}
+
+.cc-hover-preview-review-body.is-full {
+    max-height: min(52vh, 620px);
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.cc-hover-preview-review-body p,
+.cc-hover-preview-review-body blockquote,
+.cc-hover-preview-review-body ul,
+.cc-hover-preview-review-body ol,
+.cc-hover-preview-review-body div {
+    margin: 0;
+}
+
+.cc-hover-preview-review-body p+p,
+.cc-hover-preview-review-body p+div,
+.cc-hover-preview-review-body div+p,
+.cc-hover-preview-review-body div+div,
+.cc-hover-preview-review-body ul+p,
+.cc-hover-preview-review-body p+ul,
+.cc-hover-preview-review-body ol+p,
+.cc-hover-preview-review-body p+ol,
+.cc-hover-preview-review-body blockquote+p,
+.cc-hover-preview-review-body p+blockquote {
+    margin-top: 8px;
+}
+
+.cc-hover-preview-review-body blockquote {
+    border-left: 2px solid rgba(186, 3, 5, 0.24);
+    padding-left: 8px;
+    color: #575757;
 }
 
 .cc-hover-preview-label {

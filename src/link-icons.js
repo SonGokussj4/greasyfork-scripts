@@ -3,6 +3,7 @@ import {
   LINK_ICONS_CREATOR_ENABLED_KEY,
   LINK_ICONS_FILM_ENABLED_KEY,
   LINK_ICONS_MAL_ENABLED_KEY,
+  LINK_ICONS_REVIEW_ENABLED_KEY,
   LINK_ICONS_STEAM_ENABLED_KEY,
   LINK_ICONS_USER_ENABLED_KEY,
   LINK_ICONS_WIKIPEDIA_ENABLED_KEY,
@@ -23,6 +24,20 @@ const FILM_ICON_SVG = `
     <rect x="15.35" y="6.4" width="1.35" height="2.1" rx="0.45" fill="#fff2cf" />
     <rect x="15.35" y="9.7" width="1.35" height="2.1" rx="0.45" fill="#fff2cf" />
     <rect x="15.35" y="13" width="1.35" height="2.1" rx="0.45" fill="#fff2cf" />
+  </svg>
+`;
+
+const REVIEW_ICON_SVG = `
+  <svg viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+    <rect x="0.65" y="0.65" width="17.7" height="17.7" rx="4.4" fill="#fcf1f1" stroke="#ddb6b6" stroke-width=".35" />
+    <path d="M4.55 2.95h1.1v13.1h-1.1c-.43 0-.78-.35-.78-.78V3.73c0-.43.35-.78.78-.78Z" fill="#cfab77" />
+    <path d="M5.65 3.15h8.3c.68 0 1.22.54 1.22 1.22v10.26c0 .67-.54 1.22-1.22 1.22h-8.3Z" fill="#f5e2bc" />
+    <path d="M6.35 4.25h7.42c.42 0 .75.33.75.75v8.92c0 .42-.33.75-.75.75H6.35Z" fill="#f9ead0" />
+    <path d="M7.05 6.2h6.15" stroke="#785b39" stroke-width=".95" stroke-linecap="round" />
+    <path d="M7.05 8.6h6.15" stroke="#785b39" stroke-width=".95" stroke-linecap="round" />
+    <path d="M7.05 11h3.9" stroke="#785b39" stroke-width=".95" stroke-linecap="round" />
+    <rect x="11.55" y="10.55" width="2.5" height="2.5" rx=".5" fill="#c99750" />
+    <path d="M12.3 11.4h1M12.8 10.9v1" stroke="#fff9ee" stroke-width=".72" stroke-linecap="round" />
   </svg>
 `;
 
@@ -112,28 +127,30 @@ function matchesHost(url, hosts) {
   return hosts.includes(url.hostname.toLowerCase());
 }
 
-function matchesFilmUrl(url) {
+function isCsfdUrl(url) {
   const host = url.hostname.toLowerCase();
+  return url.origin === location.origin || ['www.csfd.cz', 'www.csfd.sk', 'csfd.cz', 'csfd.sk'].includes(host);
+}
+
+function matchesReviewUrl(url) {
   return (
     /^\/film\//i.test(url.pathname) &&
-    (url.origin === location.origin || ['www.csfd.cz', 'www.csfd.sk', 'csfd.cz', 'csfd.sk'].includes(host))
+    /\/recenze\/?$/i.test(url.pathname) &&
+    /^\d+$/.test(url.searchParams.get('review') || '') &&
+    isCsfdUrl(url)
   );
+}
+
+function matchesFilmUrl(url) {
+  return /^\/film\//i.test(url.pathname) && !matchesReviewUrl(url) && isCsfdUrl(url);
 }
 
 function matchesCreatorUrl(url) {
-  const host = url.hostname.toLowerCase();
-  return (
-    /^\/(tvurce|tvorca)\//i.test(url.pathname) &&
-    (url.origin === location.origin || ['www.csfd.cz', 'www.csfd.sk', 'csfd.cz', 'csfd.sk'].includes(host))
-  );
+  return /^\/(tvurce|tvorca)\//i.test(url.pathname) && isCsfdUrl(url);
 }
 
 function matchesUserUrl(url) {
-  const host = url.hostname.toLowerCase();
-  return (
-    /^\/uzivatel\//i.test(url.pathname) &&
-    (url.origin === location.origin || ['www.csfd.cz', 'www.csfd.sk', 'csfd.cz', 'csfd.sk'].includes(host))
-  );
+  return /^\/uzivatel\//i.test(url.pathname) && isCsfdUrl(url);
 }
 
 function matchesYoutubeUrl(url) {
@@ -149,6 +166,17 @@ function matchesWikipediaUrl(url) {
 }
 
 export const LINK_ICON_PROVIDERS = [
+  {
+    id: 'review',
+    label: 'Recenze',
+    settingsId: 'cc-link-icons-review',
+    settingsLabel: 'ČSFD recenze',
+    storageKey: LINK_ICONS_REVIEW_ENABLED_KEY,
+    svg: REVIEW_ICON_SVG,
+    matches(url) {
+      return matchesReviewUrl(url);
+    },
+  },
   {
     id: 'film',
     label: 'Film',
