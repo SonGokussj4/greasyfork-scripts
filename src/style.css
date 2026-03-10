@@ -1197,6 +1197,10 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
     color: #3b78c2;
 }
 
+.cc-version-markdown-kind-item.is-development .cc-version-markdown-kind-item-icon {
+    color: #6b7280;
+}
+
 .cc-version-markdown-kind-item.is-fixed .cc-version-markdown-kind-item-icon {
     color: #d98d19;
 }

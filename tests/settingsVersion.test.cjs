@@ -39,6 +39,21 @@ describe('settings version changelog helpers', () => {
     expect(sections[0].markdown).toContain('New thing');
   });
 
+  test('extracts unreleased sections with version heading suffixes', () => {
+    const sections = extractVersionSectionsFromMarkdown(`
+# Changelog
+
+## 0.9.1 - unreleased
+- Dev-only change
+
+## 0.9.0 - 2026-03-09
+- Released change
+`);
+
+    expect(sections.map((section) => section.version)).toEqual(['0.9.1', '0.9.0']);
+    expect(sections[0].heading).toBe('0.9.1 - unreleased');
+  });
+
   test('selects only versions inside the upgrade range', () => {
     const sections = selectChangelogSectionsForRange(
       `
@@ -58,6 +73,24 @@ describe('settings version changelog helpers', () => {
     );
 
     expect(sections.map((section) => section.version)).toEqual(['0.10.0', '0.9.0']);
+  });
+
+  test('selects current unreleased section for a dev build version', () => {
+    const sections = selectChangelogSectionsForRange(
+      `
+# Changelog
+
+## 0.9.1 - unreleased
+- Dev-only change
+
+## 0.9.0 - 2026-03-09
+- Released change
+`,
+      '0.9.0',
+      '0.9.1',
+    );
+
+    expect(sections.map((section) => section.heading)).toEqual(['0.9.1 - unreleased']);
   });
 
   test('renders markdown links and images with resolved URLs', () => {
@@ -85,6 +118,9 @@ describe('settings version changelog helpers', () => {
 ### Added
 - Item
 
+### Development
+- Internal refactor
+
 ### Fixed
 - Bug
 `);
@@ -92,8 +128,10 @@ describe('settings version changelog helpers', () => {
     expect(html).toContain('cc-version-markdown-heading-version');
     expect(html).toContain('cc-version-markdown-date');
     expect(html).toContain('cc-version-markdown-kind-item is-added');
+    expect(html).toContain('cc-version-markdown-kind-item is-development');
     expect(html).toContain('cc-version-markdown-kind-item is-fixed');
     expect(html).toContain('title="Novinka"');
+    expect(html).toContain('title="Vyvoj"');
     expect(html).toContain('title="Oprava"');
     expect(html).toContain('>0.8.24<');
   });

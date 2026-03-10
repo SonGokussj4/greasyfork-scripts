@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.9.1 - unreleased
+
+### Fixed
+
+- Zatim nic
+
+### Added
+
+- Nějaká super věc
+
+### Development
+
+- Úprava logiky pro zobrazení changelogu po aktualizaci skriptu v dev prostředí
+
 ## 0.9.0 - 2026-03-09
 
 ### Added
@@ -13,7 +27,7 @@
 - Tooltipy informacnich ikon v CC-menu se vykresluji mimo scrollovatelne telo menu, takze zustavaji citelne i u hlavicky a paticky.
 - Changelog z GitHubu se po zmene verze nebo po kratke dobe nacita znovu, aby se nove release poznamky propsaly rychleji.
 
-### Fixed
+### Fixedd
 
 - Opraveno klikani na info ikony se screenshoty v pripnutem CC-menu otevrenem pres `Ctrl+Alt+C`.
 - Opraveno skryvani tooltipu informacnich ikon za pevnou hlavickou a patickou CC-menu.

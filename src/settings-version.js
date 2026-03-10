@@ -1,4 +1,9 @@
 import { GREASYFORK_URL, SCRIPTNAME, VERSION, WHATS_NEW_VERSION_KEY } from './config.js';
+import {
+  BUILD_CHANGELOG_BASE_URL,
+  BUILD_CHANGELOG_MARKDOWN,
+  BUILD_PREFERS_BUNDLED_CHANGELOG,
+} from './generated-build-meta.js';
 import { escapeHtml } from './utils.js';
 
 const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
@@ -17,11 +22,13 @@ const GITHUB_CHANGELOG_BASE_URL = 'https://raw.githubusercontent.com/SonGokussj4
 const CHANGELOG_KIND_HEADINGS = new Map([
   ['added', 'is-added'],
   ['changed', 'is-changed'],
+  ['development', 'is-development'],
   ['fixed', 'is-fixed'],
 ]);
 const CHANGELOG_KIND_LABELS = new Map([
   ['is-added', 'Novinka'],
   ['is-changed', 'Uprava'],
+  ['is-development', 'Vyvoj'],
   ['is-fixed', 'Oprava'],
 ]);
 
@@ -253,6 +260,24 @@ function setCachedChangelogData(changelogData) {
   );
 }
 
+function getBundledChangelogData() {
+  const markdown = String(BUILD_CHANGELOG_MARKDOWN || '').trim();
+  if (!markdown) {
+    return undefined;
+  }
+
+  const baseUrl = String(BUILD_CHANGELOG_BASE_URL || '').trim() || GITHUB_CHANGELOG_BASE_URL;
+  const sourceUrl = resolveMarkdownUrl('CHANGELOG.md', baseUrl);
+
+  return {
+    markdown,
+    sourceUrl,
+    baseUrl,
+    isFallback: true,
+    loadFailed: false,
+  };
+}
+
 async function fetchRepoChangelogData() {
   try {
     const response = await fetch(GITHUB_CHANGELOG_URL, { method: 'GET', cache: 'no-store' });
@@ -283,12 +308,22 @@ async function fetchRepoChangelogData() {
 }
 
 async function getRepoChangelogData() {
+  const bundled = getBundledChangelogData();
+  if (BUILD_PREFERS_BUNDLED_CHANGELOG && bundled) {
+    return bundled;
+  }
+
   const cached = getCachedChangelogData();
   if (cached) {
     return cached;
   }
 
-  return fetchRepoChangelogData();
+  const remote = await fetchRepoChangelogData();
+  if (!remote.loadFailed) {
+    return remote;
+  }
+
+  return bundled || remote;
 }
 
 function resolveMarkdownUrl(url, baseUrl) {
@@ -359,6 +394,16 @@ function renderChangelogKindIcon(kindClass) {
         <circle cx="12" cy="12" r="9"></circle>
         <path d="M12 8v8"></path>
         <path d="M8 12h8"></path>
+      </svg>
+    `.trim();
+  }
+
+  if (kindClass === 'is-development') {
+    return `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="14" rx="2"></rect>
+        <path d="m7 9 3 3-3 3"></path>
+        <path d="M13 15h4"></path>
       </svg>
     `.trim();
   }
