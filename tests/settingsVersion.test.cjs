@@ -111,6 +111,37 @@ describe('settings version changelog helpers', () => {
     expect(html).toContain('cc-version-markdown-image');
   });
 
+  test('prefers bundled local asset URLs over remote changelog paths', () => {
+    const html = renderMarkdownToHtml(
+      `
+## 0.9.1
+
+![Preview](images/changelog/0.9.1-notifikace.png)
+`,
+      'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/',
+      {
+        'images/changelog/0.9.1-notifikace.png': 'data:image/png;base64,ZmFrZQ==',
+      },
+    );
+
+    expect(html).toContain('data:image/png;base64,ZmFrZQ==');
+    expect(html).not.toContain(
+      'raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/images/changelog/0.9.1-notifikace.png',
+    );
+  });
+
+  test('renders inline code spans in changelog lists without leaking placeholders', () => {
+    const html = renderMarkdownToHtml(`
+## 0.9.0
+
+- Nova samostatna volba \`Nahledy externich odkazu\` pro provideri.
+`);
+
+    expect(html).toContain('<code>Nahledy externich odkazu</code>');
+    expect(html).not.toContain('@@CCCODE0@@');
+    expect(html).not.toContain('<em>');
+  });
+
   test('renders version/date heading and changelog kind items', () => {
     const html = renderMarkdownToHtml(`
 ## 0.8.24 - 2026-03-08

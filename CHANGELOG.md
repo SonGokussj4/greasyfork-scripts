@@ -2,17 +2,19 @@
 
 ## 0.9.1 - unreleased
 
-### Fixed
-
-- Zatim nic
-
 ### Added
 
-- Nějaká super věc
+- Notifikace o nové verzi skriptu nad CC menu
 
+### Changed
+
+- Lepší notifikace o nové verzi skriptu v CC menu
+  ![Notifikace](images/changelog/0.9.1-notifikace.png)
+  
 ### Development
 
 - Úprava logiky pro zobrazení changelogu po aktualizaci skriptu v dev prostředí
+- Zobrazení fotek z images/changelog v dev módu, přes github v release verzi
 
 ## 0.9.0 - 2026-03-09
 
