@@ -130,6 +130,25 @@ describe('settings version changelog helpers', () => {
     );
   });
 
+  test('prefers bundled local document links over remote changelog paths', () => {
+    const html = renderMarkdownToHtml(
+      `
+## 0.9.1
+
+- [Plan](docs/legacy-ui-parity-and-release-ux-plan.md)
+`,
+      'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/',
+      {
+        'docs/legacy-ui-parity-and-release-ux-plan.md': 'data:text/markdown;charset=utf-8;base64,ZmFrZQ==',
+      },
+    );
+
+    expect(html).toContain('href="data:text/markdown;charset=utf-8;base64,ZmFrZQ=="');
+    expect(html).not.toContain(
+      'raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/docs/legacy-ui-parity-and-release-ux-plan.md',
+    );
+  });
+
   test('renders inline code spans in changelog lists without leaking placeholders', () => {
     const html = renderMarkdownToHtml(`
 ## 0.9.0

@@ -954,7 +954,7 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
 }
 
 .cc-version-info-modal {
-    width: min(750px, 100%);
+    width: min(850px, 100%);
     max-height: min(86vh, 920px);
     overflow: hidden;
     border-radius: 10px;

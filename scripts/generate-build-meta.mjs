@@ -6,14 +6,24 @@ const repoRoot = process.cwd();
 const changelogPath = resolve(repoRoot, 'CHANGELOG.md');
 const outputPath = resolve(repoRoot, 'src', 'generated-build-meta.js');
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads';
+// Collect relative markdown resources referenced from the bundled changelog so
+// dev builds can render unpublished local assets without depending on GitHub.
 const CHANGELOG_ASSET_URL_REGEX = /!??\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
 const MIME_TYPES = {
   '.avif': 'image/avif',
+  '.css': 'text/css;charset=utf-8',
   '.gif': 'image/gif',
+  '.htm': 'text/html;charset=utf-8',
+  '.html': 'text/html;charset=utf-8',
   '.jpeg': 'image/jpeg',
+  '.js': 'text/javascript;charset=utf-8',
+  '.json': 'application/json;charset=utf-8',
   '.jpg': 'image/jpeg',
+  '.md': 'text/markdown;charset=utf-8',
+  '.pdf': 'application/pdf',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
+  '.txt': 'text/plain;charset=utf-8',
   '.webp': 'image/webp',
 };
 

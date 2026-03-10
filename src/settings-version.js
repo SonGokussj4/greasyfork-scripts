@@ -352,6 +352,8 @@ function resolveMarkdownUrl(url, baseUrl, assetMap) {
   }
 
   const normalizedAssetPath = normalizeMarkdownAssetPath(trimmedUrl);
+  // Bundled dev changelog mode can serve local relative resources from the
+  // generated asset map before falling back to the GitHub raw URL.
   if (isRelativeMarkdownAssetPath(normalizedAssetPath) && assetMap?.[normalizedAssetPath]) {
     return assetMap[normalizedAssetPath];
   }
