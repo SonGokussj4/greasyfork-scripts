@@ -20,10 +20,14 @@ import {
   refreshConfiguredLinkIcons,
 } from './link-icons.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
-import { delay, getFeatureState, getMovieIdFromUrl } from './utils.js'; // REFACTOR: imported from utils
-
-const PROFILE_LINK_SELECTOR =
-  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+import {
+  delay,
+  extractUserSlug,
+  getFeatureState,
+  getMovieIdFromUrl,
+  getProfileLinkElement,
+  parseRatingFromStars,
+} from './utils.js';
 
 export class Csfd {
   constructor(pageContent) {
@@ -59,7 +63,7 @@ export class Csfd {
   }
 
   getCurrentUser() {
-    const userEl = document.querySelector(PROFILE_LINK_SELECTOR);
+    const userEl = getProfileLinkElement();
     if (userEl) {
       this.isLoggedIn = true;
       return userEl.getAttribute('href');
@@ -99,7 +103,7 @@ export class Csfd {
     this.storageKey = `CSFD-Compare_${this.username || 'guest'}`;
     console.debug('🟣 Storage Key:', this.storageKey);
 
-    this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
+    this.userSlug = extractUserSlug(this.userUrl);
     console.debug('🟣 User Slug:', this.userSlug);
 
     this.userRatingsUrl = this.userUrl
@@ -353,12 +357,7 @@ export class Csfd {
   }
 
   _parseRatingFromStars(starElem) {
-    if (!starElem) return NaN;
-    const clazz = starElem.className || '';
-    const m = clazz.match(/stars-(\d)/);
-    if (m) return parseInt(m[1], 10);
-    if (clazz.includes('trash')) return 0;
-    return NaN;
+    return parseRatingFromStars(starElem);
   }
 
   _getRatingColor(percent) {
@@ -828,7 +827,7 @@ export class Csfd {
   }
 
   isOnUserProfilePage() {
-    return (location.pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\//i)?.[1];
+    return extractUserSlug(location.pathname);
   }
 
   isOnOtherUserProfilePage() {

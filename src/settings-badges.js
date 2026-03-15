@@ -1,25 +1,18 @@
-import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { INDEXED_DB_NAME, PROFILE_LINK_SELECTOR, RATINGS_STORE_NAME } from './config.js';
 import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
-
-const PROFILE_LINK_SELECTOR =
-  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+import { extractUserSlug, getProfileLinkElement } from './utils.js';
 
 function getCurrentUserSlugFromProfile() {
-  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
-  const profileHref = profileEl?.getAttribute('href') || '';
-  const match = profileHref.match(/^\/uzivatel\/(\d+-[^/]+)\//i);
-  return match ? match[1] : undefined;
+  return extractUserSlug(getProfileLinkElement()?.getAttribute('href'));
 }
 
 function getUserSlugFromPath(pathname) {
-  const match = String(pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\//i);
-  return match ? match[1] : undefined;
+  return extractUserSlug(pathname);
 }
 
 function getCurrentUserRatingsUrl() {
-  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
-  const profileHref = profileEl?.getAttribute('href');
+  const profileHref = getProfileLinkElement()?.getAttribute('href');
   if (!profileHref) {
     return undefined;
   }

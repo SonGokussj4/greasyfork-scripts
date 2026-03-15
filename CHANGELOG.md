@@ -17,6 +17,7 @@
 
 - Úprava logiky pro zobrazení changelogu po aktualizaci skriptu v dev prostředí
 - Zobrazení fotek z images/changelog v dev módu, přes github v release verzi
+- Optimalizace kódu, zbavení se duplikátů, atd...
 
 ## 0.9.0 - 2026-03-09
 

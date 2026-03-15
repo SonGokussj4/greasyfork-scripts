@@ -59,3 +59,10 @@ export const ADD_RATINGS_DATE_KEY = 'cc_add_ratings_date';
 export const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
 export const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
 export const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';
+
+/** Selector for the logged-in user's profile link in the ČSFD header. */
+export const PROFILE_LINK_SELECTOR =
+  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+
+/** Regex to extract user slug (e.g. "12345-username") from a ČSFD user path. */
+export const USER_SLUG_REGEX = /^\/uzivatel\/(\d+-[^/]+)\//i;

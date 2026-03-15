@@ -1,15 +1,13 @@
-import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, RATINGS_STORE_NAME } from './config.js';
+import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, PROFILE_LINK_SELECTOR, RATINGS_STORE_NAME } from './config.js';
 import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
-import { delay } from './utils.js';
+import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
 
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
 const REQUEST_DELAY_MIN_MS = 250;
 const REQUEST_DELAY_MAX_MS = 550;
 const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
 const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
-const PROFILE_LINK_SELECTOR =
-  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 
 const loaderController = {
   isRunning: false,
@@ -37,7 +35,7 @@ function normalizeProfilePath(profileHref) {
 }
 
 function getCurrentProfilePath() {
-  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
+  const profileEl = getProfileLinkElement();
   if (!profileEl) {
     return undefined;
   }
@@ -49,8 +47,7 @@ function getRatingsSegment() {
 }
 
 function extractUserSlugFromProfilePath(profilePath) {
-  const match = profilePath?.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-  return match ? match[1] : undefined;
+  return extractUserSlug(profilePath);
 }
 
 function buildRatingsPageUrl(profilePath, pageNumber = 1) {
@@ -427,20 +424,7 @@ function isStateForCurrentUser(state, userSlug) {
 }
 
 function parseRatingFromStarsElement(starsEl) {
-  if (!starsEl) {
-    return NaN;
-  }
-
-  if (starsEl.classList.contains('trash')) {
-    return 0;
-  }
-
-  const starClass = Array.from(starsEl.classList).find((className) => /^stars-\d$/.test(className));
-  if (!starClass) {
-    return NaN;
-  }
-
-  return Number.parseInt(starClass.replace('stars-', ''), 10);
+  return parseRatingFromStars(starsEl);
 }
 
 function parseCurrentUserRatingFromDocument(doc) {
