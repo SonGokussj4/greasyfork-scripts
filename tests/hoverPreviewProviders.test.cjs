@@ -73,8 +73,25 @@ describe('hover preview parsers', () => {
     expect(data.reviewCount).toBe(959);
     expect(data.genres).toContain('Fantasy');
     expect(data.origin).toContain('Velká Británie');
+    expect(data.directors[0].name).toBe('Chris Columbus');
+    expect(data.directors[0].href).toContain('/tvurce/');
     expect(data.actors[0].name).toBe('Daniel Radcliffe');
     expect(data.actors[0].href).toContain('/tvurce/');
+  });
+
+  test('renders multiple directors above actors in film hover preview', () => {
+    const doc = loadDocument('tests/pages/seasonRated.html');
+    const data = hoverPreviewProviders.parseFilmPreviewDocument(doc);
+    const filmProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'film');
+    const html = filmProvider.render(data);
+
+    expect(data.directors).toHaveLength(3);
+    expect(data.directors[0].name).toBe('Toby Haynes');
+    expect(data.directors[1].name).toBe('Susanna White');
+    expect(data.directors[2].name).toBe('Benjamin Caron');
+    expect(html).toContain('Režie:</span>');
+    expect(html).toContain('Hrají:</span>');
+    expect(html.indexOf('Režie:</span>')).toBeLessThan(html.indexOf('Hrají:</span>'));
   });
 
   test('parses review preview data from snippet and keeps full review links clickable', () => {

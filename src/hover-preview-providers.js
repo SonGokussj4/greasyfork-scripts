@@ -390,6 +390,30 @@ function renderLabelValue(label, value, className = '') {
   );
 }
 
+function parseCreatorLinks(block, limit = Infinity) {
+  return Array.from(block?.querySelectorAll('a') || [])
+    .slice(0, limit)
+    .map((link) => ({
+      name: normalizeText(link.textContent),
+      href: resolveAssetUrl(link.getAttribute('href')),
+    }))
+    .filter((person) => person.name && person.href);
+}
+
+function renderLinkedPeopleLine(label, people) {
+  if (!Array.isArray(people) || people.length === 0) return '';
+
+  const peopleHtml = people
+    .map(
+      (person) => `<a class="cc-hover-preview-link" href="${escapeHtml(person.href)}">${escapeHtml(person.name)}</a>`,
+    )
+    .join(', ');
+
+  return renderLine(
+    `<span class="cc-hover-preview-clamp-2"><span class="cc-hover-preview-label">${escapeHtml(label)}:</span> ${peopleHtml}</span>`,
+  );
+}
+
 function getReviewExcerpt(text, maxLength = 320) {
   const normalized = normalizeText(text);
   if (!normalized) return '';
@@ -585,13 +609,11 @@ export function parseFilmPreviewDocument(doc) {
   const actorsBlock = Array.from(doc.querySelectorAll('#creators > div')).find(
     (block) => normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '') === 'Hrají',
   );
-  const actors = Array.from(actorsBlock?.querySelectorAll('a') || [])
-    .slice(0, 18)
-    .map((link) => ({
-      name: normalizeText(link.textContent),
-      href: resolveAssetUrl(link.getAttribute('href')),
-    }))
-    .filter((actor) => actor.name && actor.href);
+  const actors = parseCreatorLinks(actorsBlock, 18);
+  const directedByBlock = Array.from(doc.querySelectorAll('#creators > div')).find(
+    (block) => normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '') === 'Režie',
+  );
+  const directors = parseCreatorLinks(directedByBlock, 18);
 
   return {
     title,
@@ -602,6 +624,7 @@ export function parseFilmPreviewDocument(doc) {
     genres,
     origin,
     actors,
+    directors,
     posters: imageUrl ? [{ imageUrl, label: title }] : [],
   };
 }
@@ -957,13 +980,8 @@ function renderUserPreview(data) {
 }
 
 function renderFilmPreview(data) {
-  const actorsHtml = Array.isArray(data.actors)
-    ? data.actors
-        .map(
-          (actor) => `<a class="cc-hover-preview-link" href="${escapeHtml(actor.href)}">${escapeHtml(actor.name)}</a>`,
-        )
-        .join(', ')
-    : '';
+  const directorsLine = renderLinkedPeopleLine('Režie', data.directors);
+  const actorsLine = renderLinkedPeopleLine('Hrají', data.actors);
 
   const topHtml = [
     data.rating || data.ratingCount
@@ -985,12 +1003,9 @@ function renderFilmPreview(data) {
   const lines = [
     data.genres ? renderLine(escapeHtml(data.genres), 'is-primary') : '',
     data.origin ? renderLine(escapeHtml(data.origin), 'is-muted') : '',
-    actorsHtml ? '<div class="cc-hover-preview-divider"></div>' : '',
-    actorsHtml
-      ? renderLine(
-          `<span class="cc-hover-preview-clamp-2"><span class="cc-hover-preview-label">Hrají:</span> ${actorsHtml}</span>`,
-        )
-      : '',
+    directorsLine || actorsLine ? '<div class="cc-hover-preview-divider"></div>' : '',
+    directorsLine,
+    actorsLine,
   ].join('');
 
   return renderCardWithTop({
