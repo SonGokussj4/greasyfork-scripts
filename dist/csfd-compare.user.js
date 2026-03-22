@@ -82,6 +82,151 @@
   /** Regex to extract user slug (e.g. "12345-username") from a ČSFD user path. */
   const USER_SLUG_REGEX = /^\/uzivatel\/(\d+-[^/]+)\//i;
 
+  const CSFD_SITE_CONFIG = Object.freeze({
+    cz: Object.freeze({
+      pathSegments: Object.freeze({
+        overview: 'prehled',
+        ratings: 'hodnoceni',
+        reviews: 'recenze',
+      }),
+      creatorRoles: Object.freeze({
+        actors: 'Hrají',
+        directors: 'Režie',
+      }),
+    }),
+    sk: Object.freeze({
+      pathSegments: Object.freeze({
+        overview: 'prehlad',
+        ratings: 'hodnotenia',
+        reviews: 'recenzie',
+      }),
+      creatorRoles: Object.freeze({
+        actors: 'Hrajú',
+        directors: 'Réžia',
+      }),
+    }),
+  });
+
+  const CSFD_SHOW_TYPE_KEYWORDS = Object.freeze({
+    episode: Object.freeze(['epizoda', 'epizóda', 'episode']),
+    serial: Object.freeze(['seriál', 'serial']),
+    season: Object.freeze(['série', 'séria', 'serie', 'season', 'series']),
+    'tv movie': Object.freeze(['tv film', 'tv movie']),
+    movie: Object.freeze(['film', 'movie']),
+  });
+
+  const CSFD_CREATOR_ROLE_KEYWORDS = Object.freeze(
+    Object.fromEntries(
+      Object.keys(CSFD_SITE_CONFIG.cz.creatorRoles).map((roleKey) => [
+        roleKey,
+        Object.freeze(
+          Array.from(new Set(Object.values(CSFD_SITE_CONFIG).map((localeConfig) => localeConfig.creatorRoles[roleKey]))),
+        ),
+      ]),
+    ),
+  );
+
+  const CSFD_TEXT_VARIANTS = Object.freeze({
+    reviewHeading: Object.freeze(['recenze', 'recenzie']),
+    recentReviewsOrRatingsHeading: Object.freeze([
+      'poslední recenze',
+      'posledne recenzie',
+      'poslední hodnocení',
+      'posledné hodnotenia',
+    ]),
+    recentDiaryHeading: Object.freeze(['poslední deníček', 'posledny dennik']),
+  });
+
+  const CSFD_USER_PROFILE_SUBPATHS = Object.freeze([
+    'o-mne',
+    'denicek',
+    'dennik',
+    'seznamy',
+    'filmoteka',
+    'komentare',
+    'komentare-filmy',
+    'diskuze',
+    'diskusia',
+    'fanclub',
+    'videa',
+    'galerie',
+    'galaria',
+    'zajimavosti',
+    'zaujimavosti',
+    'biografie',
+    'biografia',
+    'obsahy',
+    'videa-fotky',
+  ]);
+
+  const CSFD_PATH_ALIASES = Object.freeze({
+    creator: Object.freeze(['tvurce', 'tvorca']),
+    discussion: Object.freeze(['diskuze', 'diskusia', 'diskusie']),
+    gallery: Object.freeze(['galerie', 'galaria']),
+  });
+
+  function escapeRegExp(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function getCsfdLocale(hostname = globalThis.location?.hostname || '') {
+    return String(hostname).endsWith('.sk') ? 'sk' : 'cz';
+  }
+
+  function getCsfdPathSegment(segmentKey, localeOrHostname = getCsfdLocale()) {
+    const locale = Object.hasOwn(CSFD_SITE_CONFIG, localeOrHostname) ? localeOrHostname : getCsfdLocale(localeOrHostname);
+    return CSFD_SITE_CONFIG[locale]?.pathSegments?.[segmentKey] || CSFD_SITE_CONFIG.cz.pathSegments?.[segmentKey] || '';
+  }
+
+  function getCsfdPathSegmentValues(segmentKey) {
+    return Object.freeze(
+      Array.from(
+        new Set(Object.values(CSFD_SITE_CONFIG).map((localeConfig) => localeConfig.pathSegments?.[segmentKey])),
+      ).filter(Boolean),
+    );
+  }
+
+  function getCsfdPathSegmentPattern(segmentKey) {
+    return getCsfdPathSegmentValues(segmentKey).map(escapeRegExp).join('|');
+  }
+
+  function getCsfdPathAliasPattern(aliasKey) {
+    return (CSFD_PATH_ALIASES[aliasKey] || []).map(escapeRegExp).join('|');
+  }
+
+  function getCsfdUserProfileSubpathPattern() {
+    return [getCsfdPathSegmentPattern('overview'), ...CSFD_USER_PROFILE_SUBPATHS.map(escapeRegExp)].join('|');
+  }
+
+  function getCsfdCreatorRoleLabel(roleKey, localeOrHostname = getCsfdLocale()) {
+    const locale = Object.hasOwn(CSFD_SITE_CONFIG, localeOrHostname) ? localeOrHostname : getCsfdLocale(localeOrHostname);
+    return CSFD_SITE_CONFIG[locale]?.creatorRoles?.[roleKey] || CSFD_SITE_CONFIG.cz.creatorRoles?.[roleKey] || '';
+  }
+
+  function matchesCsfdTextVariant(variantKey, text = '') {
+    const normalized = String(text || '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) return false;
+
+    return (CSFD_TEXT_VARIANTS[variantKey] || []).some((variant) => normalized.includes(variant));
+  }
+
+  function normalizeCsfdShowType(rawType, defaultType = 'movie') {
+    const normalized = String(rawType || '')
+      .trim()
+      .toLowerCase();
+    if (!normalized) return defaultType;
+
+    for (const [typeKey, keywords] of Object.entries(CSFD_SHOW_TYPE_KEYWORDS)) {
+      if (keywords.some((keyword) => normalized === keyword || normalized.includes(keyword))) {
+        return typeKey;
+      }
+    }
+
+    return normalized;
+  }
+
   function buildRatingRecordId(userSlug, movieId) {
     return `${userSlug}:${movieId}`;
   }
@@ -157,6 +302,9 @@
       hasChanges: staleRecordIds.length > 0,
     };
   }
+
+  const CREATOR_PATHS_PATTERN$2 = getCsfdPathAliasPattern('creator');
+  const REVIEWS_SEGMENTS_PATTERN$2 = getCsfdPathSegmentPattern('reviews');
 
   const FILM_ICON_SVG = `
   <svg viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -282,7 +430,7 @@
   function matchesReviewUrl(url) {
     return (
       /^\/film\//i.test(url.pathname) &&
-      /\/recenze\/?$/i.test(url.pathname) &&
+      new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN$2})\/?$`, 'i').test(url.pathname) &&
       /^\d+$/.test(url.searchParams.get('review') || '') &&
       isCsfdUrl(url)
     );
@@ -293,7 +441,7 @@
   }
 
   function matchesCreatorUrl(url) {
-    return /^\/(tvurce|tvorca)\//i.test(url.pathname) && isCsfdUrl(url);
+    return new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN$2})\/`, 'i').test(url.pathname) && isCsfdUrl(url);
   }
 
   function matchesUserUrl(url) {
@@ -841,6 +989,13 @@
     return parseInt(lastMatch.replace(/\D/g, ''), 10);
   }
 
+  const OVERVIEW_SEGMENTS_PATTERN$1 = getCsfdPathSegmentPattern('overview');
+  const CREATOR_PATHS_PATTERN$1 = getCsfdPathAliasPattern('creator');
+  const DISCUSSION_PATHS_PATTERN = getCsfdPathAliasPattern('discussion');
+  const GALLERY_PATHS_PATTERN = getCsfdPathAliasPattern('gallery');
+  const RATINGS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('ratings');
+  const REVIEWS_SEGMENTS_PATTERN$1 = getCsfdPathSegmentPattern('reviews');
+
   class Csfd {
     constructor(pageContent) {
       this.csfdPage = pageContent;
@@ -918,9 +1073,7 @@
       this.userSlug = extractUserSlug(this.userUrl);
       console.debug('🟣 User Slug:', this.userSlug);
 
-      this.userRatingsUrl = this.userUrl
-        ? this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni')
-        : undefined;
+      this.userRatingsUrl = this.userUrl ? this.userUrl + getCsfdPathSegment('ratings') : undefined;
       console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
 
       const settings = await getSettings(SETTINGSNAME);
@@ -1103,7 +1256,10 @@
       const parentName = slugMatches.length > 1 ? slugMatches[0] : '';
       const urlSlug = slugMatches.length ? slugMatches[slugMatches.length - 1] : '';
 
-      const cleanPath = path.replace(/\/(recenze|komentare|prehled|prehlad)\/?$/i, '/');
+      const cleanPath = path.replace(
+        new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN$1}|komentare|${OVERVIEW_SEGMENTS_PATTERN$1})\/?$`, 'i'),
+        '/',
+      );
 
       return { movieId, urlSlug, parentId, parentName, fullUrl: `${location.origin}${cleanPath}` };
     }
@@ -1140,10 +1296,7 @@
 
     getCurrentPageType() {
       const typeText = document.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
-      if (typeText.includes('epizoda')) return 'episode';
-      if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
-      if (typeText.includes('série') || typeText.includes('serie')) return 'series';
-      return 'movie';
+      return normalizeCsfdShowType(typeText, 'movie');
     }
 
     getCurrentPageComputedInfo() {
@@ -1556,7 +1709,7 @@
       const isOwnProfile = this.isOnUserProfilePage() && !isOtherUser;
 
       // Links pointing to sections that are not actual film pages
-      const ignorePathRegex = /\/(galerie|videa?|tvurci|obsahy?)\//;
+      const ignorePathRegex = new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN}|videa?|tvurci|obsahy?)\/`, 'i');
       // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
       const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
       // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
@@ -1629,12 +1782,12 @@
       if (!this.userSlug) return false;
       const path = location.pathname || '';
       return (
-        path.startsWith(`/uzivatel/${this.userSlug}/`) && (path.includes('/hodnoceni/') || path.includes('/hodnotenia/'))
+        path.startsWith(`/uzivatel/${this.userSlug}/`) && new RegExp(`\/(${RATINGS_SEGMENTS_PATTERN})\/`, 'i').test(path)
       );
     }
 
     isOnCreatorPage() {
-      return /^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(location.pathname || '');
+      return new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN$1})\/\d+-[^/]+\/`, 'i').test(location.pathname || '');
     }
 
     isOnUserProfilePage() {
@@ -1647,11 +1800,13 @@
     }
 
     isOnUserOverviewPage() {
-      return /^\/uzivatel\/\d+-[^/]+\/(prehled|prehlad)(\/|$)/i.test(location.pathname || '');
+      return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${OVERVIEW_SEGMENTS_PATTERN$1})(\/|$)`, 'i').test(
+        location.pathname || '',
+      );
     }
 
     isOnUserReviewsPage() {
-      return /^\/uzivatel\/\d+-[^/]+\/(recenze|recenzie)(\/|$)/i.test(location.pathname || '');
+      return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${REVIEWS_SEGMENTS_PATTERN$1})(\/|$)`, 'i').test(location.pathname || '');
     }
 
     /**
@@ -1687,9 +1842,8 @@
         const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
 
         if (sectionTitle) {
-          if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední hodnocení|posledné hodnotenia/))
-            return true;
-          if (sectionTitle.match(/poslední deníček|posledny dennik/)) return false;
+          if (matchesCsfdTextVariant('recentReviewsOrRatingsHeading', sectionTitle)) return true;
+          if (matchesCsfdTextVariant('recentDiaryHeading', sectionTitle)) return false;
         }
         sectionNode = sectionNode.parentElement;
       }
@@ -1697,7 +1851,9 @@
     }
 
     getRatingsPageSlug() {
-      return (location.pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\/(hodnoceni|hodnotenia)\/?/i)?.[1];
+      return (location.pathname || '').match(
+        new RegExp(`^\/uzivatel\/(\d+-[^/]+)\/(${RATINGS_SEGMENTS_PATTERN})\/?`, 'i'),
+      )?.[1];
     }
 
     isOnForeignRatingsPage() {
@@ -2019,7 +2175,7 @@
     }
 
     isOnGalleryPage() {
-      return /\/(galerie|galeria)\//i.test(location.pathname || '');
+      return new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN})\/`, 'i').test(location.pathname || '');
     }
 
     isGalleryImageLinksEnabled() {
@@ -2155,7 +2311,7 @@
      * Uses a Vanilla JS proxy-click to trigger the native ČSFD UI.
      */
     enableSelfReplyInDiscussions() {
-      if (!window.location.pathname.includes('/diskuze/')) return;
+      if (!new RegExp(String.raw`\/(?:${DISCUSSION_PATHS_PATTERN})\/`, 'i').test(window.location.pathname || '')) return;
       if (!getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) return;
 
       const posts = document.querySelectorAll('article.article-forum');
@@ -2320,7 +2476,7 @@
   }
 
   function getRatingsSegment() {
-    return location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
+    return getCsfdPathSegment('ratings');
   }
 
   function extractUserSlugFromProfilePath(profilePath) {
@@ -2333,7 +2489,8 @@
 
   function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
     const ratingsSegment = getRatingsSegment();
-    const basePath = profilePath.replace(/\/(prehled|prehlad)\/?$/i, `/${ratingsSegment}/`);
+    const overviewSegments = getCsfdPathSegmentPattern('overview');
+    const basePath = profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
     const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
     if (pageNumber <= 1) {
@@ -2399,13 +2556,7 @@
   }
 
   function normalizeType(rawType) {
-    const normalized = (rawType || '').trim().toLowerCase();
-    if (!normalized) return 'movie';
-    if (normalized.includes('epizoda')) return 'episode';
-    if (normalized.includes('seriál') || normalized.includes('serial')) return 'serial';
-    if (normalized.startsWith('série') || normalized.startsWith('serie')) return 'series';
-    if (normalized.includes('film')) return 'movie';
-    return normalized;
+    return normalizeCsfdShowType(rawType, 'movie');
   }
 
   function parseRating(starElement) {
@@ -2730,10 +2881,7 @@
 
   function parsePageType(doc) {
     const typeText = doc.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
-    if (typeText.includes('epizoda')) return 'episode';
-    if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
-    if (typeText.includes('série') || typeText.includes('serie')) return 'series';
-    return 'movie';
+    return normalizeCsfdShowType(typeText, 'movie');
   }
 
   function parsePageDate(doc) {
@@ -2750,7 +2898,7 @@
   }
 
   function buildParentReviewsUrl(parentSlug) {
-    return new URL(`/film/${parentSlug}/recenze/`, location.origin).toString();
+    return new URL(`/film/${parentSlug}/${getCsfdPathSegment('reviews')}/`, location.origin).toString();
   }
 
   function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord, parsedRating, doc }) {
@@ -5424,9 +5572,10 @@
     }
 
     const url = new URL(profileHref, location.origin);
-    const segment = location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
-    if (/\/(prehled|prehlad)\/?$/i.test(url.pathname)) {
-      url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+    const segment = getCsfdPathSegment('ratings');
+    const overviewPattern = new RegExp(`\/(${getCsfdPathSegmentValues('overview').join('|')})\/?$`, 'i');
+    if (overviewPattern.test(url.pathname)) {
+      url.pathname = url.pathname.replace(overviewPattern, `/${segment}/`);
     } else {
       url.pathname = url.pathname.endsWith('/') ? `${url.pathname}${segment}/` : `${url.pathname}/${segment}/`;
     }
@@ -5470,7 +5619,8 @@
 
   function getTotalRatingsFromCurrentPageForCurrentUser() {
     const path = location.pathname || '';
-    if (!/\/uzivatel\//.test(path) || !/\/(hodnoceni|hodnotenia)\/?$/i.test(path)) {
+    const ratingsPattern = new RegExp(`\/(${getCsfdPathSegmentValues('ratings').join('|')})\/?$`, 'i');
+    if (!/\/uzivatel\//.test(path) || !ratingsPattern.test(path)) {
       return 0;
     }
 
@@ -5766,12 +5916,10 @@
    * @returns {{key: string, label: string}}
    */
   function normalizeModalType(rawType) {
-    const normalized = String(rawType || '').toLowerCase();
-    if (normalized.includes('epizoda') || normalized === 'episode') return { key: 'episode', label: 'Episode' };
-    if (normalized.includes('seriál') || normalized.includes('serial') || normalized === 'serial')
-      return { key: 'series', label: 'Series' };
-    if (normalized.includes('série') || normalized.includes('serie') || normalized === 'series')
-      return { key: 'season', label: 'Season' };
+    const normalized = normalizeCsfdShowType(rawType, 'movie');
+    if (normalized === 'episode') return { key: 'episode', label: 'Episode' };
+    if (normalized === 'serial') return { key: 'series', label: 'Series' };
+    if (normalized === 'season') return { key: 'season', label: 'Season' };
     return { key: 'movie', label: 'Movie' };
   }
 
@@ -6786,34 +6934,10 @@
   }
 
   const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-  const CSFD_LOCALE_LABELS = Object.freeze({
-    cz: Object.freeze({
-      overviewSegment: 'prehled',
-      creatorRoles: Object.freeze({
-        actors: 'Hrají',
-        directors: 'Režie',
-      }),
-    }),
-    sk: Object.freeze({
-      overviewSegment: 'prehlad',
-      creatorRoles: Object.freeze({
-        actors: 'Hrajú',
-        directors: 'Réžia',
-      }),
-    }),
-  });
-
-  const CSFD_CREATOR_ROLE_KEYWORDS = Object.freeze(
-    Object.fromEntries(
-      Object.keys(CSFD_LOCALE_LABELS.cz.creatorRoles).map((roleKey) => [
-        roleKey,
-        Object.freeze(
-          Array.from(new Set(Object.values(CSFD_LOCALE_LABELS).map((labels) => labels.creatorRoles[roleKey]))),
-        ),
-      ]),
-    ),
-  );
+  const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
+  const OVERVIEW_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('overview');
+  const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
+  const USER_PROFILE_SUBPATHS_PATTERN = getCsfdUserProfileSubpathPattern();
 
   function createUrl(href) {
     try {
@@ -6857,20 +6981,6 @@
   }
 
   /**
-   * Determines the CSFD locale based on the hostname.
-   * Defaults to 'cz' for all hostnames that do not end with '.sk'.
-   *
-   * >>> getCsfdLocale('www.csfd.cz') => 'cz'
-   *
-   * @param {string} hostname - The hostname to determine the locale for.
-   * @returns {string} The CSFD locale ('cz' or 'sk').
-
-   */
-  function getCsfdLocale(hostname = location.hostname) {
-    return hostname.endsWith('.sk') ? 'sk' : 'cz';
-  }
-
-  /**
    * Determines the CSFD locale of a document by checking the `<html lang>` attribute.
    * If the language cannot be determined from the document, it falls back to checking the hostname.
    *
@@ -6885,20 +6995,6 @@
     return getCsfdLocale(documentHostname || location.hostname);
   }
 
-  /**
-   * Determines the appropriate overview segment for a given URL's hostname, based on the CSFD locale.
-   *
-   * >>> getOverviewSegment(new URL('https://www.csfd.cz/film/12345/prehled/')) => 'prehled'
-   * >>> getOverviewSegment(new URL('https://www.csfd.sk/film/12345/prehlad/')) => 'prehlad'
-   *
-   * @param {URL} url - The URL to determine the overview segment for.
-   * @returns {string} The overview segment for the given URL's hostname.
-
-   */
-  function getOverviewSegment(url) {
-    return CSFD_LOCALE_LABELS[getCsfdLocale(url.hostname)]?.overviewSegment || CSFD_LOCALE_LABELS.cz.overviewSegment;
-  }
-
   function findCreatorBlockByRole(doc, roleKey) {
     const keywords = CSFD_CREATOR_ROLE_KEYWORDS[roleKey] || [];
 
@@ -6907,18 +7003,14 @@
     );
   }
 
-  function getCreatorRoleLabelForLocale(roleKey, locale = getCsfdLocale()) {
-    return CSFD_LOCALE_LABELS[locale]?.creatorRoles[roleKey] || CSFD_LOCALE_LABELS.cz.creatorRoles[roleKey] || '';
-  }
-
   function normalizeCreatorUrl(href) {
     const url = createUrl(href);
-    const match = url?.pathname.match(/^\/(tvurce|tvorca)\/(\d+-[^/]+)/i);
+    const match = url?.pathname.match(new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN})\/(\d+-[^/]+)`, 'i'));
     if (!url || !match) return null;
 
     url.search = '';
     url.hash = '';
-    url.pathname = `/${match[1]}/${match[2]}/${getOverviewSegment(url)}/`;
+    url.pathname = `/${match[1]}/${match[2]}/${getCsfdPathSegment('overview', url.hostname)}/`;
     return url.toString();
   }
 
@@ -6929,7 +7021,7 @@
 
     url.search = '';
     url.hash = '';
-    url.pathname = `/uzivatel/${match[1]}/${getOverviewSegment(url)}/`;
+    url.pathname = `/uzivatel/${match[1]}/${getCsfdPathSegment('overview', url.hostname)}/`;
     return url.toString();
   }
 
@@ -6940,7 +7032,7 @@
 
     url.search = '';
     url.hash = '';
-    url.pathname = `/uzivatel/${match[1]}/recenze/`;
+    url.pathname = `/uzivatel/${match[1]}/${getCsfdPathSegment('reviews', url.hostname)}/`;
     return url.toString();
   }
 
@@ -6951,20 +7043,22 @@
 
     url.search = '';
     url.hash = '';
-    url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getOverviewSegment(url)}/`;
+    url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getCsfdPathSegment('overview', url.hostname)}/`;
     return url.toString();
   }
 
   function normalizeReviewUrl(href) {
     const url = createUrl(href);
-    const match = url?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/recenze\/?$/i);
+    const match = url?.pathname.match(
+      new RegExp(`^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i'),
+    );
     const reviewId = url?.searchParams.get('review') || '';
     if (!url || !match || !/^\d+$/.test(reviewId)) return null;
 
     url.hash = '';
     url.search = '';
     url.searchParams.set('review', reviewId);
-    url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}recenze/`;
+    url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getCsfdPathSegment('reviews', url.hostname)}/`;
     return url.toString();
   }
 
@@ -7028,7 +7122,10 @@
   }
 
   function getCreatorEntityKey(url) {
-    return createUrl(url)?.pathname.match(/^\/(?:tvurce|tvorca)\/(\d+-[^/]+)/i)?.[1] || null;
+    return (
+      createUrl(url)?.pathname.match(new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/(\d+-[^/]+)`, 'i'))?.[1] ||
+      null
+    );
   }
 
   function getUserEntityKey(url) {
@@ -7083,7 +7180,7 @@
   }
 
   function isCurrentCreatorEntity(url) {
-    if (!/^\/(?:tvurce|tvorca)\//i.test(location.pathname || '')) return false;
+    if (!new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/`, 'i').test(location.pathname || '')) return false;
     return getCreatorEntityKey(url) === getCreatorEntityKey(location.href);
   }
 
@@ -7093,7 +7190,8 @@
   }
 
   function isCurrentReviewEntity(url) {
-    if (!/^\/film\//i.test(location.pathname || '') || !/\/recenze\/?$/i.test(location.pathname || '')) return false;
+    if (!/^\/film\//i.test(location.pathname || '')) return false;
+    if (!new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(location.pathname || '')) return false;
     return getReviewEntityKey(url) === getReviewEntityKey(location.href);
   }
 
@@ -7420,7 +7518,7 @@
     const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
     const reviewCount = normalizeText(
       Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
-        .find((heading) => /^Recenze\b/i.test(normalizeText(heading.textContent)))
+        .find((heading) => matchesCsfdTextVariant('reviewHeading', normalizeText(heading.textContent)))
         ?.querySelector('.count')?.textContent,
     ).replace(/[()]/g, '');
 
@@ -7819,8 +7917,8 @@
   }
 
   function renderFilmPreview(data) {
-    const directorsLine = renderLinkedPeopleLine(getCreatorRoleLabelForLocale('directors', data.locale), data.directors);
-    const actorsLine = renderLinkedPeopleLine(getCreatorRoleLabelForLocale('actors', data.locale), data.actors);
+    const directorsLine = renderLinkedPeopleLine(getCsfdCreatorRoleLabel('directors', data.locale), data.directors);
+    const actorsLine = renderLinkedPeopleLine(getCsfdCreatorRoleLabel('actors', data.locale), data.actors);
 
     const topHtml = [
       data.rating || data.ratingCount
@@ -8024,7 +8122,10 @@
           !url.search &&
           !url.hash &&
           !isCurrentCreatorEntity(url) &&
-          /^\/(tvurce|tvorca)\/\d+-[^/]+(?:\/(?:prehled|prehlad))?\/?$/i.test(url.pathname || ''),
+          new RegExp(
+            String.raw`^\/(${CREATOR_PATHS_PATTERN})\/\d+-[^/]+(?:\/(?:${OVERVIEW_SEGMENTS_PATTERN}))?\/?$`,
+            'i',
+          ).test(url.pathname || ''),
         );
       },
       normalizeUrl: normalizeCreatorUrl,
@@ -8052,9 +8153,10 @@
           !url.search &&
           !url.hash &&
           !isCurrentUserEntity(url) &&
-          /^\/uzivatel\/\d+-[^/]+(?:\/(?:prehled|prehlad|o-mne|denicek|dennik|seznamy|filmoteka|komentare|komentare-filmy|diskuze|fanclub|videa|galerie|zajimavosti|biografie|obsahy|videa-fotky)|\/oblibene(?:\/[^/]+)*)?\/?$/i.test(
-            url.pathname || '',
-          ),
+          new RegExp(
+            String.raw`^\/uzivatel\/\d+-[^/]+(?:\/(?:${USER_PROFILE_SUBPATHS_PATTERN})|\/oblibene(?:\/[^/]+)*)?\/?$`,
+            'i',
+          ).test(url.pathname || ''),
         );
       },
       normalizeUrl: normalizeUserUrl,
@@ -8084,7 +8186,7 @@
         return Boolean(
           url &&
           /^\/film\//i.test(url.pathname || '') &&
-          /\/recenze\/?$/i.test(url.pathname || '') &&
+          new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(url.pathname || '') &&
           /^\d+$/.test(url.searchParams.get('review') || '') &&
           !isCurrentReviewEntity(url),
         );

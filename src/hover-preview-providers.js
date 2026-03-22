@@ -1,42 +1,26 @@
 import {
+  CSFD_CREATOR_ROLE_KEYWORDS,
   HOVER_PREVIEW_CREATOR_ENABLED_KEY,
   HOVER_PREVIEW_ENABLED_KEY,
   HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
   HOVER_PREVIEW_FILM_ENABLED_KEY,
   HOVER_PREVIEW_REVIEW_ENABLED_KEY,
   HOVER_PREVIEW_USER_ENABLED_KEY,
+  getCsfdPathAliasPattern,
+  getCsfdCreatorRoleLabel,
+  getCsfdLocale,
+  getCsfdPathSegment,
+  getCsfdPathSegmentPattern,
+  getCsfdUserProfileSubpathPattern,
+  matchesCsfdTextVariant,
 } from './config.js';
 import { escapeHtml } from './utils.js';
 
 const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-const CSFD_LOCALE_LABELS = Object.freeze({
-  cz: Object.freeze({
-    overviewSegment: 'prehled',
-    creatorRoles: Object.freeze({
-      actors: 'Hrají',
-      directors: 'Režie',
-    }),
-  }),
-  sk: Object.freeze({
-    overviewSegment: 'prehlad',
-    creatorRoles: Object.freeze({
-      actors: 'Hrajú',
-      directors: 'Réžia',
-    }),
-  }),
-});
-
-const CSFD_CREATOR_ROLE_KEYWORDS = Object.freeze(
-  Object.fromEntries(
-    Object.keys(CSFD_LOCALE_LABELS.cz.creatorRoles).map((roleKey) => [
-      roleKey,
-      Object.freeze(
-        Array.from(new Set(Object.values(CSFD_LOCALE_LABELS).map((labels) => labels.creatorRoles[roleKey]))),
-      ),
-    ]),
-  ),
-);
+const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
+const OVERVIEW_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('overview');
+const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
+const USER_PROFILE_SUBPATHS_PATTERN = getCsfdUserProfileSubpathPattern();
 
 function createUrl(href) {
   try {
@@ -80,20 +64,6 @@ function resolveUrlAgainst(url, baseHref) {
 }
 
 /**
- * Determines the CSFD locale based on the hostname.
- * Defaults to 'cz' for all hostnames that do not end with '.sk'.
- *
- * >>> getCsfdLocale('www.csfd.cz') => 'cz'
- *
- * @param {string} hostname - The hostname to determine the locale for.
- * @returns {string} The CSFD locale ('cz' or 'sk').
-
- */
-function getCsfdLocale(hostname = location.hostname) {
-  return hostname.endsWith('.sk') ? 'sk' : 'cz';
-}
-
-/**
  * Determines the CSFD locale of a document by checking the `<html lang>` attribute.
  * If the language cannot be determined from the document, it falls back to checking the hostname.
  *
@@ -108,20 +78,6 @@ function getDocumentCsfdLocale(doc) {
   return getCsfdLocale(documentHostname || location.hostname);
 }
 
-/**
- * Determines the appropriate overview segment for a given URL's hostname, based on the CSFD locale.
- *
- * >>> getOverviewSegment(new URL('https://www.csfd.cz/film/12345/prehled/')) => 'prehled'
- * >>> getOverviewSegment(new URL('https://www.csfd.sk/film/12345/prehlad/')) => 'prehlad'
- *
- * @param {URL} url - The URL to determine the overview segment for.
- * @returns {string} The overview segment for the given URL's hostname.
-
- */
-function getOverviewSegment(url) {
-  return CSFD_LOCALE_LABELS[getCsfdLocale(url.hostname)]?.overviewSegment || CSFD_LOCALE_LABELS.cz.overviewSegment;
-}
-
 function findCreatorBlockByRole(doc, roleKey) {
   const keywords = CSFD_CREATOR_ROLE_KEYWORDS[roleKey] || [];
 
@@ -130,18 +86,14 @@ function findCreatorBlockByRole(doc, roleKey) {
   );
 }
 
-function getCreatorRoleLabelForLocale(roleKey, locale = getCsfdLocale()) {
-  return CSFD_LOCALE_LABELS[locale]?.creatorRoles[roleKey] || CSFD_LOCALE_LABELS.cz.creatorRoles[roleKey] || '';
-}
-
 function normalizeCreatorUrl(href) {
   const url = createUrl(href);
-  const match = url?.pathname.match(/^\/(tvurce|tvorca)\/(\d+-[^/]+)/i);
+  const match = url?.pathname.match(new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN})\/(\d+-[^/]+)`, 'i'));
   if (!url || !match) return null;
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/${match[1]}/${match[2]}/${getOverviewSegment(url)}/`;
+  url.pathname = `/${match[1]}/${match[2]}/${getCsfdPathSegment('overview', url.hostname)}/`;
   return url.toString();
 }
 
@@ -152,7 +104,7 @@ function normalizeUserUrl(href) {
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/uzivatel/${match[1]}/${getOverviewSegment(url)}/`;
+  url.pathname = `/uzivatel/${match[1]}/${getCsfdPathSegment('overview', url.hostname)}/`;
   return url.toString();
 }
 
@@ -163,7 +115,7 @@ function getUserReviewsUrl(href) {
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/uzivatel/${match[1]}/recenze/`;
+  url.pathname = `/uzivatel/${match[1]}/${getCsfdPathSegment('reviews', url.hostname)}/`;
   return url.toString();
 }
 
@@ -174,20 +126,22 @@ function normalizeFilmUrl(href) {
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getOverviewSegment(url)}/`;
+  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getCsfdPathSegment('overview', url.hostname)}/`;
   return url.toString();
 }
 
 function normalizeReviewUrl(href) {
   const url = createUrl(href);
-  const match = url?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/recenze\/?$/i);
+  const match = url?.pathname.match(
+    new RegExp(`^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i'),
+  );
   const reviewId = url?.searchParams.get('review') || '';
   if (!url || !match || !/^\d+$/.test(reviewId)) return null;
 
   url.hash = '';
   url.search = '';
   url.searchParams.set('review', reviewId);
-  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}recenze/`;
+  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getCsfdPathSegment('reviews', url.hostname)}/`;
   return url.toString();
 }
 
@@ -251,7 +205,10 @@ function normalizeAniDbAnimeUrl(href) {
 }
 
 function getCreatorEntityKey(url) {
-  return createUrl(url)?.pathname.match(/^\/(?:tvurce|tvorca)\/(\d+-[^/]+)/i)?.[1] || null;
+  return (
+    createUrl(url)?.pathname.match(new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/(\d+-[^/]+)`, 'i'))?.[1] ||
+    null
+  );
 }
 
 function getUserEntityKey(url) {
@@ -306,7 +263,7 @@ function isCurrentFilmEntity(url) {
 }
 
 function isCurrentCreatorEntity(url) {
-  if (!/^\/(?:tvurce|tvorca)\//i.test(location.pathname || '')) return false;
+  if (!new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/`, 'i').test(location.pathname || '')) return false;
   return getCreatorEntityKey(url) === getCreatorEntityKey(location.href);
 }
 
@@ -316,7 +273,8 @@ function isCurrentUserEntity(url) {
 }
 
 function isCurrentReviewEntity(url) {
-  if (!/^\/film\//i.test(location.pathname || '') || !/\/recenze\/?$/i.test(location.pathname || '')) return false;
+  if (!/^\/film\//i.test(location.pathname || '')) return false;
+  if (!new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(location.pathname || '')) return false;
   return getReviewEntityKey(url) === getReviewEntityKey(location.href);
 }
 
@@ -643,7 +601,7 @@ export function parseUserPreviewDocument(doc) {
   const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
   const reviewCount = normalizeText(
     Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
-      .find((heading) => /^Recenze\b/i.test(normalizeText(heading.textContent)))
+      .find((heading) => matchesCsfdTextVariant('reviewHeading', normalizeText(heading.textContent)))
       ?.querySelector('.count')?.textContent,
   ).replace(/[()]/g, '');
 
@@ -1042,8 +1000,8 @@ function renderUserPreview(data) {
 }
 
 function renderFilmPreview(data) {
-  const directorsLine = renderLinkedPeopleLine(getCreatorRoleLabelForLocale('directors', data.locale), data.directors);
-  const actorsLine = renderLinkedPeopleLine(getCreatorRoleLabelForLocale('actors', data.locale), data.actors);
+  const directorsLine = renderLinkedPeopleLine(getCsfdCreatorRoleLabel('directors', data.locale), data.directors);
+  const actorsLine = renderLinkedPeopleLine(getCsfdCreatorRoleLabel('actors', data.locale), data.actors);
 
   const topHtml = [
     data.rating || data.ratingCount
@@ -1247,7 +1205,10 @@ export const HOVER_PREVIEW_PROVIDERS = [
         !url.search &&
         !url.hash &&
         !isCurrentCreatorEntity(url) &&
-        /^\/(tvurce|tvorca)\/\d+-[^/]+(?:\/(?:prehled|prehlad))?\/?$/i.test(url.pathname || ''),
+        new RegExp(
+          String.raw`^\/(${CREATOR_PATHS_PATTERN})\/\d+-[^/]+(?:\/(?:${OVERVIEW_SEGMENTS_PATTERN}))?\/?$`,
+          'i',
+        ).test(url.pathname || ''),
       );
     },
     normalizeUrl: normalizeCreatorUrl,
@@ -1275,9 +1236,10 @@ export const HOVER_PREVIEW_PROVIDERS = [
         !url.search &&
         !url.hash &&
         !isCurrentUserEntity(url) &&
-        /^\/uzivatel\/\d+-[^/]+(?:\/(?:prehled|prehlad|o-mne|denicek|dennik|seznamy|filmoteka|komentare|komentare-filmy|diskuze|fanclub|videa|galerie|zajimavosti|biografie|obsahy|videa-fotky)|\/oblibene(?:\/[^/]+)*)?\/?$/i.test(
-          url.pathname || '',
-        ),
+        new RegExp(
+          String.raw`^\/uzivatel\/\d+-[^/]+(?:\/(?:${USER_PROFILE_SUBPATHS_PATTERN})|\/oblibene(?:\/[^/]+)*)?\/?$`,
+          'i',
+        ).test(url.pathname || ''),
       );
     },
     normalizeUrl: normalizeUserUrl,
@@ -1307,7 +1269,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
       return Boolean(
         url &&
         /^\/film\//i.test(url.pathname || '') &&
-        /\/recenze\/?$/i.test(url.pathname || '') &&
+        new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(url.pathname || '') &&
         /^\d+$/.test(url.searchParams.get('review') || '') &&
         !isCurrentReviewEntity(url),
       );

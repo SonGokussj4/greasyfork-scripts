@@ -66,3 +66,148 @@ export const PROFILE_LINK_SELECTOR =
 
 /** Regex to extract user slug (e.g. "12345-username") from a ČSFD user path. */
 export const USER_SLUG_REGEX = /^\/uzivatel\/(\d+-[^/]+)\//i;
+
+export const CSFD_SITE_CONFIG = Object.freeze({
+  cz: Object.freeze({
+    pathSegments: Object.freeze({
+      overview: 'prehled',
+      ratings: 'hodnoceni',
+      reviews: 'recenze',
+    }),
+    creatorRoles: Object.freeze({
+      actors: 'Hrají',
+      directors: 'Režie',
+    }),
+  }),
+  sk: Object.freeze({
+    pathSegments: Object.freeze({
+      overview: 'prehlad',
+      ratings: 'hodnotenia',
+      reviews: 'recenzie',
+    }),
+    creatorRoles: Object.freeze({
+      actors: 'Hrajú',
+      directors: 'Réžia',
+    }),
+  }),
+});
+
+export const CSFD_SHOW_TYPE_KEYWORDS = Object.freeze({
+  episode: Object.freeze(['epizoda', 'epizóda', 'episode']),
+  serial: Object.freeze(['seriál', 'serial']),
+  season: Object.freeze(['série', 'séria', 'serie', 'season', 'series']),
+  'tv movie': Object.freeze(['tv film', 'tv movie']),
+  movie: Object.freeze(['film', 'movie']),
+});
+
+export const CSFD_CREATOR_ROLE_KEYWORDS = Object.freeze(
+  Object.fromEntries(
+    Object.keys(CSFD_SITE_CONFIG.cz.creatorRoles).map((roleKey) => [
+      roleKey,
+      Object.freeze(
+        Array.from(new Set(Object.values(CSFD_SITE_CONFIG).map((localeConfig) => localeConfig.creatorRoles[roleKey]))),
+      ),
+    ]),
+  ),
+);
+
+export const CSFD_TEXT_VARIANTS = Object.freeze({
+  reviewHeading: Object.freeze(['recenze', 'recenzie']),
+  recentReviewsOrRatingsHeading: Object.freeze([
+    'poslední recenze',
+    'posledne recenzie',
+    'poslední hodnocení',
+    'posledné hodnotenia',
+  ]),
+  recentDiaryHeading: Object.freeze(['poslední deníček', 'posledny dennik']),
+});
+
+export const CSFD_USER_PROFILE_SUBPATHS = Object.freeze([
+  'o-mne',
+  'denicek',
+  'dennik',
+  'seznamy',
+  'filmoteka',
+  'komentare',
+  'komentare-filmy',
+  'diskuze',
+  'diskusia',
+  'fanclub',
+  'videa',
+  'galerie',
+  'galaria',
+  'zajimavosti',
+  'zaujimavosti',
+  'biografie',
+  'biografia',
+  'obsahy',
+  'videa-fotky',
+]);
+
+export const CSFD_PATH_ALIASES = Object.freeze({
+  creator: Object.freeze(['tvurce', 'tvorca']),
+  discussion: Object.freeze(['diskuze', 'diskusia', 'diskusie']),
+  gallery: Object.freeze(['galerie', 'galaria']),
+});
+
+function escapeRegExp(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function getCsfdLocale(hostname = globalThis.location?.hostname || '') {
+  return String(hostname).endsWith('.sk') ? 'sk' : 'cz';
+}
+
+export function getCsfdPathSegment(segmentKey, localeOrHostname = getCsfdLocale()) {
+  const locale = Object.hasOwn(CSFD_SITE_CONFIG, localeOrHostname) ? localeOrHostname : getCsfdLocale(localeOrHostname);
+  return CSFD_SITE_CONFIG[locale]?.pathSegments?.[segmentKey] || CSFD_SITE_CONFIG.cz.pathSegments?.[segmentKey] || '';
+}
+
+export function getCsfdPathSegmentValues(segmentKey) {
+  return Object.freeze(
+    Array.from(
+      new Set(Object.values(CSFD_SITE_CONFIG).map((localeConfig) => localeConfig.pathSegments?.[segmentKey])),
+    ).filter(Boolean),
+  );
+}
+
+export function getCsfdPathSegmentPattern(segmentKey) {
+  return getCsfdPathSegmentValues(segmentKey).map(escapeRegExp).join('|');
+}
+
+export function getCsfdPathAliasPattern(aliasKey) {
+  return (CSFD_PATH_ALIASES[aliasKey] || []).map(escapeRegExp).join('|');
+}
+
+export function getCsfdUserProfileSubpathPattern() {
+  return [getCsfdPathSegmentPattern('overview'), ...CSFD_USER_PROFILE_SUBPATHS.map(escapeRegExp)].join('|');
+}
+
+export function getCsfdCreatorRoleLabel(roleKey, localeOrHostname = getCsfdLocale()) {
+  const locale = Object.hasOwn(CSFD_SITE_CONFIG, localeOrHostname) ? localeOrHostname : getCsfdLocale(localeOrHostname);
+  return CSFD_SITE_CONFIG[locale]?.creatorRoles?.[roleKey] || CSFD_SITE_CONFIG.cz.creatorRoles?.[roleKey] || '';
+}
+
+export function matchesCsfdTextVariant(variantKey, text = '') {
+  const normalized = String(text || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return false;
+
+  return (CSFD_TEXT_VARIANTS[variantKey] || []).some((variant) => normalized.includes(variant));
+}
+
+export function normalizeCsfdShowType(rawType, defaultType = 'movie') {
+  const normalized = String(rawType || '')
+    .trim()
+    .toLowerCase();
+  if (!normalized) return defaultType;
+
+  for (const [typeKey, keywords] of Object.entries(CSFD_SHOW_TYPE_KEYWORDS)) {
+    if (keywords.some((keyword) => normalized === keyword || normalized.includes(keyword))) {
+      return typeKey;
+    }
+  }
+
+  return normalized;
+}

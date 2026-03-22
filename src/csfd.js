@@ -12,6 +12,11 @@ import {
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
   SHOW_RATINGS_IN_REVIEWS_KEY,
   SHOW_RATINGS_KEY,
+  getCsfdPathAliasPattern,
+  getCsfdPathSegment,
+  getCsfdPathSegmentPattern,
+  matchesCsfdTextVariant,
+  normalizeCsfdShowType,
 } from './config.js';
 import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
 import {
@@ -28,6 +33,13 @@ import {
   getProfileLinkElement,
   parseRatingFromStars,
 } from './utils.js';
+
+const OVERVIEW_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('overview');
+const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
+const DISCUSSION_PATHS_PATTERN = getCsfdPathAliasPattern('discussion');
+const GALLERY_PATHS_PATTERN = getCsfdPathAliasPattern('gallery');
+const RATINGS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('ratings');
+const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
 
 export class Csfd {
   constructor(pageContent) {
@@ -106,9 +118,7 @@ export class Csfd {
     this.userSlug = extractUserSlug(this.userUrl);
     console.debug('🟣 User Slug:', this.userSlug);
 
-    this.userRatingsUrl = this.userUrl
-      ? this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni')
-      : undefined;
+    this.userRatingsUrl = this.userUrl ? this.userUrl + getCsfdPathSegment('ratings') : undefined;
     console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
 
     const settings = await getSettings(SETTINGSNAME);
@@ -291,7 +301,10 @@ export class Csfd {
     const parentName = slugMatches.length > 1 ? slugMatches[0] : '';
     const urlSlug = slugMatches.length ? slugMatches[slugMatches.length - 1] : '';
 
-    const cleanPath = path.replace(/\/(recenze|komentare|prehled|prehlad)\/?$/i, '/');
+    const cleanPath = path.replace(
+      new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN}|komentare|${OVERVIEW_SEGMENTS_PATTERN})\/?$`, 'i'),
+      '/',
+    );
 
     return { movieId, urlSlug, parentId, parentName, fullUrl: `${location.origin}${cleanPath}` };
   }
@@ -328,10 +341,7 @@ export class Csfd {
 
   getCurrentPageType() {
     const typeText = document.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
-    if (typeText.includes('epizoda')) return 'episode';
-    if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
-    if (typeText.includes('série') || typeText.includes('serie')) return 'series';
-    return 'movie';
+    return normalizeCsfdShowType(typeText, 'movie');
   }
 
   getCurrentPageComputedInfo() {
@@ -745,7 +755,7 @@ export class Csfd {
     const isOwnProfile = this.isOnUserProfilePage() && !isOtherUser;
 
     // Links pointing to sections that are not actual film pages
-    const ignorePathRegex = /\/(galerie|videa?|tvurci|obsahy?)\//;
+    const ignorePathRegex = new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN}|videa?|tvurci|obsahy?)\/`, 'i');
     // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
     const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
     // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
@@ -818,12 +828,12 @@ export class Csfd {
     if (!this.userSlug) return false;
     const path = location.pathname || '';
     return (
-      path.startsWith(`/uzivatel/${this.userSlug}/`) && (path.includes('/hodnoceni/') || path.includes('/hodnotenia/'))
+      path.startsWith(`/uzivatel/${this.userSlug}/`) && new RegExp(`\/(${RATINGS_SEGMENTS_PATTERN})\/`, 'i').test(path)
     );
   }
 
   isOnCreatorPage() {
-    return /^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(location.pathname || '');
+    return new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN})\/\d+-[^/]+\/`, 'i').test(location.pathname || '');
   }
 
   isOnUserProfilePage() {
@@ -836,11 +846,13 @@ export class Csfd {
   }
 
   isOnUserOverviewPage() {
-    return /^\/uzivatel\/\d+-[^/]+\/(prehled|prehlad)(\/|$)/i.test(location.pathname || '');
+    return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${OVERVIEW_SEGMENTS_PATTERN})(\/|$)`, 'i').test(
+      location.pathname || '',
+    );
   }
 
   isOnUserReviewsPage() {
-    return /^\/uzivatel\/\d+-[^/]+\/(recenze|recenzie)(\/|$)/i.test(location.pathname || '');
+    return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${REVIEWS_SEGMENTS_PATTERN})(\/|$)`, 'i').test(location.pathname || '');
   }
 
   /**
@@ -876,9 +888,8 @@ export class Csfd {
       const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
 
       if (sectionTitle) {
-        if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední hodnocení|posledné hodnotenia/))
-          return true;
-        if (sectionTitle.match(/poslední deníček|posledny dennik/)) return false;
+        if (matchesCsfdTextVariant('recentReviewsOrRatingsHeading', sectionTitle)) return true;
+        if (matchesCsfdTextVariant('recentDiaryHeading', sectionTitle)) return false;
       }
       sectionNode = sectionNode.parentElement;
     }
@@ -886,7 +897,9 @@ export class Csfd {
   }
 
   getRatingsPageSlug() {
-    return (location.pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\/(hodnoceni|hodnotenia)\/?/i)?.[1];
+    return (location.pathname || '').match(
+      new RegExp(`^\/uzivatel\/(\d+-[^/]+)\/(${RATINGS_SEGMENTS_PATTERN})\/?`, 'i'),
+    )?.[1];
   }
 
   isOnForeignRatingsPage() {
@@ -1208,7 +1221,7 @@ export class Csfd {
   }
 
   isOnGalleryPage() {
-    return /\/(galerie|galeria)\//i.test(location.pathname || '');
+    return new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN})\/`, 'i').test(location.pathname || '');
   }
 
   isGalleryImageLinksEnabled() {
@@ -1344,7 +1357,7 @@ export class Csfd {
    * Uses a Vanilla JS proxy-click to trigger the native ČSFD UI.
    */
   enableSelfReplyInDiscussions() {
-    if (!window.location.pathname.includes('/diskuze/')) return;
+    if (!new RegExp(String.raw`\/(?:${DISCUSSION_PATHS_PATTERN})\/`, 'i').test(window.location.pathname || '')) return;
     if (!getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) return;
 
     const posts = document.querySelectorAll('article.article-forum');

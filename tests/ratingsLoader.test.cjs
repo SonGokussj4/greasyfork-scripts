@@ -30,7 +30,8 @@ describe('ratings-loader helpers', () => {
   it('normalizeType should map Czech words correctly', () => {
     expect(normalizeType('epizoda')).to.equal('episode');
     expect(normalizeType('seriál')).to.equal('serial');
-    expect(normalizeType('série')).to.equal('series');
+    expect(normalizeType('série')).to.equal('season');
+    expect(normalizeType('séria')).to.equal('season');
     expect(normalizeType('film')).to.equal('movie');
     expect(normalizeType('')).to.equal('movie');
   });

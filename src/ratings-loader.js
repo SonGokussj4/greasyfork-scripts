@@ -1,4 +1,12 @@
-import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, PROFILE_LINK_SELECTOR, RATINGS_STORE_NAME } from './config.js';
+import {
+  INDEXED_DB_NAME,
+  NUM_RATINGS_PER_PAGE,
+  PROFILE_LINK_SELECTOR,
+  RATINGS_STORE_NAME,
+  getCsfdPathSegment,
+  getCsfdPathSegmentPattern,
+  normalizeCsfdShowType,
+} from './config.js';
 import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
@@ -43,7 +51,7 @@ function getCurrentProfilePath() {
 }
 
 function getRatingsSegment() {
-  return location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
+  return getCsfdPathSegment('ratings');
 }
 
 function extractUserSlugFromProfilePath(profilePath) {
@@ -56,7 +64,8 @@ function buildRatingsPageUrl(profilePath, pageNumber = 1) {
 
 function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
   const ratingsSegment = getRatingsSegment();
-  const basePath = profilePath.replace(/\/(prehled|prehlad)\/?$/i, `/${ratingsSegment}/`);
+  const overviewSegments = getCsfdPathSegmentPattern('overview');
+  const basePath = profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
   if (pageNumber <= 1) {
@@ -122,13 +131,7 @@ function detectPaginationModeFromDocument(doc) {
 }
 
 function normalizeType(rawType) {
-  const normalized = (rawType || '').trim().toLowerCase();
-  if (!normalized) return 'movie';
-  if (normalized.includes('epizoda')) return 'episode';
-  if (normalized.includes('seriál') || normalized.includes('serial')) return 'serial';
-  if (normalized.startsWith('série') || normalized.startsWith('serie')) return 'series';
-  if (normalized.includes('film')) return 'movie';
-  return normalized;
+  return normalizeCsfdShowType(rawType, 'movie');
 }
 
 // helpers exported for tests
@@ -476,10 +479,7 @@ function parsePageYear(doc) {
 
 function parsePageType(doc) {
   const typeText = doc.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
-  if (typeText.includes('epizoda')) return 'episode';
-  if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
-  if (typeText.includes('série') || typeText.includes('serie')) return 'series';
-  return 'movie';
+  return normalizeCsfdShowType(typeText, 'movie');
 }
 
 function parsePageDate(doc) {
@@ -496,7 +496,7 @@ function buildParentFullUrl(parentSlug) {
 }
 
 function buildParentReviewsUrl(parentSlug) {
-  return new URL(`/film/${parentSlug}/recenze/`, location.origin).toString();
+  return new URL(`/film/${parentSlug}/${getCsfdPathSegment('reviews')}/`, location.origin).toString();
 }
 
 function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord, parsedRating, doc }) {

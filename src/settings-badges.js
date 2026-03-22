@@ -1,4 +1,10 @@
-import { INDEXED_DB_NAME, PROFILE_LINK_SELECTOR, RATINGS_STORE_NAME } from './config.js';
+import {
+  INDEXED_DB_NAME,
+  PROFILE_LINK_SELECTOR,
+  RATINGS_STORE_NAME,
+  getCsfdPathSegment,
+  getCsfdPathSegmentValues,
+} from './config.js';
 import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 import { extractUserSlug, getProfileLinkElement } from './utils.js';
@@ -18,9 +24,10 @@ function getCurrentUserRatingsUrl() {
   }
 
   const url = new URL(profileHref, location.origin);
-  const segment = location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
-  if (/\/(prehled|prehlad)\/?$/i.test(url.pathname)) {
-    url.pathname = url.pathname.replace(/\/(prehled|prehlad)\/?$/i, `/${segment}/`);
+  const segment = getCsfdPathSegment('ratings');
+  const overviewPattern = new RegExp(`\/(${getCsfdPathSegmentValues('overview').join('|')})\/?$`, 'i');
+  if (overviewPattern.test(url.pathname)) {
+    url.pathname = url.pathname.replace(overviewPattern, `/${segment}/`);
   } else {
     url.pathname = url.pathname.endsWith('/') ? `${url.pathname}${segment}/` : `${url.pathname}/${segment}/`;
   }
@@ -64,7 +71,8 @@ function parseTotalRatingsFromDocument(doc) {
 
 function getTotalRatingsFromCurrentPageForCurrentUser() {
   const path = location.pathname || '';
-  if (!/\/uzivatel\//.test(path) || !/\/(hodnoceni|hodnotenia)\/?$/i.test(path)) {
+  const ratingsPattern = new RegExp(`\/(${getCsfdPathSegmentValues('ratings').join('|')})\/?$`, 'i');
+  if (!/\/uzivatel\//.test(path) || !ratingsPattern.test(path)) {
     return 0;
   }
 

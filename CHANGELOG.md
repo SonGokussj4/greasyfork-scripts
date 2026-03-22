@@ -5,9 +5,9 @@
 ### Added
 
 - Notifikace o nové verzi skriptu nad CC menu
+- Do náhledové karty filmu přidáno - **Režie:**
 - Nový náhled: Odkaz na přímou recenzi na CSFD, včetně hodnocení, data a odkazu na recenzi
   ![Recenze](images/changelog/0.9.1-nahledy-recenze.png)
-- Do náhledové karty filmu přidáno - **Režie:**
 
 ### Changed
 
@@ -22,6 +22,7 @@
 - CHANGELOG.md - předány sekce z minulých releasů
 - CHANGELOG.md - opraveny odkazy na github issues (#X)
 - Vylepšení README.md pro vývoj, přidány instrukce pro nastavení @require pro Chrome/Opera i Firefox
+- Vylepšení rozeznání SK vs CZ verze pro mechaniky skriptu
 
 ### Fixed
 

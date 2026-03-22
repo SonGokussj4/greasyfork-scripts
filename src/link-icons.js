@@ -1,4 +1,6 @@
 import {
+  getCsfdPathAliasPattern,
+  getCsfdPathSegmentPattern,
   LINK_ICONS_ANIDB_ENABLED_KEY,
   LINK_ICONS_CREATOR_ENABLED_KEY,
   LINK_ICONS_FILM_ENABLED_KEY,
@@ -10,6 +12,9 @@ import {
   LINK_ICONS_UPDATED_EVENT,
   LINK_ICONS_YOUTUBE_ENABLED_KEY,
 } from './config.js';
+
+const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
+const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
 
 const FILM_ICON_SVG = `
   <svg viewBox="0 0 19 19" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
@@ -135,7 +140,7 @@ function isCsfdUrl(url) {
 function matchesReviewUrl(url) {
   return (
     /^\/film\//i.test(url.pathname) &&
-    /\/recenze\/?$/i.test(url.pathname) &&
+    new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(url.pathname) &&
     /^\d+$/.test(url.searchParams.get('review') || '') &&
     isCsfdUrl(url)
   );
@@ -146,7 +151,7 @@ function matchesFilmUrl(url) {
 }
 
 function matchesCreatorUrl(url) {
-  return /^\/(tvurce|tvorca)\//i.test(url.pathname) && isCsfdUrl(url);
+  return new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/`, 'i').test(url.pathname) && isCsfdUrl(url);
 }
 
 function matchesUserUrl(url) {

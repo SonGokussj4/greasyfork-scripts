@@ -665,6 +665,24 @@ describe('hover preview parsers', () => {
     expect(userProvider.matches(nestedFavoriteLink)).toBe(true);
   });
 
+  test('user preview matches Slovak profile subpage aliases from shared config', () => {
+    const userProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'user');
+    const biographyLink = document.createElement('a');
+    const triviaLink = document.createElement('a');
+    const galleryLink = document.createElement('a');
+    const discussionLink = document.createElement('a');
+
+    biographyLink.href = 'https://www.csfd.sk/uzivatel/50912-popluh/biografia/';
+    triviaLink.href = 'https://www.csfd.sk/uzivatel/50912-popluh/zaujimavosti/';
+    galleryLink.href = 'https://www.csfd.sk/uzivatel/50912-popluh/galaria/';
+    discussionLink.href = 'https://www.csfd.sk/uzivatel/50912-popluh/diskusia/';
+
+    expect(userProvider.matches(biographyLink)).toBe(true);
+    expect(userProvider.matches(triviaLink)).toBe(true);
+    expect(userProvider.matches(galleryLink)).toBe(true);
+    expect(userProvider.matches(discussionLink)).toBe(true);
+  });
+
   test('creator preview ignores modal, section, and current-entity links', () => {
     const creatorProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'creator');
     const modalLink = document.createElement('a');
