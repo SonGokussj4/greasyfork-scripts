@@ -14,6 +14,10 @@
 - Lepší notifikace o nové verzi skriptu v CC menu  
   ![Notifikace](images/changelog/0.9.1-notifikace.png)
   
+### Fixed
+
+- Opraveno zobrazení Hrajů v náhledu filmu pro SK verzi
+
 ### Development
 
 - Úprava logiky pro zobrazení changelogu po aktualizaci skriptu v dev prostředí
@@ -23,10 +27,6 @@
 - CHANGELOG.md - opraveny odkazy na github issues (#X)
 - Vylepšení README.md pro vývoj, přidány instrukce pro nastavení @require pro Chrome/Opera i Firefox
 - Vylepšení rozeznání SK vs CZ verze pro mechaniky skriptu
-
-### Fixed
-
-- V náhledu filmu se pro SK verzi neozobrazovalo 'Hrají/Hrajů'
 
 ## 0.9.0 - 2026-03-09
 

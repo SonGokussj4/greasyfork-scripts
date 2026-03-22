@@ -812,6 +812,7 @@ export class Csfd {
 
       if (isOwnProfile && isTitleLink) {
         if (isUserReviewsPage) return false;
+        if (link.closest('.last-ratings table')) return false;
         // On the overview page, we want to include the title links in the main sections but exclude those in the review/rating sections to avoid duplicates and false positives
         if (this.shouldSkipProfileSectionLink(link)) return false;
       }
@@ -824,11 +825,24 @@ export class Csfd {
     });
   }
 
+  getResolvedUserSlug() {
+    if (this.userSlug) return this.userSlug;
+
+    const resolvedUserSlug = extractUserSlug(this.userUrl || this.getCurrentUser());
+    if (resolvedUserSlug) {
+      this.userSlug = resolvedUserSlug;
+    }
+
+    return resolvedUserSlug;
+  }
+
   isOnOwnRatingsPage() {
-    if (!this.userSlug) return false;
+    const currentUserSlug = this.getResolvedUserSlug();
+    if (!currentUserSlug) return false;
     const path = location.pathname || '';
     return (
-      path.startsWith(`/uzivatel/${this.userSlug}/`) && new RegExp(`\/(${RATINGS_SEGMENTS_PATTERN})\/`, 'i').test(path)
+      path.startsWith(`/uzivatel/${currentUserSlug}/`) &&
+      new RegExp(`\/(${RATINGS_SEGMENTS_PATTERN})\/`, 'i').test(path)
     );
   }
 
@@ -842,7 +856,8 @@ export class Csfd {
 
   isOnOtherUserProfilePage() {
     const pageUserSlug = this.isOnUserProfilePage();
-    return Boolean(pageUserSlug && this.userSlug && pageUserSlug !== this.userSlug);
+    const currentUserSlug = this.getResolvedUserSlug();
+    return Boolean(pageUserSlug && currentUserSlug && pageUserSlug !== currentUserSlug);
   }
 
   isOnUserOverviewPage() {
@@ -883,7 +898,7 @@ export class Csfd {
       }
 
       const titleEl = sectionNode.querySelector(
-        ':scope > .box-header h2, :scope > .box-header h3, :scope > header h2, :scope > header h3, :scope > h2, :scope > h3',
+        ':scope > .box-header h2, :scope > .box-header h3, :scope > .updated-box-header h2, :scope > .updated-box-header h3, :scope > header h2, :scope > header h3, :scope > a[data-cc-header-wrapper] > .box-header h2, :scope > a[data-cc-header-wrapper] > .box-header h3, :scope > a[data-cc-header-wrapper] > .updated-box-header h2, :scope > a[data-cc-header-wrapper] > .updated-box-header h3, :scope > h2, :scope > h3',
       );
       const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
 
@@ -896,6 +911,15 @@ export class Csfd {
     return false;
   }
 
+  hasNativeTitleRating(link) {
+    if (!(link instanceof Element)) return false;
+
+    const titleContainer = link.closest('h1, h2, h3, h4, h5, h6, .film-title-inline, .film-title-ellipsis');
+    if (!titleContainer) return false;
+
+    return Boolean(titleContainer.querySelector('.star-rating:not(.cc-own-rating)'));
+  }
+
   getRatingsPageSlug() {
     return (location.pathname || '').match(
       new RegExp(`^\/uzivatel\/(\d+-[^/]+)\/(${RATINGS_SEGMENTS_PATTERN})\/?`, 'i'),
@@ -904,7 +928,8 @@ export class Csfd {
 
   isOnForeignRatingsPage() {
     const ratingsPageSlug = this.getRatingsPageSlug();
-    return Boolean(ratingsPageSlug && this.userSlug && ratingsPageSlug !== this.userSlug);
+    const currentUserSlug = this.getResolvedUserSlug();
+    return Boolean(ratingsPageSlug && currentUserSlug && ratingsPageSlug !== currentUserSlug);
   }
 
   async addComparisonColumnOnOverviewPage() {
@@ -1163,13 +1188,22 @@ export class Csfd {
       return;
     }
 
-    if (this.isOnForeignRatingsPage()) {
+    const isForeignProfilePage = this.isOnOtherUserProfilePage();
+    const hasForeignOverviewRatingsTable = Boolean(
+      isForeignProfilePage && document.querySelector('.last-ratings table'),
+    );
+    const hasForeignRatingsPageTable = Boolean(
+      isForeignProfilePage &&
+      document.querySelector('#snippet--ratings table, #snippet-ratings table, .snippet-ratings table'),
+    );
+
+    if (this.isOnForeignRatingsPage() || hasForeignRatingsPageTable) {
       console.debug('🟣 Ratings not added: on foreign ratings page — adding comparison column instead');
       return this.addComparisonColumnOnForeignRatingsPage();
     }
 
     // Handle the header-less table on the Overview page
-    if (this.isOnUserOverviewPage() && this.isOnOtherUserProfilePage()) {
+    if ((this.isOnUserOverviewPage() && isForeignProfilePage) || hasForeignOverviewRatingsTable) {
       console.debug('🟣 On other user overview page — adding column to last ratings table');
       await this.addComparisonColumnOnOverviewPage();
     }
@@ -1178,10 +1212,18 @@ export class Csfd {
     console.debug(`🔵 Found ${links.length} candidate links for adding ratings`);
     console.debug({ links });
     const outlinedOnThisPage =
-      this.isOnOtherUserProfilePage() || /^\/soukrome\/oblibeni-uzivatele\/(\?|$)/i.test(location.pathname || '');
+      isForeignProfilePage || /^\/soukrome\/oblibeni-uzivatele\/(\?|$)/i.test(location.pathname || '');
 
     for (const link of links) {
       if (link.dataset.ccStarAdded === 'true') continue;
+
+      if (
+        link.classList.contains('film-title-name') &&
+        this.hasNativeTitleRating(link) &&
+        !this.isOnOtherUserProfilePage()
+      ) {
+        continue;
+      }
 
       const movieId = await getMovieIdFromUrl(link.getAttribute('href')); // REFACTOR: uses utils.js
       const ratingRecord = this.stars[movieId];
