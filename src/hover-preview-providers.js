@@ -10,6 +10,34 @@ import { escapeHtml } from './utils.js';
 
 const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
+const CSFD_LOCALE_LABELS = Object.freeze({
+  cz: Object.freeze({
+    overviewSegment: 'prehled',
+    creatorRoles: Object.freeze({
+      actors: 'Hrají',
+      directors: 'Režie',
+    }),
+  }),
+  sk: Object.freeze({
+    overviewSegment: 'prehlad',
+    creatorRoles: Object.freeze({
+      actors: 'Hrajú',
+      directors: 'Réžia',
+    }),
+  }),
+});
+
+const CSFD_CREATOR_ROLE_KEYWORDS = Object.freeze(
+  Object.fromEntries(
+    Object.keys(CSFD_LOCALE_LABELS.cz.creatorRoles).map((roleKey) => [
+      roleKey,
+      Object.freeze(
+        Array.from(new Set(Object.values(CSFD_LOCALE_LABELS).map((labels) => labels.creatorRoles[roleKey]))),
+      ),
+    ]),
+  ),
+);
+
 function createUrl(href) {
   try {
     return new URL(href, location.origin);
@@ -51,8 +79,59 @@ function resolveUrlAgainst(url, baseHref) {
   }
 }
 
+/**
+ * Determines the CSFD locale based on the hostname.
+ * Defaults to 'cz' for all hostnames that do not end with '.sk'.
+ *
+ * >>> getCsfdLocale('www.csfd.cz') => 'cz'
+ *
+ * @param {string} hostname - The hostname to determine the locale for.
+ * @returns {string} The CSFD locale ('cz' or 'sk').
+
+ */
+function getCsfdLocale(hostname = location.hostname) {
+  return hostname.endsWith('.sk') ? 'sk' : 'cz';
+}
+
+/**
+ * Determines the CSFD locale of a document by checking the `<html lang>` attribute.
+ * If the language cannot be determined from the document, it falls back to checking the hostname.
+ *
+ * @param {Document} doc - The document (or a document-like object)
+ */
+function getDocumentCsfdLocale(doc) {
+  const documentLang = normalizeText(doc.documentElement?.lang || doc.body?.dataset?.lang).toLowerCase();
+  if (documentLang.startsWith('sk')) return 'sk';
+  if (documentLang.startsWith('cs')) return 'cz';
+
+  const documentHostname = createUrl(doc.URL || doc.baseURI)?.hostname;
+  return getCsfdLocale(documentHostname || location.hostname);
+}
+
+/**
+ * Determines the appropriate overview segment for a given URL's hostname, based on the CSFD locale.
+ *
+ * >>> getOverviewSegment(new URL('https://www.csfd.cz/film/12345/prehled/')) => 'prehled'
+ * >>> getOverviewSegment(new URL('https://www.csfd.sk/film/12345/prehlad/')) => 'prehlad'
+ *
+ * @param {URL} url - The URL to determine the overview segment for.
+ * @returns {string} The overview segment for the given URL's hostname.
+
+ */
 function getOverviewSegment(url) {
-  return url.hostname.endsWith('.sk') ? 'prehlad' : 'prehled';
+  return CSFD_LOCALE_LABELS[getCsfdLocale(url.hostname)]?.overviewSegment || CSFD_LOCALE_LABELS.cz.overviewSegment;
+}
+
+function findCreatorBlockByRole(doc, roleKey) {
+  const keywords = CSFD_CREATOR_ROLE_KEYWORDS[roleKey] || [];
+
+  return Array.from(doc.querySelectorAll('#creators > div')).find((block) =>
+    keywords.includes(normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '')),
+  );
+}
+
+function getCreatorRoleLabelForLocale(roleKey, locale = getCsfdLocale()) {
+  return CSFD_LOCALE_LABELS[locale]?.creatorRoles[roleKey] || CSFD_LOCALE_LABELS.cz.creatorRoles[roleKey] || '';
 }
 
 function normalizeCreatorUrl(href) {
@@ -346,21 +425,6 @@ function renderImage(imageUrl, altText) {
   return `<img class="cc-hover-preview-image empty-image" src="${EMPTY_IMAGE_SRC}" alt="" referrerpolicy="no-referrer" />`;
 }
 
-function renderCard({ providerClass, imageUrl, title, titleExtraHtml = '', metaHtml = '' }) {
-  return `
-    <div class="cc-hover-preview-card ${providerClass}">
-      ${renderImage(imageUrl, title)}
-      <div class="cc-hover-preview-title">
-        <span>${escapeHtml(title)}</span>
-        ${titleExtraHtml}
-      </div>
-      <div class="cc-hover-preview-meta" ${metaHtml ? '' : 'hidden'}>
-        ${metaHtml}
-      </div>
-    </div>
-  `;
-}
-
 function renderCardWithTop({ providerClass, topHtml = '', imageUrl, title, titleExtraHtml = '', metaHtml = '' }) {
   return `
     <div class="cc-hover-preview-card ${providerClass}">
@@ -596,6 +660,7 @@ export function parseUserPreviewDocument(doc) {
 }
 
 export function parseFilmPreviewDocument(doc) {
+  const locale = getDocumentCsfdLocale(doc);
   const schemaData = parseJsonLd(doc);
   const title = normalizeText(doc.querySelector('h1')?.textContent) || 'Film';
   const imageUrl =
@@ -606,13 +671,9 @@ export function parseFilmPreviewDocument(doc) {
   const origin = normalizeText(doc.querySelector('.origin')?.textContent);
   const ratingCount = schemaData?.aggregateRating?.ratingCount || null;
   const reviewCount = schemaData?.aggregateRating?.reviewCount || null;
-  const actorsBlock = Array.from(doc.querySelectorAll('#creators > div')).find(
-    (block) => normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '') === 'Hrají',
-  );
+  const actorsBlock = findCreatorBlockByRole(doc, 'actors');
   const actors = parseCreatorLinks(actorsBlock, 18);
-  const directedByBlock = Array.from(doc.querySelectorAll('#creators > div')).find(
-    (block) => normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '') === 'Režie',
-  );
+  const directedByBlock = findCreatorBlockByRole(doc, 'directors');
   const directors = parseCreatorLinks(directedByBlock, 18);
 
   return {
@@ -625,6 +686,7 @@ export function parseFilmPreviewDocument(doc) {
     origin,
     actors,
     directors,
+    locale,
     posters: imageUrl ? [{ imageUrl, label: title }] : [],
   };
 }
@@ -980,8 +1042,8 @@ function renderUserPreview(data) {
 }
 
 function renderFilmPreview(data) {
-  const directorsLine = renderLinkedPeopleLine('Režie', data.directors);
-  const actorsLine = renderLinkedPeopleLine('Hrají', data.actors);
+  const directorsLine = renderLinkedPeopleLine(getCreatorRoleLabelForLocale('directors', data.locale), data.directors);
+  const actorsLine = renderLinkedPeopleLine(getCreatorRoleLabelForLocale('actors', data.locale), data.actors);
 
   const topHtml = [
     data.rating || data.ratingCount

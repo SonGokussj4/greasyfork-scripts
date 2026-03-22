@@ -23,6 +23,10 @@
 - CHANGELOG.md - opraveny odkazy na github issues (#X)
 - Vylepšení README.md pro vývoj, přidány instrukce pro nastavení @require pro Chrome/Opera i Firefox
 
+### Fixed
+
+- V náhledu filmu se pro SK verzi neozobrazovalo 'Hrají/Hrajů'
+
 ## 0.9.0 - 2026-03-09
 
 ### Added

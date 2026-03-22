@@ -94,6 +94,49 @@ describe('hover preview parsers', () => {
     expect(html.indexOf('Režie:</span>')).toBeLessThan(html.indexOf('Hrají:</span>'));
   });
 
+  test('parses Slovak creator labels and renders Slovak hover labels on csfd.sk', () => {
+    const doc = new DOMParser().parseFromString(
+      `
+        <html lang="sk-SK">
+          <body>
+            <h1>Andor</h1>
+            <div class="genres">Sci-Fi / Akčný</div>
+            <div class="origin">USA, 2022</div>
+            <div id="creators">
+              <div>
+                <h4>Réžia:</h4>
+                <a href="/tvorca/72912-toby-haynes/">Toby Haynes</a>,
+                <a href="/tvorca/37352-susanna-white/">Susanna White</a>
+              </div>
+              <div>
+                <h4>Hrajú:</h4>
+                <a href="/tvorca/13992-diego-luna/">Diego Luna</a>,
+                <a href="/tvorca/67747-genevieve-o-reilly/">Genevieve O'Reilly</a>
+              </div>
+            </div>
+          </body>
+        </html>
+      `,
+      'text/html',
+    );
+    const data = hoverPreviewProviders.parseFilmPreviewDocument(doc);
+    const filmProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'film');
+
+    expect(data.directors).toHaveLength(2);
+    expect(data.directors[0].name).toBe('Toby Haynes');
+    expect(data.directors[0].href).toContain('/tvorca/');
+    expect(data.actors).toHaveLength(2);
+    expect(data.actors[0].name).toBe('Diego Luna');
+    expect(data.actors[0].href).toContain('/tvorca/');
+    expect(data.locale).toBe('sk');
+
+    const html = filmProvider.render(data);
+
+    expect(html).toContain('Réžia:</span>');
+    expect(html).toContain('Hrajú:</span>');
+    expect(html.indexOf('Réžia:</span>')).toBeLessThan(html.indexOf('Hrajú:</span>'));
+  });
+
   test('parses review preview data from snippet and keeps full review links clickable', () => {
     const doc = new DOMParser().parseFromString(
       `
