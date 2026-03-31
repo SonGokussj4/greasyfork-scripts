@@ -28,6 +28,7 @@
 - CHANGELOG.md - opraveny odkazy na github issues (#X)
 - Vylepšení README.md pro vývoj, přidány instrukce pro nastavení @require pro Chrome/Opera i Firefox
 - Vylepšení rozeznání SK vs CZ verze pro mechaniky skriptu
+  Nový skript pro stažení testovacích stránek z obou verzí pro vývoj a testování: `scripts/download-test-pages.js`
 
 ## 0.9.0 - 2026-03-09
 
