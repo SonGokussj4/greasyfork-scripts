@@ -6,6 +6,7 @@
 
 - Notifikace o nové verzi skriptu nad CC menu
 - Do náhledové karty filmu přidáno - **Režie:**
+- Nové nastavení: vrácení stylu hvězdiček pro hodnocení u filmu (žádné šedé, zarovnání doprava)
 - Nový náhled: Odkaz na přímou recenzi na CSFD, včetně hodnocení, data a odkazu na recenzi
   ![Recenze](images/changelog/0.9.1-nahledy-recenze.png)
 
@@ -13,7 +14,7 @@
 
 - Lepší notifikace o nové verzi skriptu v CC menu  
   ![Notifikace](images/changelog/0.9.1-notifikace.png)
-  
+
 ### Fixed
 
 - Opraveno zobrazení Hrajů v náhledu filmu pro SK verzi
@@ -127,12 +128,12 @@ Menší vánoční update :-)
     1) nelze pak reagovat na první příspěvek
     2) nelze reagovat na více "svých" příspěvků najednou
 - CC menu je trochu přepracováno, aby šetřilo místo:
-    - Snížen padding, je to více na sobě
-    - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
-    - Počet načtených filmů je nyní zobrazeno v titulku
+  - Snížen padding, je to více na sobě
+  - Tlačítko "Načíst hodnocení" bylo zbaveno počtu načtených filmů
+  - Počet načtených filmů je nyní zobrazeno v titulku
 - Pokud je načteno více filmů, než je shlédnutých, objeví se nabídka, zda přenačíst vše
 - Přidáno nové načítání filmů, je to "experimentální", dělá to víc stránek naráz
-    - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
+  - To se pojí s novou databázovou strukturou v LocalStorage, **je třeba přenačíst vše znovu**
 - Při ohodnocení nebo odstranění hodnocení se nyní CC menu aktualizuje okamžitě, netřeba refreshovat stránku
 - Dočasná vánoční výzdoba
 
@@ -162,7 +163,7 @@ Menší vánoční update :-)
 
 ### Fixed
 
--- Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..."  ([#12](https://github.com/SonGokussj4/greasyfork-scripts/issues/12)) ([#1](https://github.com/SonGokussj4/greasyfork-scripts/issues/1))
+-- Domácí stránka: tlačítko "Skrýt" už nepřeskakuje u boxu videa + přídáno u "Partnerem čsfd..." ([#12](https://github.com/SonGokussj4/greasyfork-scripts/issues/12)) ([#1](https://github.com/SonGokussj4/greasyfork-scripts/issues/1))
 -- Galerie tvůrců: zobrazení linků na různé velikosti fotky po přejetí myší, tak jak u galerii filmů ([#10](https://github.com/SonGokussj4/greasyfork-scripts/issues/10))
 - Hodnocení: znovu ukazuje % hodnocení i když hodnotilo méně jak 10 lidí
 - Hodnocení: znovu ukazuje dodatečné hodnocení jako průměr od oblíbených uživatelů

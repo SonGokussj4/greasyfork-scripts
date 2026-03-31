@@ -6,8 +6,9 @@ import {
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_POSITION_KEY,
   RATINGS_STORE_NAME,
-  SETTINGSNAME,
+  REVERT_STAR_STYLE_KEY,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
+  SETTINGSNAME,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
   SHOW_RATINGS_IN_REVIEWS_KEY,
@@ -129,6 +130,7 @@ export class Csfd {
 
     try {
       if (getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
+      if (getFeatureState(REVERT_STAR_STYLE_KEY)) this.revertStarStyle();
       if (getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
       if (getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
       if (getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
@@ -283,6 +285,14 @@ export class Csfd {
   restoreCreatorTabs() {
     document.body.classList.remove('cc-show-all-tabs-enabled');
     window.dispatchEvent(new Event('resize'));
+  }
+
+  revertStarStyle() {
+    document.body.classList.add('cc-revert-star-style');
+  }
+
+  restoreStarStyle() {
+    document.body.classList.remove('cc-revert-star-style');
   }
 
   getCurrentItemUrlAndIds() {

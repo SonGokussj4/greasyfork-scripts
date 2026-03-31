@@ -56,6 +56,7 @@ export const CLICKABLE_HEADER_BOXES_KEY = 'cc_clickable_header_boxes';
 export const RATINGS_ESTIMATE_KEY = 'cc_ratings_estimate';
 export const RATINGS_FROM_FAVORITES_KEY = 'cc_ratings_from_favorites';
 export const ADD_RATINGS_DATE_KEY = 'cc_add_ratings_date';
+export const REVERT_STAR_STYLE_KEY = 'cc_revert_star_style';
 export const HIDE_SELECTED_REVIEWS_KEY = 'cc_hide_selected_user_reviews';
 export const HIDE_SELECTED_REVIEWS_LIST_KEY = 'cc_hide_selected_user_reviews_list';
 export const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_collapsed';

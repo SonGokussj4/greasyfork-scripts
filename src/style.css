@@ -3450,3 +3450,18 @@ body.cc-show-all-tabs-enabled .creator-about nav.tab-nav .tab-nav-more,
 body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-more {
     display: none !important;
 }
+
+/* Revert ČSFD "new-style" star ratings in the Hodnocení column
+   The site now shows 5 stars (red ::before + grey ::after, left-aligned).
+   This restores the old look: only the rated stars, right-aligned. */
+body.cc-revert-star-style section.others-rating .star-rating .stars {
+    direction: rtl;
+}
+
+body.cc-revert-star-style section.others-rating .star-rating .stars::before {
+    direction: ltr;
+}
+
+body.cc-revert-star-style section.others-rating .star-rating .stars::after {
+    display: none !important;
+}
