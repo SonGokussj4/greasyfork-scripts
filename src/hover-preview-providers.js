@@ -6,6 +6,7 @@ import {
   HOVER_PREVIEW_FILM_ENABLED_KEY,
   HOVER_PREVIEW_REVIEW_ENABLED_KEY,
   HOVER_PREVIEW_USER_ENABLED_KEY,
+  PROFILE_LINK_SELECTOR,
   getCsfdPathAliasPattern,
   getCsfdCreatorRoleLabel,
   getCsfdLocale,
@@ -32,6 +33,10 @@ function createUrl(href) {
 
 function isUserLinkInsideAccountDropdown(anchor) {
   return anchor instanceof Element && anchor.closest('.dropdown-content.main-menu') !== null;
+}
+
+function isHeaderProfileLink(anchor) {
+  return anchor instanceof Element && anchor.matches(PROFILE_LINK_SELECTOR) && anchor.closest('.header-bar') !== null;
 }
 
 function normalizeText(value) {
@@ -1226,7 +1231,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
       text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
     },
     matches(anchor) {
-      if (isUserLinkInsideAccountDropdown(anchor)) {
+      if (isUserLinkInsideAccountDropdown(anchor) || isHeaderProfileLink(anchor)) {
         return false;
       }
 

@@ -744,6 +744,28 @@ describe('hover preview parsers', () => {
     menu.remove();
   });
 
+  test('user preview ignores the logged-in header profile avatar link', () => {
+    const userProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'user');
+    const header = document.createElement('ul');
+    const item = document.createElement('li');
+    const profileLink = document.createElement('a');
+    const standaloneLink = document.createElement('a');
+
+    header.className = 'header-bar';
+    profileLink.className = 'profile initialized';
+    profileLink.href = 'https://www.csfd.cz/uzivatel/78145-songokussj/prehled/';
+    standaloneLink.href = 'https://www.csfd.cz/uzivatel/78145-songokussj/prehled/';
+
+    item.appendChild(profileLink);
+    header.appendChild(item);
+    document.body.appendChild(header);
+
+    expect(userProvider.matches(profileLink)).toBe(false);
+    expect(userProvider.matches(standaloneLink)).toBe(true);
+
+    header.remove();
+  });
+
   test('film provider ignores links to current film entity', () => {
     const filmProvider = hoverPreviewProviders.HOVER_PREVIEW_PROVIDERS.find((provider) => provider.id === 'film');
     const sameFilmLink = document.createElement('a');

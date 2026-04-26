@@ -18,6 +18,8 @@
 ### Fixed
 
 - Opraveno zobrazení Hrajů v náhledu filmu pro SK verzi
+- Opraveno schovávání panelu TV tipy dne - <den>
+- Už se nezobrazuje náhled svého profilu po přejetí myši přes profil v menu
 
 ### Development
 

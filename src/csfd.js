@@ -41,6 +41,30 @@ const DISCUSSION_PATHS_PATTERN = getCsfdPathAliasPattern('discussion');
 const GALLERY_PATHS_PATTERN = getCsfdPathAliasPattern('gallery');
 const RATINGS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('ratings');
 const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
+const HOME_PAGE_PANEL_TITLE_NORMALIZERS = Object.freeze([
+  {
+    pattern: /^tv tipy dne\s*-/i,
+    storageTitle: 'TV tipy dne -',
+  },
+]);
+
+function normalizeHomePanelTitle(title) {
+  const normalizedTitle = String(title || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalizedTitle) return '';
+
+  const matchedRule = HOME_PAGE_PANEL_TITLE_NORMALIZERS.find(({ pattern }) => pattern.test(normalizedTitle));
+  return matchedRule?.storageTitle || normalizedTitle;
+}
+
+function homePanelsListIncludes(hiddenList, title) {
+  const normalizedTitle = normalizeHomePanelTitle(title);
+  if (!normalizedTitle) return false;
+
+  return hiddenList.some((hiddenTitle) => normalizeHomePanelTitle(hiddenTitle) === normalizedTitle);
+}
 
 export class Csfd {
   constructor(pageContent) {
@@ -211,6 +235,7 @@ export class Csfd {
           }
 
           if (!title || title.length > 60) return;
+          const storageTitle = normalizeHomePanelTitle(title);
 
           let wrapper =
             headerEl.closest('.column') || headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
@@ -219,7 +244,7 @@ export class Csfd {
             wrapper = headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
           }
 
-          if (enabled && hiddenList.includes(title)) {
+          if (enabled && homePanelsListIncludes(hiddenList, storageTitle)) {
             wrapper.style.display = 'none';
           } else {
             wrapper.style.display = '';
@@ -236,8 +261,8 @@ export class Csfd {
             btn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (!this.cachedHiddenPanelsList.includes(title)) {
-                this.cachedHiddenPanelsList.push(title);
+              if (!homePanelsListIncludes(this.cachedHiddenPanelsList, storageTitle)) {
+                this.cachedHiddenPanelsList.push(storageTitle);
                 localStorage.setItem('cc_hidden_panels_list', JSON.stringify(this.cachedHiddenPanelsList));
                 window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
               }
