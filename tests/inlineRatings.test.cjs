@@ -443,4 +443,46 @@ describe('inline ratings', () => {
     expect(document.querySelector('.dropdown-content.control-panel .cc-own-rating')).toBeNull();
     expect(document.querySelectorAll('[data-cc-star-added="true"]').length).toBe(0);
   });
+
+  test('ignores episode section header navigation links but keeps season title ratings', async () => {
+    localStorage.setItem(config.SHOW_RATINGS_KEY, 'true');
+
+    window.history.replaceState({}, '', '/film/263138-hra-o-truny/prehled/');
+    document.body.innerHTML = `
+      <div class="page-content page-red">
+        <section class="updated-box updated-box-minimal">
+          <div class="updated-box-header">
+            <h3>
+              Série<span class="count">(8)</span>
+              <span class="bullet bullet-h2"></span>
+              <a href="/film/263138-hra-o-truny/epizody/">Epizody</a><span class="count">(73)</span>
+            </h3>
+          </div>
+          <div class="updated-box-content">
+            <div class="film-episodes-list">
+              <ul>
+                <li>
+                  <h3 class="film-title-inline">
+                    <i class="icon icon-rounded-square red"></i>
+                    <a href="/film/263138-hra-o-truny/417463-serie-1/" class="film-title-name">Season 1</a>
+                    <span class="film-title-info"><span class="bullet"></span><span class="info">2011</span></span>
+                  </h3>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
+
+    const csfd = new Csfd(document.querySelector('div.page-content'));
+    csfd.stars[263138] = { rating: 4 };
+    csfd.stars[417463] = { rating: 5 };
+
+    await csfd.addStars();
+
+    expect(document.querySelector('.updated-box-header .cc-own-rating')).toBeNull();
+    expect(document.querySelector('.updated-box-header a[href*="/epizody/"]')?.dataset.ccStarAdded).not.toBe('true');
+    expect(document.querySelector('.film-episodes-list .cc-own-rating .stars')?.classList.contains('stars-5')).toBe(true);
+  });
 });

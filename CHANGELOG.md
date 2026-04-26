@@ -20,9 +20,10 @@
 - Opraveno zobrazení Hrajů v náhledu filmu pro SK verzi
 - Opraveno schovávání panelu TV tipy dne - <den>
 - Už se nezobrazuje náhled svého profilu po přejetí myši přes profil v menu
-- Filmové postranní sekce (Oblíbené, Související) už zobrazují hvězdičky hodnocení
-- Odstraněno zobrazení hvězd hodnocení v panelu akcí filmu/seriálu vedle "Recenze"
-- Znovu zobrazení hodnocení filmu/seriálu z průměru oblíbených uživatelů
+- New UI fix: Filmové postranní sekce (Oblíbené, Související) už zobrazují hvězdičky hodnocení
+- New UI fix: Odstraněno zobrazení hvězd hodnocení v panelu akcí filmu/seriálu vedle "Recenze"
+- New UI fix: Znovu zobrazení hodnocení filmu/seriálu z průměru oblíbených uživatelů
+- New UI fix: Odstraněno zobrazení hvězd hodnocení u série nad seznamem episod
 
 ### Development
 

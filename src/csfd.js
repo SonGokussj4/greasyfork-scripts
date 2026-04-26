@@ -873,6 +873,10 @@ export class Csfd {
         return false;
       }
 
+      if (link.closest('.updated-box-header, .box-header') && !link.classList.contains('film-title-name')) {
+        return false;
+      }
+
       // Include links in related boxes only if they match the film title pattern
       if (link.closest('section.box-related, div.box-related, .box-related')) {
         return link.classList.contains('film-title-name');
