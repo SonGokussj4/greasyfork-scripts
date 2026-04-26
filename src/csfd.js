@@ -777,6 +777,12 @@ export class Csfd {
 
   getCandidateFilmLinks() {
     const searchRoot = this.csfdPage || document;
+    const searchRoots = [searchRoot];
+    const movieSidebar = document.querySelector('aside.aside-movie-profile');
+
+    if (movieSidebar && !searchRoot.contains(movieSidebar)) {
+      searchRoots.push(movieSidebar);
+    }
 
     const showInReviews = getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
     const showInForeignReviews = getFeatureState(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY, true);
@@ -796,7 +802,9 @@ export class Csfd {
     // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
     const validFilmRegex = /\/\d+-/;
 
-    return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
+    return Array.from(
+      new Set(searchRoots.flatMap((root) => Array.from(root.querySelectorAll('a[href*="/film/"]')))),
+    ).filter((link) => {
       const href = link.getAttribute('href') || '';
 
       if (!validFilmRegex.test(href) || ignoreParamRegex.test(href) || ignorePathRegex.test(href)) {
@@ -829,6 +837,7 @@ export class Csfd {
       if (linkText === 'více' || linkText === 'viac') return false;
 
       const isTitleLink = link.classList.contains('film-title-name');
+      const isMovieSidebarTitleLink = isTitleLink && link.closest('aside.aside-movie-profile .article-header') !== null;
       const inlineRatingContext = this.getInlineRatingContext(link);
       const isDiaryLink = inlineRatingContext === 'diary';
       const isReviewTextLink = inlineRatingContext === 'review';
@@ -852,7 +861,7 @@ export class Csfd {
         if (this.shouldSkipProfileSectionLink(link)) return false;
       }
 
-      if (link.closest(LINK_ICON_BLOCKED_LINK_CLOSEST_SELECTORS)) {
+      if (link.closest(LINK_ICON_BLOCKED_LINK_CLOSEST_SELECTORS) && !isMovieSidebarTitleLink) {
         return false;
       }
 
@@ -1283,7 +1292,9 @@ export class Csfd {
         timeRatingDiv.appendChild(starElement);
       } else {
         const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-        if (headingAncestor) {
+        if (headingAncestor && link.classList.contains('film-title-name')) {
+          link.insertAdjacentElement('afterend', starElement);
+        } else if (headingAncestor) {
           headingAncestor.appendChild(starElement);
         } else if (this.isInlineTextRatingLink(link)) {
           this.makeTrailingHyphenUnbreakable(link);
