@@ -22,6 +22,7 @@
 - Už se nezobrazuje náhled svého profilu po přejetí myši přes profil v menu
 - Filmové postranní sekce (Oblíbené, Související) už zobrazují hvězdičky hodnocení
 - Odstraněno zobrazení hvězd hodnocení v panelu akcí filmu/seriálu vedle "Recenze"
+- Znovu zobrazení hodnocení filmu/seriálu z průměru oblíbených uživatelů
 
 ### Development
 

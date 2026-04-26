@@ -76,6 +76,8 @@ export class Csfd {
     this.userRatingsUrl = undefined;
     this.isLoggedIn = false;
     this.userSlug = undefined;
+    this.favoriteRatingsModalUrl = undefined;
+    this.favoriteRatingsModalDocument = undefined;
 
     // OPTIMIZATION: Cache parsed lists to avoid calling JSON.parse in high-frequency DOM operations
     this.cachedHiddenPanelsList = [];
@@ -157,7 +159,7 @@ export class Csfd {
       if (getFeatureState(REVERT_STAR_STYLE_KEY)) this.revertStarStyle();
       if (getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
       if (getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
-      if (getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
+      if (getFeatureState('cc_ratings_from_favorites')) await this.ratingsFromFavorites();
       if (getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
       if (getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) this.enableSelfReplyInDiscussions();
     } catch (e) {
@@ -411,6 +413,48 @@ export class Csfd {
     return '#545454'; // Native CSFD gray/black
   }
 
+  _getPrimaryRatingAverageElement() {
+    return document.querySelector(
+      '.box-rating-container .film-rating-average, .box-rating.box-rating-withtabs > .film-rating-average',
+    );
+  }
+
+  _getFavoriteRatingsStarElements(root = document) {
+    return Array.from(root.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars'));
+  }
+
+  async _getRatingsFanclubDocument() {
+    const modalLink = document.querySelector('a[href*="modal=ratingAndFanclub"]');
+    const href = modalLink?.getAttribute('href');
+    if (!href) return null;
+
+    const url = new URL(href, location.origin).toString();
+    if (this.favoriteRatingsModalUrl === url && this.favoriteRatingsModalDocument) {
+      return this.favoriteRatingsModalDocument;
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+
+      const html = await response.text();
+      const documentNode = new DOMParser().parseFromString(html, 'text/html');
+      this.favoriteRatingsModalUrl = url;
+      this.favoriteRatingsModalDocument = documentNode;
+      return documentNode;
+    } catch {
+      return null;
+    }
+  }
+
+  async _getFavoriteRatingsStars() {
+    const inlineStars = this._getFavoriteRatingsStarElements(document);
+    if (inlineStars.length) return inlineStars;
+
+    const ratingsFanclubDocument = await this._getRatingsFanclubDocument();
+    return ratingsFanclubDocument ? this._getFavoriteRatingsStarElements(ratingsFanclubDocument) : [];
+  }
+
   clickableHeaderBoxes() {
     // Aplikujeme pouze na klasické boxy a hlavičky v rozbalovacích menu
     document.querySelectorAll('.dropdown-content-head, .box-header, .updated-box-header').forEach((div) => {
@@ -489,7 +533,7 @@ export class Csfd {
   }
 
   _getOrInitRatingContainer() {
-    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    const avgEl = this._getPrimaryRatingAverageElement();
     if (!avgEl) return null;
 
     if (!avgEl.dataset.ccInitialized) {
@@ -551,7 +595,7 @@ export class Csfd {
   }
 
   clearRatingsEstimate() {
-    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    const avgEl = this._getPrimaryRatingAverageElement();
     if (!avgEl || !avgEl.dataset.ccInitialized) return;
 
     const mainSpan = avgEl.querySelector('.cc-main-rating');
@@ -569,14 +613,16 @@ export class Csfd {
     }
   }
 
-  ratingsFromFavorites() {
+  async ratingsFromFavorites() {
     const avgEl = this._getOrInitRatingContainer();
     if (!avgEl) return;
 
     // OPTIMIZATION: Single loop instead of .map.map.filter chain
     let sum = 0;
     let count = 0;
-    document.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars').forEach((starEl) => {
+    const favoriteStars = await this._getFavoriteRatingsStars();
+
+    favoriteStars.forEach((starEl) => {
       const num = this._parseRatingFromStars(starEl);
       if (Number.isFinite(num)) {
         sum += num * 20;
@@ -598,7 +644,7 @@ export class Csfd {
   }
 
   clearRatingsFromFavorites() {
-    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    const avgEl = this._getPrimaryRatingAverageElement();
     if (!avgEl || !avgEl.dataset.ccInitialized) return;
 
     const favSpan = avgEl.querySelector('.cc-fav-rating');
