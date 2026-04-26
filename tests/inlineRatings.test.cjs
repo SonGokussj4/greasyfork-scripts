@@ -354,4 +354,93 @@ describe('inline ratings', () => {
     expect(row?.querySelector('td.name .cc-own-rating')).toBeNull();
     expect(document.querySelector('a.film-title-name')?.dataset.ccStarAdded).not.toBe('true');
   });
+
+  test('injects ratings into updated related sidebar cards outside page-content', async () => {
+    localStorage.setItem(config.SHOW_RATINGS_KEY, 'true');
+
+    window.history.replaceState({}, '', '/film/9499-the-matrix/prehled/');
+    document.body.innerHTML = `
+      <div class="page-content page-red">
+        <section class="updated-box">
+          <div class="updated-box-content">
+            <p>Hlavní obsah filmu</p>
+          </div>
+        </section>
+      </div>
+      <aside class="aside-movie-profile">
+        <section class="updated-box">
+          <div class="updated-box-header"><h3>Související</h3></div>
+          <div class="updated-box-content">
+            <article class="article aside-films-article">
+              <header class="article-header">
+                <h3 class="film-title-inline">
+                  <i class="icon icon-rounded-square blue"></i>
+                  <a href="/film/499395-the-matrix-resurrections/" class="film-title-name">The Matrix Resurrections</a>
+                  <span class="film-title-info"><span class="bullet"></span><span class="info">2021</span></span>
+                </h3>
+              </header>
+            </article>
+            <article class="article aside-films-article">
+              <header class="article-header">
+                <h3 class="film-title-inline">
+                  <i class="icon icon-rounded-square red"></i>
+                  <a href="/film/70635-the-animatrix/" class="film-title-name">Animatrix</a>
+                  <span class="film-title-info"><span class="bullet"></span><span class="info">2003</span></span>
+                </h3>
+              </header>
+            </article>
+          </div>
+        </section>
+      </aside>
+    `;
+
+    const csfd = new Csfd(document.querySelector('div.page-content'));
+    csfd.stars[499395] = { rating: 4 };
+    csfd.stars[70635] = { rating: 5 };
+
+    await csfd.addStars();
+
+    const titles = document.querySelectorAll('aside.aside-movie-profile h3.film-title-inline');
+    const firstTitleLink = titles[0]?.querySelector('a.film-title-name');
+    const firstTitleInfo = titles[0]?.querySelector('.film-title-info');
+
+    expect(titles[0]?.querySelector('.cc-own-rating .stars')?.classList.contains('stars-4')).toBe(true);
+    expect(titles[1]?.querySelector('.cc-own-rating .stars')?.classList.contains('stars-5')).toBe(true);
+    expect(document.querySelectorAll('aside.aside-movie-profile .cc-own-rating').length).toBe(2);
+    expect(firstTitleLink?.nextElementSibling?.classList.contains('cc-own-rating')).toBe(true);
+    expect(firstTitleInfo?.previousElementSibling?.classList.contains('cc-own-rating')).toBe(true);
+  });
+
+  test('ignores movie action panel and control panel links on film pages', async () => {
+    localStorage.setItem(config.SHOW_RATINGS_KEY, 'true');
+
+    window.history.replaceState({}, '', '/film/9499-matrix/recenze/');
+    document.body.innerHTML = `
+      <div class="page-content page-red">
+        <div class="action-panel" data-onboarding-step-9="false">
+          <div class="action-panel-list">
+            <div class="action-panel-item">
+              <a href="/film/9499-matrix/recenze/#open-review-form" class="btn-profile-action">Recenze</a>
+            </div>
+          </div>
+          <div id="dropdown-control-panel" class="dropdown-content control-panel">
+            <ul class="blue">
+              <li>
+                <a href="/film/9499-matrix/recenze/#open-review-form">Přidat recenzi</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const csfd = new Csfd(document.querySelector('div.page-content'));
+    csfd.stars[9499] = { rating: 5 };
+
+    await csfd.addStars();
+
+    expect(document.querySelector('.action-panel .cc-own-rating')).toBeNull();
+    expect(document.querySelector('.dropdown-content.control-panel .cc-own-rating')).toBeNull();
+    expect(document.querySelectorAll('[data-cc-star-added="true"]').length).toBe(0);
+  });
 });
