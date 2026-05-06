@@ -51,6 +51,15 @@ function getComputedRequestDelayMs() {
   return randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS);
 }
 
+/**
+ * Incremental checks should stay snappy, while full reloads add jitter before each fetch.
+ * @param {boolean} incremental
+ * @returns {number}
+ */
+function getRatingsFetchDelayMs(incremental) {
+  return incremental ? 0 : getAllRatingsFetchDelayMs();
+}
+
 function normalizeProfilePath(profileHref) {
   if (!profileHref) {
     return undefined;
@@ -171,6 +180,7 @@ export {
   createRecordFingerprint,
   hasRecordChanged,
   buildStorageRecordId,
+  getRatingsFetchDelayMs,
 };
 
 function parseRating(starElement) {
@@ -799,9 +809,10 @@ async function loadRatingsForCurrentUser(
     throw new Error('Nepodařilo se přečíst ID uživatele z profilu.');
   }
 
+  const fetchDelayMs = getRatingsFetchDelayMs(incremental);
   const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
   const firstDoc = await fetchRatingsPageDocument(firstPageUrl, {
-    delayMs: getAllRatingsFetchDelayMs(),
+    delayMs: fetchDelayMs,
   });
 
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
@@ -889,7 +900,7 @@ async function loadRatingsForCurrentUser(
       page === 1
         ? firstDoc
         : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
-            delayMs: getAllRatingsFetchDelayMs(),
+            delayMs: fetchDelayMs,
           });
     const pageRatings = parseRatingsFromDocument(doc, location.origin);
 
