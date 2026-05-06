@@ -2672,7 +2672,8 @@
    * @param {{ delayMs?: number }} [options]
    */
   async function fetchRatingsPageDocument(url, options = {}) {
-    const delayMs = Number(options.delayMs ?? 0);
+    const parsedDelayMs = Number(options.delayMs ?? 0);
+    const delayMs = Number.isFinite(parsedDelayMs) && parsedDelayMs > 0 ? parsedDelayMs : 0;
     if (delayMs > 0) {
       await delay(delayMs);
     }
@@ -3227,7 +3228,7 @@
 
       const existingRecord = recordsByMovieId.get(parentId);
       const reviewsUrl = buildParentReviewsUrl(parentSlug);
-      // Computed ratings keep the legacy pause after each processed item so pause/resume stays responsive.
+      // Computed ratings keep the legacy pause at the end of each loop iteration so pause/resume stays responsive.
       const doc = await fetchRatingsPageDocument(reviewsUrl);
       const parsedRating = parseCurrentUserRatingFromDocument(doc);
 
