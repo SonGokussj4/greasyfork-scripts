@@ -12,8 +12,10 @@ import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from '.
 import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
 
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
-const REQUEST_DELAY_MIN_MS = 250;
-const REQUEST_DELAY_MAX_MS = 550;
+const ALL_RATINGS_FETCH_DELAY_MIN_MS = 50;
+const ALL_RATINGS_FETCH_DELAY_MAX_MS = 500;
+const COMPUTED_REQUEST_DELAY_MIN_MS = 250;
+const COMPUTED_REQUEST_DELAY_MAX_MS = 550;
 const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
 const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
 
@@ -29,8 +31,8 @@ const computedLoaderController = {
   pauseReason: 'manual',
 };
 
-function randomDelay() {
-  return Math.floor(Math.random() * (REQUEST_DELAY_MAX_MS - REQUEST_DELAY_MIN_MS + 1)) + REQUEST_DELAY_MIN_MS;
+function randomDelay(minMs, maxMs) {
+  return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 }
 
 function normalizeProfilePath(profileHref) {
@@ -81,7 +83,12 @@ function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path')
   return new URL(`${normalizedBasePath}strana-${pageNumber}/`, location.origin).toString();
 }
 
-async function fetchRatingsPageDocument(url) {
+async function fetchRatingsPageDocument(url, options = {}) {
+  const delayMs = Number.parseInt(options.delayMs || '0', 10);
+  if (delayMs > 0) {
+    await delay(delayMs);
+  }
+
   const response = await fetch(url, {
     credentials: 'include',
     method: 'GET',
@@ -736,7 +743,7 @@ async function loadComputedParentRatingsForCurrentUser({
     });
 
     if (index < unresolvedParents.length - 1) {
-      await delay(randomDelay());
+      await delay(randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS));
     }
   }
 
@@ -770,7 +777,9 @@ async function loadRatingsForCurrentUser(
   }
 
   const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
-  const firstDoc = await fetchRatingsPageDocument(firstPageUrl);
+  const firstDoc = await fetchRatingsPageDocument(firstPageUrl, {
+    delayMs: randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS),
+  });
 
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
   const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
@@ -856,7 +865,9 @@ async function loadRatingsForCurrentUser(
     const doc =
       page === 1
         ? firstDoc
-        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode));
+        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
+            delayMs: randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS),
+          });
     const pageRatings = parseRatingsFromDocument(doc, location.origin);
 
     if (page > 1 && pageRatings.length === 0) {
@@ -946,10 +957,6 @@ async function loadRatingsForCurrentUser(
     if (shouldStopEarly) {
       stoppedEarly = true;
       break;
-    }
-
-    if (page < targetPages) {
-      await delay(randomDelay());
     }
   }
 
