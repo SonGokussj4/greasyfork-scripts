@@ -35,6 +35,14 @@ function randomDelay(minMs, maxMs) {
   return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
 }
 
+function getAllRatingsFetchDelayMs() {
+  return randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS);
+}
+
+function getComputedRequestDelayMs() {
+  return randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS);
+}
+
 function normalizeProfilePath(profileHref) {
   if (!profileHref) {
     return undefined;
@@ -83,8 +91,13 @@ function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path')
   return new URL(`${normalizedBasePath}strana-${pageNumber}/`, location.origin).toString();
 }
 
+/**
+ * Fetches a ratings page and parses it into a document.
+ * @param {string} url
+ * @param {{ delayMs?: number }} [options]
+ */
 async function fetchRatingsPageDocument(url, options = {}) {
-  const delayMs = Number.parseInt(options.delayMs || '0', 10);
+  const delayMs = Number(options.delayMs ?? 0);
   if (delayMs > 0) {
     await delay(delayMs);
   }
@@ -662,6 +675,7 @@ async function loadComputedParentRatingsForCurrentUser({
 
     const existingRecord = recordsByMovieId.get(parentId);
     const reviewsUrl = buildParentReviewsUrl(parentSlug);
+    // Computed ratings keep the legacy pause after each processed item so pause/resume stays responsive.
     const doc = await fetchRatingsPageDocument(reviewsUrl);
     const parsedRating = parseCurrentUserRatingFromDocument(doc);
 
@@ -743,7 +757,7 @@ async function loadComputedParentRatingsForCurrentUser({
     });
 
     if (index < unresolvedParents.length - 1) {
-      await delay(randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS));
+      await delay(getComputedRequestDelayMs());
     }
   }
 
@@ -778,7 +792,7 @@ async function loadRatingsForCurrentUser(
 
   const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
   const firstDoc = await fetchRatingsPageDocument(firstPageUrl, {
-    delayMs: randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS),
+    delayMs: getAllRatingsFetchDelayMs(),
   });
 
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
@@ -866,7 +880,7 @@ async function loadRatingsForCurrentUser(
       page === 1
         ? firstDoc
         : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
-            delayMs: randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS),
+            delayMs: getAllRatingsFetchDelayMs(),
           });
     const pageRatings = parseRatingsFromDocument(doc, location.origin);
 
