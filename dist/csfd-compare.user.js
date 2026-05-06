@@ -2598,14 +2598,22 @@
     pauseReason: 'manual',
   };
 
+  /**
+   * Returns a random inclusive delay between the provided bounds.
+   * @param {number} minMs
+   * @param {number} maxMs
+   * @returns {number}
+   */
   function randomDelay(minMs, maxMs) {
     return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
   }
 
+  /** Delay used before each full ratings page fetch. */
   function getAllRatingsFetchDelayMs() {
     return randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS);
   }
 
+  /** Delay used between computed ratings fetches. */
   function getComputedRequestDelayMs() {
     return randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS);
   }
