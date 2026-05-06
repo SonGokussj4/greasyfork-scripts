@@ -6,6 +6,9 @@ const repoRoot = process.cwd();
 const changelogPath = resolve(repoRoot, 'CHANGELOG.md');
 const outputPath = resolve(repoRoot, 'src', 'generated-build-meta.js');
 const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads';
+const PRIMARY_BRANCH_NAME = 'master';
+const DEVELOPMENT_BRANCH_NAME = 'dev';
+const DEFAULT_CHANGELOG_BRANCH = DEVELOPMENT_BRANCH_NAME;
 // Collect relative markdown resources referenced from the bundled changelog so
 // dev builds can render unpublished local assets without depending on GitHub.
 const CHANGELOG_ASSET_URL_REGEX = /!??\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
@@ -40,7 +43,16 @@ function getCurrentBranchName() {
 }
 
 function shouldPreferBundledChangelog(branchName) {
-  return Boolean(branchName) && branchName !== 'master';
+  return Boolean(branchName) && branchName !== PRIMARY_BRANCH_NAME;
+}
+
+function getStableChangelogBranchName(branchName) {
+  const normalizedBranchName = String(branchName || '').trim();
+  if (normalizedBranchName === PRIMARY_BRANCH_NAME || normalizedBranchName === DEVELOPMENT_BRANCH_NAME) {
+    return normalizedBranchName;
+  }
+
+  return DEFAULT_CHANGELOG_BRANCH;
 }
 
 function encodeBranchName(branchName) {
@@ -107,12 +119,13 @@ function collectBundledChangelogAssets(markdown) {
 
 const changelogMarkdown = readFileSync(changelogPath, 'utf8');
 const currentBranchName = getCurrentBranchName();
-const bundledChangelogBaseUrl = getBundledChangelogBaseUrl(currentBranchName);
+const changelogBranchName = getStableChangelogBranchName(currentBranchName);
+const bundledChangelogBaseUrl = getBundledChangelogBaseUrl(changelogBranchName);
 const bundledChangelogAssetMap = shouldPreferBundledChangelog(currentBranchName)
   ? collectBundledChangelogAssets(changelogMarkdown)
   : {};
 
-const fileContent = `export const BUILD_BRANCH_NAME = ${JSON.stringify(currentBranchName)};
+const fileContent = `export const BUILD_BRANCH_NAME = ${JSON.stringify(changelogBranchName)};
 export const BUILD_CHANGELOG_BASE_URL = ${JSON.stringify(bundledChangelogBaseUrl)};
 export const BUILD_CHANGELOG_MARKDOWN = ${JSON.stringify(changelogMarkdown)};
 export const BUILD_CHANGELOG_ASSET_MAP = ${JSON.stringify(bundledChangelogAssetMap)};
