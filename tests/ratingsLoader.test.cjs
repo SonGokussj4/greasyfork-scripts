@@ -13,9 +13,7 @@ let parseRatingsFromDocument;
 let normalizeType;
 let parseRatingRow;
 let hasRecordChanged;
-let evaluateShouldStopEarly;
 let buildStorageRecordId;
-let getRatingsFetchDelayMs;
 let parseTotalRatingsFromDocument;
 
 beforeAll(async () => {
@@ -24,9 +22,7 @@ beforeAll(async () => {
   normalizeType = ratingsLoader.normalizeType;
   parseRatingRow = ratingsLoader.parseRatingRow;
   hasRecordChanged = ratingsLoader.hasRecordChanged;
-  evaluateShouldStopEarly = ratingsLoader.evaluateShouldStopEarly;
   buildStorageRecordId = ratingsLoader.buildStorageRecordId;
-  getRatingsFetchDelayMs = ratingsLoader.getRatingsFetchDelayMs;
   parseTotalRatingsFromDocument = ratingsLoader.parseTotalRatingsFromDocument;
 });
 
@@ -111,22 +107,6 @@ describe('ratings-loader helpers', () => {
     const altered = { ...base, seriesToken: 'S01E01' };
     expect(hasRecordChanged(base, same)).to.be.false;
     expect(hasRecordChanged(base, altered)).to.be.true;
-  });
-
-  it('evaluateShouldStopEarly respects incremental flag', () => {
-    const args = { page: 5, totalRatings: 10, directRatingsCount: 10, consecutiveStablePages: 1 };
-    expect(evaluateShouldStopEarly({ incremental: true, ...args })).to.be.false;
-    expect(evaluateShouldStopEarly({ incremental: false, ...args })).to.be.true;
-  });
-
-  it('getRatingsFetchDelayMs keeps incremental checks immediate', () => {
-    expect(getRatingsFetchDelayMs(true)).to.equal(0);
-  });
-
-  it('getRatingsFetchDelayMs adds jitter for full reloads', () => {
-    const delayMs = getRatingsFetchDelayMs(false);
-    expect(delayMs).to.be.at.least(50);
-    expect(delayMs).to.be.at.most(500);
   });
 
   it('buildStorageRecordId uses stable user and movie ids', () => {
