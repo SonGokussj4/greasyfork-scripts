@@ -195,4 +195,27 @@ describe('hover preview controller', () => {
     expect(root.isConnected).toBe(false);
     expect(hoverPreviewTestApi.pinVisiblePreview()).toBe(false);
   });
+
+  test('a full localStorage evicts the oldest preview cache entries instead of failing', () => {
+    localStorage.setItem('cc_hover_cache_v1_film_old', JSON.stringify({ timestamp: 1, data: {} }));
+    localStorage.setItem('cc_hover_cache_v1_film_newer', JSON.stringify({ timestamp: 2, data: {} }));
+    localStorage.setItem('cc_setting', 'keep');
+
+    const realSetItem = Storage.prototype.setItem;
+    let quotaErrors = 1;
+    const setItemSpy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === 'cc_hover_cache_v1_film_new' && quotaErrors-- > 0) {
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      return realSetItem.call(this, key, value);
+    });
+
+    expect(() => hoverPreviewTestApi.writePreviewCache('cc_hover_cache_v1_film_new', { timestamp: 3, data: {} })).not.toThrow();
+    setItemSpy.mockRestore();
+
+    expect(localStorage.getItem('cc_hover_cache_v1_film_old')).toBeNull();
+    expect(localStorage.getItem('cc_hover_cache_v1_film_newer')).not.toBeNull();
+    expect(localStorage.getItem('cc_hover_cache_v1_film_new')).not.toBeNull();
+    expect(localStorage.getItem('cc_setting')).toBe('keep');
+  });
 });

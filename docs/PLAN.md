@@ -47,6 +47,8 @@ Five risks found during the 0.9.1-0.9.4 work (September 2026), ordered by priori
 
 ## 4. localStorage can fill up, and hover previews fail when it does
 
+**Status: step 1 done in 0.9.9** (`writePreviewCache`: evict oldest cache entries and retry; a failed cache write never hides the preview). Steps 2-4 open.
+
 **Why.** Hover-preview cache (`cc_hover_cache_v1_*`), review drafts, the ratings total cache and all settings share one localStorage origin (~5 MB). In `fetchPreviewData` (`src/hover-preview.js`) the `localStorage.setItem` for the cache sits inside the same `try` as the fetch, so a `QuotaExceededError` makes it return `null` and the preview doesn't show at all. Cleanup runs randomly on ~10% of fetches and only drops expired entries, so a heavy user can fill storage within the cache TTL. `review-draft.js` also writes drafts to localStorage; a full storage there means lost review text, the very thing the feature exists to prevent.
 
 **Plan.**
