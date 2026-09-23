@@ -1,9 +1,10 @@
 # Changelog
 
-## 0.9.5 - unreleased
+## 0.9.6 - unreleased
 
 ### Added
 
+- Okno s novinkami po aktualizaci označí červenou tečkou řádky changelogu, které přibyly od posledního zobrazení.
 - Notifikace o nové verzi skriptu nad CC menu
 - Do náhledové karty filmu přidáno - **Režie:**
 - Nové nastavení: vrácení stylu hvězdiček pro hodnocení u filmu (žádné šedé, zarovnání doprava)

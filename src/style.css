@@ -1229,6 +1229,29 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
     justify-content: center;
 }
 
+.cc-version-markdown-kind-item.is-new .cc-version-markdown-kind-item-icon,
+.cc-version-markdown-list > li.is-new {
+    position: relative;
+}
+
+.cc-version-markdown-kind-item.is-new .cc-version-markdown-kind-item-icon::after,
+.cc-version-markdown-list > li.is-new::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -5px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ba0305;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.cc-version-markdown-list > li.is-new::after {
+    top: 0.45em;
+    left: -18px;
+}
+
 .cc-version-markdown-kind-item-icon svg {
     width: 16px;
     height: 16px;
