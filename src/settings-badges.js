@@ -6,6 +6,7 @@ import {
   getCsfdPathSegment,
   getCsfdPathSegmentValues,
 } from './config.js';
+import { parseTotalRatingsFromDocument } from './ratings-loader.js';
 import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 import { extractUserSlug, getProfileLinkElement } from './utils.js';
@@ -58,35 +59,6 @@ function writeCachedRatingsTotal(ratingsUrl, total) {
 
 export function invalidateRatingsTotalCache() {
   localStorage.removeItem(RATINGS_TOTAL_CACHE_KEY);
-}
-
-function parseTotalRatingsFromDocument(doc) {
-  const extractCount = (text) => {
-    const normalized = String(text || '').replace(/\u00a0/g, ' ');
-    const match = normalized.match(/\(([^)]+)\)/);
-    if (!match) {
-      return 0;
-    }
-
-    const parsed = Number.parseInt(match[1].replace(/\s+/g, ''), 10);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
-
-  const preferredSelectors = ['#snippet--ratings h2', '#snippet--ratings .box-header h2', 'h2.page-header', 'h2'];
-  for (const selector of preferredSelectors) {
-    const heading = doc.querySelector(selector)?.textContent || '';
-    const value = extractCount(heading);
-    if (value > 0) {
-      return value;
-    }
-  }
-
-  const headingWithRatingsWord = Array.from(doc.querySelectorAll('h2, h3')).find((heading) => {
-    const text = String(heading?.textContent || '');
-    return /hodnocen|hodnoten/i.test(text) && /\(\s*[\d\s\u00a0]+\s*\)/.test(text);
-  });
-
-  return extractCount(headingWithRatingsWord?.textContent || '');
 }
 
 function getTotalRatingsFromCurrentPageForCurrentUser() {

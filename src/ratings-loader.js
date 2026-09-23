@@ -140,15 +140,17 @@ async function fetchRatingsPageDocument(url, options = {}) {
   return parser.parseFromString(html, 'text/html');
 }
 
-function parseTotalRatingsFromDocument(doc) {
-  const heading = doc.querySelector('h2')?.textContent || '';
-  const match = heading.match(/\(([^)]+)\)/);
-  if (!match) {
-    return 0;
-  }
-  const numeric = match[1].replace(/\s+/g, '');
-  const parsed = Number.parseInt(numeric, 10);
-  return Number.isNaN(parsed) ? 0 : parsed;
+/**
+ * Reads the user's total ratings count from a ČSFD ratings page, e.g. "Hodnocení (2 448)".
+ * The page has other headings first ("Upozornění", "Fanklub (62)"), so match the ratings heading by text.
+ */
+export function parseTotalRatingsFromDocument(doc) {
+  const heading = Array.from(doc.querySelectorAll('h2, h3'))
+    .map((element) => String(element.textContent || '').replace(/\u00a0/g, ' '))
+    .find((text) => /hodnocen|hodnoten/i.test(text) && /\(\s*[\d\s]+\)/.test(text));
+  const match = heading?.match(/\(([\d\s]+)\)/);
+  const parsed = match ? Number.parseInt(match[1].replace(/\s+/g, ''), 10) : NaN;
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function parseMaxPaginationPageFromDocument(doc) {
