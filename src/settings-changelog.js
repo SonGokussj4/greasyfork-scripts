@@ -489,3 +489,33 @@ export function buildFullChangelogHtml(markdown, baseUrl, assetMap) {
 export function buildChangelogWarningHtml(message = 'Changelog se nepodařilo načíst.') {
   return `<p class="cc-version-info-warning">${escapeHtml(message)}</p>`;
 }
+
+const CHANGELOG_ITEM_SELECTOR = '.cc-version-markdown-kind-item, .cc-version-markdown-list > li';
+
+function getChangelogItemKey(item) {
+  const textNode = item.querySelector('.cc-version-markdown-kind-item-text') || item;
+  return String(textNode.textContent || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Marks changelog lines the user hasn't seen yet with `is-new`. Returns the keys of all lines.
+ * Marks nothing unless some lines were seen before: after a normal release every line is new
+ * and dots would be noise; they matter when an unreleased section grows between dev builds.
+ */
+export function markNewChangelogItems(container, seenKeys = []) {
+  const items = Array.from(container.querySelectorAll(CHANGELOG_ITEM_SELECTOR));
+  const keys = items.map(getChangelogItemKey);
+  const seen = new Set(seenKeys);
+
+  if (keys.some((key) => seen.has(key))) {
+    items.forEach((item, index) => {
+      if (seen.has(keys[index])) return;
+      item.classList.add('is-new');
+      item.setAttribute('title', 'Nové od posledního zobrazení');
+    });
+  }
+
+  return keys;
+}

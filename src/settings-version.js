@@ -11,6 +11,7 @@ import {
   buildChangelogWarningHtml,
   buildFullChangelogHtml,
   compareVersions,
+  markNewChangelogItems,
   normalizeVersionLabel,
   parseCurrentVersionFromText,
   resolveMarkdownUrl,
@@ -21,6 +22,7 @@ import { escapeHtml } from './utils.js';
 export {
   compareVersions,
   extractVersionSectionsFromMarkdown,
+  markNewChangelogItems,
   renderMarkdownToHtml,
   selectChangelogSectionsForRange,
 } from './settings-changelog.js';
@@ -30,6 +32,7 @@ const VERSION_DETAILS_CACHE_KEY = 'cc_version_details_cache_v1';
 const CHANGELOG_CACHE_KEY = 'cc_repo_changelog_cache_v1';
 const MIGRATION_REMINDER_SHOWN_KEY = 'cc_migration_reminder_shown_v1';
 const PREVIOUS_WHATS_NEW_VERSION_KEY = 'CC-whats-new-version';
+const WHATS_NEW_SEEN_ITEMS_KEY = 'cc_whats_new_seen_items_v1';
 const LEGACY_INSTALLED_VERSION_KEY = 'cc_installed_script_version_v1';
 const LEGACY_SHOWN_VERSION_KEY = 'cc_update_modal_shown_version_v1';
 const UPDATE_CHECK_MAX_AGE_MS = 1000 * 60 * 60 * 12;
@@ -82,6 +85,19 @@ function migrateLegacyWhatsNewStorage() {
   localStorage.removeItem(PREVIOUS_WHATS_NEW_VERSION_KEY);
   localStorage.removeItem(LEGACY_SHOWN_VERSION_KEY);
   localStorage.removeItem(LEGACY_INSTALLED_VERSION_KEY);
+}
+
+function getSeenWhatsNewItems() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(WHATS_NEW_SEEN_ITEMS_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function setSeenWhatsNewItems(keys) {
+  localStorage.setItem(WHATS_NEW_SEEN_ITEMS_KEY, JSON.stringify(keys));
 }
 
 function setWhatsNewStoredVersion(version) {
@@ -691,6 +707,7 @@ async function maybeShowUpdatedVersionModal(menuRootElement) {
   }
 
   const changelogData = await getRepoChangelogData();
+  let shownItemKeys = [];
   openVersionModal({
     title: '',
     html: renderUpdateModalContent({
@@ -703,8 +720,10 @@ async function maybeShowUpdatedVersionModal(menuRootElement) {
     modalVariant: 'whats-new',
     onClose: () => {
       setWhatsNewStoredVersion(currentVersion);
+      setSeenWhatsNewItems(shownItemKeys);
     },
   });
+  shownItemKeys = markNewChangelogItems(getVersionModal().body, getSeenWhatsNewItems());
 }
 
 export async function initializeVersionUi(menuRootElement) {

@@ -6,6 +6,8 @@ let extractVersionSectionsFromMarkdown;
 let selectChangelogSectionsForRange;
 let renderMarkdownToHtml;
 let shouldShowWhatsNewModal;
+let markNewChangelogItems;
+let buildChangelogHtml;
 
 beforeAll(async () => {
   ({
@@ -14,7 +16,9 @@ beforeAll(async () => {
     selectChangelogSectionsForRange,
     renderMarkdownToHtml,
     shouldShowWhatsNewModal,
+    markNewChangelogItems,
   } = await import(pathToFileURL(path.resolve(__dirname, '../src/settings-version.js')).href));
+  ({ buildChangelogHtml } = await import(pathToFileURL(path.resolve(__dirname, '../src/settings-changelog.js')).href));
 });
 
 describe('settings version changelog helpers', () => {
@@ -192,5 +196,37 @@ describe('settings version changelog helpers', () => {
     expect(shouldShowWhatsNewModal('v0.8.24', '0.8.24')).toBe(false);
     expect(shouldShowWhatsNewModal('v0.8.25', '0.8.24')).toBe(false);
     expect(shouldShowWhatsNewModal('0.8.23', '0.8.24')).toBe(true);
+  });
+
+  describe('markNewChangelogItems', () => {
+    const renderSection = (items) => {
+      const container = document.createElement('div');
+      container.innerHTML = buildChangelogHtml(
+        ['# Changelog', '', '## 0.9.5 - unreleased', '', '### Added', '', ...items.map((item) => `- ${item}`)].join('\n'),
+        '',
+        {},
+        '0.9.4',
+        '0.9.5',
+      );
+      return container;
+    };
+    const newTexts = (container) =>
+      Array.from(container.querySelectorAll('.is-new')).map((item) => item.textContent.replace(/\s+/g, ' ').trim());
+
+    test('marks only lines added since the popup was last seen', () => {
+      const seen = markNewChangelogItems(renderSection(['Old line A', 'Old line **B**']), []);
+      const container = renderSection(['Old line A', 'Old line **B**', 'Brand new line']);
+
+      const keys = markNewChangelogItems(container, seen);
+
+      expect(newTexts(container)).toEqual(['Brand new line']);
+      expect(keys).toEqual(['Old line A', 'Old line B', 'Brand new line']);
+    });
+
+    test('marks nothing when no line was seen before (first popup / normal release)', () => {
+      const container = renderSection(['Line 1', 'Line 2']);
+      markNewChangelogItems(container, ['Something from an older release']);
+      expect(newTexts(container)).toEqual([]);
+    });
   });
 });
