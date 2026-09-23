@@ -9,6 +9,7 @@ export const WHATS_NEW_VERSION_KEY = 'cc_whats_new_version';
 export const NUM_RATINGS_PER_PAGE = 50;
 export const INDEXED_DB_NAME = 'CC-Ratings';
 export const RATINGS_STORE_NAME = 'ratings';
+export const RATINGS_TOTAL_CACHE_KEY = 'cc_ratings_total_cache_v1';
 
 export const GALLERY_IMAGE_LINKS_ENABLED_KEY = 'cc_gallery_image_links_enabled';
 export const LINK_ICONS_ENABLED_KEY = 'cc_link_icons_enabled';

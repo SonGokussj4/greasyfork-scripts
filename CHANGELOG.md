@@ -13,6 +13,7 @@
 
 ### Changed
 
+- Rychlejší načítání stránek: celkový počet hodnocení pro odznak v CC menu se už nestahuje při každém zobrazení stránky, ale drží se 30 minut (a obnoví se hned při změně hodnocení).
 - Připínání náhledů: stačí krátce ťuknout na `Ctrl` (Ctrl+C, Ctrl+klik a jiné zkratky už náhled omylem nepřipnou), nebo bez klávesnice podržet tlačítko myši na odkazu. Připnutý náhled má křížek pro zavření, `Esc` zavře všechny. Při připnutých náhledech fungují náhledy dalších odkazů na stránce, takže jde porovnávat víc karet. Nový náhled ukazuje nápovědu, dokud poprvé nic nepřipnete.
 - Lepší notifikace o nové verzi skriptu v CC menu  
   ![Notifikace](images/changelog/0.9.1-notifikace.png)

@@ -34,7 +34,7 @@ import {
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
-import { refreshRatingsBadges } from './settings-badges.js';
+import { invalidateRatingsTotalCache, refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
 import { initializeSettingsMenuHover } from './settings-hover.js';
 import { buildStructuredDetailItems, createDetailsModalController } from './ui-utils.js';
@@ -1302,6 +1302,7 @@ async function addSettingsButton() {
   let autoSyncTimeout;
   window.addEventListener('cc-ratings-updated', (e) => {
     invalidateRatingsModalCache();
+    invalidateRatingsTotalCache();
     refreshBadgesSafely();
 
     if (e && e.detail && e.detail.skipSync) {
