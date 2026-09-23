@@ -177,25 +177,10 @@ export {
   createRecordFingerprint,
   hasRecordChanged,
   buildStorageRecordId,
+  detectPaginationModeFromDocument,
   loadRatingsForCurrentUser,
+  parseMaxPaginationPageFromDocument,
 };
-
-function parseRating(starElement) {
-  if (!starElement) {
-    return NaN;
-  }
-
-  if (starElement.classList.contains('trash')) {
-    return 0;
-  }
-
-  const starClass = Array.from(starElement.classList).find((className) => /^stars-\d$/.test(className));
-  if (!starClass) {
-    return NaN;
-  }
-
-  return Number.parseInt(starClass.replace('stars-', ''), 10);
-}
 
 function parseIdsFromUrl(relativeUrl) {
   const matches = Array.from((relativeUrl || '').matchAll(/\/(\d+)-/g)).map((match) => Number.parseInt(match[1], 10));
@@ -283,7 +268,7 @@ function parseRatingRow(row, origin) {
     name,
     year: yearValue ? Number.parseInt(yearValue, 10) : NaN,
     type: normalizeType(rawType),
-    rating: parseRating(starEl),
+    rating: parseRatingFromStars(starEl),
     date: dateText,
     parentId,
     parentName,
@@ -433,10 +418,6 @@ function isStateForCurrentUser(state, userSlug) {
   return state.userSlug === userSlug;
 }
 
-function parseRatingFromStarsElement(starsEl) {
-  return parseRatingFromStars(starsEl);
-}
-
 function parseCurrentUserRatingFromDocument(doc) {
   const currentUserNode = doc.querySelector('.others-rating .current-user-rating') || doc.querySelector('.my-rating');
   if (!currentUserNode) {
@@ -446,7 +427,7 @@ function parseCurrentUserRatingFromDocument(doc) {
   const starRatingNode =
     currentUserNode.querySelector('.star-rating') || currentUserNode.querySelector('.stars-rating');
   const starsEl = starRatingNode?.querySelector('.stars');
-  const rating = parseRatingFromStarsElement(starsEl);
+  const rating = parseRatingFromStars(starsEl);
 
   if (!Number.isFinite(rating)) {
     return undefined;
@@ -777,8 +758,15 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
     throw new Error('Nepodařilo se přečíst ID uživatele z profilu.');
   }
 
-  const firstDoc = await fetchRatingsPageDocument(buildRatingsPageUrl(profilePath, 1));
+  const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
+  const firstDoc = await fetchRatingsPageDocument(firstPageUrl);
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
+  // A ratings page with rows but no readable total means ČSFD markup changed: say so instead
+  // of silently skipping auto-stop and deletion handling.
+  const totalMissing = totalRatings === 0 && parseRatingsFromDocument(firstDoc, location.origin).length > 0;
+  if (totalMissing) {
+    console.warn('[CC] Could not read the ratings total from', firstPageUrl);
+  }
   const totalPages = Math.max(1, parseMaxPaginationPageFromDocument(firstDoc));
   const paginationMode = detectPaginationModeFromDocument(firstDoc);
 
@@ -862,10 +850,24 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
     }
   }
 
-  return { endReason, loadedPages, totalPages, totalUpserted, totalMarkedDeleted, totalRatings, directRatingsCount };
+  return {
+    endReason,
+    loadedPages,
+    totalPages,
+    totalUpserted,
+    totalMarkedDeleted,
+    totalRatings,
+    totalMissing,
+    directRatingsCount,
+  };
 }
 
 function describeSweepResult(result) {
+  const warning = result.totalMissing ? ' · Pozor: celkový počet hodnocení z ČSFD se nepodařilo přečíst.' : '';
+  return describeSweepEnd(result) + warning;
+}
+
+function describeSweepEnd(result) {
   const changes = `${result.totalUpserted} nových/změněných`;
   const pages = `${result.loadedPages}/${result.totalPages} str.`;
   if (result.endReason === 'in-sync') {

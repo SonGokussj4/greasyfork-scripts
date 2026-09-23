@@ -131,4 +131,21 @@ describe('ratings sweep', () => {
     expect(result).toMatchObject({ endReason: 'completed', loadedPages: 3, totalUpserted: 0, totalMarkedDeleted: 0 });
     expect(fetchedPages).toEqual([1, 2, 3]);
   });
+
+  test('rows without a readable total are flagged instead of silently skipping auto-stop', async () => {
+    mockCsfdRatings(range(1, 4).reverse());
+    const realFetch = global.fetch;
+    global.fetch = jest.fn(async (url) => {
+      const response = await realFetch(url);
+      const html = (await response.text()).replace(/<h2>Hodnocení \(\d+\)<\/h2>/, '<h2>Hodnocení</h2>');
+      return { ok: true, text: async () => html };
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await loadRatingsForCurrentUser();
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+
+    expect(result).toMatchObject({ totalRatings: 0, totalMissing: true, endReason: 'completed', totalMarkedDeleted: 0 });
+  });
 });

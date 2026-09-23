@@ -21,6 +21,8 @@ Five risks found during the 0.9.1-0.9.4 work (September 2026), ordered by priori
 
 ## 2. Everything depends on scraping ČSFD HTML, and breakage is silent
 
+**Status: started in 0.9.10.** Star-rating parsing merged into `utils.parseRatingFromStars` (the review preview's own copy ignored "odpad"); `tests/realPageParsers.test.cjs` checks the ratings-list parsers against `tests/pages/ratingsList.html` (trimmed real page); the sweep warns when a ratings page has rows but no readable total. Still open: fixture tests for film/creator/user preview parsers and `csfd.js` page parsing, and a visible warning in the CC menu (today it's the loader message + console).
+
 **Why.** Ratings, totals, computed ratings and previews are all parsed from ČSFD markup. When ČSFD changes a page, parsers return `0`/empty and features quietly degrade. Proof: the loader read the ratings total from the first `<h2>` on the page, which is the notifications header, so `totalRatings` was always `0`. That disabled deleted-ratings reconciliation and the Shift+click early stop, unnoticed, until 0.9.4. The loader and the badge each had their own copy of that parser, and the two copies had diverged.
 
 **Plan.**
@@ -66,6 +68,7 @@ Five risks found during the 0.9.1-0.9.4 work (September 2026), ordered by priori
 - No formatter or linter config, and existing code isn't Prettier-clean, so style can't be enforced or auto-fixed.
 - `dist/csfd-compare.user.js` is committed and rebuilt in every change, so every branch touches it and merges conflict on it.
 - 7 old stashes and several stale branches (`NEW`, `next`, `temp`, `movie-preview`, `feature/class-rework`).
+- Committed fixtures in `tests/pages/*.html` (and possibly git history) contain `_token_` CSRF values from old logged-in sessions. Likely expired, but new snapshots should be scrubbed (`make download-pages` could strip `_token_` inputs), and `pages/` stays git-ignored.
 
 **Plan.**
 1. Add `.gitattributes` (`* text=auto eol=lf`, or `crlf` if preferred) and do one renormalisation commit (`git add --renormalize .`).
