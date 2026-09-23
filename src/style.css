@@ -2754,6 +2754,51 @@ h3.film-title-inline .cc-own-rating {
     cursor: grab;
 }
 
+.cc-hover-preview-close {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    z-index: 2;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 1px solid rgba(128, 128, 128, 0.45);
+    border-radius: 50%;
+    background: #fff;
+    color: #555;
+    font-size: 14px;
+    line-height: 17px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.cc-hover-preview-close:hover {
+    background: #ba0305;
+    border-color: #ba0305;
+    color: #fff;
+}
+
+.cc-hover-preview-hint {
+    width: fit-content;
+    max-width: 230px;
+    margin-top: 4px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    background: rgba(40, 40, 40, 0.86);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+.cc-hover-preview-hint kbd {
+    padding: 0 3px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 10px;
+}
+
 .cc-hover-preview.is-frozen.is-dragging .cc-hover-preview-top,
 .cc-hover-preview.is-frozen.is-dragging .cc-hover-preview-title {
     cursor: grabbing;

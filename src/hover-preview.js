@@ -3,6 +3,7 @@ import {
   HOVER_PREVIEW_CACHE_HOURS_KEY,
   HOVER_PREVIEW_CACHE_PREFIX,
   HOVER_PREVIEW_ENABLED_KEY,
+  HOVER_PREVIEW_PIN_HINT_SEEN_KEY,
   HOVER_PREVIEW_SETTINGS_CHANGED_EVENT,
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_POSITION_KEY,
@@ -24,6 +25,36 @@ const frozenPreviewRoots = [];
 let dragState = null;
 let loadingIndicator;
 let pendingLoadingIndicators = 0;
+let longPressState = null;
+let suppressNextClick = false;
+
+const LONG_PRESS_MS = 450;
+const LONG_PRESS_MOVE_TOLERANCE_PX = 6;
+const PIN_HINT_HTML =
+  '<div class="cc-hover-preview-hint">Připnout: ťukněte na <kbd>Ctrl</kbd> nebo podržte myš na odkazu</div>';
+const CLOSE_BUTTON_HTML =
+  '<button type="button" class="cc-hover-preview-close" data-cc-hover-close title="Zavřít (Esc zavře všechny)" aria-label="Zavřít náhled">×</button>';
+
+/**
+ * Detects a lone tap of a modifier key (press + release with nothing else in between),
+ * so Ctrl+C, Ctrl+click and other shortcuts never pin a preview by accident.
+ */
+export function createModifierTapDetector(key = 'Control') {
+  let armed = false;
+  return {
+    keydown(event) {
+      armed = event.key === key && !event.repeat && !event.altKey && !event.shiftKey && !event.metaKey;
+    },
+    keyup(event) {
+      const isTap = armed && event.key === key;
+      armed = false;
+      return isTap;
+    },
+    cancel() {
+      armed = false;
+    },
+  };
+}
 
 const inflightRequests = new Map();
 
@@ -110,6 +141,9 @@ function refreshFrozenPreviewState() {
 
   if (secondaryPreviewRoot?.classList.contains('is-visible')) {
     secondaryPreviewRoot.style.zIndex = String(10031 + frozenPreviewRoots.length);
+  }
+  if (previewRoot?.classList.contains('is-visible')) {
+    previewRoot.style.zIndex = frozenPreviewRoots.length > 0 ? String(10031 + frozenPreviewRoots.length) : '';
   }
 }
 
@@ -384,6 +418,7 @@ async function ensureDeferredPreviewData(root) {
     if (!root.isConnected) return nextData;
 
     root.innerHTML = provider.render(nextData);
+    if (isFrozenRoot(root)) root.insertAdjacentHTML('afterbegin', CLOSE_BUTTON_HTML);
     root.__ccPreviewData = nextData;
     root.dataset.provider = provider.id;
     root.setAttribute('aria-hidden', root.classList.contains('is-visible') ? 'false' : 'true');
@@ -423,10 +458,14 @@ async function showPreviewForAnchorInRoot(anchor, provider, token, root, isSecon
     providerId: provider.id,
     normalizedUrl,
   };
+  if (localStorage.getItem(HOVER_PREVIEW_PIN_HINT_SEEN_KEY) !== '1') {
+    root.insertAdjacentHTML('beforeend', PIN_HINT_HTML);
+  }
   root.dataset.provider = provider.id;
   root.classList.add('is-visible');
   root.setAttribute('aria-hidden', 'false');
   applyPreviewLinkIcons(root);
+  refreshFrozenPreviewState();
   positionPreview();
 }
 
@@ -443,33 +482,63 @@ function clearActivePreview() {
 
 function clearAllPreviews() {
   clearActivePreview();
-  frozenPreviewRoots.splice(0).forEach((root) => hidePreview(root));
+  frozenPreviewRoots.splice(0).forEach((root) => {
+    hidePreview(root);
+    root.remove();
+  });
   refreshFrozenPreviewState();
 }
 
-function popLastFrozenPreview() {
-  const root = frozenPreviewRoots.pop();
-  if (!root) return;
+function closeFrozenPreview(root) {
+  const index = frozenPreviewRoots.indexOf(root);
+  if (index === -1) return;
 
+  frozenPreviewRoots.splice(index, 1);
   hidePreview(root);
+  root.remove();
   restoreSuppressedTitles();
   secondaryHoverToken++;
   refreshFrozenPreviewState();
 }
 
-function toggleFreezePreview() {
-  if (!previewRoot?.classList.contains('is-visible')) return;
-
-  const frozenRoot = previewRoot;
-  previewRoot.classList.add('is-frozen');
-  frozenPreviewRoots.push(frozenRoot);
+function pinPreviewRoot(root) {
+  root.classList.add('is-frozen');
+  root.querySelector('.cc-hover-preview-hint')?.remove();
+  root.insertAdjacentHTML('afterbegin', CLOSE_BUTTON_HTML);
+  frozenPreviewRoots.push(root);
   refreshFrozenPreviewState();
-  previewRoot = null;
   restoreSuppressedTitles();
-  activeAnchor = null;
-  activeProvider = null;
-  hoverToken++;
-  void ensureDeferredPreviewData(frozenRoot);
+  localStorage.setItem(HOVER_PREVIEW_PIN_HINT_SEEN_KEY, '1');
+  void ensureDeferredPreviewData(root);
+}
+
+/** Pins the preview currently shown (a nested one takes precedence). Returns whether anything was pinned. */
+function pinVisiblePreview() {
+  if (secondaryPreviewRoot?.classList.contains('is-visible')) {
+    const root = secondaryPreviewRoot;
+    secondaryPreviewRoot = null;
+    secondaryHoverToken++;
+    pinPreviewRoot(root);
+    return true;
+  }
+
+  if (previewRoot?.classList.contains('is-visible')) {
+    const root = previewRoot;
+    previewRoot = null;
+    activeAnchor = null;
+    activeProvider = null;
+    hoverToken++;
+    pinPreviewRoot(root);
+    return true;
+  }
+
+  return false;
+}
+
+function cancelLongPress() {
+  if (!longPressState) return;
+  clearTimeout(longPressState.timer);
+  longPressState = null;
 }
 
 function refreshActivePreview() {
@@ -504,12 +573,20 @@ function resetHoverPreviewStateForTests() {
   dragState = null;
   loadingIndicator = null;
   pendingLoadingIndicators = 0;
+  cancelLongPress();
+  suppressNextClick = false;
   inflightRequests.clear();
 }
 
 export const __hoverPreviewTestApi = {
   clearActivePreview,
+  closeFrozenPreview,
   ensureLoadingIndicator,
+  ensurePreviewRoot,
+  pinVisiblePreview,
+  getFrozenPreviewRoots() {
+    return [...frozenPreviewRoots];
+  },
   getPreviewPosition,
   shouldIgnoreAnchor,
   hideLoadingIndicator,
@@ -535,8 +612,8 @@ export function initializeHoverPreviews() {
     'mouseover',
     (event) => {
       const hoveredPreviewRoot = getPreviewRootFromTarget(event.target);
-      const insideFrozenPreview = Boolean(hoveredPreviewRoot && hoveredPreviewRoot === getTopFrozenRoot());
-      if (frozenPreviewRoots.length > 0 && !insideFrozenPreview) return;
+      const insideFrozenPreview = Boolean(hoveredPreviewRoot && isFrozenRoot(hoveredPreviewRoot));
+      if (hoveredPreviewRoot && !insideFrozenPreview) return;
 
       const anchor = getAnchorFromTarget(event.target);
       if (!anchor) return;
@@ -565,8 +642,7 @@ export function initializeHoverPreviews() {
   document.addEventListener(
     'mouseout',
     (event) => {
-      if (frozenPreviewRoots.length > 0) {
-        if (!secondaryPreviewRoot?.classList.contains('is-visible')) return;
+      if (secondaryPreviewRoot?.classList.contains('is-visible')) {
         const fromAnchor = event.target instanceof Element ? event.target.closest('a[href]') : null;
         const toAnchor = event.relatedTarget instanceof Element ? event.relatedTarget.closest('a[href]') : null;
         const relatedPreviewRoot = getPreviewRootFromTarget(event.relatedTarget);
@@ -586,39 +662,81 @@ export function initializeHoverPreviews() {
     true,
   );
 
+  // Tap Ctrl alone: pin the shown preview, or close the last pinned one when nothing is shown.
+  const pinKeyTap = createModifierTapDetector('Control');
   document.addEventListener(
     'keydown',
     (event) => {
-      if (event.repeat) return;
-
-      if (event.key === 'Control') {
-        if (secondaryPreviewRoot?.classList.contains('is-visible')) {
-          const frozenRoot = secondaryPreviewRoot;
-          secondaryPreviewRoot.classList.add('is-frozen');
-          frozenPreviewRoots.push(frozenRoot);
-          refreshFrozenPreviewState();
-          secondaryPreviewRoot = null;
-          restoreSuppressedTitles();
-          secondaryHoverToken++;
-          void ensureDeferredPreviewData(frozenRoot);
-        } else if (previewRoot?.classList.contains('is-visible')) {
-          toggleFreezePreview();
-        } else if (frozenPreviewRoots.length > 0) {
-          popLastFrozenPreview();
-        }
-        return;
-      }
-
+      pinKeyTap.keydown(event);
       if (event.key === 'Escape') {
         clearAllPreviews();
       }
     },
     true,
   );
+  document.addEventListener(
+    'keyup',
+    (event) => {
+      if (!pinKeyTap.keyup(event)) return;
+      if (!pinVisiblePreview()) closeFrozenPreview(getTopFrozenRoot());
+    },
+    true,
+  );
+  document.addEventListener('wheel', () => pinKeyTap.cancel(), { capture: true, passive: true });
+  window.addEventListener('blur', () => pinKeyTap.cancel());
+
+  // Mouse-only pinning: hold the left button on a link whose preview is shown.
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      pinKeyTap.cancel();
+      cancelLongPress();
+      suppressNextClick = false;
+      if (event.button !== 0 || (event.pointerType && event.pointerType !== 'mouse')) return;
+
+      const anchor = getAnchorFromTarget(event.target);
+      if (!anchor || !getProviderForAnchor(anchor)) return;
+
+      longPressState = {
+        x: event.clientX,
+        y: event.clientY,
+        timer: setTimeout(() => {
+          longPressState = null;
+          if (pinVisiblePreview()) suppressNextClick = true;
+        }, LONG_PRESS_MS),
+      };
+    },
+    true,
+  );
+  document.addEventListener(
+    'pointermove',
+    (event) => {
+      if (!longPressState) return;
+      const distance = Math.hypot(event.clientX - longPressState.x, event.clientY - longPressState.y);
+      if (distance > LONG_PRESS_MOVE_TOLERANCE_PX) cancelLongPress();
+    },
+    true,
+  );
+  ['pointerup', 'pointercancel', 'dragstart'].forEach((type) => document.addEventListener(type, cancelLongPress, true));
 
   document.addEventListener(
     'click',
     (event) => {
+      if (suppressNextClick) {
+        suppressNextClick = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      const closeButton = event.target instanceof Element ? event.target.closest('[data-cc-hover-close]') : null;
+      if (closeButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeFrozenPreview(getPreviewRootFromTarget(closeButton));
+        return;
+      }
+
       const button = event.target instanceof Element ? event.target.closest('[data-cc-hover-poster-dir]') : null;
       const root = getPreviewRootFromTarget(button);
       if (!button || !root) return;
@@ -685,6 +803,8 @@ export function initializeHoverPreviews() {
         root?.contains(event.target),
       );
       if (clickedInsidePreview) return;
+      // Pressing on the link whose preview is shown may be a long-press to pin another one.
+      if (activeAnchor?.contains(event.target)) return;
 
       clearAllPreviews();
     },
