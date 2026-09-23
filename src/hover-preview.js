@@ -282,6 +282,39 @@ function cleanExpiredCache() {
   }
 }
 
+/** Drops the oldest share of hover-preview cache entries to make room in localStorage. */
+function evictOldestPreviewCache(fraction = 0.25) {
+  const entries = [];
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    if (!key?.startsWith(HOVER_PREVIEW_CACHE_GROUP_PREFIX)) continue;
+    let timestamp = 0;
+    try {
+      timestamp = Number(JSON.parse(localStorage.getItem(key))?.timestamp) || 0;
+    } catch {}
+    entries.push({ key, timestamp });
+  }
+
+  entries.sort((a, b) => a.timestamp - b.timestamp);
+  entries.slice(0, Math.max(1, Math.ceil(entries.length * fraction))).forEach(({ key }) => localStorage.removeItem(key));
+}
+
+/**
+ * Caching is best effort: a full localStorage must never stop a preview from showing.
+ * On a quota error the oldest cache entries are evicted and the write is retried once.
+ */
+function writePreviewCache(cacheKey, value) {
+  const serialized = JSON.stringify(value);
+  try {
+    localStorage.setItem(cacheKey, serialized);
+  } catch {
+    try {
+      evictOldestPreviewCache();
+      localStorage.setItem(cacheKey, serialized);
+    } catch {}
+  }
+}
+
 function isHoverPreviewEnabled() {
   return getFeatureState(HOVER_PREVIEW_ENABLED_KEY, true);
 }
@@ -367,7 +400,7 @@ async function fetchPreviewData(provider, normalizedUrl) {
       const data = await loadProviderData(provider, normalizedUrl);
       if (!data) return null;
 
-      localStorage.setItem(cacheKey, JSON.stringify({ timestamp: Date.now(), data }));
+      writePreviewCache(cacheKey, { timestamp: Date.now(), data });
       if (Math.random() < 0.1) cleanExpiredCache();
       return data;
     } catch {
@@ -589,6 +622,7 @@ export const __hoverPreviewTestApi = {
   },
   getPreviewPosition,
   shouldIgnoreAnchor,
+  writePreviewCache,
   hideLoadingIndicator,
   resetHoverPreviewStateForTests,
   showLoadingIndicator,
