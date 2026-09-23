@@ -93,7 +93,7 @@ Both csfd.**cz** and csfd.**sk** are supported. Path segments and UI labels diff
 
 ### Legacy script
 
-The root `csfd-compare.js` is the old jQuery-based script that `src/` replaced. Use it as a reference for how a feature used to behave, but not for selectors: it targeted an older ČSFD layout. Don't move or delete it (GreasyFork may still sync from that path).
+The root `csfd-compare.js` is the old jQuery-based script that `src/` replaced. Use it as a reference for how a feature used to behave, but not for selectors: it targeted an older ČSFD layout. The published bundle is `dist/csfd-compare.user.js` (GreasyFork and the local `[DEV]` userscript `@require` it).
 
 ### Settings
 
