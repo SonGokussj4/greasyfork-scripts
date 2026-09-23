@@ -2,6 +2,7 @@ import {
   INDEXED_DB_NAME,
   PROFILE_LINK_SELECTOR,
   RATINGS_STORE_NAME,
+  RATINGS_TOTAL_CACHE_KEY,
   getCsfdPathSegment,
   getCsfdPathSegmentValues,
 } from './config.js';
@@ -35,10 +36,29 @@ function getCurrentUserRatingsUrl() {
   return url.toString();
 }
 
-// Cache the last fetched total so multiple refreshRatingsBadges calls within the same
-// page load don't each trigger a separate network request to /hodnoceni/.
-let _cachedRatingsUrl = null;
-let _cachedRatingsTotal = null;
+// The ČSFD total is cached in localStorage so ordinary page views don't each download the
+// whole /hodnoceni/ page. Any local ratings change invalidates it (see settings.js).
+const RATINGS_TOTAL_CACHE_TTL_MS = 30 * 60 * 1000;
+let inflightTotalRequest = null;
+
+function readCachedRatingsTotal(ratingsUrl, now = Date.now()) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(RATINGS_TOTAL_CACHE_KEY));
+    if (cached?.url === ratingsUrl && cached.total > 0 && now - cached.timestamp < RATINGS_TOTAL_CACHE_TTL_MS) {
+      return cached.total;
+    }
+  } catch {}
+  return null;
+}
+
+function writeCachedRatingsTotal(ratingsUrl, total) {
+  if (!ratingsUrl || !(total > 0)) return;
+  localStorage.setItem(RATINGS_TOTAL_CACHE_KEY, JSON.stringify({ url: ratingsUrl, total, timestamp: Date.now() }));
+}
+
+export function invalidateRatingsTotalCache() {
+  localStorage.removeItem(RATINGS_TOTAL_CACHE_KEY);
+}
 
 function parseTotalRatingsFromDocument(doc) {
   const extractCount = (text) => {
@@ -85,39 +105,43 @@ function getTotalRatingsFromCurrentPageForCurrentUser() {
   return parseTotalRatingsFromDocument(document);
 }
 
-async function fetchTotalRatingsForCurrentUser() {
+export async function fetchTotalRatingsForCurrentUser() {
+  const ratingsUrl = getCurrentUserRatingsUrl();
   const currentPageTotal = getTotalRatingsFromCurrentPageForCurrentUser();
   if (currentPageTotal > 0) {
+    writeCachedRatingsTotal(ratingsUrl, currentPageTotal);
     return currentPageTotal;
   }
 
-  const ratingsUrl = getCurrentUserRatingsUrl();
   if (!ratingsUrl) {
     return 0;
   }
 
-  // Return cached value for this URL so repeated badge refreshes within the same
-  // page load don't each fire a redundant network request.
-  if (_cachedRatingsUrl === ratingsUrl && _cachedRatingsTotal !== null) {
-    return _cachedRatingsTotal;
+  const cachedTotal = readCachedRatingsTotal(ratingsUrl);
+  if (cachedTotal !== null) {
+    return cachedTotal;
   }
 
-  const response = await fetch(ratingsUrl, {
-    credentials: 'include',
-    method: 'GET',
+  // Share one request between the badge refreshes that run right after page load.
+  inflightTotalRequest ??= (async () => {
+    const response = await fetch(ratingsUrl, {
+      credentials: 'include',
+      method: 'GET',
+    });
+    if (!response.ok) {
+      return 0;
+    }
+
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const total = parseTotalRatingsFromDocument(doc);
+    writeCachedRatingsTotal(ratingsUrl, total);
+    return total;
+  })().finally(() => {
+    inflightTotalRequest = null;
   });
-  if (!response.ok) {
-    return 0;
-  }
 
-  const html = await response.text();
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const total = parseTotalRatingsFromDocument(doc);
-
-  _cachedRatingsUrl = ratingsUrl;
-  _cachedRatingsTotal = total;
-
-  return total;
+  return inflightTotalRequest;
 }
 
 function updateSyncButtonAuthState(rootElement, isLoggedIn) {
