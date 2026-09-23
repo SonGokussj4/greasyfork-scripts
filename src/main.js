@@ -4,6 +4,7 @@ import './style.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { initializeHoverPreviews } from './hover-preview.js';
+import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './review-draft.js';
 
 (async () => {
   'use strict';
@@ -52,6 +53,7 @@ import { initializeHoverPreviews } from './hover-preview.js';
   await csfd.addGalleryImageFormatLinks();
   csfd.addConfiguredLinkIcons();
   initializeHoverPreviews();
+  initializeReviewDraftAutosave();
 
   // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
   // etc.).  Re-run addStars once the page is fully loaded and once more a bit
@@ -233,6 +235,10 @@ import { initializeHoverPreviews } from './hover-preview.js';
     } else {
       csfd.clearSelfReplyInDiscussions();
     }
+  });
+
+  window.addEventListener('cc-review-draft-autosave-toggled', (ev) => {
+    setReviewDraftAutosaveEnabled(!!ev?.detail?.enabled);
   });
 
   // Disable Option 2 if not logged in (now using utility)

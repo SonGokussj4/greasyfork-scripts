@@ -9,6 +9,7 @@
 - Nové nastavení: vrácení stylu hvězdiček pro hodnocení u filmu (žádné šedé, zarovnání doprava)
 - Nový náhled: Odkaz na přímou recenzi na CSFD, včetně hodnocení, data a odkazu na recenzi
   ![Recenze](images/changelog/0.9.1-nahledy-recenze.png)
+- Nové nastavení: Automatické ukládání rozepsaných recenzí. Text recenze (včetně tučného, kurzívy a odkazů) se průběžně ukládá do prohlížeče, takže přežije zavření stránky, obnovení, výpadek i chybu při odeslání. Po opětovném otevření formuláře lze koncept jedním kliknutím obnovit nebo zkopírovat do schránky. Koncept se sám smaže, jakmile se recenze úspěšně objeví v seznamu recenzí.
 
 ### Changed
 

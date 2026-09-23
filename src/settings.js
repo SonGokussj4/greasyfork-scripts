@@ -6,6 +6,9 @@ import {
   ADD_RATINGS_DATE_KEY,
   CLICKABLE_HEADER_BOXES_KEY,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  HIDDEN_PANELS_LIST_KEY,
+  HIDDEN_PANELS_UPDATED_EVENT,
+  HIDE_HOME_PANELS_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
@@ -391,7 +394,7 @@ async function addSettingsButton() {
   };
 
   const updateHidePanelsUI = () => {
-    const enabled = getBoolSetting('cc_hide_home_panels', true);
+    const enabled = getBoolSetting(HIDE_HOME_PANELS_KEY, true);
     const body = queryMenu('#cc-hide-panels-group-body');
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
@@ -733,7 +736,7 @@ async function addSettingsButton() {
 
   let currentPanelPills = [];
   try {
-    const savedPanels = localStorage.getItem('cc_hidden_panels_list');
+    const savedPanels = localStorage.getItem(HIDDEN_PANELS_LIST_KEY);
     if (savedPanels) currentPanelPills = JSON.parse(savedPanels);
   } catch (e) {}
 
@@ -759,9 +762,9 @@ async function addSettingsButton() {
         removeBtn.onclick = (e) => {
           e.stopPropagation();
           currentPanelPills.splice(index, 1);
-          localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentPanelPills));
+          localStorage.setItem(HIDDEN_PANELS_LIST_KEY, JSON.stringify(currentPanelPills));
           renderPanelPills();
-          window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+          window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
         };
 
         pillEl.appendChild(removeBtn);
@@ -771,9 +774,9 @@ async function addSettingsButton() {
   };
 
   renderPanelPills();
-  window.addEventListener('cc-hidden-panels-updated', () => {
+  window.addEventListener(HIDDEN_PANELS_UPDATED_EVENT, () => {
     try {
-      currentPanelPills = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+      currentPanelPills = JSON.parse(localStorage.getItem(HIDDEN_PANELS_LIST_KEY) || '[]');
     } catch (e) {}
     renderPanelPills();
   });
@@ -783,9 +786,9 @@ async function addSettingsButton() {
     restoreAllPanelsBtn.addEventListener('click', () => {
       if (currentPanelPills.length > 0) {
         currentPanelPills = [];
-        localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentPanelPills));
+        localStorage.setItem(HIDDEN_PANELS_LIST_KEY, JSON.stringify(currentPanelPills));
         renderPanelPills();
-        window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+        window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
         showSettingsInfoToast('Všechny panely byly obnoveny.');
       } else {
         showSettingsInfoToast('Žádné panely ke smazání.');
@@ -877,7 +880,7 @@ async function addSettingsButton() {
   // --------------------------------------------------------
   const updatePanelsFeatureState = () => {
     // Evaluate the setting. (Default is true, so we check if it's explicitly 'false')
-    const isEnabled = localStorage.getItem('cc_hide_home_panels') !== 'false';
+    const isEnabled = localStorage.getItem(HIDE_HOME_PANELS_KEY) !== 'false';
 
     // Wait for body to exist before toggling the class (Firefox safety)
     if (!document.body) {
@@ -892,7 +895,7 @@ async function addSettingsButton() {
   updatePanelsFeatureState();
 
   // 2. Listen for changes from the settings menu toggle
-  window.addEventListener('cc-hidden-panels-updated', updatePanelsFeatureState);
+  window.addEventListener(HIDDEN_PANELS_UPDATED_EVENT, updatePanelsFeatureState);
 
   const syncControlsFromStorage = () => {
     togglesTracker.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
@@ -921,8 +924,8 @@ async function addSettingsButton() {
     localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
     localStorage.removeItem(SHOW_RATINGS_KEY);
     localStorage.removeItem(SHOW_RATINGS_SECTION_COLLAPSED_KEY);
-    localStorage.removeItem('cc_hide_home_panels');
-    localStorage.removeItem('cc_hidden_panels_list');
+    localStorage.removeItem(HIDE_HOME_PANELS_KEY);
+    localStorage.removeItem(HIDDEN_PANELS_LIST_KEY);
     localStorage.removeItem('cc_hide_panels_collapsed');
     localStorage.removeItem('cc_dev_mode');
     localStorage.removeItem('cc_creator_preview_cache_hours');
@@ -951,7 +954,7 @@ async function addSettingsButton() {
       }),
     );
     window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
-    window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+    window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
     window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
     showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
   });

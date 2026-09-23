@@ -3465,3 +3465,117 @@ body.cc-revert-star-style section.others-rating .star-rating .stars::before {
 body.cc-revert-star-style section.others-rating .star-rating .stars::after {
     display: none !important;
 }
+
+/* =========================================
+   REVIEW DRAFT AUTOSAVE — status pill + restore banner
+   ========================================= */
+
+/* Keep ČSFD's native footer buttons in their original (left) place and push the
+   save status to the right. */
+.box-footer-post.cc-review-draft-footer {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cc-review-draft-status {
+    margin-left: auto;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #8a8a8a;
+    text-align: right;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.cc-review-draft-status.is-saving {
+    color: #c89b3c;
+}
+
+.cc-review-draft-status.is-saved {
+    color: #2e9e5b;
+}
+
+.cc-review-draft-banner {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    margin: 0 0 10px 0;
+    padding: 10px 12px;
+    border: 1px solid #e3d4a8;
+    border-left: 3px solid #d8b54a;
+    border-radius: 8px;
+    background: #fcf7e8;
+    font-size: 13px;
+    color: #4a4334;
+}
+
+.cc-review-draft-banner.is-restored {
+    border-color: #bfe0c6;
+    border-left-color: #2e9e5b;
+    background: #f0f9f2;
+    color: #2c5d3c;
+}
+
+.cc-review-draft-banner-icon {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.cc-review-draft-banner-text {
+    flex: 1 1 auto;
+    min-width: 160px;
+}
+
+.cc-review-draft-banner-age {
+    font-weight: 600;
+}
+
+.cc-review-draft-banner-actions {
+    display: inline-flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.cc-review-draft-btn {
+    cursor: pointer;
+    border: 1px solid #cdbf94;
+    background: #fff;
+    color: #4a4334;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    line-height: 1.3;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        color 0.15s ease;
+}
+
+.cc-review-draft-btn:hover {
+    background: #f3ead0;
+}
+
+.cc-review-draft-btn-primary {
+    background: #d8b54a;
+    border-color: #c89b3c;
+    color: #3a3320;
+    font-weight: 600;
+}
+
+.cc-review-draft-btn-primary:hover {
+    background: #c89b3c;
+}
+
+.cc-review-draft-btn-ghost {
+    border-color: transparent;
+    background: transparent;
+    color: #8a8a8a;
+}
+
+.cc-review-draft-btn-ghost:hover {
+    background: rgba(0, 0, 0, 0.06);
+    color: #6a6a6a;
+}

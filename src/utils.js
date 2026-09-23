@@ -1,9 +1,5 @@
 import { PROFILE_LINK_SELECTOR, USER_SLUG_REGEX } from './config.js';
 
-export function roundTo(number, decimals) {
-  return Math.floor(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
-}
-
 export function delay(t) {
   return new Promise((resolve) => setTimeout(resolve, t));
 }
@@ -17,11 +13,30 @@ export const escapeHtml = (str) =>
 
 /**
  * Extract user slug (e.g. "12345-username") from a ČSFD user path or href.
+ * Accepts relative paths and absolute URLs, with or without a trailing slash.
  * @param {string} href - path like "/uzivatel/12345-username/hodnoceni/"
  * @returns {string|undefined}
  */
 export function extractUserSlug(href) {
   return String(href || '').match(USER_SLUG_REGEX)?.[1];
+}
+
+/**
+ * Extract the readable username from a user slug.
+ * @param {string} slug - slug like "12345-username"
+ * @returns {string|undefined}
+ */
+export function extractUsernameFromUserSlug(slug) {
+  return String(slug || '').match(/^\d+-(.+)$/)?.[1];
+}
+
+/**
+ * Extract the readable username directly from a ČSFD profile href.
+ * @param {string} href - path like "/uzivatel/12345-username/"
+ * @returns {string|undefined}
+ */
+export function extractUsernameFromHref(href) {
+  return extractUsernameFromUserSlug(extractUserSlug(href));
 }
 
 /** Returns the profile link element for the logged-in user, or null. */

@@ -137,8 +137,10 @@ function normalizeFilmUrl(href) {
 
 function normalizeReviewUrl(href) {
   const url = createUrl(href);
+  // String.raw is required — in a plain template literal `\d` cooks to `d`
+  // and the regex would never match a real film path.
   const match = url?.pathname.match(
-    new RegExp(`^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i'),
+    new RegExp(String.raw`^/film/(\d+-[^/]+)(?:/(\d+-[^/]+))?/(${REVIEWS_SEGMENTS_PATTERN})/?$`, 'i'),
   );
   const reviewId = url?.searchParams.get('review') || '';
   if (!url || !match || !/^\d+$/.test(reviewId)) return null;
