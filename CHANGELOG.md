@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.9 - unreleased
+## 0.9.10 - unreleased
 
 ### Added
 
@@ -33,6 +33,8 @@
 - Načítání hodnocení špatně četlo celkový počet hodnocení z ČSFD (bralo první nadpis stránky), takže se smazaná hodnocení nesrovnala a plné načtení (Shift+klik) nikdy neskončilo dřív.
 - Changelog v „Informace o verzi“ a v oznámení o aktualizaci teď u nevydaných změn ukazuje aktuální verzi skriptu.
 - Náhledy se zobrazí i při zaplněném úložišti prohlížeče (nejstarší uložené náhledy se uvolní).
+- Náhled recenze s hodnocením „odpad!“ teď hodnocení ukazuje (dřív se nezobrazilo žádné).
+- Když se z ČSFD nepodaří přečíst celkový počet hodnocení, načítání na to upozorní místo tichého pokračování.
 
 ### Development
 

@@ -15,7 +15,7 @@ import {
   getCsfdUserProfileSubpathPattern,
   matchesCsfdTextVariant,
 } from './config.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, parseRatingFromStars } from './utils.js';
 
 const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
@@ -451,13 +451,13 @@ function getReviewExcerpt(text, maxLength = 320) {
 }
 
 function getReviewRatingValue(article) {
-  const starsClassName = article?.querySelector('.star-rating .stars')?.className || '';
-  const match = starsClassName.match(/\bstars-(\d)\b/);
-  return match ? Number.parseInt(match[1], 10) : null;
+  const rating = parseRatingFromStars(article?.querySelector('.star-rating .stars'));
+  return Number.isFinite(rating) ? rating : null;
 }
 
 function renderReviewRating(rating) {
   if (!Number.isInteger(rating) || rating < 0) return '';
+  if (rating === 0) return '<span class="cc-hover-preview-review-stars is-trash">odpad!</span>';
 
   const clampedRating = Math.max(0, Math.min(5, rating));
   return `

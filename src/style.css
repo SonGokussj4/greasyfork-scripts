@@ -3048,6 +3048,12 @@ h3.film-title-inline .cc-own-rating {
     color: #c6b5a3;
 }
 
+.cc-hover-preview-review-stars.is-trash {
+    color: #ba0305;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .cc-hover-preview-review-body {
     font-size: 12px;
     line-height: 1.45;
