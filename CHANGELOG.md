@@ -25,6 +25,7 @@
 - New UI fix: Odstraněno zobrazení hvězd hodnocení v panelu akcí filmu/seriálu vedle "Recenze"
 - New UI fix: Znovu zobrazení hodnocení filmu/seriálu z průměru oblíbených uživatelů
 - New UI fix: Odstraněno zobrazení hvězd hodnocení u série nad seznamem episod
+- Počet načtených hodnocení už nepřesahuje celkový počet na ČSFD (např. `2449 / 2448`). Načtení hodnocení teď označí jako smazaná ta, která už na ČSFD nejsou (smazaná na jiném zařízení), a odznak při přebytku ukáže varování.
 
 ### Development
 

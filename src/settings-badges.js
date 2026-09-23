@@ -184,6 +184,9 @@ export async function refreshRatingsBadges(rootElement, options) {
   if (directRatingsCount < totalRatings) {
     redBadge.classList.add('cc-badge-warning');
     redBadge.title = `Nenačtená hodnocení: ${totalRatings - directRatingsCount}. Klikněte na načtení.`;
+  } else if (directRatingsCount > totalRatings) {
+    redBadge.classList.add('cc-badge-warning');
+    redBadge.title = `Uloženo o ${directRatingsCount - totalRatings} víc, než je na ČSFD (hodnocení smazaná na ČSFD). Klikněte na načtení pro srovnání.`;
   }
   blackBadge.textContent = `${computedCount}`;
 }
