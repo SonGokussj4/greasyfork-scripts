@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.6 - unreleased
+## 0.9.7 - unreleased
 
 ### Added
 

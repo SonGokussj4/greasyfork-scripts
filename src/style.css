@@ -1234,22 +1234,23 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
     position: relative;
 }
 
+/* Small, muted dot in the gap between the kind icon and the text (flex gap is 10px). */
 .cc-version-markdown-kind-item.is-new .cc-version-markdown-kind-item-icon::after,
 .cc-version-markdown-list > li.is-new::after {
     content: '';
     position: absolute;
-    top: -3px;
-    left: -5px;
-    width: 7px;
-    height: 7px;
+    top: 50%;
+    left: 19px;
+    width: 4px;
+    height: 4px;
     border-radius: 50%;
-    background: #ba0305;
-    box-shadow: 0 0 0 2px #fff;
+    background: rgba(186, 3, 5, 0.6);
+    transform: translateY(-50%);
 }
 
 .cc-version-markdown-list > li.is-new::after {
-    top: 0.45em;
-    left: -18px;
+    top: 0.65em;
+    left: -8px;
 }
 
 .cc-version-markdown-kind-item-icon svg {
