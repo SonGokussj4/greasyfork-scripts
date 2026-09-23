@@ -17,6 +17,8 @@ Five risks found during the 0.9.1-0.9.4 work (September 2026), ordered by priori
 
 **Done when.** With only the public key and a known user slug, neither the token nor that user's `ratings_data` can be read or written.
 
+**Also.** The Supabase project was found paused (free-tier inactivity pause) on 2026-09-23 and had to be restored, so cloud sync silently failed for everyone while it was paused. Consider a keep-alive (e.g. a scheduled GitHub Action hitting the REST endpoint) or surfacing sync errors in the CC menu.
+
 ## 2. Everything depends on scraping ČSFD HTML, and breakage is silent
 
 **Why.** Ratings, totals, computed ratings and previews are all parsed from ČSFD markup. When ČSFD changes a page, parsers return `0`/empty and features quietly degrade. Proof: the loader read the ratings total from the first `<h2>` on the page, which is the notifications header, so `totalRatings` was always `0`. That disabled deleted-ratings reconciliation and the Shift+click early stop, unnoticed, until 0.9.4. The loader and the badge each had their own copy of that parser, and the two copies had diverged.
@@ -30,6 +32,8 @@ Five risks found during the 0.9.1-0.9.4 work (September 2026), ordered by priori
 **Done when.** Each parsed fact has exactly one parser, each parser has a real-page fixture test, and a markup change produces a visible warning rather than wrong numbers.
 
 ## 3. The ratings loader's modes are confusing
+
+**Status: done in 0.9.8.** One newest-first sweep; auto-stops when the count matches ČSFD; Stop = done (no resume); a sweep that reaches the last page resolves deletions; Shift+click sweeps to the end. Covered by `tests/ratingsSweep.test.cjs`.
 
 **Why.** In `src/ratings-loader.js` a normal click runs "incremental" mode, which actually reads every page with no delay and never stops early. Shift+click runs "full" mode, which adds random delays and stops early once local count >= ČSFD total. The names say the opposite of what they do. Only a normal click reconciles deletions (Shift+click can stop early). Paused state, resume and the computed-ratings loader add more branches. This is why the `2449 / 2448` bug was hard to see.
 

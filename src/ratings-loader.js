@@ -17,7 +17,6 @@ import {
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
 
-const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
 const ALL_RATINGS_FETCH_DELAY_MIN_MS = 50;
 const ALL_RATINGS_FETCH_DELAY_MAX_MS = 500;
 const COMPUTED_REQUEST_DELAY_MIN_MS = 250;
@@ -27,8 +26,7 @@ const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
 
 const loaderController = {
   isRunning: false,
-  pauseRequested: false,
-  pauseReason: 'manual',
+  stopRequested: false,
 };
 
 const computedLoaderController = {
@@ -55,15 +53,6 @@ function getAllRatingsFetchDelayMs() {
 /** Delay used between computed ratings fetches. */
 function getComputedRequestDelayMs() {
   return randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS);
-}
-
-/**
- * Incremental checks should stay snappy, while full reloads add jitter before each fetch.
- * @param {boolean} incremental
- * @returns {number}
- */
-function getRatingsFetchDelayMs(incremental) {
-  return incremental ? 0 : getAllRatingsFetchDelayMs();
 }
 
 function normalizeProfilePath(profileHref) {
@@ -188,7 +177,7 @@ export {
   createRecordFingerprint,
   hasRecordChanged,
   buildStorageRecordId,
-  getRatingsFetchDelayMs,
+  loadRatingsForCurrentUser,
 };
 
 function parseRating(starElement) {
@@ -355,17 +344,12 @@ function hasRecordChanged(existingRecord, nextRecord) {
   return createRecordFingerprint(existingRecord) !== createRecordFingerprint(nextRecord);
 }
 
-// expose early-stop predicate for testing
-export function evaluateShouldStopEarly({
-  incremental,
-  page,
-  totalRatings,
-  directRatingsCount,
-  consecutiveStablePages,
-}) {
-  return (
-    !incremental && page >= 2 && totalRatings > 0 && directRatingsCount >= totalRatings && consecutiveStablePages >= 1
-  );
+/**
+ * The sweep may stop once the local count matches ČSFD. With more local ratings than ČSFD
+ * reports it never matches, so the sweep runs to the last page and resolves deletions.
+ */
+export function isSweepInSync({ totalRatings, directRatingsCount }) {
+  return totalRatings > 0 && directRatingsCount === totalRatings;
 }
 
 function updateProgressUI(progress, state) {
@@ -395,19 +379,13 @@ function setLoadButtonMode(button, mode) {
   const labelEl = getButtonLabelElement(button);
   if (mode === 'running') {
     button.disabled = false;
-    labelEl.textContent = 'Pozastavit načítání';
+    labelEl.textContent = 'Zastavit načítání';
     return;
   }
 
-  if (mode === 'pausing') {
+  if (mode === 'stopping') {
     button.disabled = true;
-    labelEl.textContent = 'Pozastavuji…';
-    return;
-  }
-
-  if (mode === 'resume') {
-    button.disabled = false;
-    labelEl.textContent = 'Pokračovat v načítání';
+    labelEl.textContent = 'Zastavuji…';
     return;
   }
 
@@ -415,30 +393,8 @@ function setLoadButtonMode(button, mode) {
   labelEl.textContent = 'Načíst hodnocení';
 }
 
-function getPersistedLoaderState() {
-  try {
-    const raw = localStorage.getItem(LOADER_STATE_STORAGE_KEY);
-    if (!raw) {
-      return undefined;
-    }
-    const parsed = JSON.parse(raw);
-    return typeof parsed === 'object' && parsed ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function setPersistedLoaderState(state) {
-  localStorage.setItem(
-    LOADER_STATE_STORAGE_KEY,
-    JSON.stringify({
-      ...state,
-      updatedAt: new Date().toISOString(),
-    }),
-  );
-}
-
-function clearPersistedLoaderState() {
+// Ratings loads are no longer resumable; drop state left behind by older versions.
+function clearLegacyLoaderState() {
   localStorage.removeItem(LOADER_STATE_STORAGE_KEY);
 }
 
@@ -804,13 +760,13 @@ async function loadComputedParentRatingsForCurrentUser({
   };
 }
 
-async function loadRatingsForCurrentUser(
-  maxPages = DEFAULT_MAX_PAGES,
-  onProgress = () => {},
-  resumeState = undefined,
-  options = {},
-) {
-  const incremental = options.incremental !== false;
+/**
+ * One sweep over the user's ČSFD ratings, newest page first. Ends when:
+ * - 'in-sync': the local count matches ČSFD (unless `sweepToEnd`),
+ * - 'stopped': the user pressed Stop (everything loaded so far is kept),
+ * - 'completed': the last page was read; only then are ratings missing on ČSFD marked deleted.
+ */
+async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = false, shouldStop = () => false } = {}) {
   const profilePath = getCurrentProfilePath();
   if (!profilePath) {
     throw new Error('Profil uživatele nebyl nalezen.');
@@ -821,14 +777,9 @@ async function loadRatingsForCurrentUser(
     throw new Error('Nepodařilo se přečíst ID uživatele z profilu.');
   }
 
-  const fetchDelayMs = getRatingsFetchDelayMs(incremental);
-  const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
-  const firstDoc = await fetchRatingsPageDocument(firstPageUrl, {
-    delayMs: fetchDelayMs,
-  });
-
+  const firstDoc = await fetchRatingsPageDocument(buildRatingsPageUrl(profilePath, 1));
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
-  const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
+  const totalPages = Math.max(1, parseMaxPaginationPageFromDocument(firstDoc));
   const paginationMode = detectPaginationModeFromDocument(firstDoc);
 
   const allExistingRecords = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
@@ -841,101 +792,38 @@ async function loadRatingsForCurrentUser(
       ),
     );
   }
-  const userExistingRecords = reconciledRecords.normalizedRecords;
-  const existingRecordsById = new Map(userExistingRecords.map((record) => [record.id, record]));
-  let directRatingsCount = userExistingRecords.filter(
+  const existingRecordsById = new Map(reconciledRecords.normalizedRecords.map((record) => [record.id, record]));
+  let directRatingsCount = reconciledRecords.normalizedRecords.filter(
     (record) => record.computed !== true && record.deleted !== true,
   ).length;
 
-  const detectedTargetPages =
-    maxPages === 0 ? Math.max(1, maxDetectedPages) : Math.max(1, Math.min(maxPages, maxDetectedPages));
+  const seenMovieIds = new Set();
+  let loadedPages = 0;
+  let totalUpserted = 0;
+  let endReason = 'completed';
 
-  const startPage = Math.max(1, Number.parseInt(resumeState?.nextPage || '1', 10));
-  const targetPages = Math.max(startPage, Number.parseInt(resumeState?.targetPages || detectedTargetPages, 10));
-  let totalParsed = Number.parseInt(resumeState?.totalParsed || '0', 10);
-  let loadedPages = Number.parseInt(resumeState?.loadedPages || '0', 10);
-  let totalUpserted = Number.parseInt(resumeState?.totalUpserted || '0', 10);
-  let consecutiveStablePages = Number.parseInt(resumeState?.consecutiveStablePages || '0', 10);
-  // Movie ids listed on ČSFD during this scan; carried across pause/resume so a
-  // resumed scan can still detect ratings removed on ČSFD.
-  const seenMovieIds = new Set(
-    startPage > 1 && Array.isArray(resumeState?.seenMovieIds) ? resumeState.seenMovieIds : [],
-  );
-  let stoppedEarly = false;
-
-  setPersistedLoaderState({
-    status: 'running',
-    userSlug,
-    profilePath,
-    maxPages,
-    totalRatings,
-    maxDetectedPages,
-    paginationMode,
-    targetPages,
-    nextPage: startPage,
-    loadedPages,
-    totalParsed,
-    totalUpserted,
-    directRatingsCount,
-    consecutiveStablePages,
-    incremental,
-  });
-
-  for (let page = startPage; page <= targetPages; page++) {
-    if (loaderController.pauseRequested) {
-      setPersistedLoaderState({
-        status: 'paused',
-        pauseReason: loaderController.pauseReason || 'manual',
-        userSlug,
-        profilePath,
-        maxPages,
-        totalRatings,
-        maxDetectedPages,
-        paginationMode,
-        targetPages,
-        nextPage: page,
-        loadedPages,
-        totalParsed,
-        totalUpserted,
-        directRatingsCount,
-        consecutiveStablePages,
-        incremental,
-        seenMovieIds: [...seenMovieIds],
-      });
-
-      return {
-        userSlug,
-        totalPagesLoaded: loadedPages,
-        totalPagesDetected: maxDetectedPages,
-        totalParsed,
-        totalRatings,
-        storeName: getStoreNameForUser(),
-        paused: true,
-        nextPage: page,
-        targetPages,
-      };
+  for (let page = 1; page <= totalPages; page++) {
+    if (page > 1 && shouldStop()) {
+      endReason = 'stopped';
+      break;
     }
 
     const doc =
       page === 1
         ? firstDoc
         : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
-            delayMs: fetchDelayMs,
+            delayMs: getAllRatingsFetchDelayMs(),
           });
     const pageRatings = parseRatingsFromDocument(doc, location.origin);
-
     if (page > 1 && pageRatings.length === 0) {
       break;
     }
 
-    const storageRecords = pageRatings.map((record) => toStorageRecord(record, userSlug));
     const changedRecords = [];
-
-    for (const record of storageRecords) {
+    for (const record of pageRatings.map((rating) => toStorageRecord(rating, userSlug))) {
       seenMovieIds.add(record.movieId);
       const existing = existingRecordsById.get(record.id);
-      const recordChanged = hasRecordChanged(existing, record);
-      if (!recordChanged) {
+      if (!hasRecordChanged(existing, record)) {
         continue;
       }
 
@@ -947,65 +835,22 @@ async function loadRatingsForCurrentUser(
     if (changedRecords.length > 0) {
       await saveToIndexedDB(INDEXED_DB_NAME, getStoreNameForUser(), changedRecords);
       totalUpserted += changedRecords.length;
-      consecutiveStablePages = 0;
-    } else {
-      consecutiveStablePages += 1;
     }
-
-    totalParsed += pageRatings.length;
     loadedPages += 1;
 
-    setPersistedLoaderState({
-      status: 'running',
-      userSlug,
-      profilePath,
-      maxPages,
-      totalRatings,
-      maxDetectedPages,
-      paginationMode,
-      targetPages,
-      nextPage: page + 1,
-      loadedPages,
-      totalParsed,
-      totalUpserted,
-      directRatingsCount,
-      consecutiveStablePages,
-      incremental,
-      seenMovieIds: [...seenMovieIds],
-    });
+    onProgress({ page, totalPages, totalUpserted, directRatingsCount, totalRatings });
 
-    onProgress({
-      page,
-      totalPages: targetPages,
-      totalParsed,
-      totalRatings,
-      changedOnPage: changedRecords.length,
-      totalUpserted,
-      directRatingsCount,
-      incremental,
-    });
-
-    // previously we stopped early during incremental runs once the count
-    // reached totalRatings and we saw a stable page.  this was efficient when
-    // we only cared about new entries, but it meant that metadata-only changes
-    // (like adding a seriesToken) on later pages would never be detected.  by
-    // requiring non-incremental mode we ensure full scans when the user explicitly
-    // requests updates, while still allowing non-incremental callers to abort.
-    const shouldStopEarly =
-      !incremental &&
-      page >= 2 &&
-      totalRatings > 0 &&
-      directRatingsCount >= totalRatings &&
-      consecutiveStablePages >= 1;
-
-    if (shouldStopEarly) {
-      stoppedEarly = true;
+    if (!sweepToEnd && isSweepInSync({ totalRatings, directRatingsCount })) {
+      endReason = 'in-sync';
       break;
     }
   }
 
   let totalMarkedDeleted = 0;
-  if (canReconcileDeletions({ completed: !stoppedEarly && maxPages === 0, totalRatings, seenCount: seenMovieIds.size })) {
+  if (
+    endReason === 'completed' &&
+    canReconcileDeletions({ completed: true, totalRatings, seenCount: seenMovieIds.size })
+  ) {
     const nowIso = new Date().toISOString();
     const deletedRecords = findStaleRatingRecords([...existingRecordsById.values()], seenMovieIds).map((record) =>
       toDeletedRatingRecord(record, nowIso),
@@ -1017,22 +862,20 @@ async function loadRatingsForCurrentUser(
     }
   }
 
-  return {
-    userSlug,
-    totalPagesLoaded: loadedPages,
-    totalPagesDetected: maxDetectedPages,
-    totalParsed,
-    totalUpserted,
-    totalMarkedDeleted,
-    totalRatings,
-    directRatingsCount,
-    storeName: getStoreNameForUser(),
-    paused: false,
-    nextPage: stoppedEarly ? loadedPages + 1 : targetPages + 1,
-    targetPages,
-    stoppedEarly,
-    incremental,
-  };
+  return { endReason, loadedPages, totalPages, totalUpserted, totalMarkedDeleted, totalRatings, directRatingsCount };
+}
+
+function describeSweepResult(result) {
+  const changes = `${result.totalUpserted} nových/změněných`;
+  const pages = `${result.loadedPages}/${result.totalPages} str.`;
+  if (result.endReason === 'in-sync') {
+    return `Vše synchronizováno: ${changes} (${pages})`;
+  }
+  if (result.endReason === 'stopped') {
+    return `Zastaveno: ${changes} uloženo (${pages})`;
+  }
+  const deleted = result.totalMarkedDeleted > 0 ? `, ${result.totalMarkedDeleted} smazaných na ČSFD` : '';
+  return `Hotovo: ${changes}${deleted} (${pages})`;
 }
 
 export function initializeRatingsLoader(rootElement) {
@@ -1096,102 +939,46 @@ export function initializeRatingsLoader(rootElement) {
     labelEl.textContent = 'Načíst spočtené';
   };
 
-  const runLoad = async ({ resumeState = undefined, autoResume = false } = {}) => {
+  const runLoad = async ({ sweepToEnd = false } = {}) => {
     if (loaderController.isRunning || computedLoaderController.isRunning) {
       return;
     }
 
     try {
       loaderController.isRunning = true;
-      loaderController.pauseRequested = false;
+      loaderController.stopRequested = false;
       setLoadButtonMode(loadButton, 'running');
-
-      const startPage = Math.max(1, Number.parseInt(resumeState?.nextPage || '1', 10));
-      updateProgressUI(progress, {
-        label: autoResume ? `Pokračuji od stránky ${startPage}…` : 'Připravuji načítání…',
-        current: Math.max(0, startPage - 1),
-        total: Math.max(1, Number.parseInt(resumeState?.targetPages || '1', 10)),
-      });
+      updateProgressUI(progress, { label: 'Načítám nejnovější hodnocení…', current: 0, total: 1 });
 
       const result = await loadRatingsForCurrentUser(
-        resumeState?.maxPages ?? DEFAULT_MAX_PAGES,
-        ({
-          page,
-          totalPages,
-          totalParsed,
-          changedOnPage = 0,
-          totalUpserted = 0,
-          incremental: isIncremental = true,
-        }) => {
+        ({ page, totalPages, totalUpserted, directRatingsCount, totalRatings }) => {
           updateProgressUI(progress, {
-            label: isIncremental
-              ? `Kontroluji stránku ${page}/${totalPages}… (${changedOnPage} změn, celkem ${totalUpserted})`
-              : `Načítám stránku ${page}/${totalPages}… (${totalParsed} položek)`,
+            label: `Stránka ${page}/${totalPages}: ${totalUpserted} nových/změněných · načteno ${directRatingsCount} / ${totalRatings}`,
             current: page,
             total: totalPages,
           });
-
-          if (loaderController.pauseRequested) {
-            setLoadButtonMode(loadButton, 'pausing');
-          }
         },
-        resumeState,
-        {
-          incremental: resumeState?.incremental !== false,
-        },
+        { sweepToEnd, shouldStop: () => loaderController.stopRequested },
       );
 
-      if (result.paused) {
-        updateProgressUI(progress, {
-          label: `Pozastaveno na stránce ${result.nextPage}/${result.targetPages}`,
-          current: Math.max(0, result.nextPage - 1),
-          total: result.targetPages || 1,
-        });
-        setCancelPausedButtonVisible(true, 'ratings');
-      } else {
-        clearPersistedLoaderState();
-        updateProgressUI(progress, {
-          label:
-            (result.incremental
-              ? `Hotovo: ${result.totalUpserted} nových/změněných (${result.totalPagesLoaded} str.)`
-              : `Hotovo: ${result.totalParsed} hodnocení zpracováno (${result.totalPagesLoaded} str.)`) +
-            (result.totalMarkedDeleted > 0 ? `, ${result.totalMarkedDeleted} smazaných na ČSFD` : ''),
-          current: result.totalPagesLoaded,
-          total: result.totalPagesLoaded || 1,
-        });
-        setCancelPausedButtonVisible(false, 'ratings');
-      }
-
+      updateProgressUI(progress, {
+        label: describeSweepResult(result),
+        current: result.loadedPages,
+        total: result.totalPages,
+      });
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     } catch (error) {
-      setPersistedLoaderState({
-        ...(getPersistedLoaderState() || {}),
-        status: 'paused',
-        pauseReason: 'interrupted',
-      });
       updateProgressUI(progress, {
         label: `Chyba: ${error.message}`,
         current: 0,
         total: 1,
       });
       console.error('[CC] Ratings loader failed:', error);
+      window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     } finally {
       loaderController.isRunning = false;
-      loaderController.pauseRequested = false;
-      loaderController.pauseReason = 'manual';
-
-      const currentUserSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
-      const stateAfterRun = getPersistedLoaderState();
-      if (stateAfterRun?.status === 'paused' && isStateForCurrentUser(stateAfterRun, currentUserSlug)) {
-        setLoadButtonMode(loadButton, 'resume');
-        setCancelPausedButtonVisible(true, 'ratings');
-      } else {
-        setLoadButtonMode(loadButton, 'idle');
-        const computedState = getPersistedComputedLoaderState();
-        const hasComputedPause =
-          computedState?.status === 'paused' && isStateForCurrentUser(computedState, currentUserSlug);
-        setCancelPausedButtonVisible(hasComputedPause, hasComputedPause ? 'computed' : 'ratings');
-      }
+      loaderController.stopRequested = false;
+      setLoadButtonMode(loadButton, 'idle');
     }
   };
 
@@ -1283,13 +1070,8 @@ export function initializeRatingsLoader(rootElement) {
       }
 
       const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
-      const ratingsState = getPersistedLoaderState();
       const computedState = getPersistedComputedLoaderState();
-
-      const hasRatingsPause = ratingsState?.status === 'paused' && isStateForCurrentUser(ratingsState, userSlug);
-      const hasComputedPause = computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug);
-
-      if (hasComputedPause && !hasRatingsPause) {
+      if (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug)) {
         const pausedCurrent = Math.max(
           0,
           Number.parseInt(computedState?.processed || `${computedState?.nextIndex || 0}`, 10),
@@ -1302,19 +1084,6 @@ export function initializeRatingsLoader(rootElement) {
           current: pausedCurrent,
           total: pausedTotal,
         });
-      } else {
-        const pausedCurrent = Math.max(
-          0,
-          Number.parseInt(ratingsState?.loadedPages || `${Math.max(0, (ratingsState?.nextPage || 1) - 1)}`, 10),
-        );
-        const pausedTotal = Math.max(1, Number.parseInt(ratingsState?.targetPages || '1', 10));
-        clearPersistedLoaderState();
-        setLoadButtonMode(loadButton, 'idle');
-        updateProgressUI(progress, {
-          label: 'Pozastavené načítání bylo zrušeno',
-          current: pausedCurrent,
-          total: pausedTotal,
-        });
       }
 
       setCancelPausedButtonVisible(false);
@@ -1322,7 +1091,8 @@ export function initializeRatingsLoader(rootElement) {
     });
   }
 
-  loadButton.title = 'Klik: rychlé doplnění chybějících/změněných, Shift+klik: plné načtení';
+  loadButton.title =
+    'Načte hodnocení od nejnovějších a samo skončí, když počet sedí s ČSFD. Kdykoli lze zastavit. Shift+klik: projde všechny stránky.';
 
   loadButton.addEventListener('click', async (event) => {
     if (computedLoaderController.isRunning) {
@@ -1330,28 +1100,12 @@ export function initializeRatingsLoader(rootElement) {
     }
 
     if (loaderController.isRunning) {
-      loaderController.pauseRequested = true;
-      loaderController.pauseReason = 'manual';
-      setLoadButtonMode(loadButton, 'pausing');
+      loaderController.stopRequested = true;
+      setLoadButtonMode(loadButton, 'stopping');
       return;
     }
 
-    const state = getPersistedLoaderState();
-    const forceFullLoad = event.shiftKey === true;
-    const resumeState = state?.status === 'paused' ? state : undefined;
-
-    if (forceFullLoad && resumeState) {
-      resumeState.incremental = false;
-    }
-
-    await runLoad({
-      resumeState: resumeState
-        ? resumeState
-        : {
-            incremental: !forceFullLoad,
-          },
-      autoResume: false,
-    });
+    await runLoad({ sweepToEnd: event.shiftKey === true });
   });
 
   if (computedButton.dataset.ccComputedBound !== 'true') {
@@ -1376,37 +1130,12 @@ export function initializeRatingsLoader(rootElement) {
     });
   }
 
+  clearLegacyLoaderState();
   const userSlug = extractUserSlugFromProfilePath(getCurrentProfilePath());
-  const state = getPersistedLoaderState();
   const computedState = getPersistedComputedLoaderState();
-  let cancelMode = 'ratings';
-
-  if (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) {
-    setLoadButtonMode(loadButton, 'resume');
-    cancelMode = 'ratings';
-
-    if (state.pauseReason === 'manual') {
-      updateProgressUI(progress, {
-        label: `Pozastaveno ručně na stránce ${state.nextPage}/${state.targetPages || '?'}`,
-        current: Math.max(0, (state.nextPage || 1) - 1),
-        total: state.targetPages || 1,
-      });
-    } else {
-      updateProgressUI(progress, {
-        label: `Nalezeno nedokončené načítání (str. ${state.nextPage}/${state.targetPages || '?'}) — automaticky pokračuji…`,
-        current: Math.max(0, (state.nextPage || 1) - 1),
-        total: state.targetPages || 1,
-      });
-
-      setTimeout(() => {
-        runLoad({ resumeState: state, autoResume: true });
-      }, 500);
-    }
-  }
 
   if (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug)) {
     setComputedButtonMode('resume');
-    cancelMode = 'computed';
 
     if (computedState.pauseReason === 'manual') {
       updateProgressUI(progress, {
@@ -1427,8 +1156,6 @@ export function initializeRatingsLoader(rootElement) {
     }
   }
 
-  const hasAnyPaused =
-    (state?.status === 'paused' && isStateForCurrentUser(state, userSlug)) ||
-    (computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug));
-  setCancelPausedButtonVisible(hasAnyPaused, cancelMode);
+  const hasComputedPause = computedState?.status === 'paused' && isStateForCurrentUser(computedState, userSlug);
+  setCancelPausedButtonVisible(hasComputedPause, 'computed');
 }
