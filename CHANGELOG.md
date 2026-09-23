@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.1 - unreleased
+## 0.9.5 - unreleased
 
 ### Added
 
@@ -29,6 +29,7 @@
 - New UI fix: Odstraněno zobrazení hvězd hodnocení u série nad seznamem episod
 - Počet načtených hodnocení už nepřesahuje celkový počet na ČSFD (např. `2449 / 2448`). Načtení hodnocení teď označí jako smazaná ta, která už na ČSFD nejsou (smazaná na jiném zařízení), a odznak při přebytku ukáže varování.
 - Načítání hodnocení špatně četlo celkový počet hodnocení z ČSFD (bralo první nadpis stránky), takže se smazaná hodnocení nesrovnala a plné načtení (Shift+klik) nikdy neskončilo dřív.
+- Changelog v „Informace o verzi“ a v oznámení o aktualizaci teď u nevydaných změn ukazuje aktuální verzi skriptu.
 
 ### Development
 

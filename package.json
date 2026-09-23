@@ -1,17 +1,17 @@
 {
   "type": "module",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "scripts": {
     "generate-build-meta": "node scripts/generate-build-meta.mjs",
-    "prebuild": "npm run generate-build-meta",
-    "prewatch": "npm run generate-build-meta",
-    "predev": "npm run generate-build-meta",
+    "prebuild": "npm run sync-version && npm run generate-build-meta",
+    "prewatch": "npm run sync-version && npm run generate-build-meta",
+    "predev": "npm run sync-version && npm run generate-build-meta",
     "sync-version": "node scripts/sync-version.mjs",
-    "build": "npm run sync-version && rollup -c",
+    "build": "rollup -c",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand",
     "test:hover-preview": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/hoverPreviewProviders.test.cjs --runInBand",
-    "watch": "npm run sync-version && rollup -c -w",
-    "dev": "npm run sync-version && rollup -c -w"
+    "watch": "rollup -c -w",
+    "dev": "rollup -c -w"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",

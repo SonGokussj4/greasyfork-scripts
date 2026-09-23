@@ -16,7 +16,7 @@ To run a single test file directly:
 node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/inlineRatings.test.cjs --runInBand
 ```
 
-The `prebuild`/`predev`/`prewatch` hooks auto-run `generate-build-meta.mjs` before Rollup. The `sync-version` step keeps `src/config.js` and `src/settings-button-content.html` in sync with the version in `package.json` — bumping the version in `package.json` is the single source of truth.
+The `prebuild`/`predev`/`prewatch` hooks run `sync-version` then `generate-build-meta.mjs` (which embeds `CHANGELOG.md` into the bundle) before Rollup. `sync-version` keeps `src/config.js`, `src/settings-button-content.html` and the `## x.y.z - unreleased` heading in `CHANGELOG.md` in sync with the version in `package.json` — bumping the version in `package.json` is the single source of truth.
 
 **Never hand-edit `dist/csfd-compare.user.js`** — it is fully generated.
 
