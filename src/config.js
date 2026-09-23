@@ -1,7 +1,7 @@
 /*
  * Config and constants for CSFD-Compare
  */
-export const VERSION = '0.9.1';
+export const VERSION = '0.9.2';
 export const SCRIPTNAME = 'CSFD-Compare';
 export const SETTINGSNAME = 'CSFD-Compare-settings';
 export const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
@@ -35,6 +35,7 @@ export const HOVER_PREVIEW_FILM_ENABLED_KEY = 'cc_hover_preview_film_enabled';
 export const HOVER_PREVIEW_EXTERNAL_ENABLED_KEY = 'cc_hover_preview_external_enabled';
 export const HOVER_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_hover_preview_section_collapsed';
 export const HOVER_PREVIEW_SETTINGS_CHANGED_EVENT = 'cc-hover-preview-settings-changed';
+export const HOVER_PREVIEW_PIN_HINT_SEEN_KEY = 'cc_hover_preview_pin_hint_seen';
 export const SELF_REPLY_IN_DISCUSSIONS_KEY = 'cc_self_reply_discussions';
 
 // Review draft autosave — persistently saves a half-written film review so it

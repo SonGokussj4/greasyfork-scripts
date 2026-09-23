@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "scripts": {
     "generate-build-meta": "node scripts/generate-build-meta.mjs",
     "prebuild": "npm run generate-build-meta",
