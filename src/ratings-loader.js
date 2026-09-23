@@ -7,7 +7,13 @@ import {
   getCsfdPathSegmentPattern,
   normalizeCsfdShowType,
 } from './config.js';
-import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
+import {
+  buildRatingRecordId,
+  canReconcileDeletions,
+  findStaleRatingRecords,
+  reconcileUserRatingRecords,
+  toDeletedRatingRecord,
+} from './ratings-records.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
 
@@ -333,6 +339,10 @@ function createRecordFingerprint(record) {
     record?.computedFromText || '',
     token,
   ].join('|');
+}
+
+function countsAsDirect(record) {
+  return record && record.computed !== true && record.deleted !== true ? 1 : 0;
 }
 
 function hasRecordChanged(existingRecord, nextRecord) {
@@ -831,7 +841,9 @@ async function loadRatingsForCurrentUser(
   }
   const userExistingRecords = reconciledRecords.normalizedRecords;
   const existingRecordsById = new Map(userExistingRecords.map((record) => [record.id, record]));
-  let directRatingsCount = userExistingRecords.filter((record) => record.computed !== true).length;
+  let directRatingsCount = userExistingRecords.filter(
+    (record) => record.computed !== true && record.deleted !== true,
+  ).length;
 
   const detectedTargetPages =
     maxPages === 0 ? Math.max(1, maxDetectedPages) : Math.max(1, Math.min(maxPages, maxDetectedPages));
@@ -842,6 +854,11 @@ async function loadRatingsForCurrentUser(
   let loadedPages = Number.parseInt(resumeState?.loadedPages || '0', 10);
   let totalUpserted = Number.parseInt(resumeState?.totalUpserted || '0', 10);
   let consecutiveStablePages = Number.parseInt(resumeState?.consecutiveStablePages || '0', 10);
+  // Movie ids listed on ČSFD during this scan; carried across pause/resume so a
+  // resumed scan can still detect ratings removed on ČSFD.
+  const seenMovieIds = new Set(
+    startPage > 1 && Array.isArray(resumeState?.seenMovieIds) ? resumeState.seenMovieIds : [],
+  );
   let stoppedEarly = false;
 
   setPersistedLoaderState({
@@ -881,6 +898,7 @@ async function loadRatingsForCurrentUser(
         directRatingsCount,
         consecutiveStablePages,
         incremental,
+        seenMovieIds: [...seenMovieIds],
       });
 
       return {
@@ -912,6 +930,7 @@ async function loadRatingsForCurrentUser(
     const changedRecords = [];
 
     for (const record of storageRecords) {
+      seenMovieIds.add(record.movieId);
       const existing = existingRecordsById.get(record.id);
       const recordChanged = hasRecordChanged(existing, record);
       if (!recordChanged) {
@@ -919,19 +938,7 @@ async function loadRatingsForCurrentUser(
       }
 
       changedRecords.push(record);
-
-      if (!existing && record.computed !== true) {
-        directRatingsCount += 1;
-      } else if (existing) {
-        const existingIsDirect = existing.computed !== true;
-        const nextIsDirect = record.computed !== true;
-        if (existingIsDirect && !nextIsDirect) {
-          directRatingsCount = Math.max(0, directRatingsCount - 1);
-        } else if (!existingIsDirect && nextIsDirect) {
-          directRatingsCount += 1;
-        }
-      }
-
+      directRatingsCount = Math.max(0, directRatingsCount + countsAsDirect(record) - countsAsDirect(existing));
       existingRecordsById.set(record.id, record);
     }
 
@@ -962,6 +969,7 @@ async function loadRatingsForCurrentUser(
       directRatingsCount,
       consecutiveStablePages,
       incremental,
+      seenMovieIds: [...seenMovieIds],
     });
 
     onProgress({
@@ -994,12 +1002,26 @@ async function loadRatingsForCurrentUser(
     }
   }
 
+  let totalMarkedDeleted = 0;
+  if (canReconcileDeletions({ completed: !stoppedEarly && maxPages === 0, totalRatings, seenCount: seenMovieIds.size })) {
+    const nowIso = new Date().toISOString();
+    const deletedRecords = findStaleRatingRecords([...existingRecordsById.values()], seenMovieIds).map((record) =>
+      toDeletedRatingRecord(record, nowIso),
+    );
+    if (deletedRecords.length > 0) {
+      await saveToIndexedDB(INDEXED_DB_NAME, getStoreNameForUser(), deletedRecords);
+      totalMarkedDeleted = deletedRecords.length;
+      directRatingsCount = Math.max(0, directRatingsCount - totalMarkedDeleted);
+    }
+  }
+
   return {
     userSlug,
     totalPagesLoaded: loadedPages,
     totalPagesDetected: maxDetectedPages,
     totalParsed,
     totalUpserted,
+    totalMarkedDeleted,
     totalRatings,
     directRatingsCount,
     storeName: getStoreNameForUser(),
@@ -1127,9 +1149,11 @@ export function initializeRatingsLoader(rootElement) {
       } else {
         clearPersistedLoaderState();
         updateProgressUI(progress, {
-          label: result.incremental
-            ? `Hotovo: ${result.totalUpserted} nových/změněných (${result.totalPagesLoaded} str.)`
-            : `Hotovo: ${result.totalParsed} hodnocení zpracováno (${result.totalPagesLoaded} str.)`,
+          label:
+            (result.incremental
+              ? `Hotovo: ${result.totalUpserted} nových/změněných (${result.totalPagesLoaded} str.)`
+              : `Hotovo: ${result.totalParsed} hodnocení zpracováno (${result.totalPagesLoaded} str.)`) +
+            (result.totalMarkedDeleted > 0 ? `, ${result.totalMarkedDeleted} smazaných na ČSFD` : ''),
           current: result.totalPagesLoaded,
           total: result.totalPagesLoaded || 1,
         });

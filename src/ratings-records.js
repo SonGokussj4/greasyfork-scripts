@@ -73,3 +73,30 @@ export function reconcileUserRatingRecords(records, userSlug) {
     hasChanges: staleRecordIds.length > 0,
   };
 }
+
+/**
+ * Direct (non-computed, not yet deleted) records that a complete scan of the
+ * user's ČSFD ratings list did not see — i.e. ratings removed on ČSFD since
+ * they were stored locally.
+ */
+export function findStaleRatingRecords(records, seenMovieIds) {
+  return (Array.isArray(records) ? records : []).filter(
+    (record) =>
+      record?.deleted !== true &&
+      record?.computed !== true &&
+      Number.isFinite(record?.movieId) &&
+      !seenMovieIds.has(record.movieId),
+  );
+}
+
+/**
+ * Only trust a scan for deletions when it walked every page and saw at least as
+ * many ratings as ČSFD reports; a partial or misparsed scan must never delete.
+ */
+export function canReconcileDeletions({ completed, totalRatings, seenCount }) {
+  return completed === true && totalRatings > 0 && seenCount >= totalRatings;
+}
+
+export function toDeletedRatingRecord(record, nowIso = new Date().toISOString()) {
+  return { ...record, rating: null, deleted: true, lastUpdate: nowIso };
+}
