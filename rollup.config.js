@@ -115,6 +115,32 @@ function runSyncVersionOnChange() {
   };
 }
 
+function runBuildMetaGeneratorOnChange() {
+  const changelogPath = fileURLToPath(new URL('./CHANGELOG.md', import.meta.url));
+  const generatorPath = fileURLToPath(new URL('./scripts/generate-build-meta.mjs', import.meta.url));
+
+  function runGenerator() {
+    execSync('node scripts/generate-build-meta.mjs', { stdio: 'inherit' });
+  }
+
+  return {
+    name: 'run-build-meta-generator-on-change',
+    buildStart() {
+      this.addWatchFile(changelogPath);
+      this.addWatchFile(generatorPath);
+    },
+    watchChange(id) {
+      try {
+        if (id === changelogPath || id === generatorPath) {
+          runGenerator();
+        }
+      } catch (err) {
+        console.error('Failed to run generate-build-meta.mjs during watch rebuild', err);
+      }
+    },
+  };
+}
+
 // Rollup configuration
 export default {
   input: 'src/main.js',
@@ -126,7 +152,7 @@ export default {
     banner: () => `${buildUserscriptBanner()}\n`,
   },
   watch: {
-    include: ['src/**', 'package.json', 'rollup.config.js'],
+    include: ['src/**', 'CHANGELOG.md', 'package.json', 'rollup.config.js'],
   },
   plugins: [
     // css({
@@ -157,5 +183,7 @@ export default {
     }),
     // Ensure package.json changes trigger the sync-version script during watch
     runSyncVersionOnChange(),
+    // Regenerate bundled changelog metadata when the changelog changes during watch.
+    runBuildMetaGeneratorOnChange(),
   ],
 };

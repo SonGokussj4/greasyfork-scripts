@@ -1,52 +1,7 @@
+import { PROFILE_LINK_SELECTOR, USER_SLUG_REGEX } from './config.js';
+
 export function roundTo(number, decimals) {
   return Math.floor(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
-}
-
-export function profileFunction(fn, name, profilingData) {
-  return function (...args) {
-    const start = performance.now();
-    const result = fn.apply(this, args);
-    const end = performance.now();
-    if (!profilingData[name]) {
-      profilingData[name] = { type: 'function', calledNumber: 0, completeTime_ms: 0 };
-    }
-    profilingData[name].calledNumber++;
-    profilingData[name].completeTime_ms += end - start;
-    profilingData[name].averagePerCall_ms = profilingData[name].completeTime_ms / profilingData[name].calledNumber;
-    return result;
-  };
-}
-
-export function profileAsyncFunction(fn, name, profilingData) {
-  return async function (...args) {
-    const start = performance.now();
-    const result = await fn.apply(this, args);
-    const end = performance.now();
-    if (!profilingData[name]) {
-      profilingData[name] = { type: 'async function', calledNumber: 0, completeTime_ms: 0 };
-    }
-    profilingData[name].calledNumber++;
-    profilingData[name].completeTime_ms += end - start;
-    profilingData[name].averagePerCall_ms = profilingData[name].completeTime_ms / profilingData[name].calledNumber;
-    return result;
-  };
-}
-
-export function profileMethod(obj, methodName, profilingData) {
-  const originalMethod = obj[methodName];
-  obj[methodName] = function (...args) {
-    const start = performance.now();
-    const result = originalMethod.apply(this, args);
-    const end = performance.now();
-    if (!profilingData[methodName]) {
-      profilingData[methodName] = { type: 'method', calledNumber: 0, completeTime_ms: 0 };
-    }
-    profilingData[methodName].calledNumber++;
-    profilingData[methodName].completeTime_ms += end - start;
-    profilingData[methodName].averagePerCall_ms =
-      profilingData[methodName].completeTime_ms / profilingData[methodName].calledNumber;
-    return result;
-  };
 }
 
 export function delay(t) {
@@ -61,11 +16,30 @@ export const escapeHtml = (str) =>
   );
 
 /**
- * Checks if the current user is logged into ČSFD.
- * @returns {boolean}
+ * Extract user slug (e.g. "12345-username") from a ČSFD user path or href.
+ * @param {string} href - path like "/uzivatel/12345-username/hodnoceni/"
+ * @returns {string|undefined}
  */
-export function isUserLoggedIn() {
-  return document.querySelector('.user-logged') !== null;
+export function extractUserSlug(href) {
+  return String(href || '').match(USER_SLUG_REGEX)?.[1];
+}
+
+/** Returns the profile link element for the logged-in user, or null. */
+export function getProfileLinkElement() {
+  return document.querySelector(PROFILE_LINK_SELECTOR);
+}
+
+/**
+ * Parse a star-rating value from a ČSFD `.stars` element.
+ * @param {Element|null} starsEl - element with class like "stars stars-4" or "stars trash"
+ * @returns {number} 0-5 rating, or NaN if unparseable
+ */
+export function parseRatingFromStars(starsEl) {
+  if (!starsEl) return NaN;
+  const cls = starsEl.className || '';
+  if (cls.includes('trash')) return 0;
+  const m = cls.match(/stars-(\d)/);
+  return m ? parseInt(m[1], 10) : NaN;
 }
 
 /**
@@ -81,11 +55,11 @@ export function getFeatureState(key, defaultValue = true) {
 }
 
 /**
- * Pure utility function for parsing IDs.
- * @param {string} url - The URL to extract the movie ID from.
+ * Extract the movie/film ID from a ČSFD URL path.
+ * @param {string} url - The URL or path to extract the movie ID from.
  * @returns {number} The extracted movie ID, or NaN if it cannot be parsed.
  */
-export async function getMovieIdFromUrl(url) {
+export function getMovieIdFromUrl(url) {
   if (!url) return NaN;
   // OPTIMIZATION: matchAll is slower. A simple regex match with global flag is faster.
   const matches = url.match(/\/(\d+)-/g);

@@ -13,6 +13,7 @@ import {
   LINK_ICONS_UPDATED_EVENT,
   RATINGS_ESTIMATE_KEY,
   RATINGS_FROM_FAVORITES_KEY,
+  REVERT_STAR_STYLE_KEY,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
   SHOW_ALL_CREATOR_TABS_KEY,
   SHOW_RATINGS_IN_DIARIES_KEY,
@@ -237,6 +238,20 @@ export const MENU_CONFIG = [
         infoIcon: {
           url: 'https://i.imgur.com/B5evwT4.png',
           text: 'Zobrazí datum, kdy jste film hodnotili.\n\n👉 Klikni pro ukázku',
+        },
+      },
+      {
+        type: 'toggle',
+        id: 'cc-revert-star-style',
+        storageKey: REVERT_STAR_STYLE_KEY,
+        defaultValue: true,
+        requiresLogin: false,
+        label: 'Vrátit styl hvězd v hodnocení',
+        tooltip: '',
+        eventName: 'cc-revert-star-style-toggled',
+        infoIcon: {
+          url: '',
+          text: 'Zobrazení hvězdiček v hodnocení bez šedého pozadí.\n\n👉 Klikni pro ukázku',
         },
       },
       {

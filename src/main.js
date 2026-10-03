@@ -39,6 +39,14 @@ import { initializeHoverPreviews } from './hover-preview.js';
     }
   });
 
+  window.addEventListener('cc-revert-star-style-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.revertStarStyle();
+    } else {
+      csfd.restoreStarStyle();
+    }
+  });
+
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();

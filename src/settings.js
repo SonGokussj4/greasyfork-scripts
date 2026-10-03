@@ -34,36 +34,25 @@ import { refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
 import { initializeSettingsMenuHover } from './settings-hover.js';
 import { buildStructuredDetailItems, createDetailsModalController } from './ui-utils.js';
-import { escapeHtml } from './utils.js';
+import { escapeHtml, extractUserSlug, getFeatureState, getProfileLinkElement } from './utils.js';
 import MENU_CONFIG from './settings-config.js';
 
 let infoToastTimeoutId;
-const PROFILE_LINK_SELECTOR =
-  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 const MANAGED_LOCAL_STORAGE_PREFIXES = ['cc_', 'CSFD-Compare'];
 
 // ==========================================
 // UTILITY FUNCTIONS
 // ==========================================
 
-function getBoolSetting(key, defaultValue = true) {
-  const value = localStorage.getItem(key);
-  return value === null ? defaultValue : value === 'true';
-}
-
-function getProfileLinkElement() {
-  return document.querySelector(PROFILE_LINK_SELECTOR);
-}
+/** Alias for getFeatureState — reads a boolean from localStorage. */
+const getBoolSetting = getFeatureState;
 
 function isUserLoggedIn() {
   return Boolean(getProfileLinkElement());
 }
 
 function getCurrentUserSlug() {
-  const match = getProfileLinkElement()
-    ?.getAttribute('href')
-    ?.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-  return match ? match[1] : undefined;
+  return extractUserSlug(getProfileLinkElement()?.getAttribute('href'));
 }
 
 function getMostFrequentUserSlug(records) {

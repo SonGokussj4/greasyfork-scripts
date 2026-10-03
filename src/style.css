@@ -22,7 +22,7 @@
 .dropdown-content.cc-settings {
     width: 360px;
     margin-top: 0;
-    right: 0;
+    right: 8px !important;
     top: 100%;
     padding: 0;
     box-sizing: border-box;
@@ -33,7 +33,7 @@
     background-color: #ffffff !important;
 
     /* New styles for a modern, clean look */
-    border-radius: 0 0 10px 10px;
+    border-radius: 8px;
     box-shadow: 0 12px 34px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.08);
     border: 1px solid #eaeaea;
     border-top: none;
@@ -47,7 +47,8 @@
 header.page-header.user-not-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings,
 header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-settings {
     margin-top: -4px;
-    right: 8px;
+    right: 0;
+    left: auto;
     z-index: 10000 !important;
 }
 
@@ -56,6 +57,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     top: 30px;
     right: 30px;
     left: auto;
+    width: 388px;
     margin-top: 0 !important;
     max-height: min(65vh, calc(100vh - 60px));
     border-top: 1px solid #eaeaea;
@@ -114,6 +116,22 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     display: inline-flex !important;
 }
 
+.dropdown-content.cc-settings .dropdown-content-head {
+    position: relative;
+}
+
+.dropdown-content.cc-settings.cc-settings-pinned-root .right-head {
+    position: relative;
+    padding-right: 34px;
+}
+
+.dropdown-content.cc-settings.cc-settings-pinned-root .cc-settings-pin-close {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+}
+
 .dropdown-content.cc-settings.cc-settings-pinned-root .left-head {
     cursor: move;
     user-select: none;
@@ -165,6 +183,38 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     line-height: 1.1;
 }
 
+.user-link.csfd-compare-menu {
+    position: relative;
+}
+
+.cc-menu-update-pill {
+    position: absolute;
+    top: 3px;
+    right: 0px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    background: #ffefbe;
+    border: 1px solid #efdb9d;
+    border-radius: 10px;
+    color: #463200bb;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 14px;
+    text-align: center;
+    box-sizing: border-box;
+    opacity: 0;
+    /* box-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) inset; */
+    /* transform: translateY(-2px); */
+    /* pointer-events: none; */
+    /* transition: opacity 0.18s ease, transform 0.18s ease; */
+}
+
+.cc-menu-update-pill.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
 .cc-version-row {
     display: inline-flex;
     align-items: center;
@@ -191,7 +241,9 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     background: #b8b8b8;
     display: inline-block;
     opacity: 0;
+    pointer-events: none;
     transition: opacity 0.18s ease;
+    text-decoration: none;
 }
 
 .cc-version-status.is-visible {
@@ -203,7 +255,7 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
 }
 
 .cc-version-status.is-ok {
-    background: #8f8f8f;
+    background: #34bf24b0;
 }
 
 .cc-version-status.is-error {
@@ -214,11 +266,22 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     width: auto;
     height: auto;
     padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid #efdb9d;
+    background: #ffefbe;
     font-size: 10px;
     line-height: 1.3;
     font-weight: 700;
-    color: #fff;
-    background: var(--cc-color-red);
+    letter-spacing: 0.02em;
+    color: #6d5200;
+    white-space: nowrap;
+    pointer-events: auto;
+}
+
+.cc-version-status.is-update:hover {
+    border-color: #d7bf72;
+    background: #f8e39b;
+    color: #5f4700;
 }
 
 .cc-head-right,
@@ -891,7 +954,7 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
 }
 
 .cc-version-info-modal {
-    width: min(750px, 100%);
+    width: min(850px, 100%);
     max-height: min(86vh, 920px);
     overflow: hidden;
     border-radius: 10px;
@@ -1197,6 +1260,10 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
     color: #3b78c2;
 }
 
+.cc-version-markdown-kind-item.is-development .cc-version-markdown-kind-item-icon {
+    color: #6b7280;
+}
+
 .cc-version-markdown-kind-item.is-fixed .cc-version-markdown-kind-item-icon {
     color: #d98d19;
 }
@@ -1256,20 +1323,31 @@ body.cc-dev-mode-active .cc-maint-dev-control.cc-dev-only {
 }
 
 .cc-version-markdown-pre code,
+.cc-version-markdown-kind-item-text code,
 .cc-version-markdown-paragraph code,
 .cc-version-markdown-list code,
 .cc-version-markdown-heading code {
     font-family: Consolas, "Courier New", monospace;
 }
 
+.cc-version-markdown-kind-item-text code,
 .cc-version-markdown-paragraph code,
 .cc-version-markdown-list code,
 .cc-version-markdown-heading code {
-    padding: 1px 5px;
-    border-radius: 5px;
-    background: #f1f1f1;
-    color: #333;
-    font-size: 0.95em;
+    display: inline-block;
+    padding: 3px 7px;
+    margin: 0 1px;
+    border: 1px solid #d6d6d6;
+    border-bottom-width: 2px;
+    border-radius: 6px;
+    background: #fafafa;
+    color: #222;
+    font-size: 0.86em;
+    font-weight: 500;
+    line-height: 1.1;
+    vertical-align: baseline;
+    white-space: nowrap;
+    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
 }
 
 .cc-version-info-body a {
@@ -2712,6 +2790,15 @@ h3.film-title-inline .cc-own-rating {
     width: 230px;
 }
 
+.cc-hover-preview-card.is-review {
+    width: 320px;
+}
+
+.cc-hover-preview-card.is-review.is-expanded {
+    width: 640px;
+    max-width: min(640px, calc(100vw - 24px));
+}
+
 .cc-hover-preview-top {
     padding: 6px 8px 4px;
     border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -2843,6 +2930,109 @@ h3.film-title-inline .cc-own-rating {
 
 .cc-hover-preview-line.is-small {
     font-size: 10px;
+}
+
+.cc-hover-preview-review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 20px;
+}
+
+.cc-hover-preview-review-author-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.cc-hover-preview-review-author-wrap .cc-hover-preview-line {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cc-hover-preview-review-date {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    flex: 0 0 auto;
+    margin-left: auto;
+    text-align: right;
+}
+
+.cc-hover-preview-review-stars {
+    font-size: 14px;
+    line-height: 1;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.cc-hover-preview-review-stars .is-filled {
+    color: #ba0305;
+}
+
+.cc-hover-preview-review-stars .is-empty {
+    color: #c6b5a3;
+}
+
+.cc-hover-preview-review-body {
+    font-size: 12px;
+    line-height: 1.45;
+    color: #353535;
+    white-space: normal;
+}
+
+.cc-hover-preview-review-body.is-compact {
+    display: -webkit-box;
+    -webkit-line-clamp: 6;
+    line-clamp: 6;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.cc-hover-preview-review-body.is-compact a,
+.cc-hover-preview-review-body.is-compact strong,
+.cc-hover-preview-review-body.is-compact b,
+.cc-hover-preview-review-body.is-compact em,
+.cc-hover-preview-review-body.is-compact i {
+    display: inline;
+}
+
+.cc-hover-preview-review-body.is-full {
+    max-height: min(52vh, 620px);
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.cc-hover-preview-review-body p,
+.cc-hover-preview-review-body blockquote,
+.cc-hover-preview-review-body ul,
+.cc-hover-preview-review-body ol,
+.cc-hover-preview-review-body div {
+    margin: 0;
+}
+
+.cc-hover-preview-review-body p+p,
+.cc-hover-preview-review-body p+div,
+.cc-hover-preview-review-body div+p,
+.cc-hover-preview-review-body div+div,
+.cc-hover-preview-review-body ul+p,
+.cc-hover-preview-review-body p+ul,
+.cc-hover-preview-review-body ol+p,
+.cc-hover-preview-review-body p+ol,
+.cc-hover-preview-review-body blockquote+p,
+.cc-hover-preview-review-body p+blockquote {
+    margin-top: 8px;
+}
+
+.cc-hover-preview-review-body blockquote {
+    border-left: 2px solid rgba(186, 3, 5, 0.24);
+    padding-left: 8px;
+    color: #575757;
 }
 
 .cc-hover-preview-label {
@@ -3258,5 +3448,20 @@ body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-list .tab-li
 body.cc-show-all-tabs-enabled .creator nav.tab-nav .tab-nav-more,
 body.cc-show-all-tabs-enabled .creator-about nav.tab-nav .tab-nav-more,
 body.cc-show-all-tabs-enabled .creator-profile nav.tab-nav .tab-nav-more {
+    display: none !important;
+}
+
+/* Revert ČSFD "new-style" star ratings in the Hodnocení column
+   The site now shows 5 stars (red ::before + grey ::after, left-aligned).
+   This restores the old look: only the rated stars, right-aligned. */
+body.cc-revert-star-style section.others-rating .star-rating .stars {
+    direction: rtl;
+}
+
+body.cc-revert-star-style section.others-rating .star-rating .stars::before {
+    direction: ltr;
+}
+
+body.cc-revert-star-style section.others-rating .star-rating .stars::after {
     display: none !important;
 }

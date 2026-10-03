@@ -15,6 +15,7 @@ let parseRatingRow;
 let hasRecordChanged;
 let evaluateShouldStopEarly;
 let buildStorageRecordId;
+let getRatingsFetchDelayMs;
 
 beforeAll(async () => {
   const ratingsLoader = await import(pathToFileURL(path.resolve(__dirname, '../src/ratings-loader.js')).href);
@@ -24,13 +25,15 @@ beforeAll(async () => {
   hasRecordChanged = ratingsLoader.hasRecordChanged;
   evaluateShouldStopEarly = ratingsLoader.evaluateShouldStopEarly;
   buildStorageRecordId = ratingsLoader.buildStorageRecordId;
+  getRatingsFetchDelayMs = ratingsLoader.getRatingsFetchDelayMs;
 });
 
 describe('ratings-loader helpers', () => {
   it('normalizeType should map Czech words correctly', () => {
     expect(normalizeType('epizoda')).to.equal('episode');
     expect(normalizeType('seriál')).to.equal('serial');
-    expect(normalizeType('série')).to.equal('series');
+    expect(normalizeType('série')).to.equal('season');
+    expect(normalizeType('séria')).to.equal('season');
     expect(normalizeType('film')).to.equal('movie');
     expect(normalizeType('')).to.equal('movie');
   });
@@ -112,6 +115,16 @@ describe('ratings-loader helpers', () => {
     const args = { page: 5, totalRatings: 10, directRatingsCount: 10, consecutiveStablePages: 1 };
     expect(evaluateShouldStopEarly({ incremental: true, ...args })).to.be.false;
     expect(evaluateShouldStopEarly({ incremental: false, ...args })).to.be.true;
+  });
+
+  it('getRatingsFetchDelayMs keeps incremental checks immediate', () => {
+    expect(getRatingsFetchDelayMs(true)).to.equal(0);
+  });
+
+  it('getRatingsFetchDelayMs adds jitter for full reloads', () => {
+    const delayMs = getRatingsFetchDelayMs(false);
+    expect(delayMs).to.be.at.least(50);
+    expect(delayMs).to.be.at.most(500);
   });
 
   it('buildStorageRecordId uses stable user and movie ids', () => {

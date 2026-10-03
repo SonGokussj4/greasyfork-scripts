@@ -2,6 +2,10 @@
   "type": "module",
   "version": "0.9.0",
   "scripts": {
+    "generate-build-meta": "node scripts/generate-build-meta.mjs",
+    "prebuild": "npm run generate-build-meta",
+    "prewatch": "npm run generate-build-meta",
+    "predev": "npm run generate-build-meta",
     "sync-version": "node scripts/sync-version.mjs",
     "build": "npm run sync-version && rollup -c",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --runInBand",

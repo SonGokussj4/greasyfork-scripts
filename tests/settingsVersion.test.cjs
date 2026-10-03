@@ -39,6 +39,21 @@ describe('settings version changelog helpers', () => {
     expect(sections[0].markdown).toContain('New thing');
   });
 
+  test('extracts unreleased sections with version heading suffixes', () => {
+    const sections = extractVersionSectionsFromMarkdown(`
+# Changelog
+
+## 0.9.1 - unreleased
+- Dev-only change
+
+## 0.9.0 - 2026-03-09
+- Released change
+`);
+
+    expect(sections.map((section) => section.version)).toEqual(['0.9.1', '0.9.0']);
+    expect(sections[0].heading).toBe('0.9.1 - unreleased');
+  });
+
   test('selects only versions inside the upgrade range', () => {
     const sections = selectChangelogSectionsForRange(
       `
@@ -60,6 +75,24 @@ describe('settings version changelog helpers', () => {
     expect(sections.map((section) => section.version)).toEqual(['0.10.0', '0.9.0']);
   });
 
+  test('selects current unreleased section for a dev build version', () => {
+    const sections = selectChangelogSectionsForRange(
+      `
+# Changelog
+
+## 0.9.1 - unreleased
+- Dev-only change
+
+## 0.9.0 - 2026-03-09
+- Released change
+`,
+      '0.9.0',
+      '0.9.1',
+    );
+
+    expect(sections.map((section) => section.heading)).toEqual(['0.9.1 - unreleased']);
+  });
+
   test('renders markdown links and images with resolved URLs', () => {
     const html = renderMarkdownToHtml(
       `
@@ -78,12 +111,65 @@ describe('settings version changelog helpers', () => {
     expect(html).toContain('cc-version-markdown-image');
   });
 
+  test('prefers bundled local asset URLs over remote changelog paths', () => {
+    const html = renderMarkdownToHtml(
+      `
+## 0.9.1
+
+![Preview](images/changelog/0.9.1-notifikace.png)
+`,
+      'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/',
+      {
+        'images/changelog/0.9.1-notifikace.png': 'data:image/png;base64,ZmFrZQ==',
+      },
+    );
+
+    expect(html).toContain('data:image/png;base64,ZmFrZQ==');
+    expect(html).not.toContain(
+      'raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/images/changelog/0.9.1-notifikace.png',
+    );
+  });
+
+  test('prefers bundled local document links over remote changelog paths', () => {
+    const html = renderMarkdownToHtml(
+      `
+## 0.9.1
+
+- [Plan](docs/legacy-ui-parity-and-release-ux-plan.md)
+`,
+      'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/',
+      {
+        'docs/legacy-ui-parity-and-release-ux-plan.md': 'data:text/markdown;charset=utf-8;base64,ZmFrZQ==',
+      },
+    );
+
+    expect(html).toContain('href="data:text/markdown;charset=utf-8;base64,ZmFrZQ=="');
+    expect(html).not.toContain(
+      'raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/dev/docs/legacy-ui-parity-and-release-ux-plan.md',
+    );
+  });
+
+  test('renders inline code spans in changelog lists without leaking placeholders', () => {
+    const html = renderMarkdownToHtml(`
+## 0.9.0
+
+- Nova samostatna volba \`Nahledy externich odkazu\` pro provideri.
+`);
+
+    expect(html).toContain('<code>Nahledy externich odkazu</code>');
+    expect(html).not.toContain('@@CCCODE0@@');
+    expect(html).not.toContain('<em>');
+  });
+
   test('renders version/date heading and changelog kind items', () => {
     const html = renderMarkdownToHtml(`
 ## 0.8.24 - 2026-03-08
 
 ### Added
 - Item
+
+### Development
+- Internal refactor
 
 ### Fixed
 - Bug
@@ -92,8 +178,10 @@ describe('settings version changelog helpers', () => {
     expect(html).toContain('cc-version-markdown-heading-version');
     expect(html).toContain('cc-version-markdown-date');
     expect(html).toContain('cc-version-markdown-kind-item is-added');
+    expect(html).toContain('cc-version-markdown-kind-item is-development');
     expect(html).toContain('cc-version-markdown-kind-item is-fixed');
     expect(html).toContain('title="Novinka"');
+    expect(html).toContain('title="Vyvoj"');
     expect(html).toContain('title="Oprava"');
     expect(html).toContain('>0.8.24<');
   });

@@ -1,15 +1,23 @@
-import { INDEXED_DB_NAME, NUM_RATINGS_PER_PAGE, RATINGS_STORE_NAME } from './config.js';
+import {
+  INDEXED_DB_NAME,
+  NUM_RATINGS_PER_PAGE,
+  PROFILE_LINK_SELECTOR,
+  RATINGS_STORE_NAME,
+  getCsfdPathSegment,
+  getCsfdPathSegmentPattern,
+  normalizeCsfdShowType,
+} from './config.js';
 import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
-import { delay } from './utils.js';
+import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
 
 const DEFAULT_MAX_PAGES = 0; // 0 means no limit, load all available pages
-const REQUEST_DELAY_MIN_MS = 250;
-const REQUEST_DELAY_MAX_MS = 550;
+const ALL_RATINGS_FETCH_DELAY_MIN_MS = 50;
+const ALL_RATINGS_FETCH_DELAY_MAX_MS = 500;
+const COMPUTED_REQUEST_DELAY_MIN_MS = 250;
+const COMPUTED_REQUEST_DELAY_MAX_MS = 550;
 const LOADER_STATE_STORAGE_KEY = 'cc_ratings_loader_state_v1';
 const COMPUTED_LOADER_STATE_STORAGE_KEY = 'cc_computed_loader_state_v1';
-const PROFILE_LINK_SELECTOR =
-  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 
 const loaderController = {
   isRunning: false,
@@ -23,8 +31,33 @@ const computedLoaderController = {
   pauseReason: 'manual',
 };
 
-function randomDelay() {
-  return Math.floor(Math.random() * (REQUEST_DELAY_MAX_MS - REQUEST_DELAY_MIN_MS + 1)) + REQUEST_DELAY_MIN_MS;
+/**
+ * Returns a random inclusive delay between the provided bounds.
+ * @param {number} minMs
+ * @param {number} maxMs
+ * @returns {number}
+ */
+function randomDelay(minMs, maxMs) {
+  return Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+}
+
+/** Delay used before each full ratings page fetch. */
+function getAllRatingsFetchDelayMs() {
+  return randomDelay(ALL_RATINGS_FETCH_DELAY_MIN_MS, ALL_RATINGS_FETCH_DELAY_MAX_MS);
+}
+
+/** Delay used between computed ratings fetches. */
+function getComputedRequestDelayMs() {
+  return randomDelay(COMPUTED_REQUEST_DELAY_MIN_MS, COMPUTED_REQUEST_DELAY_MAX_MS);
+}
+
+/**
+ * Incremental checks should stay snappy, while full reloads add jitter before each fetch.
+ * @param {boolean} incremental
+ * @returns {number}
+ */
+function getRatingsFetchDelayMs(incremental) {
+  return incremental ? 0 : getAllRatingsFetchDelayMs();
 }
 
 function normalizeProfilePath(profileHref) {
@@ -37,7 +70,7 @@ function normalizeProfilePath(profileHref) {
 }
 
 function getCurrentProfilePath() {
-  const profileEl = document.querySelector(PROFILE_LINK_SELECTOR);
+  const profileEl = getProfileLinkElement();
   if (!profileEl) {
     return undefined;
   }
@@ -45,12 +78,11 @@ function getCurrentProfilePath() {
 }
 
 function getRatingsSegment() {
-  return location.hostname.endsWith('.sk') ? 'hodnotenia' : 'hodnoceni';
+  return getCsfdPathSegment('ratings');
 }
 
 function extractUserSlugFromProfilePath(profilePath) {
-  const match = profilePath?.match(/^\/uzivatel\/(\d+-[^/]+)\//);
-  return match ? match[1] : undefined;
+  return extractUserSlug(profilePath);
 }
 
 function buildRatingsPageUrl(profilePath, pageNumber = 1) {
@@ -59,7 +91,8 @@ function buildRatingsPageUrl(profilePath, pageNumber = 1) {
 
 function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
   const ratingsSegment = getRatingsSegment();
-  const basePath = profilePath.replace(/\/(prehled|prehlad)\/?$/i, `/${ratingsSegment}/`);
+  const overviewSegments = getCsfdPathSegmentPattern('overview');
+  const basePath = profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
   if (pageNumber <= 1) {
@@ -75,7 +108,18 @@ function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path')
   return new URL(`${normalizedBasePath}strana-${pageNumber}/`, location.origin).toString();
 }
 
-async function fetchRatingsPageDocument(url) {
+/**
+ * Fetches a ratings page and parses it into a document.
+ * @param {string} url
+ * @param {{ delayMs?: number }} [options]
+ */
+async function fetchRatingsPageDocument(url, options = {}) {
+  const parsedDelayMs = Number(options.delayMs ?? 0);
+  const delayMs = Number.isFinite(parsedDelayMs) && parsedDelayMs > 0 ? parsedDelayMs : 0;
+  if (delayMs > 0) {
+    await delay(delayMs);
+  }
+
   const response = await fetch(url, {
     credentials: 'include',
     method: 'GET',
@@ -125,13 +169,7 @@ function detectPaginationModeFromDocument(doc) {
 }
 
 function normalizeType(rawType) {
-  const normalized = (rawType || '').trim().toLowerCase();
-  if (!normalized) return 'movie';
-  if (normalized.includes('epizoda')) return 'episode';
-  if (normalized.includes('seriál') || normalized.includes('serial')) return 'serial';
-  if (normalized.startsWith('série') || normalized.startsWith('serie')) return 'series';
-  if (normalized.includes('film')) return 'movie';
-  return normalized;
+  return normalizeCsfdShowType(rawType, 'movie');
 }
 
 // helpers exported for tests
@@ -142,6 +180,7 @@ export {
   createRecordFingerprint,
   hasRecordChanged,
   buildStorageRecordId,
+  getRatingsFetchDelayMs,
 };
 
 function parseRating(starElement) {
@@ -427,20 +466,7 @@ function isStateForCurrentUser(state, userSlug) {
 }
 
 function parseRatingFromStarsElement(starsEl) {
-  if (!starsEl) {
-    return NaN;
-  }
-
-  if (starsEl.classList.contains('trash')) {
-    return 0;
-  }
-
-  const starClass = Array.from(starsEl.classList).find((className) => /^stars-\d$/.test(className));
-  if (!starClass) {
-    return NaN;
-  }
-
-  return Number.parseInt(starClass.replace('stars-', ''), 10);
+  return parseRatingFromStars(starsEl);
 }
 
 function parseCurrentUserRatingFromDocument(doc) {
@@ -492,10 +518,7 @@ function parsePageYear(doc) {
 
 function parsePageType(doc) {
   const typeText = doc.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
-  if (typeText.includes('epizoda')) return 'episode';
-  if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
-  if (typeText.includes('série') || typeText.includes('serie')) return 'series';
-  return 'movie';
+  return normalizeCsfdShowType(typeText, 'movie');
 }
 
 function parsePageDate(doc) {
@@ -512,7 +535,7 @@ function buildParentFullUrl(parentSlug) {
 }
 
 function buildParentReviewsUrl(parentSlug) {
-  return new URL(`/film/${parentSlug}/recenze/`, location.origin).toString();
+  return new URL(`/film/${parentSlug}/${getCsfdPathSegment('reviews')}/`, location.origin).toString();
 }
 
 function toComputedParentRecord({ userSlug, parentId, parentSlug, existingRecord, parsedRating, doc }) {
@@ -671,6 +694,7 @@ async function loadComputedParentRatingsForCurrentUser({
 
     const existingRecord = recordsByMovieId.get(parentId);
     const reviewsUrl = buildParentReviewsUrl(parentSlug);
+    // Computed ratings keep the legacy pause at the end of each loop iteration so pause/resume stays responsive.
     const doc = await fetchRatingsPageDocument(reviewsUrl);
     const parsedRating = parseCurrentUserRatingFromDocument(doc);
 
@@ -752,7 +776,7 @@ async function loadComputedParentRatingsForCurrentUser({
     });
 
     if (index < unresolvedParents.length - 1) {
-      await delay(randomDelay());
+      await delay(getComputedRequestDelayMs());
     }
   }
 
@@ -785,8 +809,11 @@ async function loadRatingsForCurrentUser(
     throw new Error('Nepodařilo se přečíst ID uživatele z profilu.');
   }
 
+  const fetchDelayMs = getRatingsFetchDelayMs(incremental);
   const firstPageUrl = buildRatingsPageUrl(profilePath, 1);
-  const firstDoc = await fetchRatingsPageDocument(firstPageUrl);
+  const firstDoc = await fetchRatingsPageDocument(firstPageUrl, {
+    delayMs: fetchDelayMs,
+  });
 
   const totalRatings = parseTotalRatingsFromDocument(firstDoc);
   const maxDetectedPages = parseMaxPaginationPageFromDocument(firstDoc);
@@ -872,7 +899,9 @@ async function loadRatingsForCurrentUser(
     const doc =
       page === 1
         ? firstDoc
-        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode));
+        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
+            delayMs: fetchDelayMs,
+          });
     const pageRatings = parseRatingsFromDocument(doc, location.origin);
 
     if (page > 1 && pageRatings.length === 0) {
@@ -962,10 +991,6 @@ async function loadRatingsForCurrentUser(
     if (shouldStopEarly) {
       stoppedEarly = true;
       break;
-    }
-
-    if (page < targetPages) {
-      await delay(randomDelay());
     }
   }
 

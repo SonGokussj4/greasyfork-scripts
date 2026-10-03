@@ -1,4 +1,4 @@
-import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { INDEXED_DB_NAME, RATINGS_STORE_NAME, normalizeCsfdShowType } from './config.js';
 import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 import { createDetailsModalController, formatDetailValue } from './ui-utils.js';
@@ -20,12 +20,10 @@ function resolveRecordUrl(record) {
  * @returns {{key: string, label: string}}
  */
 function normalizeModalType(rawType) {
-  const normalized = String(rawType || '').toLowerCase();
-  if (normalized.includes('epizoda') || normalized === 'episode') return { key: 'episode', label: 'Episode' };
-  if (normalized.includes('seriál') || normalized.includes('serial') || normalized === 'serial')
-    return { key: 'series', label: 'Series' };
-  if (normalized.includes('série') || normalized.includes('serie') || normalized === 'series')
-    return { key: 'season', label: 'Season' };
+  const normalized = normalizeCsfdShowType(rawType, 'movie');
+  if (normalized === 'episode') return { key: 'episode', label: 'Episode' };
+  if (normalized === 'serial') return { key: 'series', label: 'Series' };
+  if (normalized === 'season') return { key: 'season', label: 'Season' };
   return { key: 'movie', label: 'Movie' };
 }
 

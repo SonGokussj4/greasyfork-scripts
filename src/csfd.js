@@ -6,12 +6,18 @@ import {
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_POSITION_KEY,
   RATINGS_STORE_NAME,
-  SETTINGSNAME,
+  REVERT_STAR_STYLE_KEY,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
+  SETTINGSNAME,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
   SHOW_RATINGS_IN_REVIEWS_KEY,
   SHOW_RATINGS_KEY,
+  getCsfdPathAliasPattern,
+  getCsfdPathSegment,
+  getCsfdPathSegmentPattern,
+  matchesCsfdTextVariant,
+  normalizeCsfdShowType,
 } from './config.js';
 import { buildRatingRecordId, reconcileUserRatingRecords } from './ratings-records.js';
 import {
@@ -20,10 +26,45 @@ import {
   refreshConfiguredLinkIcons,
 } from './link-icons.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
-import { delay, getFeatureState, getMovieIdFromUrl } from './utils.js'; // REFACTOR: imported from utils
+import {
+  delay,
+  extractUserSlug,
+  getFeatureState,
+  getMovieIdFromUrl,
+  getProfileLinkElement,
+  parseRatingFromStars,
+} from './utils.js';
 
-const PROFILE_LINK_SELECTOR =
-  'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
+const OVERVIEW_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('overview');
+const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
+const DISCUSSION_PATHS_PATTERN = getCsfdPathAliasPattern('discussion');
+const GALLERY_PATHS_PATTERN = getCsfdPathAliasPattern('gallery');
+const RATINGS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('ratings');
+const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
+const HOME_PAGE_PANEL_TITLE_NORMALIZERS = Object.freeze([
+  {
+    pattern: /^tv tipy dne\s*-/i,
+    storageTitle: 'TV tipy dne -',
+  },
+]);
+
+function normalizeHomePanelTitle(title) {
+  const normalizedTitle = String(title || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!normalizedTitle) return '';
+
+  const matchedRule = HOME_PAGE_PANEL_TITLE_NORMALIZERS.find(({ pattern }) => pattern.test(normalizedTitle));
+  return matchedRule?.storageTitle || normalizedTitle;
+}
+
+function homePanelsListIncludes(hiddenList, title) {
+  const normalizedTitle = normalizeHomePanelTitle(title);
+  if (!normalizedTitle) return false;
+
+  return hiddenList.some((hiddenTitle) => normalizeHomePanelTitle(hiddenTitle) === normalizedTitle);
+}
 
 export class Csfd {
   constructor(pageContent) {
@@ -35,6 +76,8 @@ export class Csfd {
     this.userRatingsUrl = undefined;
     this.isLoggedIn = false;
     this.userSlug = undefined;
+    this.favoriteRatingsModalUrl = undefined;
+    this.favoriteRatingsModalDocument = undefined;
 
     // OPTIMIZATION: Cache parsed lists to avoid calling JSON.parse in high-frequency DOM operations
     this.cachedHiddenPanelsList = [];
@@ -59,7 +102,7 @@ export class Csfd {
   }
 
   getCurrentUser() {
-    const userEl = document.querySelector(PROFILE_LINK_SELECTOR);
+    const userEl = getProfileLinkElement();
     if (userEl) {
       this.isLoggedIn = true;
       return userEl.getAttribute('href');
@@ -99,12 +142,10 @@ export class Csfd {
     this.storageKey = `CSFD-Compare_${this.username || 'guest'}`;
     console.debug('🟣 Storage Key:', this.storageKey);
 
-    this.userSlug = this.userUrl?.match(/^\/uzivatel\/(\d+-[^/]+)\//)?.[1];
+    this.userSlug = extractUserSlug(this.userUrl);
     console.debug('🟣 User Slug:', this.userSlug);
 
-    this.userRatingsUrl = this.userUrl
-      ? this.userUrl + (location.origin.endsWith('sk') ? 'hodnotenia' : 'hodnoceni')
-      : undefined;
+    this.userRatingsUrl = this.userUrl ? this.userUrl + getCsfdPathSegment('ratings') : undefined;
     console.debug('🟣 User Ratings URL:', this.userRatingsUrl);
 
     const settings = await getSettings(SETTINGSNAME);
@@ -115,9 +156,10 @@ export class Csfd {
 
     try {
       if (getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
+      if (getFeatureState(REVERT_STAR_STYLE_KEY)) this.revertStarStyle();
       if (getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
       if (getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
-      if (getFeatureState('cc_ratings_from_favorites')) this.ratingsFromFavorites();
+      if (getFeatureState('cc_ratings_from_favorites')) await this.ratingsFromFavorites();
       if (getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
       if (getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) this.enableSelfReplyInDiscussions();
     } catch (e) {
@@ -195,6 +237,7 @@ export class Csfd {
           }
 
           if (!title || title.length > 60) return;
+          const storageTitle = normalizeHomePanelTitle(title);
 
           let wrapper =
             headerEl.closest('.column') || headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
@@ -203,7 +246,7 @@ export class Csfd {
             wrapper = headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
           }
 
-          if (enabled && hiddenList.includes(title)) {
+          if (enabled && homePanelsListIncludes(hiddenList, storageTitle)) {
             wrapper.style.display = 'none';
           } else {
             wrapper.style.display = '';
@@ -220,8 +263,8 @@ export class Csfd {
             btn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (!this.cachedHiddenPanelsList.includes(title)) {
-                this.cachedHiddenPanelsList.push(title);
+              if (!homePanelsListIncludes(this.cachedHiddenPanelsList, storageTitle)) {
+                this.cachedHiddenPanelsList.push(storageTitle);
                 localStorage.setItem('cc_hidden_panels_list', JSON.stringify(this.cachedHiddenPanelsList));
                 window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
               }
@@ -271,6 +314,14 @@ export class Csfd {
     window.dispatchEvent(new Event('resize'));
   }
 
+  revertStarStyle() {
+    document.body.classList.add('cc-revert-star-style');
+  }
+
+  restoreStarStyle() {
+    document.body.classList.remove('cc-revert-star-style');
+  }
+
   getCurrentItemUrlAndIds() {
     const path = location.pathname || '';
     if (!path.includes('/film/')) {
@@ -287,7 +338,10 @@ export class Csfd {
     const parentName = slugMatches.length > 1 ? slugMatches[0] : '';
     const urlSlug = slugMatches.length ? slugMatches[slugMatches.length - 1] : '';
 
-    const cleanPath = path.replace(/\/(recenze|komentare|prehled|prehlad)\/?$/i, '/');
+    const cleanPath = path.replace(
+      new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN}|komentare|${OVERVIEW_SEGMENTS_PATTERN})\/?$`, 'i'),
+      '/',
+    );
 
     return { movieId, urlSlug, parentId, parentName, fullUrl: `${location.origin}${cleanPath}` };
   }
@@ -324,10 +378,7 @@ export class Csfd {
 
   getCurrentPageType() {
     const typeText = document.querySelector('.film-header .type')?.textContent?.toLowerCase() || '';
-    if (typeText.includes('epizoda')) return 'episode';
-    if (typeText.includes('seriál') || typeText.includes('serial')) return 'serial';
-    if (typeText.includes('série') || typeText.includes('serie')) return 'series';
-    return 'movie';
+    return normalizeCsfdShowType(typeText, 'movie');
   }
 
   getCurrentPageComputedInfo() {
@@ -353,18 +404,55 @@ export class Csfd {
   }
 
   _parseRatingFromStars(starElem) {
-    if (!starElem) return NaN;
-    const clazz = starElem.className || '';
-    const m = clazz.match(/stars-(\d)/);
-    if (m) return parseInt(m[1], 10);
-    if (clazz.includes('trash')) return 0;
-    return NaN;
+    return parseRatingFromStars(starElem);
   }
 
   _getRatingColor(percent) {
     if (percent >= 70) return '#ba0305'; // Native CSFD red
     if (percent >= 30) return '#62829d'; // Native CSFD blue
     return '#545454'; // Native CSFD gray/black
+  }
+
+  _getPrimaryRatingAverageElement() {
+    return document.querySelector(
+      '.box-rating-container .film-rating-average, .box-rating.box-rating-withtabs > .film-rating-average',
+    );
+  }
+
+  _getFavoriteRatingsStarElements(root = document) {
+    return Array.from(root.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars'));
+  }
+
+  async _getRatingsFanclubDocument() {
+    const modalLink = document.querySelector('a[href*="modal=ratingAndFanclub"]');
+    const href = modalLink?.getAttribute('href');
+    if (!href) return null;
+
+    const url = new URL(href, location.origin).toString();
+    if (this.favoriteRatingsModalUrl === url && this.favoriteRatingsModalDocument) {
+      return this.favoriteRatingsModalDocument;
+    }
+
+    try {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+
+      const html = await response.text();
+      const documentNode = new DOMParser().parseFromString(html, 'text/html');
+      this.favoriteRatingsModalUrl = url;
+      this.favoriteRatingsModalDocument = documentNode;
+      return documentNode;
+    } catch {
+      return null;
+    }
+  }
+
+  async _getFavoriteRatingsStars() {
+    const inlineStars = this._getFavoriteRatingsStarElements(document);
+    if (inlineStars.length) return inlineStars;
+
+    const ratingsFanclubDocument = await this._getRatingsFanclubDocument();
+    return ratingsFanclubDocument ? this._getFavoriteRatingsStarElements(ratingsFanclubDocument) : [];
   }
 
   clickableHeaderBoxes() {
@@ -445,7 +533,7 @@ export class Csfd {
   }
 
   _getOrInitRatingContainer() {
-    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    const avgEl = this._getPrimaryRatingAverageElement();
     if (!avgEl) return null;
 
     if (!avgEl.dataset.ccInitialized) {
@@ -507,7 +595,7 @@ export class Csfd {
   }
 
   clearRatingsEstimate() {
-    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    const avgEl = this._getPrimaryRatingAverageElement();
     if (!avgEl || !avgEl.dataset.ccInitialized) return;
 
     const mainSpan = avgEl.querySelector('.cc-main-rating');
@@ -525,14 +613,16 @@ export class Csfd {
     }
   }
 
-  ratingsFromFavorites() {
+  async ratingsFromFavorites() {
     const avgEl = this._getOrInitRatingContainer();
     if (!avgEl) return;
 
     // OPTIMIZATION: Single loop instead of .map.map.filter chain
     let sum = 0;
     let count = 0;
-    document.querySelectorAll('li.favored:not(.current-user-rating) .star-rating .stars').forEach((starEl) => {
+    const favoriteStars = await this._getFavoriteRatingsStars();
+
+    favoriteStars.forEach((starEl) => {
       const num = this._parseRatingFromStars(starEl);
       if (Number.isFinite(num)) {
         sum += num * 20;
@@ -554,7 +644,7 @@ export class Csfd {
   }
 
   clearRatingsFromFavorites() {
-    const avgEl = document.querySelector('.box-rating-container .film-rating-average');
+    const avgEl = this._getPrimaryRatingAverageElement();
     if (!avgEl || !avgEl.dataset.ccInitialized) return;
 
     const favSpan = avgEl.querySelector('.cc-fav-rating');
@@ -733,6 +823,12 @@ export class Csfd {
 
   getCandidateFilmLinks() {
     const searchRoot = this.csfdPage || document;
+    const searchRoots = [searchRoot];
+    const movieSidebar = document.querySelector('aside.aside-movie-profile');
+
+    if (movieSidebar && !searchRoot.contains(movieSidebar)) {
+      searchRoots.push(movieSidebar);
+    }
 
     const showInReviews = getFeatureState(SHOW_RATINGS_IN_REVIEWS_KEY);
     const showInForeignReviews = getFeatureState(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY, true);
@@ -746,13 +842,15 @@ export class Csfd {
     const isOwnProfile = this.isOnUserProfilePage() && !isOtherUser;
 
     // Links pointing to sections that are not actual film pages
-    const ignorePathRegex = /\/(galerie|videa?|tvurci|obsahy?)\//;
+    const ignorePathRegex = new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN}|videa?|tvurci|obsahy?)\/`, 'i');
     // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
     const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
     // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
     const validFilmRegex = /\/\d+-/;
 
-    return Array.from(searchRoot.querySelectorAll('a[href*="/film/"]')).filter((link) => {
+    return Array.from(
+      new Set(searchRoots.flatMap((root) => Array.from(root.querySelectorAll('a[href*="/film/"]')))),
+    ).filter((link) => {
       const href = link.getAttribute('href') || '';
 
       if (!validFilmRegex.test(href) || ignoreParamRegex.test(href) || ignorePathRegex.test(href)) {
@@ -771,6 +869,14 @@ export class Csfd {
         return false;
       }
 
+      if (link.closest('.action-panel, .dropdown-content.control-panel')) {
+        return false;
+      }
+
+      if (link.closest('.updated-box-header, .box-header') && !link.classList.contains('film-title-name')) {
+        return false;
+      }
+
       // Include links in related boxes only if they match the film title pattern
       if (link.closest('section.box-related, div.box-related, .box-related')) {
         return link.classList.contains('film-title-name');
@@ -785,6 +891,7 @@ export class Csfd {
       if (linkText === 'více' || linkText === 'viac') return false;
 
       const isTitleLink = link.classList.contains('film-title-name');
+      const isMovieSidebarTitleLink = isTitleLink && link.closest('aside.aside-movie-profile .article-header') !== null;
       const inlineRatingContext = this.getInlineRatingContext(link);
       const isDiaryLink = inlineRatingContext === 'diary';
       const isReviewTextLink = inlineRatingContext === 'review';
@@ -803,11 +910,12 @@ export class Csfd {
 
       if (isOwnProfile && isTitleLink) {
         if (isUserReviewsPage) return false;
+        if (link.closest('.last-ratings table')) return false;
         // On the overview page, we want to include the title links in the main sections but exclude those in the review/rating sections to avoid duplicates and false positives
         if (this.shouldSkipProfileSectionLink(link)) return false;
       }
 
-      if (link.closest(LINK_ICON_BLOCKED_LINK_CLOSEST_SELECTORS)) {
+      if (link.closest(LINK_ICON_BLOCKED_LINK_CLOSEST_SELECTORS) && !isMovieSidebarTitleLink) {
         return false;
       }
 
@@ -815,33 +923,49 @@ export class Csfd {
     });
   }
 
+  getResolvedUserSlug() {
+    if (this.userSlug) return this.userSlug;
+
+    const resolvedUserSlug = extractUserSlug(this.userUrl || this.getCurrentUser());
+    if (resolvedUserSlug) {
+      this.userSlug = resolvedUserSlug;
+    }
+
+    return resolvedUserSlug;
+  }
+
   isOnOwnRatingsPage() {
-    if (!this.userSlug) return false;
+    const currentUserSlug = this.getResolvedUserSlug();
+    if (!currentUserSlug) return false;
     const path = location.pathname || '';
     return (
-      path.startsWith(`/uzivatel/${this.userSlug}/`) && (path.includes('/hodnoceni/') || path.includes('/hodnotenia/'))
+      path.startsWith(`/uzivatel/${currentUserSlug}/`) &&
+      new RegExp(`\/(${RATINGS_SEGMENTS_PATTERN})\/`, 'i').test(path)
     );
   }
 
   isOnCreatorPage() {
-    return /^\/(tvurce|tvorca)\/\d+-[^/]+\//i.test(location.pathname || '');
+    return new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN})\/\d+-[^/]+\/`, 'i').test(location.pathname || '');
   }
 
   isOnUserProfilePage() {
-    return (location.pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\//i)?.[1];
+    return extractUserSlug(location.pathname);
   }
 
   isOnOtherUserProfilePage() {
     const pageUserSlug = this.isOnUserProfilePage();
-    return Boolean(pageUserSlug && this.userSlug && pageUserSlug !== this.userSlug);
+    const currentUserSlug = this.getResolvedUserSlug();
+    return Boolean(pageUserSlug && currentUserSlug && pageUserSlug !== currentUserSlug);
   }
 
   isOnUserOverviewPage() {
-    return /^\/uzivatel\/\d+-[^/]+\/(prehled|prehlad)(\/|$)/i.test(location.pathname || '');
+    return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${OVERVIEW_SEGMENTS_PATTERN})(\/|$)`, 'i').test(
+      location.pathname || '',
+    );
   }
 
   isOnUserReviewsPage() {
-    return /^\/uzivatel\/\d+-[^/]+\/(recenze|recenzie)(\/|$)/i.test(location.pathname || '');
+    return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${REVIEWS_SEGMENTS_PATTERN})(\/|$)`, 'i').test(location.pathname || '');
   }
 
   /**
@@ -872,27 +996,38 @@ export class Csfd {
       }
 
       const titleEl = sectionNode.querySelector(
-        ':scope > .box-header h2, :scope > .box-header h3, :scope > header h2, :scope > header h3, :scope > h2, :scope > h3',
+        ':scope > .box-header h2, :scope > .box-header h3, :scope > .updated-box-header h2, :scope > .updated-box-header h3, :scope > header h2, :scope > header h3, :scope > a[data-cc-header-wrapper] > .box-header h2, :scope > a[data-cc-header-wrapper] > .box-header h3, :scope > a[data-cc-header-wrapper] > .updated-box-header h2, :scope > a[data-cc-header-wrapper] > .updated-box-header h3, :scope > h2, :scope > h3',
       );
       const sectionTitle = titleEl?.textContent?.replace(/\s+/g, ' ').trim().toLowerCase() || '';
 
       if (sectionTitle) {
-        if (sectionTitle.match(/poslední recenze|posledne recenzie|poslední hodnocení|posledné hodnotenia/))
-          return true;
-        if (sectionTitle.match(/poslední deníček|posledny dennik/)) return false;
+        if (matchesCsfdTextVariant('recentReviewsOrRatingsHeading', sectionTitle)) return true;
+        if (matchesCsfdTextVariant('recentDiaryHeading', sectionTitle)) return false;
       }
       sectionNode = sectionNode.parentElement;
     }
     return false;
   }
 
+  hasNativeTitleRating(link) {
+    if (!(link instanceof Element)) return false;
+
+    const titleContainer = link.closest('h1, h2, h3, h4, h5, h6, .film-title-inline, .film-title-ellipsis');
+    if (!titleContainer) return false;
+
+    return Boolean(titleContainer.querySelector('.star-rating:not(.cc-own-rating)'));
+  }
+
   getRatingsPageSlug() {
-    return (location.pathname || '').match(/^\/uzivatel\/(\d+-[^/]+)\/(hodnoceni|hodnotenia)\/?/i)?.[1];
+    return (location.pathname || '').match(
+      new RegExp(`^\/uzivatel\/(\d+-[^/]+)\/(${RATINGS_SEGMENTS_PATTERN})\/?`, 'i'),
+    )?.[1];
   }
 
   isOnForeignRatingsPage() {
     const ratingsPageSlug = this.getRatingsPageSlug();
-    return Boolean(ratingsPageSlug && this.userSlug && ratingsPageSlug !== this.userSlug);
+    const currentUserSlug = this.getResolvedUserSlug();
+    return Boolean(ratingsPageSlug && currentUserSlug && ratingsPageSlug !== currentUserSlug);
   }
 
   async addComparisonColumnOnOverviewPage() {
@@ -1151,13 +1286,22 @@ export class Csfd {
       return;
     }
 
-    if (this.isOnForeignRatingsPage()) {
+    const isForeignProfilePage = this.isOnOtherUserProfilePage();
+    const hasForeignOverviewRatingsTable = Boolean(
+      isForeignProfilePage && document.querySelector('.last-ratings table'),
+    );
+    const hasForeignRatingsPageTable = Boolean(
+      isForeignProfilePage &&
+      document.querySelector('#snippet--ratings table, #snippet-ratings table, .snippet-ratings table'),
+    );
+
+    if (this.isOnForeignRatingsPage() || hasForeignRatingsPageTable) {
       console.debug('🟣 Ratings not added: on foreign ratings page — adding comparison column instead');
       return this.addComparisonColumnOnForeignRatingsPage();
     }
 
     // Handle the header-less table on the Overview page
-    if (this.isOnUserOverviewPage() && this.isOnOtherUserProfilePage()) {
+    if ((this.isOnUserOverviewPage() && isForeignProfilePage) || hasForeignOverviewRatingsTable) {
       console.debug('🟣 On other user overview page — adding column to last ratings table');
       await this.addComparisonColumnOnOverviewPage();
     }
@@ -1166,10 +1310,18 @@ export class Csfd {
     console.debug(`🔵 Found ${links.length} candidate links for adding ratings`);
     console.debug({ links });
     const outlinedOnThisPage =
-      this.isOnOtherUserProfilePage() || /^\/soukrome\/oblibeni-uzivatele\/(\?|$)/i.test(location.pathname || '');
+      isForeignProfilePage || /^\/soukrome\/oblibeni-uzivatele\/(\?|$)/i.test(location.pathname || '');
 
     for (const link of links) {
       if (link.dataset.ccStarAdded === 'true') continue;
+
+      if (
+        link.classList.contains('film-title-name') &&
+        this.hasNativeTitleRating(link) &&
+        !this.isOnOtherUserProfilePage()
+      ) {
+        continue;
+      }
 
       const movieId = await getMovieIdFromUrl(link.getAttribute('href')); // REFACTOR: uses utils.js
       const ratingRecord = this.stars[movieId];
@@ -1194,7 +1346,9 @@ export class Csfd {
         timeRatingDiv.appendChild(starElement);
       } else {
         const headingAncestor = link.closest('h1, h2, h3, h4, h5, h6');
-        if (headingAncestor) {
+        if (headingAncestor && link.classList.contains('film-title-name')) {
+          link.insertAdjacentElement('afterend', starElement);
+        } else if (headingAncestor) {
           headingAncestor.appendChild(starElement);
         } else if (this.isInlineTextRatingLink(link)) {
           this.makeTrailingHyphenUnbreakable(link);
@@ -1209,7 +1363,7 @@ export class Csfd {
   }
 
   isOnGalleryPage() {
-    return /\/(galerie|galeria)\//i.test(location.pathname || '');
+    return new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN})\/`, 'i').test(location.pathname || '');
   }
 
   isGalleryImageLinksEnabled() {
@@ -1345,7 +1499,7 @@ export class Csfd {
    * Uses a Vanilla JS proxy-click to trigger the native ČSFD UI.
    */
   enableSelfReplyInDiscussions() {
-    if (!window.location.pathname.includes('/diskuze/')) return;
+    if (!new RegExp(String.raw`\/(?:${DISCUSSION_PATHS_PATTERN})\/`, 'i').test(window.location.pathname || '')) return;
     if (!getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) return;
 
     const posts = document.querySelectorAll('article.article-forum');

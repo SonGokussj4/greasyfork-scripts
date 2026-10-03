@@ -1,4 +1,10 @@
 import { GREASYFORK_URL, SCRIPTNAME, VERSION, WHATS_NEW_VERSION_KEY } from './config.js';
+import {
+  BUILD_CHANGELOG_ASSET_MAP,
+  BUILD_CHANGELOG_BASE_URL,
+  BUILD_CHANGELOG_MARKDOWN,
+  BUILD_PREFERS_BUNDLED_CHANGELOG,
+} from './generated-build-meta.js';
 import { escapeHtml } from './utils.js';
 
 const UPDATE_CHECK_CACHE_KEY = 'cc_update_check_cache_v1';
@@ -17,11 +23,13 @@ const GITHUB_CHANGELOG_BASE_URL = 'https://raw.githubusercontent.com/SonGokussj4
 const CHANGELOG_KIND_HEADINGS = new Map([
   ['added', 'is-added'],
   ['changed', 'is-changed'],
+  ['development', 'is-development'],
   ['fixed', 'is-fixed'],
 ]);
 const CHANGELOG_KIND_LABELS = new Map([
   ['is-added', 'Novinka'],
   ['is-changed', 'Uprava'],
+  ['is-development', 'Vyvoj'],
   ['is-fixed', 'Oprava'],
 ]);
 
@@ -253,6 +261,27 @@ function setCachedChangelogData(changelogData) {
   );
 }
 
+function getBundledChangelogData() {
+  const markdown = String(BUILD_CHANGELOG_MARKDOWN || '').trim();
+  if (!markdown) {
+    return undefined;
+  }
+
+  const baseUrl = String(BUILD_CHANGELOG_BASE_URL || '').trim() || GITHUB_CHANGELOG_BASE_URL;
+  const sourceUrl = resolveMarkdownUrl('CHANGELOG.md', baseUrl);
+  const assetMap =
+    BUILD_CHANGELOG_ASSET_MAP && typeof BUILD_CHANGELOG_ASSET_MAP === 'object' ? BUILD_CHANGELOG_ASSET_MAP : {};
+
+  return {
+    markdown,
+    sourceUrl,
+    baseUrl,
+    assetMap,
+    isFallback: true,
+    loadFailed: false,
+  };
+}
+
 async function fetchRepoChangelogData() {
   try {
     const response = await fetch(GITHUB_CHANGELOG_URL, { method: 'GET', cache: 'no-store' });
@@ -283,18 +312,50 @@ async function fetchRepoChangelogData() {
 }
 
 async function getRepoChangelogData() {
+  const bundled = getBundledChangelogData();
+  if (BUILD_PREFERS_BUNDLED_CHANGELOG && bundled) {
+    return bundled;
+  }
+
   const cached = getCachedChangelogData();
   if (cached) {
     return cached;
   }
 
-  return fetchRepoChangelogData();
+  const remote = await fetchRepoChangelogData();
+  if (!remote.loadFailed) {
+    return remote;
+  }
+
+  return bundled || remote;
 }
 
-function resolveMarkdownUrl(url, baseUrl) {
+function normalizeMarkdownAssetPath(url) {
+  return String(url || '')
+    .trim()
+    .replace(/\\/g, '/');
+}
+
+function isRelativeMarkdownAssetPath(url) {
+  const normalized = normalizeMarkdownAssetPath(url);
+  if (!normalized || normalized.startsWith('#') || normalized.startsWith('/')) {
+    return false;
+  }
+
+  return !/^(?:[a-z][a-z\d+.-]*:)?\/\//i.test(normalized) && !/^[a-z][a-z\d+.-]*:/i.test(normalized);
+}
+
+function resolveMarkdownUrl(url, baseUrl, assetMap) {
   const trimmedUrl = String(url || '').trim();
   if (!trimmedUrl) {
     return '';
+  }
+
+  const normalizedAssetPath = normalizeMarkdownAssetPath(trimmedUrl);
+  // Bundled dev changelog mode can serve local relative resources from the
+  // generated asset map before falling back to the GitHub raw URL.
+  if (isRelativeMarkdownAssetPath(normalizedAssetPath) && assetMap?.[normalizedAssetPath]) {
+    return assetMap[normalizedAssetPath];
   }
 
   try {
@@ -305,7 +366,7 @@ function resolveMarkdownUrl(url, baseUrl) {
 }
 
 function createCodePlaceholder(index) {
-  return `@@CC_CODE_${index}@@`;
+  return `@@CCCODE${index}@@`;
 }
 
 function getVersionHeadingParts(headingText) {
@@ -327,7 +388,7 @@ function renderChangelogKindHeading(text) {
   return CHANGELOG_KIND_HEADINGS.get(label.toLowerCase());
 }
 
-function renderChangelogKindItems(kindClass, items, baseUrl) {
+function renderChangelogKindItems(kindClass, items, baseUrl, assetMap) {
   const normalizedItems = items.map((item) => String(item || '').trim()).filter(Boolean);
 
   if (normalizedItems.length === 0) {
@@ -343,7 +404,7 @@ function renderChangelogKindItems(kindClass, items, baseUrl) {
           (item) => `
             <li class="cc-version-markdown-kind-item ${kindClass}">
               <span class="cc-version-markdown-kind-item-icon" title="${escapeHtml(kindLabel)}" aria-label="${escapeHtml(kindLabel)}">${renderChangelogKindIcon(kindClass)}</span>
-              <span class="cc-version-markdown-kind-item-text">${renderInlineMarkdown(item, baseUrl)}</span>
+              <span class="cc-version-markdown-kind-item-text">${renderInlineMarkdown(item, baseUrl, assetMap)}</span>
             </li>
           `,
         )
@@ -359,6 +420,16 @@ function renderChangelogKindIcon(kindClass) {
         <circle cx="12" cy="12" r="9"></circle>
         <path d="M12 8v8"></path>
         <path d="M8 12h8"></path>
+      </svg>
+    `.trim();
+  }
+
+  if (kindClass === 'is-development') {
+    return `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="14" rx="2"></rect>
+        <path d="m7 9 3 3-3 3"></path>
+        <path d="M13 15h4"></path>
       </svg>
     `.trim();
   }
@@ -390,7 +461,7 @@ function renderChangelogKindIcon(kindClass) {
   `.trim();
 }
 
-function renderInlineMarkdown(text, baseUrl) {
+function renderInlineMarkdown(text, baseUrl, assetMap) {
   const codeSegments = [];
   let output = String(text || '').replace(/`([^`]+)`/g, (_, code) => {
     const placeholder = createCodePlaceholder(codeSegments.length);
@@ -400,12 +471,12 @@ function renderInlineMarkdown(text, baseUrl) {
 
   output = escapeHtml(output);
   output = output.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/g, (_, alt, url, title) => {
-    const resolvedUrl = resolveMarkdownUrl(url, baseUrl);
+    const resolvedUrl = resolveMarkdownUrl(url, baseUrl, assetMap);
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
     return `<img class="cc-version-markdown-image" src="${escapeHtml(resolvedUrl)}" alt="${escapeHtml(alt)}"${titleAttr} loading="lazy" referrerpolicy="no-referrer" />`;
   });
   output = output.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"([^"]+)")?\)/g, (_, label, url, title) => {
-    const resolvedUrl = resolveMarkdownUrl(url, baseUrl);
+    const resolvedUrl = resolveMarkdownUrl(url, baseUrl, assetMap);
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
     return `<a href="${escapeHtml(resolvedUrl)}" target="_blank" rel="noopener noreferrer"${titleAttr}>${label}</a>`;
   });
@@ -421,7 +492,7 @@ function renderInlineMarkdown(text, baseUrl) {
   return output;
 }
 
-export function renderMarkdownToHtml(markdown, baseUrl = GITHUB_CHANGELOG_BASE_URL) {
+export function renderMarkdownToHtml(markdown, baseUrl = GITHUB_CHANGELOG_BASE_URL, assetMap) {
   const lines = String(markdown || '')
     .replace(/\r\n/g, '\n')
     .split('\n');
@@ -486,7 +557,7 @@ export function renderMarkdownToHtml(markdown, baseUrl = GITHUB_CHANGELOG_BASE_U
 
       currentKindClass = '';
       htmlParts.push(
-        `<h${level} class="cc-version-markdown-heading cc-version-markdown-heading-${level}">${renderInlineMarkdown(headingMatch[2], baseUrl)}</h${level}>`,
+        `<h${level} class="cc-version-markdown-heading cc-version-markdown-heading-${level}">${renderInlineMarkdown(headingMatch[2], baseUrl, assetMap)}</h${level}>`,
       );
       index += 1;
       continue;
@@ -500,12 +571,12 @@ export function renderMarkdownToHtml(markdown, baseUrl = GITHUB_CHANGELOG_BASE_U
       }
 
       if (currentKindClass) {
-        htmlParts.push(renderChangelogKindItems(currentKindClass, items, baseUrl));
+        htmlParts.push(renderChangelogKindItems(currentKindClass, items, baseUrl, assetMap));
         continue;
       }
 
       htmlParts.push(
-        `<ul class="cc-version-markdown-list">${items.map((item) => `<li>${renderInlineMarkdown(item, baseUrl)}</li>`).join('')}</ul>`,
+        `<ul class="cc-version-markdown-list">${items.map((item) => `<li>${renderInlineMarkdown(item, baseUrl, assetMap)}</li>`).join('')}</ul>`,
       );
       continue;
     }
@@ -518,12 +589,12 @@ export function renderMarkdownToHtml(markdown, baseUrl = GITHUB_CHANGELOG_BASE_U
       }
 
       if (currentKindClass) {
-        htmlParts.push(renderChangelogKindItems(currentKindClass, items, baseUrl));
+        htmlParts.push(renderChangelogKindItems(currentKindClass, items, baseUrl, assetMap));
         continue;
       }
 
       htmlParts.push(
-        `<ol class="cc-version-markdown-list cc-version-markdown-list-ordered">${items.map((item) => `<li>${renderInlineMarkdown(item, baseUrl)}</li>`).join('')}</ol>`,
+        `<ol class="cc-version-markdown-list cc-version-markdown-list-ordered">${items.map((item) => `<li>${renderInlineMarkdown(item, baseUrl, assetMap)}</li>`).join('')}</ol>`,
       );
       continue;
     }
@@ -545,18 +616,18 @@ export function renderMarkdownToHtml(markdown, baseUrl = GITHUB_CHANGELOG_BASE_U
     const paragraphText = paragraphLines.join('\n').trim();
     if (currentKindClass && /^!\[[^\]]*\]\([^)]+\)$/.test(paragraphText)) {
       htmlParts.push(
-        `<p class="cc-version-markdown-paragraph cc-version-markdown-paragraph-image">${renderInlineMarkdown(paragraphText, baseUrl)}</p>`,
+        `<p class="cc-version-markdown-paragraph cc-version-markdown-paragraph-image">${renderInlineMarkdown(paragraphText, baseUrl, assetMap)}</p>`,
       );
       continue;
     }
 
     if (currentKindClass) {
-      htmlParts.push(renderChangelogKindItems(currentKindClass, paragraphLines, baseUrl));
+      htmlParts.push(renderChangelogKindItems(currentKindClass, paragraphLines, baseUrl, assetMap));
       continue;
     }
 
     htmlParts.push(
-      `<p class="cc-version-markdown-paragraph">${renderInlineMarkdown(paragraphLines.join('<br />'), baseUrl)}</p>`,
+      `<p class="cc-version-markdown-paragraph">${renderInlineMarkdown(paragraphLines.join('<br />'), baseUrl, assetMap)}</p>`,
     );
   }
 
@@ -650,7 +721,7 @@ export function selectChangelogSectionsForRange(markdown, fromVersion, toVersion
   return currentSection ? [currentSection] : sections.slice(0, 1);
 }
 
-function buildChangelogHtml(markdown, baseUrl, fromVersion, toVersion) {
+function buildChangelogHtml(markdown, baseUrl, assetMap, fromVersion, toVersion) {
   const sections = selectChangelogSectionsForRange(markdown, fromVersion, toVersion);
   if (sections.length === 0) {
     return '<p class="cc-version-info-empty">Changelog není k dispozici.</p>';
@@ -659,25 +730,25 @@ function buildChangelogHtml(markdown, baseUrl, fromVersion, toVersion) {
   return sections
     .map(
       (section) =>
-        `<section class="cc-version-changelog-section">${renderMarkdownToHtml(section.markdown, baseUrl)}</section>`,
+        `<section class="cc-version-changelog-section">${renderMarkdownToHtml(section.markdown, baseUrl, assetMap)}</section>`,
     )
     .join('');
 }
 
-function buildFullChangelogHtml(markdown, baseUrl) {
+function buildFullChangelogHtml(markdown, baseUrl, assetMap) {
   if (!String(markdown || '').trim()) {
     return '<p class="cc-version-info-empty">Changelog není k dispozici.</p>';
   }
 
   const sections = extractVersionSectionsFromMarkdown(markdown);
   if (sections.length === 0) {
-    return `<section class="cc-version-changelog-section">${renderMarkdownToHtml(markdown, baseUrl)}</section>`;
+    return `<section class="cc-version-changelog-section">${renderMarkdownToHtml(markdown, baseUrl, assetMap)}</section>`;
   }
 
   return sections
     .map(
       (section) =>
-        `<section class="cc-version-changelog-section">${renderMarkdownToHtml(section.markdown, baseUrl)}</section>`,
+        `<section class="cc-version-changelog-section">${renderMarkdownToHtml(section.markdown, baseUrl, assetMap)}</section>`,
     )
     .join('');
 }
@@ -791,7 +862,11 @@ function renderVersionInfoContent(currentVersion, details, changelogData) {
   const shortcutsHtml = buildKeyboardShortcutsHtml();
   const changelogHtml = changelogData?.loadFailed
     ? buildChangelogWarningHtml()
-    : buildFullChangelogHtml(changelogData?.markdown, changelogData?.baseUrl || GITHUB_CHANGELOG_BASE_URL);
+    : buildFullChangelogHtml(
+        changelogData?.markdown,
+        changelogData?.baseUrl || GITHUB_CHANGELOG_BASE_URL,
+        changelogData?.assetMap,
+      );
 
   return `
     ${metaHtml}
@@ -805,7 +880,11 @@ function renderVersionInfoErrorContent(currentVersion, changelogData) {
   const shortcutsHtml = buildKeyboardShortcutsHtml();
   const changelogHtml = changelogData?.loadFailed
     ? buildChangelogWarningHtml()
-    : buildFullChangelogHtml(changelogData?.markdown, changelogData?.baseUrl || GITHUB_CHANGELOG_BASE_URL);
+    : buildFullChangelogHtml(
+        changelogData?.markdown,
+        changelogData?.baseUrl || GITHUB_CHANGELOG_BASE_URL,
+        changelogData?.assetMap,
+      );
   return `
     ${buildInstalledOnlyMetaHtml(currentVersion)}
     ${shortcutsHtml}
@@ -814,42 +893,73 @@ function renderVersionInfoErrorContent(currentVersion, changelogData) {
   `;
 }
 
-function setVersionStatus(versionStatusEl, state, latestVersion) {
-  if (!versionStatusEl) {
+function setVersionStatus(versionStatusEl, menuUpdatePillEl, state, latestVersion) {
+  if (!versionStatusEl && !menuUpdatePillEl) {
     return;
   }
 
-  versionStatusEl.className = 'cc-version-status';
-  versionStatusEl.textContent = '';
-  versionStatusEl.removeAttribute('title');
+  if (versionStatusEl) {
+    versionStatusEl.className = 'cc-version-status';
+    versionStatusEl.textContent = '';
+    versionStatusEl.removeAttribute('title');
+    versionStatusEl.removeAttribute('aria-label');
+    versionStatusEl.setAttribute('aria-hidden', 'true');
+    versionStatusEl.setAttribute('tabindex', '-1');
+  }
+
+  if (menuUpdatePillEl) {
+    menuUpdatePillEl.className = 'cc-menu-update-pill';
+    menuUpdatePillEl.textContent = '!';
+    menuUpdatePillEl.removeAttribute('title');
+    menuUpdatePillEl.setAttribute('aria-hidden', 'true');
+  }
 
   if (state === 'hidden') {
     return;
   }
 
-  versionStatusEl.classList.add('is-visible');
+  if (versionStatusEl) {
+    versionStatusEl.classList.add('is-visible');
+  }
 
   if (state === 'checking') {
-    versionStatusEl.classList.add('is-checking');
-    versionStatusEl.title = 'Kontroluji aktualizaci…';
+    if (versionStatusEl) {
+      versionStatusEl.classList.add('is-checking');
+      versionStatusEl.title = 'Kontroluji aktualizaci…';
+    }
     return;
   }
 
   if (state === 'ok') {
-    versionStatusEl.classList.add('is-ok');
-    versionStatusEl.title = 'Používáte aktuální verzi.';
+    if (versionStatusEl) {
+      versionStatusEl.classList.add('is-ok');
+      versionStatusEl.title = 'Používáte aktuální verzi.';
+    }
     return;
   }
 
   if (state === 'update') {
-    versionStatusEl.classList.add('is-update');
-    versionStatusEl.textContent = '↑';
-    versionStatusEl.title = `K dispozici je nová verze: ${latestVersion}`;
+    if (versionStatusEl) {
+      versionStatusEl.classList.add('is-update');
+      versionStatusEl.textContent = '⚠ Update';
+      versionStatusEl.title = `K dispozici je nová verze: ${latestVersion}`;
+      versionStatusEl.setAttribute('aria-label', `K dispozici je nová verze: ${latestVersion}`);
+      versionStatusEl.setAttribute('aria-hidden', 'false');
+      versionStatusEl.setAttribute('tabindex', '0');
+    }
+
+    if (menuUpdatePillEl) {
+      menuUpdatePillEl.classList.add('is-visible');
+      menuUpdatePillEl.title = `K dispozici je nová verze: ${latestVersion}`;
+      menuUpdatePillEl.setAttribute('aria-label', `Nová verze k dispozici: ${latestVersion}`);
+    }
     return;
   }
 
-  versionStatusEl.classList.add('is-error');
-  versionStatusEl.title = 'Aktualizaci se nepodařilo ověřit.';
+  if (versionStatusEl) {
+    versionStatusEl.classList.add('is-error');
+    versionStatusEl.title = 'Aktualizaci se nepodařilo ověřit.';
+  }
 }
 
 function getVersionModal() {
@@ -972,6 +1082,7 @@ function renderUpdateModalContent({ fromVersion, toVersion, changelogData }) {
     : buildChangelogHtml(
         changelogData?.markdown,
         changelogData?.baseUrl || GITHUB_CHANGELOG_BASE_URL,
+        changelogData?.assetMap,
         fromVersion,
         toVersion,
       );
@@ -1055,20 +1166,21 @@ async function maybeShowUpdatedVersionModal(menuRootElement) {
 
 export async function initializeVersionUi(menuRootElement) {
   const versionStatusEl = menuRootElement.querySelector('#cc-version-status');
+  const menuUpdatePillEl = menuRootElement.querySelector('#cc-menu-update-pill');
   const currentVersion = getCurrentMenuVersion(menuRootElement);
   if (!versionStatusEl || !currentVersion) {
-    setVersionStatus(versionStatusEl, 'hidden');
+    setVersionStatus(versionStatusEl, menuUpdatePillEl, 'hidden');
     return;
   }
 
   maybeShowUpdatedVersionModal(menuRootElement).catch(() => undefined);
 
-  setVersionStatus(versionStatusEl, 'checking');
+  setVersionStatus(versionStatusEl, menuUpdatePillEl, 'checking');
 
   const cached = getCachedUpdateInfo();
   if (cached?.latestVersion) {
     const isUpdateAvailable = compareVersions(cached.latestVersion, currentVersion) > 0;
-    setVersionStatus(versionStatusEl, isUpdateAvailable ? 'update' : 'ok', cached.latestVersion);
+    setVersionStatus(versionStatusEl, menuUpdatePillEl, isUpdateAvailable ? 'update' : 'ok', cached.latestVersion);
     return;
   }
 
@@ -1076,8 +1188,8 @@ export async function initializeVersionUi(menuRootElement) {
     const latestVersion = await fetchLatestScriptVersion();
     setCachedUpdateInfo(latestVersion);
     const isUpdateAvailable = compareVersions(latestVersion, currentVersion) > 0;
-    setVersionStatus(versionStatusEl, isUpdateAvailable ? 'update' : 'ok', latestVersion);
+    setVersionStatus(versionStatusEl, menuUpdatePillEl, isUpdateAvailable ? 'update' : 'ok', latestVersion);
   } catch {
-    setVersionStatus(versionStatusEl, 'error');
+    setVersionStatus(versionStatusEl, menuUpdatePillEl, 'error');
   }
 }

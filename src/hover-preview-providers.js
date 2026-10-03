@@ -1,13 +1,27 @@
 import {
+  CSFD_CREATOR_ROLE_KEYWORDS,
   HOVER_PREVIEW_CREATOR_ENABLED_KEY,
   HOVER_PREVIEW_ENABLED_KEY,
   HOVER_PREVIEW_EXTERNAL_ENABLED_KEY,
   HOVER_PREVIEW_FILM_ENABLED_KEY,
+  HOVER_PREVIEW_REVIEW_ENABLED_KEY,
   HOVER_PREVIEW_USER_ENABLED_KEY,
+  PROFILE_LINK_SELECTOR,
+  getCsfdPathAliasPattern,
+  getCsfdCreatorRoleLabel,
+  getCsfdLocale,
+  getCsfdPathSegment,
+  getCsfdPathSegmentPattern,
+  getCsfdUserProfileSubpathPattern,
+  matchesCsfdTextVariant,
 } from './config.js';
 import { escapeHtml } from './utils.js';
 
 const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
+const OVERVIEW_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('overview');
+const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
+const USER_PROFILE_SUBPATHS_PATTERN = getCsfdUserProfileSubpathPattern();
 
 function createUrl(href) {
   try {
@@ -19,6 +33,10 @@ function createUrl(href) {
 
 function isUserLinkInsideAccountDropdown(anchor) {
   return anchor instanceof Element && anchor.closest('.dropdown-content.main-menu') !== null;
+}
+
+function isHeaderProfileLink(anchor) {
+  return anchor instanceof Element && anchor.matches(PROFILE_LINK_SELECTOR) && anchor.closest('.header-bar') !== null;
 }
 
 function normalizeText(value) {
@@ -50,18 +68,37 @@ function resolveUrlAgainst(url, baseHref) {
   }
 }
 
-function getOverviewSegment(url) {
-  return url.hostname.endsWith('.sk') ? 'prehlad' : 'prehled';
+/**
+ * Determines the CSFD locale of a document by checking the `<html lang>` attribute.
+ * If the language cannot be determined from the document, it falls back to checking the hostname.
+ *
+ * @param {Document} doc - The document (or a document-like object)
+ */
+function getDocumentCsfdLocale(doc) {
+  const documentLang = normalizeText(doc.documentElement?.lang || doc.body?.dataset?.lang).toLowerCase();
+  if (documentLang.startsWith('sk')) return 'sk';
+  if (documentLang.startsWith('cs')) return 'cz';
+
+  const documentHostname = createUrl(doc.URL || doc.baseURI)?.hostname;
+  return getCsfdLocale(documentHostname || location.hostname);
+}
+
+function findCreatorBlockByRole(doc, roleKey) {
+  const keywords = CSFD_CREATOR_ROLE_KEYWORDS[roleKey] || [];
+
+  return Array.from(doc.querySelectorAll('#creators > div')).find((block) =>
+    keywords.includes(normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '')),
+  );
 }
 
 function normalizeCreatorUrl(href) {
   const url = createUrl(href);
-  const match = url?.pathname.match(/^\/(tvurce|tvorca)\/(\d+-[^/]+)/i);
+  const match = url?.pathname.match(new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN})\/(\d+-[^/]+)`, 'i'));
   if (!url || !match) return null;
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/${match[1]}/${match[2]}/${getOverviewSegment(url)}/`;
+  url.pathname = `/${match[1]}/${match[2]}/${getCsfdPathSegment('overview', url.hostname)}/`;
   return url.toString();
 }
 
@@ -72,7 +109,7 @@ function normalizeUserUrl(href) {
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/uzivatel/${match[1]}/${getOverviewSegment(url)}/`;
+  url.pathname = `/uzivatel/${match[1]}/${getCsfdPathSegment('overview', url.hostname)}/`;
   return url.toString();
 }
 
@@ -83,7 +120,7 @@ function getUserReviewsUrl(href) {
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/uzivatel/${match[1]}/recenze/`;
+  url.pathname = `/uzivatel/${match[1]}/${getCsfdPathSegment('reviews', url.hostname)}/`;
   return url.toString();
 }
 
@@ -94,7 +131,22 @@ function normalizeFilmUrl(href) {
 
   url.search = '';
   url.hash = '';
-  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getOverviewSegment(url)}/`;
+  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getCsfdPathSegment('overview', url.hostname)}/`;
+  return url.toString();
+}
+
+function normalizeReviewUrl(href) {
+  const url = createUrl(href);
+  const match = url?.pathname.match(
+    new RegExp(`^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i'),
+  );
+  const reviewId = url?.searchParams.get('review') || '';
+  if (!url || !match || !/^\d+$/.test(reviewId)) return null;
+
+  url.hash = '';
+  url.search = '';
+  url.searchParams.set('review', reviewId);
+  url.pathname = `/film/${match[1]}/${match[2] ? `${match[2]}/` : ''}${getCsfdPathSegment('reviews', url.hostname)}/`;
   return url.toString();
 }
 
@@ -158,7 +210,10 @@ function normalizeAniDbAnimeUrl(href) {
 }
 
 function getCreatorEntityKey(url) {
-  return createUrl(url)?.pathname.match(/^\/(?:tvurce|tvorca)\/(\d+-[^/]+)/i)?.[1] || null;
+  return (
+    createUrl(url)?.pathname.match(new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/(\d+-[^/]+)`, 'i'))?.[1] ||
+    null
+  );
 }
 
 function getUserEntityKey(url) {
@@ -169,6 +224,14 @@ function getFilmEntityKey(url) {
   const match = createUrl(url)?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
   if (!match) return null;
   return match[2] ? `${match[1]}__${match[2]}` : match[1];
+}
+
+function getReviewEntityKey(url) {
+  const normalizedUrl = createUrl(url);
+  const reviewId = normalizedUrl?.searchParams.get('review') || '';
+  const filmEntityKey = getFilmEntityKey(url);
+  if (!filmEntityKey || !/^\d+$/.test(reviewId)) return null;
+  return `${filmEntityKey}__review__${reviewId}`;
 }
 
 /**
@@ -205,13 +268,19 @@ function isCurrentFilmEntity(url) {
 }
 
 function isCurrentCreatorEntity(url) {
-  if (!/^\/(?:tvurce|tvorca)\//i.test(location.pathname || '')) return false;
+  if (!new RegExp(String.raw`^\/(?:${CREATOR_PATHS_PATTERN})\/`, 'i').test(location.pathname || '')) return false;
   return getCreatorEntityKey(url) === getCreatorEntityKey(location.href);
 }
 
 function isCurrentUserEntity(url) {
   if (!/^\/uzivatel\//i.test(location.pathname || '')) return false;
   return getUserEntityKey(url) === getUserEntityKey(location.href);
+}
+
+function isCurrentReviewEntity(url) {
+  if (!/^\/film\//i.test(location.pathname || '')) return false;
+  if (!new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(location.pathname || '')) return false;
+  return getReviewEntityKey(url) === getReviewEntityKey(location.href);
 }
 
 function cloneWithout(selectorList, element) {
@@ -319,21 +388,6 @@ function renderImage(imageUrl, altText) {
   return `<img class="cc-hover-preview-image empty-image" src="${EMPTY_IMAGE_SRC}" alt="" referrerpolicy="no-referrer" />`;
 }
 
-function renderCard({ providerClass, imageUrl, title, titleExtraHtml = '', metaHtml = '' }) {
-  return `
-    <div class="cc-hover-preview-card ${providerClass}">
-      ${renderImage(imageUrl, title)}
-      <div class="cc-hover-preview-title">
-        <span>${escapeHtml(title)}</span>
-        ${titleExtraHtml}
-      </div>
-      <div class="cc-hover-preview-meta" ${metaHtml ? '' : 'hidden'}>
-        ${metaHtml}
-      </div>
-    </div>
-  `;
-}
-
 function renderCardWithTop({ providerClass, topHtml = '', imageUrl, title, titleExtraHtml = '', metaHtml = '' }) {
   return `
     <div class="cc-hover-preview-card ${providerClass}">
@@ -361,6 +415,103 @@ function renderLabelValue(label, value, className = '') {
     `<span class="cc-hover-preview-label-strong">${escapeHtml(label)}</span> ${escapeHtml(value)}`,
     className,
   );
+}
+
+function parseCreatorLinks(block, limit = Infinity) {
+  return Array.from(block?.querySelectorAll('a') || [])
+    .slice(0, limit)
+    .map((link) => ({
+      name: normalizeText(link.textContent),
+      href: resolveAssetUrl(link.getAttribute('href')),
+    }))
+    .filter((person) => person.name && person.href);
+}
+
+function renderLinkedPeopleLine(label, people) {
+  if (!Array.isArray(people) || people.length === 0) return '';
+
+  const peopleHtml = people
+    .map(
+      (person) => `<a class="cc-hover-preview-link" href="${escapeHtml(person.href)}">${escapeHtml(person.name)}</a>`,
+    )
+    .join(', ');
+
+  return renderLine(
+    `<span class="cc-hover-preview-clamp-2"><span class="cc-hover-preview-label">${escapeHtml(label)}:</span> ${peopleHtml}</span>`,
+  );
+}
+
+function getReviewExcerpt(text, maxLength = 320) {
+  const normalized = normalizeText(text);
+  if (!normalized) return '';
+  if (normalized.length <= maxLength) return normalized;
+  return `${normalized.slice(0, maxLength).replace(/[\s,.!?;:-]+$/u, '')}...`;
+}
+
+function getReviewRatingValue(article) {
+  const starsClassName = article?.querySelector('.star-rating .stars')?.className || '';
+  const match = starsClassName.match(/\bstars-(\d)\b/);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function renderReviewRating(rating) {
+  if (!Number.isInteger(rating) || rating < 0) return '';
+
+  const clampedRating = Math.max(0, Math.min(5, rating));
+  return `
+    <span class="cc-hover-preview-review-stars" aria-label="${escapeHtml(String(clampedRating))} z 5 hvězdiček">
+      <span class="is-filled">${'★'.repeat(clampedRating)}</span><span class="is-empty">${'☆'.repeat(5 - clampedRating)}</span>
+    </span>
+  `;
+}
+
+function sanitizeReviewContent(contentNode, baseHref) {
+  if (!contentNode) return '';
+
+  const clone = contentNode.cloneNode(true);
+  const allowedTags = new Set([
+    'A',
+    'B',
+    'BLOCKQUOTE',
+    'BR',
+    'DIV',
+    'EM',
+    'I',
+    'LI',
+    'OL',
+    'P',
+    'SPAN',
+    'STRONG',
+    'UL',
+  ]);
+
+  Array.from(clone.querySelectorAll('*'))
+    .reverse()
+    .forEach((node) => {
+      const tagName = node.tagName;
+
+      if (tagName === 'A') {
+        const href = resolveUrlAgainst(node.getAttribute('href'), baseHref);
+        if (!href) {
+          node.replaceWith(...node.childNodes);
+          return;
+        }
+
+        Array.from(node.attributes).forEach((attribute) => node.removeAttribute(attribute.name));
+        node.setAttribute('href', href);
+        node.className = 'cc-hover-preview-link';
+        return;
+      }
+
+      if (allowedTags.has(tagName)) {
+        Array.from(node.attributes).forEach((attribute) => node.removeAttribute(attribute.name));
+        return;
+      }
+
+      node.replaceWith(...node.childNodes);
+    });
+
+  return clone.innerHTML.trim();
 }
 
 export function parseCreatorPreviewDocument(doc) {
@@ -455,7 +606,7 @@ export function parseUserPreviewDocument(doc) {
   const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
   const reviewCount = normalizeText(
     Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
-      .find((heading) => /^Recenze\b/i.test(normalizeText(heading.textContent)))
+      .find((heading) => matchesCsfdTextVariant('reviewHeading', normalizeText(heading.textContent)))
       ?.querySelector('.count')?.textContent,
   ).replace(/[()]/g, '');
 
@@ -472,6 +623,7 @@ export function parseUserPreviewDocument(doc) {
 }
 
 export function parseFilmPreviewDocument(doc) {
+  const locale = getDocumentCsfdLocale(doc);
   const schemaData = parseJsonLd(doc);
   const title = normalizeText(doc.querySelector('h1')?.textContent) || 'Film';
   const imageUrl =
@@ -482,16 +634,10 @@ export function parseFilmPreviewDocument(doc) {
   const origin = normalizeText(doc.querySelector('.origin')?.textContent);
   const ratingCount = schemaData?.aggregateRating?.ratingCount || null;
   const reviewCount = schemaData?.aggregateRating?.reviewCount || null;
-  const actorsBlock = Array.from(doc.querySelectorAll('#creators > div')).find(
-    (block) => normalizeText(block.querySelector('h4')?.textContent).replace(/:$/, '') === 'Hrají',
-  );
-  const actors = Array.from(actorsBlock?.querySelectorAll('a') || [])
-    .slice(0, 18)
-    .map((link) => ({
-      name: normalizeText(link.textContent),
-      href: resolveAssetUrl(link.getAttribute('href')),
-    }))
-    .filter((actor) => actor.name && actor.href);
+  const actorsBlock = findCreatorBlockByRole(doc, 'actors');
+  const actors = parseCreatorLinks(actorsBlock, 18);
+  const directedByBlock = findCreatorBlockByRole(doc, 'directors');
+  const directors = parseCreatorLinks(directedByBlock, 18);
 
   return {
     title,
@@ -502,7 +648,59 @@ export function parseFilmPreviewDocument(doc) {
     genres,
     origin,
     actors,
+    directors,
+    locale,
     posters: imageUrl ? [{ imageUrl, label: title }] : [],
+  };
+}
+
+/**
+ * Reads the main content of a film review, along with some basic metadata about the review and its author.
+ */
+export function parseReviewPreviewDocument(doc, reviewUrl = location.href) {
+  const normalizedUrl = createUrl(reviewUrl);
+  const reviewId = normalizedUrl?.searchParams.get('review') || '';
+  const articleId = /^\d+$/.test(reviewId) ? `review-${reviewId}` : '';
+  const article =
+    (articleId ? doc.getElementById(articleId) : null) ||
+    doc.querySelector(`.tabs-review-content[data-highlight="${articleId}"] article[data-film-review]`) ||
+    doc.querySelector('article[data-film-review].highlight') ||
+    doc.querySelector('article[data-film-review]');
+
+  if (!article) return null;
+
+  const authorLink = article.querySelector(
+    'h3.user-title a.user-title-name, .article-header-review-name .user-title-name',
+  );
+  const authorName = normalizeText(authorLink?.textContent) || 'Uživatel';
+  const authorUrl = resolveAssetUrl(authorLink?.getAttribute('href'));
+  const titleDateText = normalizeText(article.querySelector('[title*="Vloženo v "]')?.getAttribute('title')).replace(
+    /^.*Vloženo v\s*/i,
+    '',
+  );
+  const dateText = normalizeText(
+    article.querySelector(
+      '.review-date time, .review-date, .comment-date time, .comment-date, .header-right-info .info time, .header-right-info time',
+    )?.textContent || titleDateText,
+  ).replace(/^\((.*)\)$/, '$1');
+  const reviewContentNode = article.querySelector(
+    '[data-film-review-content], .article-review .comment, .comment[data-film-review-content]',
+  );
+  const reviewText = normalizeText(reviewContentNode?.textContent);
+  const filmTitle = normalizeText(doc.querySelector('h1')?.textContent) || 'Recenze';
+  const filmUrl = normalizeFilmUrl(reviewUrl);
+
+  return {
+    filmTitle,
+    filmUrl,
+    authorName,
+    authorUrl,
+    reviewId,
+    dateText,
+    rating: getReviewRatingValue(article),
+    excerptText: getReviewExcerpt(reviewText),
+    previewReviewHtml: sanitizeReviewContent(reviewContentNode, normalizedUrl?.href || reviewUrl),
+    fullReviewHtml: sanitizeReviewContent(reviewContentNode, normalizedUrl?.href || reviewUrl),
   };
 }
 
@@ -807,13 +1005,8 @@ function renderUserPreview(data) {
 }
 
 function renderFilmPreview(data) {
-  const actorsHtml = Array.isArray(data.actors)
-    ? data.actors
-        .map(
-          (actor) => `<a class="cc-hover-preview-link" href="${escapeHtml(actor.href)}">${escapeHtml(actor.name)}</a>`,
-        )
-        .join(', ')
-    : '';
+  const directorsLine = renderLinkedPeopleLine(getCsfdCreatorRoleLabel('directors', data.locale), data.directors);
+  const actorsLine = renderLinkedPeopleLine(getCsfdCreatorRoleLabel('actors', data.locale), data.actors);
 
   const topHtml = [
     data.rating || data.ratingCount
@@ -835,12 +1028,9 @@ function renderFilmPreview(data) {
   const lines = [
     data.genres ? renderLine(escapeHtml(data.genres), 'is-primary') : '',
     data.origin ? renderLine(escapeHtml(data.origin), 'is-muted') : '',
-    actorsHtml ? '<div class="cc-hover-preview-divider"></div>' : '',
-    actorsHtml
-      ? renderLine(
-          `<span class="cc-hover-preview-clamp-2"><span class="cc-hover-preview-label">Hrají:</span> ${actorsHtml}</span>`,
-        )
-      : '',
+    directorsLine || actorsLine ? '<div class="cc-hover-preview-divider"></div>' : '',
+    directorsLine,
+    actorsLine,
   ].join('');
 
   return renderCardWithTop({
@@ -858,6 +1048,37 @@ function renderFilmPreview(data) {
         : '',
     metaHtml: lines,
   });
+}
+
+function renderReviewPreview(data) {
+  const authorHtml = data.authorUrl
+    ? `<a class="cc-hover-preview-link" href="${escapeHtml(data.authorUrl)}">${escapeHtml(data.authorName)}</a>`
+    : escapeHtml(data.authorName || 'Uživatel');
+  const isDeferred = Boolean(data.deferredLoaded);
+  const bodyHtml = isDeferred
+    ? data.fullReviewHtml || data.previewReviewHtml || escapeHtml(data.excerptText || '')
+    : data.previewReviewHtml || data.fullReviewHtml || escapeHtml(data.excerptText || '');
+  const bodyClassName = isDeferred ? 'is-full' : 'is-compact';
+
+  return `
+    <div class="cc-hover-preview-card is-review ${isDeferred ? 'is-expanded' : ''}">
+      <div class="cc-hover-preview-title">
+        ${data.filmUrl ? `<a class="cc-hover-preview-link" href="${escapeHtml(data.filmUrl)}">${escapeHtml(data.filmTitle || 'Recenze')}</a>` : `<span>${escapeHtml(data.filmTitle || 'Recenze')}</span>`}
+      </div>
+      <div class="cc-hover-preview-meta">
+        <div class="cc-hover-preview-review-header">
+          <div class="cc-hover-preview-review-author-wrap">
+            <span class="cc-hover-preview-line is-primary">${authorHtml}</span>
+            ${renderReviewRating(data.rating)}
+          </div>
+          ${data.dateText ? `<span class="cc-hover-preview-line is-muted cc-hover-preview-review-date">${escapeHtml(data.dateText)}</span>` : ''}
+        </div>
+        <div class="cc-hover-preview-divider"></div>
+        <div class="cc-hover-preview-review-body ${bodyClassName}">${bodyHtml}</div>
+        ${!isDeferred && data.fullReviewHtml ? renderLine('CTRL pro celou recenzi', 'is-muted is-small is-center') : ''}
+      </div>
+    </div>
+  `;
 }
 
 function renderMyAnimeListCharacterPreview(data) {
@@ -989,7 +1210,10 @@ export const HOVER_PREVIEW_PROVIDERS = [
         !url.search &&
         !url.hash &&
         !isCurrentCreatorEntity(url) &&
-        /^\/(tvurce|tvorca)\/\d+-[^/]+(?:\/(?:prehled|prehlad))?\/?$/i.test(url.pathname || ''),
+        new RegExp(
+          String.raw`^\/(${CREATOR_PATHS_PATTERN})\/\d+-[^/]+(?:\/(?:${OVERVIEW_SEGMENTS_PATTERN}))?\/?$`,
+          'i',
+        ).test(url.pathname || ''),
       );
     },
     normalizeUrl: normalizeCreatorUrl,
@@ -1007,7 +1231,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
       text: 'Zobrazí avatar a stručné informace o uživateli ČSFD.\nCTRL pro ukotvení.\n\n👉 Klikni pro ukázku',
     },
     matches(anchor) {
-      if (isUserLinkInsideAccountDropdown(anchor)) {
+      if (isUserLinkInsideAccountDropdown(anchor) || isHeaderProfileLink(anchor)) {
         return false;
       }
 
@@ -1017,9 +1241,10 @@ export const HOVER_PREVIEW_PROVIDERS = [
         !url.search &&
         !url.hash &&
         !isCurrentUserEntity(url) &&
-        /^\/uzivatel\/\d+-[^/]+(?:\/(?:prehled|prehlad|o-mne|denicek|dennik|seznamy|filmoteka|komentare|komentare-filmy|diskuze|fanclub|videa|galerie|zajimavosti|biografie|obsahy|videa-fotky)|\/oblibene(?:\/[^/]+)*)?\/?$/i.test(
-          url.pathname || '',
-        ),
+        new RegExp(
+          String.raw`^\/uzivatel\/\d+-[^/]+(?:\/(?:${USER_PROFILE_SUBPATHS_PATTERN})|\/oblibene(?:\/[^/]+)*)?\/?$`,
+          'i',
+        ).test(url.pathname || ''),
       );
     },
     normalizeUrl: normalizeUserUrl,
@@ -1034,6 +1259,41 @@ export const HOVER_PREVIEW_PROVIDERS = [
     },
     parseDocument: parseUserPreviewDocument,
     render: renderUserPreview,
+  },
+  {
+    id: 'review',
+    storageKey: HOVER_PREVIEW_REVIEW_ENABLED_KEY,
+    settingsId: 'cc-hover-preview-reviews',
+    settingsLabel: 'Náhledy csfd recenzí',
+    settingsInfoIcon: {
+      url: 'https://i.imgur.com/aejN8f7.png',
+      text: 'Zobrazí autora, hodnocení, datum a ukázku z konkrétní recenze ČSFD. CTRL ukotví náhled a rozbalí celou recenzi.',
+    },
+    matches(anchor) {
+      const url = createUrl(anchor.getAttribute('href') || anchor.href || '');
+      return Boolean(
+        url &&
+        /^\/film\//i.test(url.pathname || '') &&
+        new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i').test(url.pathname || '') &&
+        /^\d+$/.test(url.searchParams.get('review') || '') &&
+        !isCurrentReviewEntity(url),
+      );
+    },
+    normalizeUrl: normalizeReviewUrl,
+    getEntityKey: getReviewEntityKey,
+    async fetchData({ url }) {
+      const response = await fetch(url);
+      if (!response.ok) return null;
+
+      const html = await response.text();
+      const detailDocument = new DOMParser().parseFromString(html, 'text/html');
+      return parseReviewPreviewDocument(detailDocument, url);
+    },
+    async loadDeferredData({ data }) {
+      return data;
+    },
+    parseDocument: parseReviewPreviewDocument,
+    render: renderReviewPreview,
   },
   {
     id: 'film',
