@@ -64,11 +64,15 @@ describe('hover preview parsers', () => {
     expect(data.lastReviewDate).toBe('21.02.2026');
   });
 
-  test('last review date: ignores plain articles, empty without reviews', () => {
+  test('last review date comes from the owner reviews, not from other articles on the page', () => {
     const withTrap = new DOMParser().parseFromString(
       `<div class="user-profile"><div class="user-profile-header"><h1>X</h1></div></div>
-       <article class="article"><div class="article-header-date"><span class="info">01.01.2026 10:00</span></div></article>
-       <article class="article article-user"><div class="article-header-date"><span class="info">15.02.2026 09:00</span></div></article>`,
+       <article class="article article-user"><div class="article-header-date"><span class="info">02.10.2026 10:00</span></div></article>
+       <article class="article"><div class="article-header-date"><span class="info">01.10.2026 10:00</span></div></article>
+       <section class="updated-box"><article class="article">
+         <div class="article-content" data-film-review>
+           <header><div class="article-header-date-content"><span class="info"><time>15.02.2026</time></span></div></header>
+         </div></article></section>`,
       'text/html',
     );
     expect(hoverPreviewProviders.parseUserPreviewDocument(withTrap).lastReviewDate).toBe('15.02.2026');

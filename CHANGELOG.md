@@ -12,7 +12,7 @@
 - Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
 - Náhled uživatele (najetí myší na jméno uživatele): nový řádek "Poslední recenze" s datem poslední napsané recenze
   ![Poslední recenze](images/changelog/0.10.0-posledni-recenze.png)
-- CC menu - Další akce: nové tlačítko "Log" s posledními záznamy o činnosti skriptu (načítání hodnocení, synchronizace, chyby), s kopírováním a smazáním; data zůstávají jen v prohlížeči
+- CC menu - Další akce: nové tlačítko "Log" s posledními záznamy o činnosti skriptu (načítání a dopočet hodnocení, synchronizace, změny nastavení, selhání náhledů, chyby), s kopírováním a smazáním; data zůstávají jen v prohlížeči
 
 ### Fixed
 

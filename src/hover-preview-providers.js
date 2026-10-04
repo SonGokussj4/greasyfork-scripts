@@ -624,6 +624,9 @@ export function normalizeReviewDate(text, now = new Date()) {
   return value.match(/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/)?.[0].replace(/\s+/g, '') || '';
 }
 
+// Bump when the parsed user data changes, so previews cached by an older parser are fetched again.
+const USER_PREVIEW_PARSER_VERSION = 2;
+
 export function parseUserPreviewDocument(doc) {
   const profile = doc.querySelector('.user-profile');
   if (!profile) return null;
@@ -658,9 +661,13 @@ export function parseUserPreviewDocument(doc) {
       .join(' '),
   );
   const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
-  // Reviews of the profile owner are `article-user`; other articles on the page belong to other people.
+  // The owner's reviews are the `data-film-review` articles in the main "Recenze" box. Other `article`
+  // elements on the page (favourites activity, site-wide boxes) belong to other people.
   const lastReviewDate = normalizeReviewDate(
-    doc.querySelector('article.article-user .article-header-date .info')?.textContent,
+    doc
+      .querySelector('article [data-film-review]')
+      ?.closest('article')
+      ?.querySelector('.article-header-date-content .info')?.textContent,
   );
   const reviewCount = normalizeText(
     Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
@@ -677,6 +684,7 @@ export function parseUserPreviewDocument(doc) {
     memberSince,
     lastLogin,
     lastReviewDate,
+    parserVersion: USER_PREVIEW_PARSER_VERSION,
     reviewCount,
   };
 }
@@ -1311,7 +1319,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
     },
     normalizeUrl: normalizeUserUrl,
     getEntityKey: getUserEntityKey,
-    isCacheCurrent: (data) => Boolean(data) && 'lastReviewDate' in data,
+    isCacheCurrent: (data) => data?.parserVersion === USER_PREVIEW_PARSER_VERSION,
     async fetchData({ url }) {
       const response = await fetch(getUserReviewsUrl(url) || url);
       if (!response.ok) return null;

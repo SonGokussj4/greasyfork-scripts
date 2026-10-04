@@ -8,6 +8,7 @@ import {
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_POSITION_KEY,
 } from './config.js';
+import { logActivity } from './activity-log.js';
 import { applyConfiguredLinkIcons } from './link-icons.js';
 import { getFeatureState } from './utils.js';
 import { HOVER_PREVIEW_PROVIDERS } from './hover-preview-providers.js';
@@ -406,6 +407,7 @@ async function fetchPreviewData(provider, normalizedUrl) {
       if (Math.random() < 0.1) cleanExpiredCache();
       return data;
     } catch {
+      logActivity('hover', `Preview failed to load: ${provider.id}`, 'warn');
       return null;
     } finally {
       inflightRequests.delete(requestKey);
