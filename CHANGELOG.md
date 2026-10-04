@@ -8,11 +8,15 @@
   Příspěvek otevřený přes takový odkaz je zvýrazněný (červený proužek vlevo a krátké probliknutí), aby bylo jasné, který to je.
   ![Odkaz na příspěvek](images/changelog/0.10.0-odkaz-na-prispevek.png)
 - Filmy: nové nastavení "Skrýt tlačítka u filmu" - skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka)
+  ![Skrytá tlačítka u filmu](images/changelog/0.10.0-skryt-tlacitka-u-filmu.png)
 - Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
+  ![Moje diskuze](images/changelog/0.10.0-moje-diskuze.png)
 - Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
+  ![Filmografie na jeden řádek](images/changelog/0.10.0-filmografie-jeden-radek.png)
 - Náhled uživatele (najetí myší na jméno uživatele): nový řádek "Poslední recenze" s datem poslední napsané recenze
   ![Poslední recenze](images/changelog/0.10.0-posledni-recenze.png)
 - CC menu - Další akce: nové tlačítko "Log" s posledními záznamy o činnosti skriptu (načítání a dopočet hodnocení, synchronizace, změny nastavení, selhání náhledů, chyby), s kopírováním a smazáním; data zůstávají jen v prohlížeči
+  ![Log aktivity](images/changelog/0.10.0-log-aktivity.png)
 
 ### Fixed
 
