@@ -3668,3 +3668,10 @@ body.cc-revert-star-style section.others-rating .star-rating .stars::after {
     background: rgba(0, 0, 0, 0.06);
     color: #6a6a6a;
 }
+
+/* Discussion post permalink icon */
+.cc-post-permalink {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}

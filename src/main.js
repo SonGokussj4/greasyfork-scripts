@@ -132,6 +132,7 @@ import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './
         forumObserverTimer = window.setTimeout(() => {
           forumObserverTimer = null;
           csfd.enableSelfReplyInDiscussions();
+          csfd.addPostPermalinks();
         }, 200);
       }
     }
@@ -197,6 +198,14 @@ import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './
       csfd.enableSelfReplyInDiscussions();
     } else {
       csfd.clearSelfReplyInDiscussions();
+    }
+  });
+
+  window.addEventListener('cc-post-permalink-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.addPostPermalinks();
+    } else {
+      csfd.clearPostPermalinks();
     }
   });
 
