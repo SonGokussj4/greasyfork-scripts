@@ -44,6 +44,7 @@ export const MY_DISCUSSIONS_HIDDEN_LIST_KEY = 'cc_hidden_my_discussions';
 export const MY_DISCUSSIONS_UPDATED_EVENT = 'cc-my-discussions-updated';
 export const CREATOR_ONE_LINE_KEY = 'cc_creator_one_line';
 export const CREATOR_ONE_LINE_UPDATED_EVENT = 'cc-creator-one-line-updated';
+export const ACTIVITY_LOG_KEY = 'cc_activity_log_v1';
 export const FILM_ACTIONS_HIDE_KEY = 'cc_film_actions_hide';
 export const FILM_ACTIONS_UPDATED_EVENT = 'cc-film-actions-updated';
 export const FILM_ACTIONS_SECTION_COLLAPSED_KEY = 'cc_film_actions_section_collapsed';

@@ -39,7 +39,8 @@ import {
   SHOW_RATINGS_KEY,
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
-import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
+import { initializeVersionUi, openInfoModal, openVersionInfoModal } from './settings-version.js';
+import { openActivityLogModal } from './activity-log-modal.js';
 import { invalidateRatingsTotalCache, refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
 import { initializeSettingsMenuHover } from './settings-hover.js';
@@ -1213,6 +1214,11 @@ async function addSettingsButton() {
     },
     true,
   );
+
+  settingsButton.querySelector('#cc-maint-log-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openActivityLogModal(openInfoModal);
+  });
 
   settingsButton.querySelector('#cc-version-info-btn')?.addEventListener('click', (e) => {
     e.preventDefault();

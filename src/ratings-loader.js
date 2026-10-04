@@ -14,6 +14,7 @@ import {
   reconcileUserRatingRecords,
   toDeletedRatingRecord,
 } from './ratings-records.js';
+import { logActivity } from './activity-log.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
 import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
 
@@ -949,6 +950,7 @@ export function initializeRatingsLoader(rootElement) {
     try {
       loaderController.isRunning = true;
       loaderController.stopRequested = false;
+      logActivity('ratings', `Loading ratings started${sweepToEnd ? ' (full sweep)' : ''}`);
       setLoadButtonMode(loadButton, 'running');
       updateProgressUI(progress, { label: 'Načítám nejnovější hodnocení…', current: 0, total: 1 });
 
@@ -968,8 +970,10 @@ export function initializeRatingsLoader(rootElement) {
         current: result.loadedPages,
         total: result.totalPages,
       });
+      logActivity('ratings', `Loading ratings finished: ${describeSweepResult(result)}`);
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     } catch (error) {
+      logActivity('ratings', `Loading ratings failed: ${error.message}`, 'error');
       updateProgressUI(progress, {
         label: `Chyba: ${error.message}`,
         current: 0,

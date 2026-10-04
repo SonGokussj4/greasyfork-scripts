@@ -15,6 +15,7 @@ import {
   getCsfdUserProfileSubpathPattern,
   matchesCsfdTextVariant,
 } from './config.js';
+import { logActivity } from './activity-log.js';
 import { escapeHtml, parseRatingFromStars } from './utils.js';
 
 const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
@@ -330,6 +331,7 @@ async function requestHtml(url) {
           url,
           onload: (response) => {
             if (response?.status === 403 && /<title>\s*Just a moment/i.test(response.responseText || '')) {
+              logActivity('hover', `Blocked by a Cloudflare challenge: ${new URL(url).hostname}`, 'warn');
               const error = new Error('Blocked by a Cloudflare challenge');
               error.code = CLOUDFLARE_CHALLENGE_CODE;
               reject(error);
