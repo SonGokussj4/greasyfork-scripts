@@ -3435,6 +3435,13 @@ body:not(.cc-panels-feature-enabled) .cc-hide-video-btn {
     margin-top: -5px;
 }
 
+/* Favorites activity ("X ohodnotila ..."): the title row is a flex line, so centre the rating box on the title text */
+.article-content>h3.film-title-ellipsis .cc-own-rating,
+.article-content>h3.film-title-ellipsis .cc-own-rating-foreign-profile {
+    margin-top: 0;
+    align-self: center;
+}
+
 /* https://www.csfd.cz/uzivatel/xxx/prehled/ */
 header.article-header>h3>span.cc-own-rating-foreign-profile {
     margin-top: -6px;
