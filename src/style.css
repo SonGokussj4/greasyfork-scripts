@@ -400,6 +400,29 @@ header.page-header.user-logged .header-bar>li.cc-menu-item .dropdown-content.cc-
     outline: none !important;
 }
 
+.cc-button-outline {
+    background: #fff;
+    color: var(--cc-color-red) !important;
+    border: 1.5px solid var(--cc-color-red);
+}
+
+.cc-button-outline:hover,
+.cc-button-outline:focus-visible {
+    background: var(--cc-color-red);
+    color: #fff !important;
+    outline: none;
+}
+
+.cc-button-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.cc-settings-actions .cc-span-all {
+    grid-column: 1 / -1;
+}
+
 .cc-button-iconed {
     display: inline-flex;
     align-items: center;
@@ -1411,10 +1434,6 @@ body.cc-version-info-open {
     }
 }
 
-.cc-badge[role="button"] {
-    cursor: pointer;
-}
-
 /* =========================================================
    6. RATINGS TABLE MODAL
    ========================================================= */
@@ -2386,11 +2405,6 @@ body.cc-menu-open .box-video {
 /* Subtle separator between red and black */
 .cc-badges-pill .cc-badge-black {
     border-left: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-/* Align the list button */
-#cc-open-ratings-btn {
-    margin-right: 2px;
 }
 
 /* =========================================================

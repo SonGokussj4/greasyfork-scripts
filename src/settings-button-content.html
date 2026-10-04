@@ -53,7 +53,7 @@
                     <div class="cc-version-row">
                         <a class="cc-version-link" id="cc-version-value"
                             href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare" target="_blank"
-                            rel="noopener noreferrer">v0.9.0</a>
+                            rel="noopener noreferrer">v0.10.0</a>
                         <a class="cc-version-status" id="cc-version-status"
                             href="https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare" target="_blank"
                             rel="noopener noreferrer" tabindex="-1" aria-hidden="true"></a>
@@ -62,24 +62,11 @@
                 <div class="right-head cc-ml-auto cc-head-right">
                     <div class="cc-head-tools">
                         <div class="cc-badges-pill" title="Tvá uložená hodnocení">
-                            <span id="cc-badge-red" class="cc-badge cc-badge-red" tabindex="0" role="button"
+                            <span id="cc-badge-red" class="cc-badge cc-badge-red"
                                 title="Uloženo / Celkem: Počet přímo načtených hodnocení">0 / 0</span>
-                            <span id="cc-badge-black" class="cc-badge cc-badge-black" tabindex="0" role="button"
+                            <span id="cc-badge-black" class="cc-badge cc-badge-black"
                                 title="Spočtená hodnocení: Počet hodnocení automaticky dopočítaných pro seriály">0</span>
                         </div>
-
-                        <button type="button" class="cc-sync-icon-btn" id="cc-open-ratings-btn"
-                            aria-label="Tabulka hodnocení" title="Zobrazit tabulku všech hodnocení">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="8" y1="6" x2="21" y2="6"></line>
-                                <line x1="8" y1="12" x2="21" y2="12"></line>
-                                <line x1="8" y1="18" x2="21" y2="18"></line>
-                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                            </svg>
-                        </button>
 
                         <button type="button" class="cc-sync-icon-btn" id="cc-sync-cloud-btn"
                             title="Synchronizace s cloudem">
@@ -127,6 +114,21 @@
                                     <use href="#cc-icon-star"></use>
                                 </svg></span>
                             <span>Načíst spočtené</span>
+                        </button>
+                        <button id="cc-open-ratings-table-btn"
+                            class="cc-button cc-button-outline cc-button-iconed cc-span-all"
+                            title="Otevře přehlednou tabulku všech vašich hodnocení s vyhledáváním, filtrováním a řazením.">
+                            <span class="cc-button-icon" aria-hidden="true"><svg width="14" height="14"
+                                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg></span>
+                            <span>Tabulka všech hodnocení</span>
                         </button>
                     </div>
                 </div>

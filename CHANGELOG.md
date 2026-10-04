@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.1 - unreleased
+## 0.10.0
 
 ### Added
 
@@ -12,6 +12,8 @@
 
 ### Changed
 
+- Tabulka hodnocení se otevírá novým tlačítkem "Tabulka všech hodnocení" v CC menu (odstraněna ikona v liště a klikání na počítadla)
+- AniDB: Cloudflare blokuje načtení náhledu, místo prázdného náhledu se zobrazí krátká informace
 - Lepší notifikace o nové verzi skriptu v CC menu  
   ![Notifikace](images/changelog/0.9.1-notifikace.png)
 
@@ -27,6 +29,8 @@
 
 ### Development
 
+- Rychlejší sledování změn stránky (jeden průchod místo tří) a odstraněno zbytečné opakování načítání hvězdiček
+- Makefile: bootstrap, install, build, dev, test, clean, doctor
 - Úprava logiky pro zobrazení changelogu po aktualizaci skriptu v dev prostředí
 - Zobrazení fotek z images/changelog v dev módu, přes github v release verzi
 - Optimalizace kódu, zbavení se duplikátů, atd...

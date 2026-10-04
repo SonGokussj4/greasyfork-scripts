@@ -284,7 +284,7 @@ async function addSettingsButton() {
   // Disable main actions if the user is not logged in
   if (!loggedIn) {
     // Buttons & Cloud Icon
-    ['#cc-load-ratings-btn', '#cc-load-computed-btn', '#cc-sync-cloud-btn'].forEach((id) => {
+    ['#cc-load-ratings-btn', '#cc-load-computed-btn', '#cc-open-ratings-table-btn', '#cc-sync-cloud-btn'].forEach((id) => {
       const btn = settingsButton.querySelector(id);
       if (btn) {
         btn.disabled = true;
@@ -1188,33 +1188,7 @@ async function addSettingsButton() {
   });
 
   const ratingsModalOptions = { getCurrentUserSlug, getMostFrequentUserSlug };
-  const setupBadge = (id, type) => {
-    const badge = settingsButton.querySelector(id);
-    if (!badge) return;
-    badge.setAttribute('role', 'button');
-    badge.setAttribute('tabindex', '0');
-
-    const handler = (e) => {
-      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
-      if (e.type === 'keydown') e.preventDefault();
-      if (!isUserLoggedIn()) {
-        showSettingsInfoToast('Pro zobrazení hodnocení se prosím přihlaste.');
-        return;
-      }
-      openRatingsTableModal(settingsButton, type, ratingsModalOptions).catch((err) =>
-        console.error(`[CC] Failed to open ${type} ratings table:`, err),
-      );
-    };
-
-    badge.addEventListener('click', handler);
-    badge.addEventListener('keydown', handler);
-  };
-
-  setupBadge('#cc-badge-red', 'direct');
-  setupBadge('#cc-badge-black', 'computed');
-
-  // Setup the dedicated list button in the settings menu
-  const listBtn = settingsButton.querySelector('#cc-open-ratings-btn');
+  const listBtn = settingsButton.querySelector('#cc-open-ratings-table-btn');
   if (listBtn) {
     const handler = (e) => {
       if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;

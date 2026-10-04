@@ -315,6 +315,8 @@ function parseJsonLd(doc) {
  * For external sites we prefer userscript requests because they bypass normal
  * page CORS limits. If that API is not available, we fall back to regular `fetch()`.
  */
+const CLOUDFLARE_CHALLENGE_CODE = 'cc-cloudflare-challenge';
+
 async function requestHtml(url) {
   const gmRequest = globalThis.GM_xmlhttpRequest || globalThis.GM?.xmlHttpRequest;
 
@@ -325,6 +327,13 @@ async function requestHtml(url) {
           method: 'GET',
           url,
           onload: (response) => {
+            if (response?.status === 403 && /<title>\s*Just a moment/i.test(response.responseText || '')) {
+              const error = new Error('Blocked by a Cloudflare challenge');
+              error.code = CLOUDFLARE_CHALLENGE_CODE;
+              reject(error);
+              return;
+            }
+
             if (response?.status >= 200 && response?.status < 400) {
               resolve(response.responseText || '');
               return;
@@ -335,7 +344,9 @@ async function requestHtml(url) {
           onerror: reject,
         });
       });
-    } catch {
+    } catch (err) {
+      // A challenge page cannot be bypassed by a plain fetch() either, so surface it to the caller.
+      if (err?.code === CLOUDFLARE_CHALLENGE_CODE) throw err;
       // Fall back to fetch when a userscript request is unavailable.
     }
   }
@@ -352,6 +363,29 @@ async function requestHtml(url) {
 async function requestHtmlDocument(url) {
   const html = await requestHtml(url);
   return html ? new DOMParser().parseFromString(html, 'text/html') : null;
+}
+
+/**
+ * AniDB sits behind a Cloudflare challenge that userscript requests cannot pass.
+ * Return a marker so the hover card can say so instead of silently not showing.
+ */
+async function requestAniDbDocument(url, parse) {
+  try {
+    const documentNode = await requestHtmlDocument(url);
+    return documentNode ? parse(documentNode) : null;
+  } catch (err) {
+    if (err?.code === CLOUDFLARE_CHALLENGE_CODE) return { blocked: true, url };
+    throw err;
+  }
+}
+
+function renderAniDbBlockedPreview() {
+  return `
+    <div class="cc-hover-preview-card is-anidb-blocked">
+      <div class="cc-hover-preview-top">${renderLine('anidb.net', 'is-primary')}</div>
+      <div class="cc-hover-preview-meta">${renderLine('Náhled není dostupný - AniDB vyžaduje ověření prohlížeče.', 'is-muted')}</div>
+    </div>
+  `;
 }
 
 function countCareerTitles(table) {
@@ -1109,6 +1143,7 @@ function renderMyAnimeListCharacterPreview(data) {
 }
 
 function renderAniDbCharacterPreview(data) {
+  if (data.blocked) return renderAniDbBlockedPreview();
   const relatedAnimeHtml = Array.isArray(data.relatedAnime)
     ? data.relatedAnime
         .map((item) => {
@@ -1137,6 +1172,7 @@ function renderAniDbCharacterPreview(data) {
 }
 
 function renderAniDbAnimePreview(data) {
+  if (data.blocked) return renderAniDbBlockedPreview();
   const topHtml = data.rating ? renderLine(`${escapeHtml(data.rating)}/10`, 'is-rating') : '';
   const metaHtml = [
     data.year ? renderLine(escapeHtml(data.year), 'is-muted') : '',
@@ -1389,8 +1425,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
     normalizeUrl: normalizeAniDbCharacterUrl,
     getEntityKey: getAniDbCharacterEntityKey,
     async fetchData({ url }) {
-      const documentNode = await requestHtmlDocument(url);
-      return documentNode ? parseAniDbCharacterPreviewDocument(documentNode) : null;
+      return requestAniDbDocument(url, parseAniDbCharacterPreviewDocument);
     },
     parseDocument: parseAniDbCharacterPreviewDocument,
     render: renderAniDbCharacterPreview,
@@ -1408,8 +1443,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
     normalizeUrl: normalizeAniDbAnimeUrl,
     getEntityKey: getAniDbAnimeEntityKey,
     async fetchData({ url }) {
-      const documentNode = await requestHtmlDocument(url);
-      return documentNode ? parseAniDbAnimePreviewDocument(documentNode) : null;
+      return requestAniDbDocument(url, parseAniDbAnimePreviewDocument);
     },
     parseDocument: parseAniDbAnimePreviewDocument,
     render: renderAniDbAnimePreview,

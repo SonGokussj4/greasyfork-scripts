@@ -82,7 +82,6 @@ import { initializeHoverPreviews } from './hover-preview.js';
   } else {
     window.addEventListener('load', rerunStars, { once: true });
   }
-  window.setTimeout(rerunStars, 1500);
 
   // Watch for content injected into the DOM after initial load (e.g. pagination
   // clicks, lazy-loaded boxes and AJAX-replies in discussions) and add stars to any new film links.
@@ -91,68 +90,32 @@ import { initializeHoverPreviews } from './hover-preview.js';
   let starObserverTimer = null;
   let forumObserverTimer = null;
 
-  const mutationContainsFilmLink = (mutationList) => {
+  const FILM_LINK_SELECTOR = 'a[href*="/film/"]';
+  const FORUM_POST_SELECTOR = '.article-forum-item, article.article-forum';
+  const LINK_ICON_SELECTOR =
+    'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment';
+
+  // Single pass over the added nodes; stops early once every kind has been seen.
+  const classifyMutations = (mutationList) => {
+    const found = { film: false, forum: false, linkIcon: false };
+    const hit = (node, selector) => node.matches(selector) || node.querySelector(selector) !== null;
+
     for (const mutation of mutationList) {
-      if (!mutation.addedNodes || mutation.addedNodes.length === 0) {
-        continue;
-      }
-
-      for (const node of mutation.addedNodes) {
-        if (!(node instanceof Element)) {
-          continue;
-        }
-
-        if (node.matches?.('a[href*="/film/"]') || node.querySelector?.('a[href*="/film/"]')) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
-
-  // Helper to detect when ČSFD injects new discussion posts
-  const mutationContainsForumPost = (mutationList) => {
-    for (const mutation of mutationList) {
-      if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
       for (const node of mutation.addedNodes) {
         if (!(node instanceof Element)) continue;
-        if (
-          node.matches?.('.article-forum-item, article.article-forum') ||
-          node.querySelector?.('.article-forum-item, article.article-forum')
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
-
-  const mutationContainsLinkIconTarget = (mutationList) => {
-    for (const mutation of mutationList) {
-      if (!mutation.addedNodes || mutation.addedNodes.length === 0) continue;
-
-      for (const node of mutation.addedNodes) {
-        if (!(node instanceof Element)) continue;
-
-        if (
-          node.matches?.(
-            'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment',
-          ) ||
-          node.querySelector?.(
-            'a[href*="/film/"], a[href*="/tvurce/"], a[href*="/tvorca/"], a[href*="/uzivatel/"], a[href*="youtube.com"], a[href*="youtu.be"], a[href*="store.steampowered.com"], a[href*="wikipedia.org"], a[href*="anidb.net"], a[href*="myanimelist.net"], .article-content.article-content-justify, .article-content.article-content-icons, .article-news-content.article-content-justify, span.comment',
-          )
-        ) {
-          return true;
-        }
+        found.film = found.film || hit(node, FILM_LINK_SELECTOR);
+        found.forum = found.forum || hit(node, FORUM_POST_SELECTOR);
+        found.linkIcon = found.linkIcon || hit(node, LINK_ICON_SELECTOR);
+        if (found.film && found.forum && found.linkIcon) return found;
       }
     }
 
-    return false;
+    return found;
   };
 
   const contentObserver = new MutationObserver((mutationList) => {
-    if (mutationContainsFilmLink(mutationList)) {
+    const changes = classifyMutations(mutationList);
+    if (changes.film) {
       if (starObserverTimer === null) {
         starObserverTimer = window.setTimeout(() => {
           starObserverTimer = null;
@@ -162,7 +125,7 @@ import { initializeHoverPreviews } from './hover-preview.js';
     }
 
     // If the DOM update contained a forum post, redraw the self-reply buttons!
-    if (mutationContainsForumPost(mutationList)) {
+    if (changes.forum) {
       if (forumObserverTimer === null) {
         forumObserverTimer = window.setTimeout(() => {
           forumObserverTimer = null;
@@ -171,7 +134,7 @@ import { initializeHoverPreviews } from './hover-preview.js';
       }
     }
 
-    if (mutationContainsLinkIconTarget(mutationList)) {
+    if (changes.linkIcon) {
       if (linkIconObserverTimer === null) {
         linkIconObserverTimer = window.setTimeout(() => {
           linkIconObserverTimer = null;
