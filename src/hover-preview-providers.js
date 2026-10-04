@@ -606,6 +606,22 @@ export function parseCreatorPreviewDocument(doc) {
   };
 }
 
+/**
+ * ČSFD prints recent review dates as "dnes 13:51" / "včera 22:35". The preview may be cached
+ * for hours, so turn those into a real date; absolute dates are kept (date part only).
+ * Uses the browser's local date, so it can be off by one near midnight for users outside Prague.
+ */
+export function normalizeReviewDate(text, now = new Date()) {
+  const value = normalizeText(text);
+  const formatDate = (date) =>
+    `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`;
+
+  if (/^dnes(?:\s|$)/i.test(value)) return formatDate(now);
+  if (/^včera(?:\s|$)/i.test(value)) return formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+
+  return value.match(/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/)?.[0].replace(/\s+/g, '') || '';
+}
+
 export function parseUserPreviewDocument(doc) {
   const profile = doc.querySelector('.user-profile');
   if (!profile) return null;
@@ -640,6 +656,10 @@ export function parseUserPreviewDocument(doc) {
       .join(' '),
   );
   const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
+  // Reviews of the profile owner are `article-user`; other articles on the page belong to other people.
+  const lastReviewDate = normalizeReviewDate(
+    doc.querySelector('article.article-user .article-header-date .info')?.textContent,
+  );
   const reviewCount = normalizeText(
     Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
       .find((heading) => matchesCsfdTextVariant('reviewHeading', normalizeText(heading.textContent)))
@@ -654,6 +674,7 @@ export function parseUserPreviewDocument(doc) {
     points,
     memberSince,
     lastLogin,
+    lastReviewDate,
     reviewCount,
   };
 }
@@ -1022,13 +1043,14 @@ function renderUserPreview(data) {
     data.lastLogin
       ? renderLabelValue('Viděn', data.lastLogin.replace(/^Poslední\s+přihlášení\s*/i, ''), 'is-muted')
       : '',
-    data.lastLogin && (data.memberSince || data.reviewCount)
+    data.lastLogin && (data.memberSince || data.reviewCount || data.lastReviewDate)
       ? '<div class="cc-hover-preview-divider is-subtle"></div>'
       : '',
     data.memberSince
       ? renderLabelValue('Na ČSFD od', data.memberSince.replace(/^Na\s+ČSFD\s+od\s*/i, ''), 'is-muted')
       : '',
     data.reviewCount ? renderLabelValue('Recenzí', formatCount(data.reviewCount), 'is-muted') : '',
+    data.lastReviewDate ? renderLabelValue('Poslední recenze', data.lastReviewDate, 'is-muted') : '',
   ].join('');
 
   return renderCardWithTop({
