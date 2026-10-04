@@ -3558,6 +3558,12 @@ body.cc-revert-star-style section.others-rating .star-rating .stars::before {
     direction: ltr;
 }
 
+/* "odpad!" is plain text: rtl would move the "!" to the front, so keep it ltr and aligned with the stars */
+body.cc-revert-star-style section.others-rating .star-rating .stars.trash {
+    direction: ltr;
+    text-align: right;
+}
+
 body.cc-revert-star-style section.others-rating .star-rating .stars::after {
     display: none !important;
 }
