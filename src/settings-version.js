@@ -655,6 +655,12 @@ function renderUpdateModalContent({ fromVersion, toVersion, changelogData }) {
   `;
 }
 
+/** Opens the shared CC modal with arbitrary HTML and returns its body element. */
+export function openInfoModal({ title, html }) {
+  openVersionModal({ title, html });
+  return getVersionModal().body;
+}
+
 export async function openVersionInfoModal(menuRootElement) {
   const currentVersion = getCurrentMenuVersion(menuRootElement);
   openVersionModal({

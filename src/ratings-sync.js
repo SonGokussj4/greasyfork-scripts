@@ -1,6 +1,7 @@
 import { getOrCreateToken, downloadFromCloud, uploadToCloud } from './supabase-api.js';
 import { getAllFromIndexedDB, saveToIndexedDB, deleteItemFromIndexedDB } from './storage.js';
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME } from './config.js';
+import { logActivity } from './activity-log.js';
 
 const SYNC_ENABLED_KEY = 'cc_sync_enabled';
 const SYNC_ACCESS_KEY = 'cc_sync_access_key';
@@ -394,6 +395,7 @@ export async function performCloudSync(isManualCheck = false) {
 
   isSyncing = true;
   console.log('☁️ [CC Sync] Starting sync...');
+  logActivity('sync', `Cloud sync started${isManualCheck ? ' (manual)' : ''}`);
 
   try {
     const localArray = await getAllFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME);
@@ -505,9 +507,11 @@ export async function performCloudSync(isManualCheck = false) {
     }
 
     console.log('☁️ [CC Sync] Sync complete!', stats);
+    logActivity('sync', `Cloud sync complete: ${JSON.stringify(stats)}`);
     return { status: 'success', stats, hasLocalChanges, hasCloudChanges };
   } catch (error) {
     console.error('☁️ [CC Sync] Failed:', error);
+    logActivity('sync', `Cloud sync failed: ${error?.message || error}`, 'error');
     return { status: 'error' };
   } finally {
     isSyncing = false;

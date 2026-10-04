@@ -3772,3 +3772,72 @@ body.cc-creator-one-line .updated-box-table td.name .film-title-inline > a.film-
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* Activity log modal (activity-log-modal.js) */
+.cc-activity-log-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.cc-activity-log-note {
+    margin-left: auto;
+    font-size: 11px;
+    color: #777;
+}
+
+.cc-activity-log-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 12px;
+    font-family: ui-monospace, Consolas, monospace;
+}
+
+.cc-activity-log-row {
+    display: grid;
+    grid-template-columns: 132px auto 64px 1fr;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.cc-activity-log-row.is-error .cc-activity-log-level,
+.cc-activity-log-row.is-error .cc-activity-log-msg {
+    color: var(--cc-color-red);
+}
+
+.cc-activity-log-row.is-warn .cc-activity-log-level {
+    color: #b36b00;
+}
+
+.cc-activity-log-time,
+.cc-activity-log-level,
+.cc-activity-log-area {
+    color: #777;
+}
+
+.cc-activity-log-msg {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.cc-activity-log-empty {
+    color: #777;
+}
+
+@media (max-width: 520px) {
+    .cc-activity-log-row {
+        grid-template-columns: auto auto 1fr;
+    }
+
+    .cc-activity-log-time {
+        grid-column: 1 / -1;
+    }
+
+    .cc-activity-log-msg {
+        grid-column: 1 / -1;
+    }
+}

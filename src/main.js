@@ -6,6 +6,7 @@ import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { initializeHoverPreviews } from './hover-preview.js';
 import { applyFilmActionVisibility } from './film-actions.js';
 import { CREATOR_ONE_LINE_UPDATED_EVENT, FILM_ACTIONS_UPDATED_EVENT, MY_DISCUSSIONS_UPDATED_EVENT } from './config.js';
+import { installConsoleCapture } from './activity-log.js';
 import { applyMyDiscussions } from './my-discussions.js';
 import { applyCreatorOneLine } from './creator-filmography.js';
 import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './review-draft.js';
@@ -13,6 +14,7 @@ import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './
 (async () => {
   'use strict';
   console.debug('🟣 Script started');
+  installConsoleCapture();
 
   await delay(20);
 

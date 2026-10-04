@@ -9,6 +9,7 @@
 - Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
 - Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
 - Náhled uživatele: řádek "Poslední recenze" s datem poslední napsané recenze
+- CC menu - Další akce: nové tlačítko "Log" s posledními záznamy o činnosti skriptu (načítání hodnocení, synchronizace, chyby), s kopírováním a smazáním; data zůstávají jen v prohlížeči
 
 ### Fixed
 
