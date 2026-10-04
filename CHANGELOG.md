@@ -9,6 +9,10 @@
 - Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
 - Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
 
+### Fixed
+
+- Aktivita oblíbených: hodnocení vedle názvu filmu je zarovnané na střed textu
+
 ## 0.10.0
 
 ### Added
