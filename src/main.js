@@ -5,8 +5,9 @@ import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { initializeHoverPreviews } from './hover-preview.js';
 import { applyFilmActionVisibility } from './film-actions.js';
-import { FILM_ACTIONS_UPDATED_EVENT, MY_DISCUSSIONS_UPDATED_EVENT } from './config.js';
+import { CREATOR_ONE_LINE_UPDATED_EVENT, FILM_ACTIONS_UPDATED_EVENT, MY_DISCUSSIONS_UPDATED_EVENT } from './config.js';
 import { applyMyDiscussions } from './my-discussions.js';
+import { applyCreatorOneLine } from './creator-filmography.js';
 import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './review-draft.js';
 
 (async () => {
@@ -53,6 +54,8 @@ import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './
 
   applyFilmActionVisibility();
   applyMyDiscussions();
+  applyCreatorOneLine();
+  window.addEventListener(CREATOR_ONE_LINE_UPDATED_EVENT, applyCreatorOneLine);
   window.addEventListener(MY_DISCUSSIONS_UPDATED_EVENT, applyMyDiscussions);
   window.addEventListener(FILM_ACTIONS_UPDATED_EVENT, applyFilmActionVisibility);
 

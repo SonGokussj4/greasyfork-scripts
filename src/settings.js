@@ -21,6 +21,7 @@ import {
   INDEXED_DB_NAME,
   RATINGS_STORE_NAME,
   FILM_ACTIONS_HIDE_KEY,
+  CREATOR_ONE_LINE_UPDATED_EVENT,
   MY_DISCUSSIONS_HIDDEN_LIST_KEY,
   MY_DISCUSSIONS_UPDATED_EVENT,
   FILM_ACTIONS_SECTION_COLLAPSED_KEY,
@@ -980,6 +981,7 @@ async function addSettingsButton() {
     window.dispatchEvent(new CustomEvent(FILM_ACTIONS_UPDATED_EVENT, { detail: { skipSync: true } }));
     window.dispatchEvent(new CustomEvent('cc-post-permalink-toggled', { detail: { enabled: true } }));
     localStorage.removeItem(MY_DISCUSSIONS_HIDDEN_LIST_KEY);
+    window.dispatchEvent(new CustomEvent(CREATOR_ONE_LINE_UPDATED_EVENT, { detail: { skipSync: true } }));
     window.dispatchEvent(new CustomEvent(MY_DISCUSSIONS_UPDATED_EVENT, { detail: { skipSync: true } }));
     window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
     window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
