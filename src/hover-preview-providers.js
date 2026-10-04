@@ -1311,6 +1311,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
     },
     normalizeUrl: normalizeUserUrl,
     getEntityKey: getUserEntityKey,
+    isCacheCurrent: (data) => Boolean(data) && 'lastReviewDate' in data,
     async fetchData({ url }) {
       const response = await fetch(getUserReviewsUrl(url) || url);
       if (!response.ok) return null;
