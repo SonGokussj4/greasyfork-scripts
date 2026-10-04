@@ -61,6 +61,38 @@ describe('hover preview parsers', () => {
     expect(data.points.value).toBe('5');
     expect(data.reviewCount).toBe('5 465');
     expect(data.lastLogin).toContain('21.02.2026 15:03');
+    expect(data.lastReviewDate).toBe('21.02.2026');
+  });
+
+  test('last review date: ignores plain articles, empty without reviews', () => {
+    const withTrap = new DOMParser().parseFromString(
+      `<div class="user-profile"><div class="user-profile-header"><h1>X</h1></div></div>
+       <article class="article"><div class="article-header-date"><span class="info">01.01.2026 10:00</span></div></article>
+       <article class="article article-user"><div class="article-header-date"><span class="info">15.02.2026 09:00</span></div></article>`,
+      'text/html',
+    );
+    expect(hoverPreviewProviders.parseUserPreviewDocument(withTrap).lastReviewDate).toBe('15.02.2026');
+
+    const none = new DOMParser().parseFromString(
+      '<div class="user-profile"><div class="user-profile-header"><h1>X</h1></div></div>',
+      'text/html',
+    );
+    expect(hoverPreviewProviders.parseUserPreviewDocument(none).lastReviewDate).toBe('');
+  });
+
+  test('"včera" crosses month, year and leap day boundaries', () => {
+    const f = (d) => hoverPreviewProviders.normalizeReviewDate('včera 10:00', d);
+    expect(f(new Date(2026, 0, 1))).toBe('31.12.2025');
+    expect(f(new Date(2026, 2, 1))).toBe('28.02.2026');
+    expect(f(new Date(2028, 2, 1))).toBe('29.02.2028');
+  });
+
+  test('normalizes review dates, turning relative ones into real dates', () => {
+    const now = new Date(2026, 2, 1, 12, 0);
+    expect(hoverPreviewProviders.normalizeReviewDate('dnes 13:51', now)).toBe('01.03.2026');
+    expect(hoverPreviewProviders.normalizeReviewDate('včera 22:35', now)).toBe('28.02.2026');
+    expect(hoverPreviewProviders.normalizeReviewDate('19.02.2026 11:01', now)).toBe('19.02.2026');
+    expect(hoverPreviewProviders.normalizeReviewDate('', now)).toBe('');
   });
 
   test('parses film preview data from saved fixture', () => {

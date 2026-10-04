@@ -8,6 +8,7 @@
 - Filmy: nové nastavení "Skrýt tlačítka u filmu" - skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka)
 - Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
 - Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
+- Náhled uživatele: řádek "Poslední recenze" s datem poslední napsané recenze
 
 ### Fixed
 
