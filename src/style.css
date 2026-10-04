@@ -3675,3 +3675,12 @@ body.cc-revert-star-style section.others-rating .star-rating .stars::after {
     align-items: center;
     justify-content: center;
 }
+
+/* Hidden film profile action buttons (body classes set by film-actions.js) */
+body.cc-hide-film-action-review .action-panel-item:has(> a[href*="#open-review-form"]),
+body.cc-hide-film-action-watchlist .action-panel-item:has(> a[href*="modal=watchlist"]),
+body.cc-hide-film-action-fanclub #snippet--actionLinkFanclub,
+body.cc-hide-film-action-lists .action-panel-item:has(> a[href*="modal=filmList"]),
+body.cc-hide-film-action-collection #snippet--actionLinkCollection {
+    display: none !important;
+}

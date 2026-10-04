@@ -20,6 +20,9 @@ import {
   HOVER_PREVIEW_SETTINGS_CHANGED_EVENT,
   INDEXED_DB_NAME,
   RATINGS_STORE_NAME,
+  FILM_ACTIONS_HIDE_KEY,
+  FILM_ACTIONS_SECTION_COLLAPSED_KEY,
+  FILM_ACTIONS_UPDATED_EVENT,
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_UPDATED_EVENT,
   LINK_ICONS_POSITION_KEY,
@@ -413,6 +416,18 @@ async function addSettingsButton() {
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
+  const updateFilmActionsUI = () => {
+    const enabled = getBoolSetting(FILM_ACTIONS_HIDE_KEY, false);
+    const groupConfig = findMenuConfigItem('cc-hide-film-actions');
+    const body = queryMenu('#cc-film-actions-group-body');
+
+    for (const child of groupConfig?.childrenItems || []) {
+      const childToggle = queryMenu(`#${child.id}`);
+      if (childToggle) childToggle.disabled = !enabled;
+    }
+    if (body) body.classList.toggle('is-disabled', !enabled);
+  };
+
   const updateLinkIconsUI = () => {
     const enabled = getBoolSetting(LINK_ICONS_ENABLED_KEY, true);
     const position = localStorage.getItem(LINK_ICONS_POSITION_KEY) === 'after' ? 'after' : 'before';
@@ -447,6 +462,7 @@ async function addSettingsButton() {
     updateHidePanelsUI,
     updateShowRatingsUI,
     updateLinkIconsUI,
+    updateFilmActionsUI,
     updateHoverPreviewUI,
     updateHideReviewsUI,
   };
@@ -733,6 +749,7 @@ async function addSettingsButton() {
   updateHideReviewsUI();
   updateHidePanelsUI();
   updateLinkIconsUI();
+  updateFilmActionsUI();
   updateShowRatingsUI();
 
   let currentPanelPills = [];
@@ -905,6 +922,7 @@ async function addSettingsButton() {
     updateHideReviewsUI();
     updateHidePanelsUI();
     updateLinkIconsUI();
+    updateFilmActionsUI();
     updateShowRatingsUI();
     updateDevState();
   };
@@ -919,6 +937,7 @@ async function addSettingsButton() {
     localStorage.removeItem(HOVER_PREVIEW_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(HOVER_PREVIEW_PIN_HINT_SEEN_KEY);
     localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
+    localStorage.removeItem(FILM_ACTIONS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
     localStorage.removeItem(LINK_ICONS_POSITION_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_DIARIES_KEY);
@@ -956,6 +975,8 @@ async function addSettingsButton() {
       }),
     );
     window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
+    window.dispatchEvent(new CustomEvent(FILM_ACTIONS_UPDATED_EVENT, { detail: { skipSync: true } }));
+    window.dispatchEvent(new CustomEvent('cc-post-permalink-toggled', { detail: { enabled: true } }));
     window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
     window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
     showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
