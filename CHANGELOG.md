@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.10 - unreleased
+## 0.10.0
 
 ### Added
 
@@ -17,6 +17,9 @@
 - Načítání hodnocení je jedno projití od nejnovějších: jakmile počet sedí s ČSFD, samo skončí (typicky po 1. stránce), tlačítkem jde kdykoli zastavit a načtené zůstane uložené. Když máte uloženo víc hodnocení než ČSFD, projde vše až do konce a smazaná označí. Shift+klik projde všechny stránky. Pozastavení a pokračování načítání bylo zrušeno.
 - Rychlejší načítání stránek: celkový počet hodnocení pro odznak v CC menu se už nestahuje při každém zobrazení stránky, ale drží se 30 minut (a obnoví se hned při změně hodnocení).
 - Připínání náhledů: stačí krátce ťuknout na `Ctrl` (Ctrl+C, Ctrl+klik a jiné zkratky už náhled omylem nepřipnou), nebo bez klávesnice podržet tlačítko myši na odkazu. Připnutý náhled má křížek pro zavření, `Esc` zavře všechny. Při připnutých náhledech fungují náhledy dalších odkazů na stránce, takže jde porovnávat víc karet. Nový náhled ukazuje nápovědu, dokud poprvé nic nepřipnete.
+- Tabulka hodnocení se otevírá novým tlačítkem "Tabulka všech hodnocení" v CC menu (odstraněna ikona v liště a klikání na počítadla)
+  ![Tabulka hodnocení](images/changelog/0.10.0-tabulka-hodnoceni.png)
+- AniDB: Cloudflare blokuje načtení náhledu, místo prázdného náhledu se zobrazí krátká informace
 - Lepší notifikace o nové verzi skriptu v CC menu  
   ![Notifikace](images/changelog/0.9.1-notifikace.png)
 
@@ -38,6 +41,8 @@
 
 ### Development
 
+- Rychlejší sledování změn stránky (jeden průchod místo tří) a odstraněno zbytečné opakování načítání hvězdiček
+- Makefile: bootstrap, install, build, dev, test, clean, doctor
 - Úprava logiky pro zobrazení changelogu po aktualizaci skriptu v dev prostředí
 - Zobrazení fotek z images/changelog v dev módu, přes github v release verzi
 - Optimalizace kódu, zbavení se duplikátů, atd...
