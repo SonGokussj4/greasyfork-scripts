@@ -13,6 +13,7 @@
 ### Changed
 
 - Tabulka hodnocení se otevírá novým tlačítkem "Tabulka všech hodnocení" v CC menu (odstraněna ikona v liště a klikání na počítadla)
+  ![Tabulka hodnocení](images/changelog/0.10.0-tabulka-hodnoceni.png)
 - AniDB: Cloudflare blokuje načtení náhledu, místo prázdného náhledu se zobrazí krátká informace
 - Lepší notifikace o nové verzi skriptu v CC menu  
   ![Notifikace](images/changelog/0.9.1-notifikace.png)
