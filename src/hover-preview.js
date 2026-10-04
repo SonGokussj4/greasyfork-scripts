@@ -386,7 +386,9 @@ async function fetchPreviewData(provider, normalizedUrl) {
 
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey));
-    if (cached?.timestamp && Date.now() - cached.timestamp < maxAgeMs) {
+    // `isCacheCurrent` lets a provider drop entries cached before it learned a new field.
+    const isCurrent = provider.isCacheCurrent ? provider.isCacheCurrent(cached?.data) : true;
+    if (cached?.timestamp && isCurrent && Date.now() - cached.timestamp < maxAgeMs) {
       return cached.data;
     }
   } catch {}
