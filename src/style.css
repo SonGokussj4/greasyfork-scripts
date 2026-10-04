@@ -3736,3 +3736,32 @@ tr.cc-md-hidden-preview .cc-md-btn {
     font-size: 11px;
     font-weight: normal;
 }
+
+/* Creator filmography: one film per line (creator-filmography.js) */
+body.cc-creator-one-line .updated-box-table td.name {
+    max-width: 0;
+    width: 100%;
+}
+
+body.cc-creator-one-line .updated-box-table td.year,
+body.cc-creator-one-line .updated-box-table td.rating {
+    white-space: nowrap;
+}
+
+body.cc-creator-one-line .updated-box-table td.name .film-title-inline {
+    display: flex;
+    align-items: baseline;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+body.cc-creator-one-line .updated-box-table td.name .film-title-inline > * {
+    flex: none;
+}
+
+body.cc-creator-one-line .updated-box-table td.name .film-title-inline > a.film-title-name {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
