@@ -2784,11 +2784,14 @@
   const MAX_MESSAGE_LENGTH = 300;
   const DEDUPE_WINDOW_MS = 5000;
 
-  /** Single line, no URLs or token-like strings (errors can contain keys or links), length-limited. */
+  /**
+   * Single line, no URLs or token-like strings (errors can contain keys or links), length-limited.
+   * Token-like = 24+ id characters containing a digit, so long setting names (cc_show_ratings_in_reviews) stay readable.
+   */
   function sanitizeMessage(message) {
     return String(message ?? '')
       .replace(/https?:\/\/\S+/gi, '[url]')
-      .replace(/[A-Za-z0-9_-]{24,}/g, '[redacted]')
+      .replace(/(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{24,}/g, '[redacted]')
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, MAX_MESSAGE_LENGTH);

@@ -75,6 +75,11 @@ describe('activity log privacy and noise', () => {
     expect(msg).toContain('[url]');
   });
 
+  test('keeps long setting names readable', () => {
+    log.logActivity('settings', 'cc_show_ratings_in_foreign_reviews on');
+    expect(log.getActivityLog()[0].msg).toBe('cc_show_ratings_in_foreign_reviews on');
+  });
+
   test('collapses immediate repeats of the same message', () => {
     log.logActivity('hover', 'blocked', 'warn');
     log.logActivity('hover', 'blocked', 'warn');
