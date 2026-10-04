@@ -3841,3 +3841,26 @@ body.cc-creator-one-line .updated-box-table td.name .film-title-inline > a.film-
         grid-column: 1 / -1;
     }
 }
+
+/* Discussion post opened through a permalink (#highlight-post-N): make it obvious which one it is */
+article.article-forum:target {
+    background: rgba(186, 0, 5, 0.07);
+    box-shadow: inset 4px 0 0 var(--cc-color-red, #ba0005);
+    animation: cc-post-target-flash 2.4s ease-out 1;
+}
+
+@keyframes cc-post-target-flash {
+    0% {
+        background: rgba(186, 0, 5, 0.28);
+    }
+
+    100% {
+        background: rgba(186, 0, 5, 0.07);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    article.article-forum:target {
+        animation: none;
+    }
+}
