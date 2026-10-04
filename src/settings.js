@@ -41,6 +41,7 @@ import {
 } from './config.js';
 import { initializeVersionUi, openInfoModal, openVersionInfoModal } from './settings-version.js';
 import { openActivityLogModal } from './activity-log-modal.js';
+import { logActivity } from './activity-log.js';
 import { invalidateRatingsTotalCache, refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
 import { initializeSettingsMenuHover } from './settings-hover.js';
@@ -591,6 +592,7 @@ async function addSettingsButton() {
 
     element.addEventListener('change', () => {
       localStorage.setItem(storageKey, String(element.checked));
+      logActivity('settings', `${storageKey} ${element.checked ? 'on' : 'off'}`);
       // skipSync: true so redraw triggers won't mistakenly try to push cloud updates constantly
       if (eventName)
         window.dispatchEvent(

@@ -996,6 +996,7 @@ export function initializeRatingsLoader(rootElement) {
     try {
       computedLoaderController.isRunning = true;
       computedLoaderController.pauseRequested = false;
+      logActivity('ratings', 'Computing series ratings started');
       setComputedButtonMode('running');
 
       const total = Math.max(1, Number.parseInt(resumeState?.unresolvedParents?.length || '1', 10));
@@ -1021,6 +1022,13 @@ export function initializeRatingsLoader(rootElement) {
           }
         },
       });
+
+      logActivity(
+        'ratings',
+        result.paused
+          ? `Computing series ratings paused at ${result.nextIndex}/${result.unresolved}`
+          : `Computing series ratings finished: ${result.saved} saved, ${result.skippedNonComputed} skipped`,
+      );
 
       if (result.paused) {
         updateProgressUI(progress, {
@@ -1051,6 +1059,7 @@ export function initializeRatingsLoader(rootElement) {
         current: 0,
         total: 1,
       });
+      logActivity('ratings', `Computing series ratings failed: ${error.message}`, 'error');
       console.error('[CC] Computed ratings loader failed:', error);
     } finally {
       computedLoaderController.isRunning = false;
