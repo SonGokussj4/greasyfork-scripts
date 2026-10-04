@@ -18,6 +18,9 @@ import {
   REVIEW_DRAFT_AUTOSAVE_TOGGLED_EVENT,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
   POST_PERMALINK_KEY,
+  FILM_ACTIONS_HIDE_KEY,
+  FILM_ACTIONS_UPDATED_EVENT,
+  FILM_ACTIONS_SECTION_COLLAPSED_KEY,
   SHOW_ALL_CREATOR_TABS_KEY,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
@@ -26,6 +29,7 @@ import {
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 import { getLinkIconSettingsItems } from './link-icons.js';
+import { getFilmActionSettingsItems } from './film-actions.js';
 import { getHoverPreviewSettingsItems } from './hover-preview-providers.js';
 
 // Export a pure data-driven MENU_CONFIG. Callback handlers are exported as
@@ -139,6 +143,25 @@ export const MENU_CONFIG = [
   {
     category: 'Filmy a seriály',
     items: [
+      {
+        type: 'group',
+        id: 'cc-hide-film-actions',
+        storageKey: FILM_ACTIONS_HIDE_KEY,
+        defaultValue: false,
+        requiresLogin: false,
+        label: 'Skrýt tlačítka u filmu',
+        tooltip: '',
+        infoIcon: {
+          url: '',
+          text: 'Skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka).',
+        },
+        eventName: FILM_ACTIONS_UPDATED_EVENT,
+        groupToggleId: 'cc-film-actions-group-toggle',
+        groupBodyId: 'cc-film-actions-group-body',
+        collapsedKey: FILM_ACTIONS_SECTION_COLLAPSED_KEY,
+        callback: 'updateFilmActionsUI',
+        childrenItems: getFilmActionSettingsItems(),
+      },
       {
         type: 'group',
         id: 'cc-show-ratings',

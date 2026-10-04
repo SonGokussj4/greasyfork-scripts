@@ -4,6 +4,8 @@ import './style.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { initializeHoverPreviews } from './hover-preview.js';
+import { applyFilmActionVisibility } from './film-actions.js';
+import { FILM_ACTIONS_UPDATED_EVENT } from './config.js';
 import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './review-draft.js';
 
 (async () => {
@@ -47,6 +49,9 @@ import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './
       csfd.restoreStarStyle();
     }
   });
+
+  applyFilmActionVisibility();
+  window.addEventListener(FILM_ACTIONS_UPDATED_EVENT, applyFilmActionVisibility);
 
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
