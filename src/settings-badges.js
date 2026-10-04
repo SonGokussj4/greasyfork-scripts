@@ -2,9 +2,11 @@ import {
   INDEXED_DB_NAME,
   PROFILE_LINK_SELECTOR,
   RATINGS_STORE_NAME,
+  RATINGS_TOTAL_CACHE_KEY,
   getCsfdPathSegment,
   getCsfdPathSegmentValues,
 } from './config.js';
+import { parseTotalRatingsFromDocument } from './ratings-loader.js';
 import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 import { extractUserSlug, getProfileLinkElement } from './utils.js';
@@ -35,38 +37,28 @@ function getCurrentUserRatingsUrl() {
   return url.toString();
 }
 
-// Cache the last fetched total so multiple refreshRatingsBadges calls within the same
-// page load don't each trigger a separate network request to /hodnoceni/.
-let _cachedRatingsUrl = null;
-let _cachedRatingsTotal = null;
+// The ČSFD total is cached in localStorage so ordinary page views don't each download the
+// whole /hodnoceni/ page. Any local ratings change invalidates it (see settings.js).
+const RATINGS_TOTAL_CACHE_TTL_MS = 30 * 60 * 1000;
+let inflightTotalRequest = null;
 
-function parseTotalRatingsFromDocument(doc) {
-  const extractCount = (text) => {
-    const normalized = String(text || '').replace(/\u00a0/g, ' ');
-    const match = normalized.match(/\(([^)]+)\)/);
-    if (!match) {
-      return 0;
+function readCachedRatingsTotal(ratingsUrl, now = Date.now()) {
+  try {
+    const cached = JSON.parse(localStorage.getItem(RATINGS_TOTAL_CACHE_KEY));
+    if (cached?.url === ratingsUrl && cached.total > 0 && now - cached.timestamp < RATINGS_TOTAL_CACHE_TTL_MS) {
+      return cached.total;
     }
+  } catch {}
+  return null;
+}
 
-    const parsed = Number.parseInt(match[1].replace(/\s+/g, ''), 10);
-    return Number.isFinite(parsed) ? parsed : 0;
-  };
+function writeCachedRatingsTotal(ratingsUrl, total) {
+  if (!ratingsUrl || !(total > 0)) return;
+  localStorage.setItem(RATINGS_TOTAL_CACHE_KEY, JSON.stringify({ url: ratingsUrl, total, timestamp: Date.now() }));
+}
 
-  const preferredSelectors = ['#snippet--ratings h2', '#snippet--ratings .box-header h2', 'h2.page-header', 'h2'];
-  for (const selector of preferredSelectors) {
-    const heading = doc.querySelector(selector)?.textContent || '';
-    const value = extractCount(heading);
-    if (value > 0) {
-      return value;
-    }
-  }
-
-  const headingWithRatingsWord = Array.from(doc.querySelectorAll('h2, h3')).find((heading) => {
-    const text = String(heading?.textContent || '');
-    return /hodnocen|hodnoten/i.test(text) && /\(\s*[\d\s\u00a0]+\s*\)/.test(text);
-  });
-
-  return extractCount(headingWithRatingsWord?.textContent || '');
+export function invalidateRatingsTotalCache() {
+  localStorage.removeItem(RATINGS_TOTAL_CACHE_KEY);
 }
 
 function getTotalRatingsFromCurrentPageForCurrentUser() {
@@ -85,39 +77,43 @@ function getTotalRatingsFromCurrentPageForCurrentUser() {
   return parseTotalRatingsFromDocument(document);
 }
 
-async function fetchTotalRatingsForCurrentUser() {
+export async function fetchTotalRatingsForCurrentUser() {
+  const ratingsUrl = getCurrentUserRatingsUrl();
   const currentPageTotal = getTotalRatingsFromCurrentPageForCurrentUser();
   if (currentPageTotal > 0) {
+    writeCachedRatingsTotal(ratingsUrl, currentPageTotal);
     return currentPageTotal;
   }
 
-  const ratingsUrl = getCurrentUserRatingsUrl();
   if (!ratingsUrl) {
     return 0;
   }
 
-  // Return cached value for this URL so repeated badge refreshes within the same
-  // page load don't each fire a redundant network request.
-  if (_cachedRatingsUrl === ratingsUrl && _cachedRatingsTotal !== null) {
-    return _cachedRatingsTotal;
+  const cachedTotal = readCachedRatingsTotal(ratingsUrl);
+  if (cachedTotal !== null) {
+    return cachedTotal;
   }
 
-  const response = await fetch(ratingsUrl, {
-    credentials: 'include',
-    method: 'GET',
+  // Share one request between the badge refreshes that run right after page load.
+  inflightTotalRequest ??= (async () => {
+    const response = await fetch(ratingsUrl, {
+      credentials: 'include',
+      method: 'GET',
+    });
+    if (!response.ok) {
+      return 0;
+    }
+
+    const html = await response.text();
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const total = parseTotalRatingsFromDocument(doc);
+    writeCachedRatingsTotal(ratingsUrl, total);
+    return total;
+  })().finally(() => {
+    inflightTotalRequest = null;
   });
-  if (!response.ok) {
-    return 0;
-  }
 
-  const html = await response.text();
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const total = parseTotalRatingsFromDocument(doc);
-
-  _cachedRatingsUrl = ratingsUrl;
-  _cachedRatingsTotal = total;
-
-  return total;
+  return inflightTotalRequest;
 }
 
 function updateSyncButtonAuthState(rootElement, isLoggedIn) {
@@ -184,6 +180,9 @@ export async function refreshRatingsBadges(rootElement, options) {
   if (directRatingsCount < totalRatings) {
     redBadge.classList.add('cc-badge-warning');
     redBadge.title = `Nenačtená hodnocení: ${totalRatings - directRatingsCount}. Klikněte na načtení.`;
+  } else if (directRatingsCount > totalRatings) {
+    redBadge.classList.add('cc-badge-warning');
+    redBadge.title = `Uloženo o ${directRatingsCount - totalRatings} víc, než je na ČSFD (hodnocení smazaná na ČSFD). Klikněte na načtení pro srovnání.`;
   }
   blackBadge.textContent = `${computedCount}`;
 }

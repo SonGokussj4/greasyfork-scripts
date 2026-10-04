@@ -4,10 +4,17 @@ import './style.css';
 import { addSettingsButton } from './settings.js';
 import { setControlsDisabledByLoginState } from './ui-utils.js';
 import { initializeHoverPreviews } from './hover-preview.js';
+import { applyFilmActionVisibility } from './film-actions.js';
+import { CREATOR_ONE_LINE_UPDATED_EVENT, FILM_ACTIONS_UPDATED_EVENT, MY_DISCUSSIONS_UPDATED_EVENT } from './config.js';
+import { installConsoleCapture } from './activity-log.js';
+import { applyMyDiscussions } from './my-discussions.js';
+import { applyCreatorOneLine } from './creator-filmography.js';
+import { initializeReviewDraftAutosave, setReviewDraftAutosaveEnabled } from './review-draft.js';
 
 (async () => {
   'use strict';
   console.debug('🟣 Script started');
+  installConsoleCapture();
 
   await delay(20);
 
@@ -47,11 +54,19 @@ import { initializeHoverPreviews } from './hover-preview.js';
     }
   });
 
+  applyFilmActionVisibility();
+  applyMyDiscussions();
+  applyCreatorOneLine();
+  window.addEventListener(CREATOR_ONE_LINE_UPDATED_EVENT, applyCreatorOneLine);
+  window.addEventListener(MY_DISCUSSIONS_UPDATED_EVENT, applyMyDiscussions);
+  window.addEventListener(FILM_ACTIONS_UPDATED_EVENT, applyFilmActionVisibility);
+
   console.debug('🟣 Adding stars (first pass)');
   await csfd.addStars();
   await csfd.addGalleryImageFormatLinks();
   csfd.addConfiguredLinkIcons();
   initializeHoverPreviews();
+  initializeReviewDraftAutosave();
 
   // CSFD loads some page sections asynchronously (Nette snippets, TV-tips table,
   // etc.).  Re-run addStars once the page is fully loaded and once more a bit
@@ -130,6 +145,7 @@ import { initializeHoverPreviews } from './hover-preview.js';
         forumObserverTimer = window.setTimeout(() => {
           forumObserverTimer = null;
           csfd.enableSelfReplyInDiscussions();
+          csfd.addPostPermalinks();
         }, 200);
       }
     }
@@ -196,6 +212,18 @@ import { initializeHoverPreviews } from './hover-preview.js';
     } else {
       csfd.clearSelfReplyInDiscussions();
     }
+  });
+
+  window.addEventListener('cc-post-permalink-toggled', (ev) => {
+    if (ev?.detail?.enabled) {
+      csfd.addPostPermalinks();
+    } else {
+      csfd.clearPostPermalinks();
+    }
+  });
+
+  window.addEventListener('cc-review-draft-autosave-toggled', (ev) => {
+    setReviewDraftAutosaveEnabled(!!ev?.detail?.enabled);
   });
 
   // Disable Option 2 if not logged in (now using utility)

@@ -14,7 +14,17 @@ import {
   RATINGS_ESTIMATE_KEY,
   RATINGS_FROM_FAVORITES_KEY,
   REVERT_STAR_STYLE_KEY,
+  REVIEW_DRAFT_AUTOSAVE_ENABLED_KEY,
+  REVIEW_DRAFT_AUTOSAVE_TOGGLED_EVENT,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
+  POST_PERMALINK_KEY,
+  CREATOR_ONE_LINE_KEY,
+  CREATOR_ONE_LINE_UPDATED_EVENT,
+  MY_DISCUSSIONS_HIDE_KEY,
+  MY_DISCUSSIONS_UPDATED_EVENT,
+  FILM_ACTIONS_HIDE_KEY,
+  FILM_ACTIONS_UPDATED_EVENT,
+  FILM_ACTIONS_SECTION_COLLAPSED_KEY,
   SHOW_ALL_CREATOR_TABS_KEY,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
@@ -23,6 +33,7 @@ import {
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
 import { getLinkIconSettingsItems } from './link-icons.js';
+import { getFilmActionSettingsItems } from './film-actions.js';
 import { getHoverPreviewSettingsItems } from './hover-preview-providers.js';
 
 // Export a pure data-driven MENU_CONFIG. Callback handlers are exported as
@@ -89,6 +100,34 @@ export const MENU_CONFIG = [
         eventName: 'cc-self-reply-toggled',
       },
       {
+        type: 'toggle',
+        id: 'cc-enable-post-permalink',
+        storageKey: POST_PERMALINK_KEY,
+        defaultValue: true,
+        requiresLogin: false,
+        label: 'Odkaz na příspěvek v diskuzi',
+        infoIcon: {
+          url: '',
+          text: 'Přidá k příspěvkům v diskuzi ikonu s odkazem přímo na daný příspěvek.',
+        },
+        tooltip: '',
+        eventName: 'cc-post-permalink-toggled',
+      },
+      {
+        type: 'toggle',
+        id: 'cc-enable-hide-my-discussions',
+        storageKey: MY_DISCUSSIONS_HIDE_KEY,
+        defaultValue: true,
+        requiresLogin: false,
+        label: 'Skrývání vybraných "Moje diskuze"',
+        infoIcon: {
+          url: '',
+          text: 'Na stránce Diskuze - Moje a sledované přidá k vlastním diskuzím tlačítko pro skrytí. Skryté diskuze lze kdykoli obnovit přes "Skryté (N)" v záhlaví seznamu.',
+        },
+        tooltip: '',
+        eventName: MY_DISCUSSIONS_UPDATED_EVENT,
+      },
+      {
         type: 'group',
         id: 'cc-enable-link-icons',
         storageKey: LINK_ICONS_ENABLED_KEY,
@@ -122,6 +161,25 @@ export const MENU_CONFIG = [
   {
     category: 'Filmy a seriály',
     items: [
+      {
+        type: 'group',
+        id: 'cc-hide-film-actions',
+        storageKey: FILM_ACTIONS_HIDE_KEY,
+        defaultValue: false,
+        requiresLogin: false,
+        label: 'Skrýt tlačítka u filmu',
+        tooltip: '',
+        infoIcon: {
+          url: '',
+          text: 'Skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka).',
+        },
+        eventName: FILM_ACTIONS_UPDATED_EVENT,
+        groupToggleId: 'cc-film-actions-group-toggle',
+        groupBodyId: 'cc-film-actions-group-body',
+        collapsedKey: FILM_ACTIONS_SECTION_COLLAPSED_KEY,
+        callback: 'updateFilmActionsUI',
+        childrenItems: getFilmActionSettingsItems(),
+      },
       {
         type: 'group',
         id: 'cc-show-ratings',
@@ -183,6 +241,20 @@ export const MENU_CONFIG = [
             callback: null,
           },
         ],
+      },
+      {
+        type: 'toggle',
+        id: 'cc-review-draft-autosave',
+        storageKey: REVIEW_DRAFT_AUTOSAVE_ENABLED_KEY,
+        defaultValue: true,
+        requiresLogin: true,
+        label: 'Automaticky ukládat rozepsané recenze',
+        tooltip: '',
+        eventName: REVIEW_DRAFT_AUTOSAVE_TOGGLED_EVENT,
+        infoIcon: {
+          url: '',
+          text: 'Průběžně ukládá rozepsanou recenzi do prohlížeče, takže se neztratí při zavření stránky, obnovení, výpadku nebo chybě odeslání. Po návratu na stránku ji můžeš jedním kliknutím obnovit. Koncept se sám smaže, jakmile se recenze úspěšně přidá do seznamu.',
+        },
       },
       {
         type: 'toggle',
@@ -334,6 +406,20 @@ export const MENU_CONFIG = [
         infoIcon: {
           url: 'https://i.imgur.com/4VxTL3j.png',
           text: 'Na profilu herce automaticky zobrazí všechny záložky (Videa, Galerie, Diskuze) vedle sebe bez klikání na "další 🔻".\n\n👉 Klikni pro ukázku',
+        },
+      },
+      {
+        type: 'toggle',
+        id: 'cc-creator-one-line',
+        storageKey: CREATOR_ONE_LINE_KEY,
+        defaultValue: false,
+        requiresLogin: false,
+        label: 'Filmografie: jeden film na řádek',
+        tooltip: '',
+        eventName: CREATOR_ONE_LINE_UPDATED_EVENT,
+        infoIcon: {
+          url: '',
+          text: 'V profilu tvůrce zkrátí dlouhé názvy filmů na jeden řádek (celý název se zobrazí po najetí myší).',
         },
       },
     ],

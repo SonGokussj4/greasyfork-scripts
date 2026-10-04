@@ -2,15 +2,17 @@ const path = require('path');
 const { pathToFileURL } = require('url');
 
 let hoverPreviewTestApi;
+let createModifierTapDetector;
 
 beforeAll(async () => {
-  ({ __hoverPreviewTestApi: hoverPreviewTestApi } = await import(
+  ({ __hoverPreviewTestApi: hoverPreviewTestApi, createModifierTapDetector } = await import(
     pathToFileURL(path.resolve(__dirname, '../src/hover-preview.js')).href
   ));
 });
 
 beforeEach(() => {
   document.body.innerHTML = '';
+  localStorage.clear();
   hoverPreviewTestApi.resetHoverPreviewStateForTests();
 });
 
@@ -155,5 +157,65 @@ describe('hover preview controller', () => {
     expect(hoverPreviewTestApi.shouldIgnoreAnchor(reviewMentionLink)).toBe(false);
     expect(hoverPreviewTestApi.shouldIgnoreAnchor(editLink)).toBe(true);
     expect(hoverPreviewTestApi.shouldIgnoreAnchor(paginationLink)).toBe(true);
+  });
+
+  test('pin key fires only on a lone Ctrl tap, not on Ctrl shortcuts', () => {
+    const tap = createModifierTapDetector('Control');
+    const key = (k, extra = {}) => ({ key: k, repeat: false, altKey: false, shiftKey: false, metaKey: false, ...extra });
+
+    tap.keydown(key('Control'));
+    expect(tap.keyup(key('Control'))).toBe(true);
+
+    tap.keydown(key('Control'));
+    tap.keydown(key('c', { ctrlKey: true }));
+    expect(tap.keyup(key('Control'))).toBe(false);
+
+    tap.keydown(key('Control', { altKey: true }));
+    expect(tap.keyup(key('Control'))).toBe(false);
+
+    tap.keydown(key('Control'));
+    tap.cancel();
+    expect(tap.keyup(key('Control'))).toBe(false);
+  });
+
+  test('pinning adds a close button and closing removes the pinned preview from the DOM', () => {
+    const root = hoverPreviewTestApi.ensurePreviewRoot();
+    root.innerHTML = '<div class="cc-hover-preview-card"></div><div class="cc-hover-preview-hint"></div>';
+    root.classList.add('is-visible');
+
+    expect(hoverPreviewTestApi.pinVisiblePreview()).toBe(true);
+    expect(hoverPreviewTestApi.getFrozenPreviewRoots()).toEqual([root]);
+    expect(root.classList.contains('is-frozen')).toBe(true);
+    expect(root.querySelector('[data-cc-hover-close]')).not.toBeNull();
+    expect(root.querySelector('.cc-hover-preview-hint')).toBeNull();
+    expect(localStorage.getItem('cc_hover_preview_pin_hint_seen')).toBe('1');
+
+    hoverPreviewTestApi.closeFrozenPreview(root);
+    expect(hoverPreviewTestApi.getFrozenPreviewRoots()).toEqual([]);
+    expect(root.isConnected).toBe(false);
+    expect(hoverPreviewTestApi.pinVisiblePreview()).toBe(false);
+  });
+
+  test('a full localStorage evicts the oldest preview cache entries instead of failing', () => {
+    localStorage.setItem('cc_hover_cache_v1_film_old', JSON.stringify({ timestamp: 1, data: {} }));
+    localStorage.setItem('cc_hover_cache_v1_film_newer', JSON.stringify({ timestamp: 2, data: {} }));
+    localStorage.setItem('cc_setting', 'keep');
+
+    const realSetItem = Storage.prototype.setItem;
+    let quotaErrors = 1;
+    const setItemSpy = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
+      if (key === 'cc_hover_cache_v1_film_new' && quotaErrors-- > 0) {
+        throw new DOMException('full', 'QuotaExceededError');
+      }
+      return realSetItem.call(this, key, value);
+    });
+
+    expect(() => hoverPreviewTestApi.writePreviewCache('cc_hover_cache_v1_film_new', { timestamp: 3, data: {} })).not.toThrow();
+    setItemSpy.mockRestore();
+
+    expect(localStorage.getItem('cc_hover_cache_v1_film_old')).toBeNull();
+    expect(localStorage.getItem('cc_hover_cache_v1_film_newer')).not.toBeNull();
+    expect(localStorage.getItem('cc_hover_cache_v1_film_new')).not.toBeNull();
+    expect(localStorage.getItem('cc_setting')).toBe('keep');
   });
 });

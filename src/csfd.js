@@ -1,14 +1,20 @@
 import {
-  GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  ADD_RATINGS_DATE_KEY,
+  CLICKABLE_HEADER_BOXES_KEY,
+  HIDDEN_PANELS_LIST_KEY,
+  HIDDEN_PANELS_UPDATED_EVENT,
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   INDEXED_DB_NAME,
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_POSITION_KEY,
+  RATINGS_ESTIMATE_KEY,
+  RATINGS_FROM_FAVORITES_KEY,
   RATINGS_STORE_NAME,
   REVERT_STAR_STYLE_KEY,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
   SETTINGSNAME,
+  SHOW_ALL_CREATOR_TABS_KEY,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
   SHOW_RATINGS_IN_REVIEWS_KEY,
@@ -26,9 +32,13 @@ import {
   refreshConfiguredLinkIcons,
 } from './link-icons.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
+import * as galleryLinks from './gallery-links.js';
+import * as discussions from './discussions.js';
+import { createHomePanelsVisibilitySync, homePanelsListIncludes } from './home-panels.js';
 import {
   delay,
   extractUserSlug,
+  extractUsernameFromHref,
   getFeatureState,
   getMovieIdFromUrl,
   getProfileLinkElement,
@@ -37,34 +47,23 @@ import {
 
 const OVERVIEW_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('overview');
 const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
-const DISCUSSION_PATHS_PATTERN = getCsfdPathAliasPattern('discussion');
 const GALLERY_PATHS_PATTERN = getCsfdPathAliasPattern('gallery');
 const RATINGS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('ratings');
 const REVIEWS_SEGMENTS_PATTERN = getCsfdPathSegmentPattern('reviews');
-const HOME_PAGE_PANEL_TITLE_NORMALIZERS = Object.freeze([
-  {
-    pattern: /^tv tipy dne\s*-/i,
-    storageTitle: 'TV tipy dne -',
-  },
-]);
 
-function normalizeHomePanelTitle(title) {
-  const normalizedTitle = String(title || '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (!normalizedTitle) return '';
-
-  const matchedRule = HOME_PAGE_PANEL_TITLE_NORMALIZERS.find(({ pattern }) => pattern.test(normalizedTitle));
-  return matchedRule?.storageTitle || normalizedTitle;
-}
-
-function homePanelsListIncludes(hiddenList, title) {
-  const normalizedTitle = normalizeHomePanelTitle(title);
-  if (!normalizedTitle) return false;
-
-  return hiddenList.some((hiddenTitle) => normalizeHomePanelTitle(hiddenTitle) === normalizedTitle);
-}
+// Page-detection regexes, precompiled once. Use String.raw — in a plain
+// template literal `\d` silently cooks to `d` and the regex never matches.
+const CREATOR_PAGE_REGEX = new RegExp(String.raw`^/(${CREATOR_PATHS_PATTERN})/\d+-[^/]+/`, 'i');
+const USER_OVERVIEW_PAGE_REGEX = new RegExp(String.raw`^/uzivatel/\d+-[^/]+/(${OVERVIEW_SEGMENTS_PATTERN})(/|$)`, 'i');
+const USER_REVIEWS_PAGE_REGEX = new RegExp(String.raw`^/uzivatel/\d+-[^/]+/(${REVIEWS_SEGMENTS_PATTERN})(/|$)`, 'i');
+const RATINGS_PAGE_SLUG_REGEX = new RegExp(String.raw`^/uzivatel/(\d+-[^/]+)/(${RATINGS_SEGMENTS_PATTERN})/?`, 'i');
+const RATINGS_SEGMENT_REGEX = new RegExp(`/(${RATINGS_SEGMENTS_PATTERN})/`, 'i');
+const FILM_SECTION_SUFFIX_REGEX = new RegExp(
+  `/(${REVIEWS_SEGMENTS_PATTERN}|komentare|${OVERVIEW_SEGMENTS_PATTERN})/?$`,
+  'i',
+);
+// Links pointing to film sub-sections that are not actual film pages
+const NON_FILM_SECTION_REGEX = new RegExp(String.raw`/(?:${GALLERY_PATHS_PATTERN}|videa?|tvurci|obsahy?)/`, 'i');
 
 export class Csfd {
   constructor(pageContent) {
@@ -88,7 +87,7 @@ export class Csfd {
   // OPTIMIZATION: One method to update all memory-cached local storage lists
   updateCachedLists() {
     try {
-      this.cachedHiddenPanelsList = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+      this.cachedHiddenPanelsList = JSON.parse(localStorage.getItem(HIDDEN_PANELS_LIST_KEY) || '[]');
     } catch (e) {
       this.cachedHiddenPanelsList = [];
     }
@@ -118,9 +117,9 @@ export class Csfd {
       console.debug('🟣 User URL not found');
       return undefined;
     }
-    const match = userHref.match(/\/(\d+)-(.+?)\//);
-    if (match && match.length >= 3) {
-      this.username = match[2];
+    const username = extractUsernameFromHref(userHref);
+    if (username) {
+      this.username = username;
       return this.username;
     }
     console.debug('🟣 Username not found');
@@ -155,13 +154,14 @@ export class Csfd {
     await this.syncCurrentPageRatingWithIndexedDb();
 
     try {
-      if (getFeatureState('cc_show_all_creator_tabs')) this.showAllCreatorTabs();
+      if (getFeatureState(SHOW_ALL_CREATOR_TABS_KEY)) this.showAllCreatorTabs();
       if (getFeatureState(REVERT_STAR_STYLE_KEY)) this.revertStarStyle();
-      if (getFeatureState('cc_clickable_header_boxes')) this.clickableHeaderBoxes();
-      if (getFeatureState('cc_ratings_estimate')) this.ratingsEstimate();
-      if (getFeatureState('cc_ratings_from_favorites')) await this.ratingsFromFavorites();
-      if (getFeatureState('cc_add_ratings_date')) this.addRatingsDate();
+      if (getFeatureState(CLICKABLE_HEADER_BOXES_KEY)) this.clickableHeaderBoxes();
+      if (getFeatureState(RATINGS_ESTIMATE_KEY)) this.ratingsEstimate();
+      if (getFeatureState(RATINGS_FROM_FAVORITES_KEY)) await this.ratingsFromFavorites();
+      if (getFeatureState(ADD_RATINGS_DATE_KEY)) this.addRatingsDate();
       if (getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) this.enableSelfReplyInDiscussions();
+      this.addPostPermalinks();
     } catch (e) {
       // ignore silently
     }
@@ -174,7 +174,7 @@ export class Csfd {
     });
 
     // Initialize Home Panels Hiding
-    window.addEventListener('cc-hidden-panels-updated', () => {
+    window.addEventListener(HIDDEN_PANELS_UPDATED_EVENT, () => {
       this.updateCachedLists(); // Update memory cache
       if (typeof this._syncVisibility === 'function') this._syncVisibility();
     });
@@ -205,100 +205,16 @@ export class Csfd {
     if (location.pathname !== '/' && location.pathname !== '') return;
 
     // Save reference so event listeners can call it without recreating it
-    this._syncVisibility = () => {
-      const enabled = getFeatureState('cc_hide_home_panels', true);
-      const hiddenList = this.cachedHiddenPanelsList; // Use memory cache!
-
-      // REFACTOR: Removed Array.from(), modern NodeLists support .forEach natively
-      document
-        .querySelectorAll(
-          `
-          .page-content .box-header > h2,
-          .page-content .updated-box-header > h2,
-          .page-content .updated-box-header > p,
-          .updated-box-homepage-video,
-          .page-content .updated-box-banner p,
-          .page-content .updated-box-banner-mobile p
-        `,
-        )
-        .forEach((headerEl) => {
-          const isVideoSlider = headerEl.classList.contains('updated-box-homepage-video');
-          let title = '';
-
-          if (isVideoSlider) {
-            title = 'Trailery a Videa';
-          } else {
-            title = Array.from(headerEl.childNodes)
-              .filter((node) => node.nodeType === Node.TEXT_NODE)
-              .map((node) => node.textContent)
-              .join('')
-              .replace(/\s+/g, ' ')
-              .trim();
-          }
-
-          if (!title || title.length > 60) return;
-          const storageTitle = normalizeHomePanelTitle(title);
-
-          let wrapper =
-            headerEl.closest('.column') || headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
-
-          if (wrapper.classList.contains('column') && wrapper.children.length > 1) {
-            wrapper = headerEl.closest('.box') || headerEl.closest('.updated-box') || headerEl;
-          }
-
-          if (enabled && homePanelsListIncludes(hiddenList, storageTitle)) {
-            wrapper.style.display = 'none';
-          } else {
-            wrapper.style.display = '';
-          }
-
-          // Add hide buttons if they don't exist
-          const btnClass = isVideoSlider ? '.cc-hide-video-btn' : '.cc-hide-panel-btn';
-          if (!headerEl.querySelector(btnClass)) {
-            const btn = document.createElement('button');
-            btn.className = btnClass.replace('.', '');
-            btn.title = isVideoSlider ? 'Skrýt Trailery' : 'Skrýt tento panel';
-            btn.textContent = isVideoSlider ? 'skrýt trailery' : 'skrýt';
-
-            btn.onclick = (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!homePanelsListIncludes(this.cachedHiddenPanelsList, storageTitle)) {
-                this.cachedHiddenPanelsList.push(storageTitle);
-                localStorage.setItem('cc_hidden_panels_list', JSON.stringify(this.cachedHiddenPanelsList));
-                window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
-              }
-            };
-            headerEl.appendChild(btn);
-          }
-        });
-
-      // GROUP & ROW COLLAPSE ENGINE
-      document.querySelectorAll('.page-content .updated-box-group').forEach((group) => {
-        const items = Array.from(group.querySelectorAll(':scope > section, :scope > div.updated-box'));
-        if (items.length > 0) {
-          const allHidden = items.every((item) => item.style.display === 'none');
-          group.style.display = allHidden ? 'none' : '';
+    this._syncVisibility = createHomePanelsVisibilitySync({
+      getHiddenList: () => this.cachedHiddenPanelsList,
+      onHidePanel: (storageTitle) => {
+        if (!homePanelsListIncludes(this.cachedHiddenPanelsList, storageTitle)) {
+          this.cachedHiddenPanelsList.push(storageTitle);
+          localStorage.setItem(HIDDEN_PANELS_LIST_KEY, JSON.stringify(this.cachedHiddenPanelsList));
+          window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
         }
-      });
-
-      document.querySelectorAll('.page-content .row').forEach((row) => {
-        const cols = Array.from(row.querySelectorAll(':scope > .column'));
-        if (cols.length === 0) return;
-
-        const allHidden = cols.every((col) => {
-          if (col.style.display === 'none') return true;
-          const sections = Array.from(
-            col.querySelectorAll(':scope > section, :scope > div.updated-box, :scope > div.updated-box-group'),
-          );
-          if (sections.length === 0) return false;
-
-          return sections.every((sec) => sec.style.display === 'none');
-        });
-
-        row.style.display = allHidden ? 'none' : '';
-      });
-    };
+      },
+    });
 
     this._syncVisibility();
     setTimeout(this._syncVisibility, 500);
@@ -338,10 +254,7 @@ export class Csfd {
     const parentName = slugMatches.length > 1 ? slugMatches[0] : '';
     const urlSlug = slugMatches.length ? slugMatches[slugMatches.length - 1] : '';
 
-    const cleanPath = path.replace(
-      new RegExp(`\/(${REVIEWS_SEGMENTS_PATTERN}|komentare|${OVERVIEW_SEGMENTS_PATTERN})\/?$`, 'i'),
-      '/',
-    );
+    const cleanPath = path.replace(FILM_SECTION_SUFFIX_REGEX, '/');
 
     return { movieId, urlSlug, parentId, parentName, fullUrl: `${location.origin}${cleanPath}` };
   }
@@ -841,8 +754,6 @@ export class Csfd {
     const isForeignProfile = isOtherUser && (isUserReviewsPage || isUserOverviewPage);
     const isOwnProfile = this.isOnUserProfilePage() && !isOtherUser;
 
-    // Links pointing to sections that are not actual film pages
-    const ignorePathRegex = new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN}|videa?|tvurci|obsahy?)\/`, 'i');
     // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
     const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
     // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
@@ -853,7 +764,7 @@ export class Csfd {
     ).filter((link) => {
       const href = link.getAttribute('href') || '';
 
-      if (!validFilmRegex.test(href) || ignoreParamRegex.test(href) || ignorePathRegex.test(href)) {
+      if (!validFilmRegex.test(href) || ignoreParamRegex.test(href) || NON_FILM_SECTION_REGEX.test(href)) {
         return false;
       }
 
@@ -938,14 +849,11 @@ export class Csfd {
     const currentUserSlug = this.getResolvedUserSlug();
     if (!currentUserSlug) return false;
     const path = location.pathname || '';
-    return (
-      path.startsWith(`/uzivatel/${currentUserSlug}/`) &&
-      new RegExp(`\/(${RATINGS_SEGMENTS_PATTERN})\/`, 'i').test(path)
-    );
+    return path.startsWith(`/uzivatel/${currentUserSlug}/`) && RATINGS_SEGMENT_REGEX.test(path);
   }
 
   isOnCreatorPage() {
-    return new RegExp(String.raw`^\/(${CREATOR_PATHS_PATTERN})\/\d+-[^/]+\/`, 'i').test(location.pathname || '');
+    return CREATOR_PAGE_REGEX.test(location.pathname || '');
   }
 
   isOnUserProfilePage() {
@@ -959,13 +867,11 @@ export class Csfd {
   }
 
   isOnUserOverviewPage() {
-    return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${OVERVIEW_SEGMENTS_PATTERN})(\/|$)`, 'i').test(
-      location.pathname || '',
-    );
+    return USER_OVERVIEW_PAGE_REGEX.test(location.pathname || '');
   }
 
   isOnUserReviewsPage() {
-    return new RegExp(`^\/uzivatel\/\d+-[^/]+\/(${REVIEWS_SEGMENTS_PATTERN})(\/|$)`, 'i').test(location.pathname || '');
+    return USER_REVIEWS_PAGE_REGEX.test(location.pathname || '');
   }
 
   /**
@@ -1019,9 +925,7 @@ export class Csfd {
   }
 
   getRatingsPageSlug() {
-    return (location.pathname || '').match(
-      new RegExp(`^\/uzivatel\/(\d+-[^/]+)\/(${RATINGS_SEGMENTS_PATTERN})\/?`, 'i'),
-    )?.[1];
+    return (location.pathname || '').match(RATINGS_PAGE_SLUG_REGEX)?.[1];
   }
 
   isOnForeignRatingsPage() {
@@ -1047,7 +951,7 @@ export class Csfd {
 
       const nameLink = row.querySelector('td.name a[href*="/film/"]');
       const ratingCell = row.querySelector('td.star-rating-only');
-      const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href'));
+      const movieId = getMovieIdFromUrl(nameLink.getAttribute('href'));
       const ratingRecord = this.stars[movieId];
 
       const myRatingCell = document.createElement('td');
@@ -1109,7 +1013,7 @@ export class Csfd {
 
         const nameLink = row.querySelector('td.name a[href*="/film/"]');
         const ratingCell = row.querySelector('td.star-rating-only');
-        const movieId = await getMovieIdFromUrl(nameLink.getAttribute('href')); // REFACTOR: uses utils.js
+        const movieId = getMovieIdFromUrl(nameLink.getAttribute('href'));
         const ratingRecord = this.stars[movieId];
 
         const myRatingCell = document.createElement('td');
@@ -1315,15 +1219,11 @@ export class Csfd {
     for (const link of links) {
       if (link.dataset.ccStarAdded === 'true') continue;
 
-      if (
-        link.classList.contains('film-title-name') &&
-        this.hasNativeTitleRating(link) &&
-        !this.isOnOtherUserProfilePage()
-      ) {
+      if (link.classList.contains('film-title-name') && !isForeignProfilePage && this.hasNativeTitleRating(link)) {
         continue;
       }
 
-      const movieId = await getMovieIdFromUrl(link.getAttribute('href')); // REFACTOR: uses utils.js
+      const movieId = getMovieIdFromUrl(link.getAttribute('href'));
       const ratingRecord = this.stars[movieId];
       if (!ratingRecord || ratingRecord.deleted === true) continue;
 
@@ -1363,11 +1263,11 @@ export class Csfd {
   }
 
   isOnGalleryPage() {
-    return new RegExp(String.raw`\/(?:${GALLERY_PATHS_PATTERN})\/`, 'i').test(location.pathname || '');
+    return galleryLinks.isOnGalleryPage();
   }
 
   isGalleryImageLinksEnabled() {
-    return getFeatureState(GALLERY_IMAGE_LINKS_ENABLED_KEY);
+    return galleryLinks.isGalleryImageLinksEnabled();
   }
 
   areLinkIconsEnabled() {
@@ -1395,199 +1295,34 @@ export class Csfd {
   }
 
   clearGalleryImageFormatLinks() {
-    document.querySelectorAll('.cc-gallery-size-links').forEach((el) => el.remove());
-    document.querySelectorAll('.cc-gallery-size-host').forEach((el) => el.classList.remove('cc-gallery-size-host'));
-    document.querySelectorAll('.gallery-item picture[data-cc-gallery-links-bound="true"]').forEach((el) => {
-      delete el.dataset.ccGalleryLinksBound;
-    });
+    galleryLinks.clearGalleryImageFormatLinks();
   }
 
   getGalleryImageFormatLinks(pictureEl) {
-    const widthLinks = [];
-    const seenHrefs = new Set();
-
-    const addWidthCandidate = (rawUrl) => {
-      if (!rawUrl) return;
-      const widthMatch = rawUrl.match(/[/]w(\d+)(?:h\d+)?[/]/i);
-      if (!widthMatch) return;
-
-      const absoluteUrl = new URL(rawUrl, location.origin).toString();
-      if (seenHrefs.has(absoluteUrl)) return;
-
-      seenHrefs.add(absoluteUrl);
-      widthLinks.push({ width: Number.parseInt(widthMatch[1], 10), href: absoluteUrl });
-    };
-
-    pictureEl.querySelectorAll('source').forEach((sourceEl) => {
-      const candidates = (sourceEl.getAttribute('srcset') || '')
-        .split(',')
-        .map((entry) => entry.trim())
-        .filter(Boolean);
-      candidates.forEach((candidate) => addWidthCandidate(candidate.split(/\s+/, 1)[0]));
-    });
-
-    const imgEl = pictureEl.querySelector('img');
-    addWidthCandidate(imgEl?.getAttribute('src'));
-
-    const imgSrcsetCandidates = (imgEl?.getAttribute('srcset') || '')
-      .split(',')
-      .map((entry) => entry.trim())
-      .filter(Boolean);
-    imgSrcsetCandidates.forEach((candidate) => addWidthCandidate(candidate.split(/\s+/, 1)[0]));
-
-    addWidthCandidate(pictureEl.closest('figure')?.querySelector('a.btn-photo-share')?.getAttribute('href'));
-
-    const uniqueByWidth = [];
-    const seenWidths = new Set();
-
-    widthLinks
-      .sort((a, b) => b.width - a.width)
-      .forEach((link) => {
-        if (!seenWidths.has(link.width)) {
-          seenWidths.add(link.width);
-          uniqueByWidth.push(link);
-        }
-      });
-
-    if (!uniqueByWidth.length) return [];
-
-    return [
-      { label: '100 %', href: uniqueByWidth[0].href },
-      ...uniqueByWidth.map((item) => ({ label: String(item.width), href: item.href })),
-    ];
+    return galleryLinks.getGalleryImageFormatLinks(pictureEl);
   }
 
   async addGalleryImageFormatLinks() {
-    if (!this.isOnGalleryPage()) return;
-
-    if (!this.isGalleryImageLinksEnabled()) {
-      return this.clearGalleryImageFormatLinks();
-    }
-
-    document.querySelectorAll('.gallery-item picture').forEach((pictureEl) => {
-      if (pictureEl.dataset.ccGalleryLinksBound === 'true') return;
-
-      const links = this.getGalleryImageFormatLinks(pictureEl);
-      if (!links.length || !pictureEl.parentElement) {
-        pictureEl.dataset.ccGalleryLinksBound = 'true';
-        return;
-      }
-
-      const host = pictureEl.parentElement;
-      host.classList.add('cc-gallery-size-host');
-
-      const linksWrapper = document.createElement('div');
-      linksWrapper.className = 'cc-gallery-size-links';
-
-      links.forEach((linkDef) => {
-        const anchor = document.createElement('a');
-        anchor.className = 'cc-gallery-size-link';
-        anchor.href = linkDef.href;
-        anchor.textContent = linkDef.label;
-        anchor.target = '_blank';
-        anchor.rel = 'noopener noreferrer';
-        linksWrapper.appendChild(anchor);
-      });
-
-      host.appendChild(linksWrapper);
-      pictureEl.dataset.ccGalleryLinksBound = 'true';
-    });
+    return galleryLinks.addGalleryImageFormatLinks();
   }
 
   /**
    * Adds a "Reagovat" button to the logged-in user's own discussion posts.
-   * Uses a Vanilla JS proxy-click to trigger the native ČSFD UI.
+   * See discussions.js for the implementation.
    */
   enableSelfReplyInDiscussions() {
-    if (!new RegExp(String.raw`\/(?:${DISCUSSION_PATHS_PATTERN})\/`, 'i').test(window.location.pathname || '')) return;
-    if (!getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) return;
-
-    const posts = document.querySelectorAll('article.article-forum');
-
-    posts.forEach((post) => {
-      const actionsContainer = post.querySelector('.icon-control');
-      if (!actionsContainer) return;
-
-      const hasReplyBtn = actionsContainer.querySelector('.reply-add');
-
-      // If missing, it's your post. Let's inject our proxy button.
-      if (!hasReplyBtn) {
-        const authorLink = post.querySelector('.article-header-message a.user-title-name');
-        if (!authorLink) return;
-
-        // Extract your user info and post ID
-        const href = authorLink.getAttribute('href') || '';
-        const userMatch = href.match(/\/uzivatel\/(\d+)-([^/]+)\//);
-        if (!userMatch) return;
-
-        const userId = userMatch[1];
-        const username = authorLink.textContent.trim();
-
-        const articleId = post.getAttribute('id') || '';
-        const postMatch = articleId.match(/highlight-post-(\d+)/);
-        if (!postMatch) return;
-
-        const postId = postMatch[1];
-
-        // Create our visual button
-        const replyBtn = document.createElement('a');
-        replyBtn.href = '#';
-        replyBtn.className = 'button button-circle reply-add cc-self-reply';
-        replyBtn.title = 'Odpovědět (CC)';
-        replyBtn.innerHTML = '<i class="icon icon-reply"></i>';
-
-        // The magic: Proxy the click to an existing native button
-        replyBtn.addEventListener('click', (e) => {
-          e.preventDefault();
-
-          // Find any valid native button on the page from another user
-          const nativeBtn = document.querySelector('a.reply-add:not(.cc-self-reply)');
-
-          if (nativeBtn) {
-            console.debug(`[CC] Proxying reply click to native button for ${username}`);
-
-            // 1. Backup the native button's original values
-            const origNick = nativeBtn.getAttribute('data-nick');
-            const origId = nativeBtn.getAttribute('data-id');
-            const origPost = nativeBtn.getAttribute('data-post');
-
-            // 2. Override with your post's values
-            nativeBtn.setAttribute('data-nick', username);
-            nativeBtn.setAttribute('data-id', userId);
-            nativeBtn.setAttribute('data-post', postId);
-
-            // 3. Dispatch the native click (this triggers ČSFD's UI formatting)
-            nativeBtn.click();
-
-            // 4. Restore the native button immediately so it isn't permanently broken
-            nativeBtn.setAttribute('data-nick', origNick);
-            nativeBtn.setAttribute('data-id', origId);
-            nativeBtn.setAttribute('data-post', origPost);
-          } else {
-            console.debug('[CC] No native button found. Using simple fallback.');
-
-            // Fallback just in case you are the ONLY person in the discussion
-            const textToInsert = `@${username} `;
-            if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
-              tinymce.activeEditor.execCommand('mceInsertContent', false, textToInsert);
-              tinymce.activeEditor.focus();
-            } else {
-              const textarea = document.querySelector('form textarea#frm-forum-postForm-text');
-              if (textarea) {
-                textarea.value = textarea.value ? `${textarea.value} ${textToInsert}` : textToInsert;
-                textarea.focus();
-              }
-            }
-          }
-        });
-
-        // Insert our button into the actions bar
-        actionsContainer.insertBefore(replyBtn, actionsContainer.firstChild);
-      }
-    });
+    discussions.enableSelfReplyInDiscussions();
   }
 
   clearSelfReplyInDiscussions() {
-    document.querySelectorAll('.cc-self-reply').forEach((btn) => btn.remove());
+    discussions.clearSelfReplyInDiscussions();
+  }
+
+  addPostPermalinks() {
+    discussions.addPostPermalinks();
+  }
+
+  clearPostPermalinks() {
+    discussions.clearPostPermalinks();
   }
 }

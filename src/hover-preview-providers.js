@@ -15,7 +15,8 @@ import {
   getCsfdUserProfileSubpathPattern,
   matchesCsfdTextVariant,
 } from './config.js';
-import { escapeHtml } from './utils.js';
+import { logActivity } from './activity-log.js';
+import { escapeHtml, parseRatingFromStars } from './utils.js';
 
 const EMPTY_IMAGE_SRC = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 const CREATOR_PATHS_PATTERN = getCsfdPathAliasPattern('creator');
@@ -137,8 +138,10 @@ function normalizeFilmUrl(href) {
 
 function normalizeReviewUrl(href) {
   const url = createUrl(href);
+  // String.raw is required — in a plain template literal `\d` cooks to `d`
+  // and the regex would never match a real film path.
   const match = url?.pathname.match(
-    new RegExp(`^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?\/(${REVIEWS_SEGMENTS_PATTERN})\/?$`, 'i'),
+    new RegExp(String.raw`^/film/(\d+-[^/]+)(?:/(\d+-[^/]+))?/(${REVIEWS_SEGMENTS_PATTERN})/?$`, 'i'),
   );
   const reviewId = url?.searchParams.get('review') || '';
   if (!url || !match || !/^\d+$/.test(reviewId)) return null;
@@ -328,6 +331,7 @@ async function requestHtml(url) {
           url,
           onload: (response) => {
             if (response?.status === 403 && /<title>\s*Just a moment/i.test(response.responseText || '')) {
+              logActivity('hover', `Blocked by a Cloudflare challenge: ${new URL(url).hostname}`, 'warn');
               const error = new Error('Blocked by a Cloudflare challenge');
               error.code = CLOUDFLARE_CHALLENGE_CODE;
               reject(error);
@@ -483,13 +487,13 @@ function getReviewExcerpt(text, maxLength = 320) {
 }
 
 function getReviewRatingValue(article) {
-  const starsClassName = article?.querySelector('.star-rating .stars')?.className || '';
-  const match = starsClassName.match(/\bstars-(\d)\b/);
-  return match ? Number.parseInt(match[1], 10) : null;
+  const rating = parseRatingFromStars(article?.querySelector('.star-rating .stars'));
+  return Number.isFinite(rating) ? rating : null;
 }
 
 function renderReviewRating(rating) {
   if (!Number.isInteger(rating) || rating < 0) return '';
+  if (rating === 0) return '<span class="cc-hover-preview-review-stars is-trash">odpad!</span>';
 
   const clampedRating = Math.max(0, Math.min(5, rating));
   return `
@@ -604,6 +608,25 @@ export function parseCreatorPreviewDocument(doc) {
   };
 }
 
+/**
+ * ČSFD prints recent review dates as "dnes 13:51" / "včera 22:35". The preview may be cached
+ * for hours, so turn those into a real date; absolute dates are kept (date part only).
+ * Uses the browser's local date, so it can be off by one near midnight for users outside Prague.
+ */
+export function normalizeReviewDate(text, now = new Date()) {
+  const value = normalizeText(text);
+  const formatDate = (date) =>
+    `${String(date.getDate()).padStart(2, '0')}.${String(date.getMonth() + 1).padStart(2, '0')}.${date.getFullYear()}`;
+
+  if (/^dnes(?:\s|$)/i.test(value)) return formatDate(now);
+  if (/^včera(?:\s|$)/i.test(value)) return formatDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+
+  return value.match(/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/)?.[0].replace(/\s+/g, '') || '';
+}
+
+// Bump when the parsed user data changes, so previews cached by an older parser are fetched again.
+const USER_PREVIEW_PARSER_VERSION = 2;
+
 export function parseUserPreviewDocument(doc) {
   const profile = doc.querySelector('.user-profile');
   if (!profile) return null;
@@ -638,6 +661,14 @@ export function parseUserPreviewDocument(doc) {
       .join(' '),
   );
   const lastLogin = normalizeText(footer?.querySelector('.p-last-login')?.textContent);
+  // The owner's reviews are the `data-film-review` articles in the main "Recenze" box. Other `article`
+  // elements on the page (favourites activity, site-wide boxes) belong to other people.
+  const lastReviewDate = normalizeReviewDate(
+    doc
+      .querySelector('article [data-film-review]')
+      ?.closest('article')
+      ?.querySelector('.article-header-date-content .info')?.textContent,
+  );
   const reviewCount = normalizeText(
     Array.from(doc.querySelectorAll('.updated-box-header h2, .box-header h2'))
       .find((heading) => matchesCsfdTextVariant('reviewHeading', normalizeText(heading.textContent)))
@@ -652,6 +683,8 @@ export function parseUserPreviewDocument(doc) {
     points,
     memberSince,
     lastLogin,
+    lastReviewDate,
+    parserVersion: USER_PREVIEW_PARSER_VERSION,
     reviewCount,
   };
 }
@@ -1020,13 +1053,14 @@ function renderUserPreview(data) {
     data.lastLogin
       ? renderLabelValue('Viděn', data.lastLogin.replace(/^Poslední\s+přihlášení\s*/i, ''), 'is-muted')
       : '',
-    data.lastLogin && (data.memberSince || data.reviewCount)
+    data.lastLogin && (data.memberSince || data.reviewCount || data.lastReviewDate)
       ? '<div class="cc-hover-preview-divider is-subtle"></div>'
       : '',
     data.memberSince
       ? renderLabelValue('Na ČSFD od', data.memberSince.replace(/^Na\s+ČSFD\s+od\s*/i, ''), 'is-muted')
       : '',
     data.reviewCount ? renderLabelValue('Recenzí', formatCount(data.reviewCount), 'is-muted') : '',
+    data.lastReviewDate ? renderLabelValue('Poslední recenze', data.lastReviewDate, 'is-muted') : '',
   ].join('');
 
   return renderCardWithTop({
@@ -1285,6 +1319,7 @@ export const HOVER_PREVIEW_PROVIDERS = [
     },
     normalizeUrl: normalizeUserUrl,
     getEntityKey: getUserEntityKey,
+    isCacheCurrent: (data) => data?.parserVersion === USER_PREVIEW_PARSER_VERSION,
     async fetchData({ url }) {
       const response = await fetch(getUserReviewsUrl(url) || url);
       if (!response.ok) return null;

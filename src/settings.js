@@ -6,16 +6,26 @@ import {
   ADD_RATINGS_DATE_KEY,
   CLICKABLE_HEADER_BOXES_KEY,
   GALLERY_IMAGE_LINKS_ENABLED_KEY,
+  HIDDEN_PANELS_LIST_KEY,
+  HIDDEN_PANELS_UPDATED_EVENT,
+  HIDE_HOME_PANELS_KEY,
   HIDE_REVIEWS_SECTION_COLLAPSED_KEY,
   HIDE_SELECTED_REVIEWS_KEY,
   HIDE_SELECTED_REVIEWS_LIST_KEY,
   HOVER_PREVIEW_CACHE_HOURS_KEY,
   HOVER_PREVIEW_CACHE_GROUP_PREFIX,
   HOVER_PREVIEW_ENABLED_KEY,
+  HOVER_PREVIEW_PIN_HINT_SEEN_KEY,
   HOVER_PREVIEW_SECTION_COLLAPSED_KEY,
   HOVER_PREVIEW_SETTINGS_CHANGED_EVENT,
   INDEXED_DB_NAME,
   RATINGS_STORE_NAME,
+  FILM_ACTIONS_HIDE_KEY,
+  CREATOR_ONE_LINE_UPDATED_EVENT,
+  MY_DISCUSSIONS_HIDDEN_LIST_KEY,
+  MY_DISCUSSIONS_UPDATED_EVENT,
+  FILM_ACTIONS_SECTION_COLLAPSED_KEY,
+  FILM_ACTIONS_UPDATED_EVENT,
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_UPDATED_EVENT,
   LINK_ICONS_POSITION_KEY,
@@ -29,8 +39,10 @@ import {
   SHOW_RATINGS_KEY,
   SHOW_RATINGS_SECTION_COLLAPSED_KEY,
 } from './config.js';
-import { initializeVersionUi, openVersionInfoModal } from './settings-version.js';
-import { refreshRatingsBadges } from './settings-badges.js';
+import { initializeVersionUi, openInfoModal, openVersionInfoModal } from './settings-version.js';
+import { openActivityLogModal } from './activity-log-modal.js';
+import { logActivity } from './activity-log.js';
+import { invalidateRatingsTotalCache, refreshRatingsBadges } from './settings-badges.js';
 import { invalidateRatingsModalCache, openRatingsTableModal } from './settings-ratings-modal.js';
 import { initializeSettingsMenuHover } from './settings-hover.js';
 import { buildStructuredDetailItems, createDetailsModalController } from './ui-utils.js';
@@ -391,7 +403,7 @@ async function addSettingsButton() {
   };
 
   const updateHidePanelsUI = () => {
-    const enabled = getBoolSetting('cc_hide_home_panels', true);
+    const enabled = getBoolSetting(HIDE_HOME_PANELS_KEY, true);
     const body = queryMenu('#cc-hide-panels-group-body');
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
@@ -406,6 +418,18 @@ async function addSettingsButton() {
     if (childToggle) childToggle.disabled = !enabled;
     if (foreignChildToggle) foreignChildToggle.disabled = !enabled;
     if (diariesChildToggle) diariesChildToggle.disabled = !enabled;
+    if (body) body.classList.toggle('is-disabled', !enabled);
+  };
+
+  const updateFilmActionsUI = () => {
+    const enabled = getBoolSetting(FILM_ACTIONS_HIDE_KEY, false);
+    const groupConfig = findMenuConfigItem('cc-hide-film-actions');
+    const body = queryMenu('#cc-film-actions-group-body');
+
+    for (const child of groupConfig?.childrenItems || []) {
+      const childToggle = queryMenu(`#${child.id}`);
+      if (childToggle) childToggle.disabled = !enabled;
+    }
     if (body) body.classList.toggle('is-disabled', !enabled);
   };
 
@@ -443,6 +467,7 @@ async function addSettingsButton() {
     updateHidePanelsUI,
     updateShowRatingsUI,
     updateLinkIconsUI,
+    updateFilmActionsUI,
     updateHoverPreviewUI,
     updateHideReviewsUI,
   };
@@ -567,6 +592,7 @@ async function addSettingsButton() {
 
     element.addEventListener('change', () => {
       localStorage.setItem(storageKey, String(element.checked));
+      logActivity('settings', `${storageKey} ${element.checked ? 'on' : 'off'}`);
       // skipSync: true so redraw triggers won't mistakenly try to push cloud updates constantly
       if (eventName)
         window.dispatchEvent(
@@ -729,11 +755,12 @@ async function addSettingsButton() {
   updateHideReviewsUI();
   updateHidePanelsUI();
   updateLinkIconsUI();
+  updateFilmActionsUI();
   updateShowRatingsUI();
 
   let currentPanelPills = [];
   try {
-    const savedPanels = localStorage.getItem('cc_hidden_panels_list');
+    const savedPanels = localStorage.getItem(HIDDEN_PANELS_LIST_KEY);
     if (savedPanels) currentPanelPills = JSON.parse(savedPanels);
   } catch (e) {}
 
@@ -759,9 +786,9 @@ async function addSettingsButton() {
         removeBtn.onclick = (e) => {
           e.stopPropagation();
           currentPanelPills.splice(index, 1);
-          localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentPanelPills));
+          localStorage.setItem(HIDDEN_PANELS_LIST_KEY, JSON.stringify(currentPanelPills));
           renderPanelPills();
-          window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+          window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
         };
 
         pillEl.appendChild(removeBtn);
@@ -771,9 +798,9 @@ async function addSettingsButton() {
   };
 
   renderPanelPills();
-  window.addEventListener('cc-hidden-panels-updated', () => {
+  window.addEventListener(HIDDEN_PANELS_UPDATED_EVENT, () => {
     try {
-      currentPanelPills = JSON.parse(localStorage.getItem('cc_hidden_panels_list') || '[]');
+      currentPanelPills = JSON.parse(localStorage.getItem(HIDDEN_PANELS_LIST_KEY) || '[]');
     } catch (e) {}
     renderPanelPills();
   });
@@ -783,9 +810,9 @@ async function addSettingsButton() {
     restoreAllPanelsBtn.addEventListener('click', () => {
       if (currentPanelPills.length > 0) {
         currentPanelPills = [];
-        localStorage.setItem('cc_hidden_panels_list', JSON.stringify(currentPanelPills));
+        localStorage.setItem(HIDDEN_PANELS_LIST_KEY, JSON.stringify(currentPanelPills));
         renderPanelPills();
-        window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+        window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
         showSettingsInfoToast('Všechny panely byly obnoveny.');
       } else {
         showSettingsInfoToast('Žádné panely ke smazání.');
@@ -877,7 +904,7 @@ async function addSettingsButton() {
   // --------------------------------------------------------
   const updatePanelsFeatureState = () => {
     // Evaluate the setting. (Default is true, so we check if it's explicitly 'false')
-    const isEnabled = localStorage.getItem('cc_hide_home_panels') !== 'false';
+    const isEnabled = localStorage.getItem(HIDE_HOME_PANELS_KEY) !== 'false';
 
     // Wait for body to exist before toggling the class (Firefox safety)
     if (!document.body) {
@@ -892,7 +919,7 @@ async function addSettingsButton() {
   updatePanelsFeatureState();
 
   // 2. Listen for changes from the settings menu toggle
-  window.addEventListener('cc-hidden-panels-updated', updatePanelsFeatureState);
+  window.addEventListener(HIDDEN_PANELS_UPDATED_EVENT, updatePanelsFeatureState);
 
   const syncControlsFromStorage = () => {
     togglesTracker.forEach((t) => (t.element.checked = getBoolSetting(t.storageKey, t.defaultValue)));
@@ -901,6 +928,7 @@ async function addSettingsButton() {
     updateHideReviewsUI();
     updateHidePanelsUI();
     updateLinkIconsUI();
+    updateFilmActionsUI();
     updateShowRatingsUI();
     updateDevState();
   };
@@ -913,7 +941,9 @@ async function addSettingsButton() {
 
     localStorage.removeItem(HOVER_PREVIEW_CACHE_HOURS_KEY);
     localStorage.removeItem(HOVER_PREVIEW_SECTION_COLLAPSED_KEY);
+    localStorage.removeItem(HOVER_PREVIEW_PIN_HINT_SEEN_KEY);
     localStorage.removeItem(HIDE_REVIEWS_SECTION_COLLAPSED_KEY);
+    localStorage.removeItem(FILM_ACTIONS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
     localStorage.removeItem(LINK_ICONS_POSITION_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_DIARIES_KEY);
@@ -921,8 +951,8 @@ async function addSettingsButton() {
     localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
     localStorage.removeItem(SHOW_RATINGS_KEY);
     localStorage.removeItem(SHOW_RATINGS_SECTION_COLLAPSED_KEY);
-    localStorage.removeItem('cc_hide_home_panels');
-    localStorage.removeItem('cc_hidden_panels_list');
+    localStorage.removeItem(HIDE_HOME_PANELS_KEY);
+    localStorage.removeItem(HIDDEN_PANELS_LIST_KEY);
     localStorage.removeItem('cc_hide_panels_collapsed');
     localStorage.removeItem('cc_dev_mode');
     localStorage.removeItem('cc_creator_preview_cache_hours');
@@ -951,7 +981,12 @@ async function addSettingsButton() {
       }),
     );
     window.dispatchEvent(new CustomEvent('cc-hide-selected-reviews-updated'));
-    window.dispatchEvent(new CustomEvent('cc-hidden-panels-updated'));
+    window.dispatchEvent(new CustomEvent(FILM_ACTIONS_UPDATED_EVENT, { detail: { skipSync: true } }));
+    window.dispatchEvent(new CustomEvent('cc-post-permalink-toggled', { detail: { enabled: true } }));
+    localStorage.removeItem(MY_DISCUSSIONS_HIDDEN_LIST_KEY);
+    window.dispatchEvent(new CustomEvent(CREATOR_ONE_LINE_UPDATED_EVENT, { detail: { skipSync: true } }));
+    window.dispatchEvent(new CustomEvent(MY_DISCUSSIONS_UPDATED_EVENT, { detail: { skipSync: true } }));
+    window.dispatchEvent(new CustomEvent(HIDDEN_PANELS_UPDATED_EVENT));
     window.dispatchEvent(new CustomEvent('cc-ratings-updated', { detail: { skipSync: true } }));
     showSettingsInfoToast('Všechna nastavení byla vrácena na výchozí hodnoty.');
   });
@@ -1182,6 +1217,11 @@ async function addSettingsButton() {
     true,
   );
 
+  settingsButton.querySelector('#cc-maint-log-btn')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    openActivityLogModal(openInfoModal);
+  });
+
   settingsButton.querySelector('#cc-version-info-btn')?.addEventListener('click', (e) => {
     e.preventDefault();
     openVersionInfoModal(settingsButton).catch((err) => console.error('[CC] Failed to open version info modal:', err));
@@ -1271,6 +1311,7 @@ async function addSettingsButton() {
   let autoSyncTimeout;
   window.addEventListener('cc-ratings-updated', (e) => {
     invalidateRatingsModalCache();
+    invalidateRatingsTotalCache();
     refreshBadgesSafely();
 
     if (e && e.detail && e.detail.skipSync) {

@@ -1,23 +1,16 @@
 /*
  * Config and constants for CSFD-Compare
  */
-export const VERSION = '0.10.0';
+export const VERSION = '0.10.1';
 export const SCRIPTNAME = 'CSFD-Compare';
 export const SETTINGSNAME = 'CSFD-Compare-settings';
 export const GREASYFORK_URL = 'https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare';
 export const WHATS_NEW_VERSION_KEY = 'cc_whats_new_version';
 export const NUM_RATINGS_PER_PAGE = 50;
-export const INDEXED_DB_VERSION = 1;
 export const INDEXED_DB_NAME = 'CC-Ratings';
 export const RATINGS_STORE_NAME = 'ratings';
+export const RATINGS_TOTAL_CACHE_KEY = 'cc_ratings_total_cache_v1';
 
-export const SUPABASE_URL = '';
-export const SUPABASE_ANON_KEY = '';
-export const SUPABASE_TABLE = 'cc_ratings';
-export const SUPABASE_URL_STORAGE_KEY = 'cc_supabase_url';
-export const SUPABASE_ANON_KEY_STORAGE_KEY = 'cc_supabase_anon_key';
-export const DEV_PANEL_ALWAYS_VISIBLE = false;
-export const DEV_PERFORMANCE_METRICS = false;
 export const GALLERY_IMAGE_LINKS_ENABLED_KEY = 'cc_gallery_image_links_enabled';
 export const LINK_ICONS_ENABLED_KEY = 'cc_link_icons_enabled';
 export const LINK_ICONS_REVIEW_ENABLED_KEY = 'cc_link_icons_review_enabled';
@@ -43,13 +36,35 @@ export const HOVER_PREVIEW_FILM_ENABLED_KEY = 'cc_hover_preview_film_enabled';
 export const HOVER_PREVIEW_EXTERNAL_ENABLED_KEY = 'cc_hover_preview_external_enabled';
 export const HOVER_PREVIEW_SECTION_COLLAPSED_KEY = 'cc_hover_preview_section_collapsed';
 export const HOVER_PREVIEW_SETTINGS_CHANGED_EVENT = 'cc-hover-preview-settings-changed';
+export const HOVER_PREVIEW_PIN_HINT_SEEN_KEY = 'cc_hover_preview_pin_hint_seen';
 export const SELF_REPLY_IN_DISCUSSIONS_KEY = 'cc_self_reply_discussions';
+export const POST_PERMALINK_KEY = 'cc_discussion_post_permalink';
+export const MY_DISCUSSIONS_HIDE_KEY = 'cc_hide_my_discussions';
+export const MY_DISCUSSIONS_HIDDEN_LIST_KEY = 'cc_hidden_my_discussions';
+export const MY_DISCUSSIONS_UPDATED_EVENT = 'cc-my-discussions-updated';
+export const CREATOR_ONE_LINE_KEY = 'cc_creator_one_line';
+export const CREATOR_ONE_LINE_UPDATED_EVENT = 'cc-creator-one-line-updated';
+export const ACTIVITY_LOG_KEY = 'cc_activity_log_v1';
+export const FILM_ACTIONS_HIDE_KEY = 'cc_film_actions_hide';
+export const FILM_ACTIONS_UPDATED_EVENT = 'cc-film-actions-updated';
+export const FILM_ACTIONS_SECTION_COLLAPSED_KEY = 'cc_film_actions_section_collapsed';
+
+// Review draft autosave — persistently saves a half-written film review so it
+// survives crashes, refreshes and failed submits.
+export const REVIEW_DRAFT_AUTOSAVE_ENABLED_KEY = 'cc_review_draft_autosave_enabled';
+export const REVIEW_DRAFT_STORAGE_PREFIX = 'cc_review_draft_v1_';
+export const REVIEW_DRAFT_AUTOSAVE_TOGGLED_EVENT = 'cc-review-draft-autosave-toggled';
 export const SHOW_ALL_CREATOR_TABS_KEY = 'cc_show_all_creator_tabs';
 export const SHOW_RATINGS_KEY = 'cc_show_ratings';
 export const SHOW_RATINGS_IN_REVIEWS_KEY = 'cc_show_ratings_in_reviews';
 export const SHOW_RATINGS_IN_DIARIES_KEY = 'cc_show_ratings_in_diaries';
 export const SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY = 'cc_show_ratings_in_foreign_reviews';
 export const SHOW_RATINGS_SECTION_COLLAPSED_KEY = 'cc_show_ratings_section_collapsed';
+
+// Homepage panel hiding
+export const HIDE_HOME_PANELS_KEY = 'cc_hide_home_panels';
+export const HIDDEN_PANELS_LIST_KEY = 'cc_hidden_panels_list';
+export const HIDDEN_PANELS_UPDATED_EVENT = 'cc-hidden-panels-updated';
 
 // feature flags copied from legacy script
 export const CLICKABLE_HEADER_BOXES_KEY = 'cc_clickable_header_boxes';
@@ -65,8 +80,11 @@ export const HIDE_REVIEWS_SECTION_COLLAPSED_KEY = 'cc_hide_reviews_section_colla
 export const PROFILE_LINK_SELECTOR =
   'a.profile.initialized, a.profile[href*="/uzivatel/"], .profile.initialized[href*="/uzivatel/"]';
 
-/** Regex to extract user slug (e.g. "12345-username") from a ČSFD user path. */
-export const USER_SLUG_REGEX = /^\/uzivatel\/(\d+-[^/]+)\//i;
+/**
+ * Regex to extract user slug (e.g. "12345-username") from a ČSFD user path or URL.
+ * Not anchored so it also matches absolute URLs and paths without a trailing slash.
+ */
+export const USER_SLUG_REGEX = /\/uzivatel\/(\d+-[^/?#]+)/i;
 
 export const CSFD_SITE_CONFIG = Object.freeze({
   cz: Object.freeze({

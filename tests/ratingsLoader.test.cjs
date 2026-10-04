@@ -13,9 +13,8 @@ let parseRatingsFromDocument;
 let normalizeType;
 let parseRatingRow;
 let hasRecordChanged;
-let evaluateShouldStopEarly;
 let buildStorageRecordId;
-let getRatingsFetchDelayMs;
+let parseTotalRatingsFromDocument;
 
 beforeAll(async () => {
   const ratingsLoader = await import(pathToFileURL(path.resolve(__dirname, '../src/ratings-loader.js')).href);
@@ -23,9 +22,8 @@ beforeAll(async () => {
   normalizeType = ratingsLoader.normalizeType;
   parseRatingRow = ratingsLoader.parseRatingRow;
   hasRecordChanged = ratingsLoader.hasRecordChanged;
-  evaluateShouldStopEarly = ratingsLoader.evaluateShouldStopEarly;
   buildStorageRecordId = ratingsLoader.buildStorageRecordId;
-  getRatingsFetchDelayMs = ratingsLoader.getRatingsFetchDelayMs;
+  parseTotalRatingsFromDocument = ratingsLoader.parseTotalRatingsFromDocument;
 });
 
 describe('ratings-loader helpers', () => {
@@ -111,23 +109,23 @@ describe('ratings-loader helpers', () => {
     expect(hasRecordChanged(base, altered)).to.be.true;
   });
 
-  it('evaluateShouldStopEarly respects incremental flag', () => {
-    const args = { page: 5, totalRatings: 10, directRatingsCount: 10, consecutiveStablePages: 1 };
-    expect(evaluateShouldStopEarly({ incremental: true, ...args })).to.be.false;
-    expect(evaluateShouldStopEarly({ incremental: false, ...args })).to.be.true;
-  });
-
-  it('getRatingsFetchDelayMs keeps incremental checks immediate', () => {
-    expect(getRatingsFetchDelayMs(true)).to.equal(0);
-  });
-
-  it('getRatingsFetchDelayMs adds jitter for full reloads', () => {
-    const delayMs = getRatingsFetchDelayMs(false);
-    expect(delayMs).to.be.at.least(50);
-    expect(delayMs).to.be.at.most(500);
-  });
-
   it('buildStorageRecordId uses stable user and movie ids', () => {
     expect(buildStorageRecordId('78145-songokussj', 1000064)).to.equal('78145-songokussj:1000064');
+  });
+
+  it('parseTotalRatingsFromDocument finds the ratings heading, not the first h2', () => {
+    const html = `
+      <h2>Upozornění <span>Chci vidět</span></h2>
+      <h2>Pošta</h2>
+      <h2>Fanklub (62)</h2>
+      <h2>Hodnocení <span>(2 448)</span></h2>`;
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    expect(parseTotalRatingsFromDocument(doc)).to.equal(2448);
+
+    const skDoc = new DOMParser().parseFromString('<h2>Hodnotenia (15)</h2>', 'text/html');
+    expect(parseTotalRatingsFromDocument(skDoc)).to.equal(15);
+
+    const emptyDoc = new DOMParser().parseFromString('<h2>Fanklub (62)</h2>', 'text/html');
+    expect(parseTotalRatingsFromDocument(emptyDoc)).to.equal(0);
   });
 });

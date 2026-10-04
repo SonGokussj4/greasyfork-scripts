@@ -1,17 +1,45 @@
 # Changelog
 
+## 0.10.1
+
+### Added
+
+- Diskuze: u každého příspěvku nová ikona s odkazem přímo na daný příspěvek (nastavení: "Odkaz na příspěvek v diskuzi")
+  Příspěvek otevřený přes takový odkaz je zvýrazněný (červený proužek vlevo a krátké probliknutí), aby bylo jasné, který to je.
+  ![Odkaz na příspěvek](images/changelog/0.10.0-odkaz-na-prispevek.png)
+- Filmy: nové nastavení "Skrýt tlačítka u filmu" - skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka)
+  ![Skrytá tlačítka u filmu](images/changelog/0.10.0-skryt-tlacitka-u-filmu.png)
+- Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
+  ![Moje diskuze](images/changelog/0.10.0-moje-diskuze.png)
+- Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
+  ![Filmografie na jeden řádek](images/changelog/0.10.0-filmografie-jeden-radek.png)
+- Náhled uživatele (najetí myší na jméno uživatele): nový řádek "Poslední recenze" s datem poslední napsané recenze
+  ![Poslední recenze](images/changelog/0.10.0-posledni-recenze.png)
+- CC menu - Další akce: nové tlačítko "Log" s posledními záznamy o činnosti skriptu (načítání a dopočet hodnocení, synchronizace, změny nastavení, selhání náhledů, chyby), s kopírováním a smazáním; data zůstávají jen v prohlížeči
+  ![Log aktivity](images/changelog/0.10.0-log-aktivity.png)
+
+### Fixed
+
+- Aktivita oblíbených: hodnocení vedle názvu filmu je zarovnané na střed textu
+- Vrátit styl hvězd v hodnocení: "odpad!" se zobrazuje správně (vykřičník na konci) a je zarovnaný s hvězdami
+
 ## 0.10.0
 
 ### Added
 
+- Okno s novinkami po aktualizaci označí červenou tečkou řádky changelogu, které přibyly od posledního zobrazení.
 - Notifikace o nové verzi skriptu nad CC menu
 - Do náhledové karty filmu přidáno - **Režie:**
 - Nové nastavení: vrácení stylu hvězdiček pro hodnocení u filmu (žádné šedé, zarovnání doprava)
 - Nový náhled: Odkaz na přímou recenzi na CSFD, včetně hodnocení, data a odkazu na recenzi
   ![Recenze](images/changelog/0.9.1-nahledy-recenze.png)
+- Nové nastavení: Automatické ukládání rozepsaných recenzí. Text recenze (včetně tučného, kurzívy a odkazů) se průběžně ukládá do prohlížeče, takže přežije zavření stránky, obnovení, výpadek i chybu při odeslání. Po opětovném otevření formuláře lze koncept jedním kliknutím obnovit nebo zkopírovat do schránky. Koncept se sám smaže, jakmile se recenze úspěšně objeví v seznamu recenzí.
 
 ### Changed
 
+- Načítání hodnocení je jedno projití od nejnovějších: jakmile počet sedí s ČSFD, samo skončí (typicky po 1. stránce), tlačítkem jde kdykoli zastavit a načtené zůstane uložené. Když máte uloženo víc hodnocení než ČSFD, projde vše až do konce a smazaná označí. Shift+klik projde všechny stránky. Pozastavení a pokračování načítání bylo zrušeno.
+- Rychlejší načítání stránek: celkový počet hodnocení pro odznak v CC menu se už nestahuje při každém zobrazení stránky, ale drží se 30 minut (a obnoví se hned při změně hodnocení).
+- Připínání náhledů: stačí krátce ťuknout na `Ctrl` (Ctrl+C, Ctrl+klik a jiné zkratky už náhled omylem nepřipnou), nebo bez klávesnice podržet tlačítko myši na odkazu. Připnutý náhled má křížek pro zavření, `Esc` zavře všechny. Při připnutých náhledech fungují náhledy dalších odkazů na stránce, takže jde porovnávat víc karet. Nový náhled ukazuje nápovědu, dokud poprvé nic nepřipnete.
 - Tabulka hodnocení se otevírá novým tlačítkem "Tabulka všech hodnocení" v CC menu (odstraněna ikona v liště a klikání na počítadla)
   ![Tabulka hodnocení](images/changelog/0.10.0-tabulka-hodnoceni.png)
 - AniDB: Cloudflare blokuje načtení náhledu, místo prázdného náhledu se zobrazí krátká informace
@@ -27,6 +55,12 @@
 - New UI fix: Odstraněno zobrazení hvězd hodnocení v panelu akcí filmu/seriálu vedle "Recenze"
 - New UI fix: Znovu zobrazení hodnocení filmu/seriálu z průměru oblíbených uživatelů
 - New UI fix: Odstraněno zobrazení hvězd hodnocení u série nad seznamem episod
+- Počet načtených hodnocení už nepřesahuje celkový počet na ČSFD (např. `2449 / 2448`). Načtení hodnocení teď označí jako smazaná ta, která už na ČSFD nejsou (smazaná na jiném zařízení), a odznak při přebytku ukáže varování.
+- Načítání hodnocení špatně četlo celkový počet hodnocení z ČSFD (bralo první nadpis stránky), takže se smazaná hodnocení nesrovnala a plné načtení (Shift+klik) nikdy neskončilo dřív.
+- Changelog v „Informace o verzi“ a v oznámení o aktualizaci teď u nevydaných změn ukazuje aktuální verzi skriptu.
+- Náhledy se zobrazí i při zaplněném úložišti prohlížeče (nejstarší uložené náhledy se uvolní).
+- Náhled recenze s hodnocením „odpad!“ teď hodnocení ukazuje (dřív se nezobrazilo žádné).
+- Když se z ČSFD nepodaří přečíst celkový počet hodnocení, načítání na to upozorní místo tichého pokračování.
 
 ### Development
 
