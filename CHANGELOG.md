@@ -5,6 +5,7 @@
 ### Added
 
 - Diskuze: u každého příspěvku nová ikona s odkazem přímo na daný příspěvek (nastavení: "Odkaz na příspěvek v diskuzi")
+  Příspěvek otevřený přes takový odkaz je zvýrazněný (červený proužek vlevo a krátké probliknutí), aby bylo jasné, který to je.
 - Filmy: nové nastavení "Skrýt tlačítka u filmu" - skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka)
 - Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
 - Profil tvůrce: nové nastavení "Filmografie: jeden film na řádek" - dlouhé názvy se zkrátí, celý název je v tooltipu
