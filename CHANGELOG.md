@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.10.0 - unreleased
+## 0.10.1
 
 ### Added
 
@@ -21,6 +21,7 @@
 ### Fixed
 
 - Aktivita oblíbených: hodnocení vedle názvu filmu je zarovnané na střed textu
+- Vrátit styl hvězd v hodnocení: "odpad!" se zobrazuje správně (vykřičník na konci) a je zarovnaný s hvězdami
 
 ## 0.10.0
 
