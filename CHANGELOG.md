@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.0 - unreleased
+
+### Added
+
+- Diskuze: u každého příspěvku nová ikona s odkazem přímo na daný příspěvek (nastavení: "Odkaz na příspěvek v diskuzi")
+
 ## 0.10.0
 
 ### Added

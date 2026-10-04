@@ -4,7 +4,7 @@
  *
  * Extracted from csfd.js; the Csfd class delegates here.
  */
-import { SELF_REPLY_IN_DISCUSSIONS_KEY, getCsfdPathAliasPattern } from './config.js';
+import { POST_PERMALINK_KEY, SELF_REPLY_IN_DISCUSSIONS_KEY, getCsfdPathAliasPattern } from './config.js';
 import { getFeatureState } from './utils.js';
 
 const DISCUSSION_PAGE_REGEX = new RegExp(String.raw`/(?:${getCsfdPathAliasPattern('discussion')})/`, 'i');
@@ -105,4 +105,44 @@ export function enableSelfReplyInDiscussions() {
 /** Remove all injected self-reply buttons. */
 export function clearSelfReplyInDiscussions() {
   document.querySelectorAll('.cc-self-reply').forEach((btn) => btn.remove());
+}
+
+const LINK_ICON_SVG =
+  '<svg width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"></path><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"></path></svg>';
+
+/**
+ * Builds a link to one post: current discussion page (keeping ?page=N) + the post anchor.
+ */
+export function buildPostPermalink(location, postId) {
+  return `${location.origin}${location.pathname}${location.search}#highlight-post-${postId}`;
+}
+
+/**
+ * Adds a "link to this post" icon to the action bar of every discussion post.
+ * Pure DOM work, no requests.
+ */
+export function addPostPermalinks() {
+  if (!DISCUSSION_PAGE_REGEX.test(window.location.pathname || '')) return;
+  if (!getFeatureState(POST_PERMALINK_KEY, true)) return;
+
+  document.querySelectorAll('article.article-forum').forEach((post) => {
+    const actionsContainer = post.querySelector('.icon-control');
+    if (!actionsContainer || actionsContainer.querySelector('.cc-post-permalink')) return;
+
+    const postId = (post.getAttribute('id') || '').match(/highlight-post-(\d+)/)?.[1];
+    if (!postId) return;
+
+    const link = document.createElement('a');
+    link.className = 'button button-circle cc-post-permalink';
+    link.href = buildPostPermalink(window.location, postId);
+    link.title = 'Odkaz na tento příspěvek (CC)';
+    link.setAttribute('aria-label', link.title);
+    link.innerHTML = LINK_ICON_SVG;
+    actionsContainer.appendChild(link);
+  });
+}
+
+/** Remove all injected permalink icons. */
+export function clearPostPermalinks() {
+  document.querySelectorAll('.cc-post-permalink').forEach((el) => el.remove());
 }

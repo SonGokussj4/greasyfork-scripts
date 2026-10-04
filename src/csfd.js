@@ -161,6 +161,7 @@ export class Csfd {
       if (getFeatureState(RATINGS_FROM_FAVORITES_KEY)) await this.ratingsFromFavorites();
       if (getFeatureState(ADD_RATINGS_DATE_KEY)) this.addRatingsDate();
       if (getFeatureState(SELF_REPLY_IN_DISCUSSIONS_KEY, true)) this.enableSelfReplyInDiscussions();
+      this.addPostPermalinks();
     } catch (e) {
       // ignore silently
     }
@@ -1315,5 +1316,13 @@ export class Csfd {
 
   clearSelfReplyInDiscussions() {
     discussions.clearSelfReplyInDiscussions();
+  }
+
+  addPostPermalinks() {
+    discussions.addPostPermalinks();
+  }
+
+  clearPostPermalinks() {
+    discussions.clearPostPermalinks();
   }
 }

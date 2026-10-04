@@ -17,6 +17,7 @@ import {
   REVIEW_DRAFT_AUTOSAVE_ENABLED_KEY,
   REVIEW_DRAFT_AUTOSAVE_TOGGLED_EVENT,
   SELF_REPLY_IN_DISCUSSIONS_KEY,
+  POST_PERMALINK_KEY,
   SHOW_ALL_CREATOR_TABS_KEY,
   SHOW_RATINGS_IN_DIARIES_KEY,
   SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY,
@@ -89,6 +90,20 @@ export const MENU_CONFIG = [
         },
         tooltip: '',
         eventName: 'cc-self-reply-toggled',
+      },
+      {
+        type: 'toggle',
+        id: 'cc-enable-post-permalink',
+        storageKey: POST_PERMALINK_KEY,
+        defaultValue: true,
+        requiresLogin: false,
+        label: 'Odkaz na příspěvek v diskuzi',
+        infoIcon: {
+          url: '',
+          text: 'Přidá k příspěvkům v diskuzi ikonu s odkazem přímo na daný příspěvek.',
+        },
+        tooltip: '',
+        eventName: 'cc-post-permalink-toggled',
       },
       {
         type: 'group',
