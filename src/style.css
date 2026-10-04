@@ -3684,3 +3684,55 @@ body.cc-hide-film-action-lists .action-panel-item:has(> a[href*="modal=filmList"
 body.cc-hide-film-action-collection #snippet--actionLinkCollection {
     display: none !important;
 }
+
+/* "Moje diskuze" hiding (my-discussions.js) */
+tr.cc-md-hidden {
+    display: none;
+}
+
+tr.cc-md-hidden-preview {
+    opacity: 0.5;
+}
+
+.cc-md-btn,
+.cc-md-toggle {
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    color: #999;
+    padding: 0 4px;
+}
+
+.cc-md-btn {
+    margin-left: 6px;
+    opacity: 0;
+}
+
+tr:hover .cc-md-btn,
+tr:focus-within .cc-md-btn,
+.cc-md-btn:focus-visible,
+tr.cc-md-hidden-preview .cc-md-btn {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .cc-md-btn {
+        opacity: 1;
+    }
+}
+
+.cc-md-toggle:focus-visible {
+    outline: 2px solid var(--cc-color-red);
+}
+
+.cc-md-btn:hover,
+.cc-md-toggle:hover {
+    color: var(--cc-color-red);
+}
+
+.cc-md-toggle {
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: normal;
+}

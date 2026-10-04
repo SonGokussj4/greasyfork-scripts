@@ -6,6 +6,7 @@
 
 - Diskuze: u každého příspěvku nová ikona s odkazem přímo na daný příspěvek (nastavení: "Odkaz na příspěvek v diskuzi")
 - Filmy: nové nastavení "Skrýt tlačítka u filmu" - skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka)
+- Diskuze - Moje a sledované: u "Moje diskuze" lze skrýt vybrané diskuze (×) a kdykoli je obnovit přes "Skryté (N)" (nastavení: "Skrývání vybraných Moje diskuze")
 
 ## 0.10.0
 
