@@ -113,8 +113,13 @@ def update_symlink(target: Path) -> None:
         PAGES_SYMLINK.unlink()
     # Build a relative path so the symlink works regardless of checkout location
     rel = os.path.relpath(target, PAGES_SYMLINK.parent)
-    PAGES_SYMLINK.symlink_to(rel)
-    print(f"  ✔ symlink tests/pages → {rel}")
+    try:
+        PAGES_SYMLINK.symlink_to(rel)
+        print(f"  ✔ symlink tests/pages → {rel}")
+    except OSError:
+        # Windows without symlink privilege: fall back to a plain copy
+        shutil.copytree(target, PAGES_SYMLINK)
+        print(f"  ✔ copied snapshot to tests/pages (symlinks not permitted)")
 
 
 # ── subcommands ──────────────────────────────────────────────────────────
@@ -383,6 +388,8 @@ async def _async_download(site_key: str, *, headed: bool = False) -> None:
 
 
 def main() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        stream.reconfigure(encoding="utf-8")  # Windows consoles default to cp1252
     parser = argparse.ArgumentParser(
         description="Download ČSFD test pages using Playwright.",
     )
