@@ -38,6 +38,9 @@ import { getHoverPreviewSettingsItems } from './hover-preview-providers.js';
 
 // Export a pure data-driven MENU_CONFIG. Callback handlers are exported as
 // string names so the main module can resolve them to actual function refs.
+// Help screenshots live in the repo; the raw GitHub URL serves them once they are on master.
+const HELP_IMAGE_BASE = 'https://raw.githubusercontent.com/SonGokussj4/greasyfork-scripts/refs/heads/master/images/';
+
 export const MENU_CONFIG = [
   {
     category: 'Globální',
@@ -107,8 +110,8 @@ export const MENU_CONFIG = [
         requiresLogin: false,
         label: 'Odkaz na příspěvek v diskuzi',
         infoIcon: {
-          url: '',
-          text: 'Přidá k příspěvkům v diskuzi ikonu s odkazem přímo na daný příspěvek.',
+          url: `${HELP_IMAGE_BASE}changelog/0.10.0-odkaz-na-prispevek.png`,
+          text: 'Přidá k příspěvkům v diskuzi ikonu s odkazem přímo na daný příspěvek.\n\n👉 Klikni pro ukázku',
         },
         tooltip: '',
         eventName: 'cc-post-permalink-toggled',
@@ -121,8 +124,8 @@ export const MENU_CONFIG = [
         requiresLogin: false,
         label: 'Skrývání vybraných "Moje diskuze"',
         infoIcon: {
-          url: '',
-          text: 'Na stránce Diskuze - Moje a sledované přidá k vlastním diskuzím tlačítko pro skrytí. Skryté diskuze lze kdykoli obnovit přes "Skryté (N)" v záhlaví seznamu.',
+          url: `${HELP_IMAGE_BASE}changelog/0.10.0-moje-diskuze.png`,
+          text: 'Na stránce Diskuze - Moje a sledované přidá k vlastním diskuzím tlačítko pro skrytí. Skryté diskuze lze kdykoli obnovit přes "Skryté (N)" v záhlaví seznamu.\n\n👉 Klikni pro ukázku',
         },
         tooltip: '',
         eventName: MY_DISCUSSIONS_UPDATED_EVENT,
@@ -170,8 +173,8 @@ export const MENU_CONFIG = [
         label: 'Skrýt tlačítka u filmu',
         tooltip: '',
         infoIcon: {
-          url: '',
-          text: 'Skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka).',
+          url: `${HELP_IMAGE_BASE}changelog/0.10.0-skryt-tlacitka-u-filmu.png`,
+          text: 'Skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka).\n\n👉 Klikni pro ukázku',
         },
         eventName: FILM_ACTIONS_UPDATED_EVENT,
         groupToggleId: 'cc-film-actions-group-toggle',
@@ -252,8 +255,8 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: REVIEW_DRAFT_AUTOSAVE_TOGGLED_EVENT,
         infoIcon: {
-          url: '',
-          text: 'Průběžně ukládá rozepsanou recenzi do prohlížeče, takže se neztratí při zavření stránky, obnovení, výpadku nebo chybě odeslání. Po návratu na stránku ji můžeš jedním kliknutím obnovit. Koncept se sám smaže, jakmile se recenze úspěšně přidá do seznamu.',
+          url: `${HELP_IMAGE_BASE}help/ukladani-konceptu-recenze.png`,
+          text: 'Průběžně ukládá rozepsanou recenzi do prohlížeče, takže se neztratí při zavření stránky, obnovení, výpadku nebo chybě odeslání. Po návratu na stránku ji můžeš jedním kliknutím obnovit. Koncept se sám smaže, jakmile se recenze úspěšně přidá do seznamu.\n\n👉 Klikni pro ukázku',
         },
       },
       {
@@ -322,7 +325,7 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: 'cc-revert-star-style-toggled',
         infoIcon: {
-          url: '',
+          url: `${HELP_IMAGE_BASE}help/vratit-styl-hvezd.png`,
           text: 'Zobrazení hvězdiček v hodnocení bez šedého pozadí.\n\n👉 Klikni pro ukázku',
         },
       },
@@ -418,8 +421,8 @@ export const MENU_CONFIG = [
         tooltip: '',
         eventName: CREATOR_ONE_LINE_UPDATED_EVENT,
         infoIcon: {
-          url: '',
-          text: 'V profilu tvůrce zkrátí dlouhé názvy filmů na jeden řádek (celý název se zobrazí po najetí myší).',
+          url: `${HELP_IMAGE_BASE}changelog/0.10.0-filmografie-jeden-radek.png`,
+          text: 'V profilu tvůrce zkrátí dlouhé názvy filmů na jeden řádek (celý název se zobrazí po najetí myší).\n\n👉 Klikni pro ukázku',
         },
       },
     ],
