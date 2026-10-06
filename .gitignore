@@ -23,7 +23,7 @@ tests/snapshots/
 scripts/.auth-state.json
 scripts/.auth-state-sk.json
 scripts/.credentials.json
-**/.venv/
+**/.venv*/
 
 # Local-only: page snapshots contain session CSRF tokens; agent memory/settings
 /pages/
