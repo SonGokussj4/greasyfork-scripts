@@ -64,7 +64,7 @@ setup:  # Create venv, install Python deps + Playwright Chromium browser
 login:  # Log in to ČSFD and save browser auth state (SITE=cz|sk, needs CSFD_USERNAME & CSFD_PASSWORD)
 	$(PYTHON) scripts/download-test-pages.py login --site $(SITE)
 
-download-pages: # Download all pages from scripts/test-pages.txt into tests/snapshots/<today>/ and update the tests/pages symlink
+download-pages: # Download all pages from scripts/test-pages.txt into tests/snapshots/<today>/
 	$(PYTHON) scripts/download-test-pages.py download --site $(SITE)
 
 drift-check:  # Download fresh CZ + SK pages and check the selectors the script depends on still match (manual, ~15 requests)
