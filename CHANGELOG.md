@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.10.2
+
+### Added
+
+- Nápověda (ikona "i") v CC menu má teď ukázkový obrázek u nastavení: Odkaz na příspěvek v diskuzi, Skrývání vybraných "Moje diskuze", Skrýt tlačítka u filmu (před/po), Filmografie: jeden film na řádek, Automaticky ukládat rozepsané recenze a Vrátit styl hvězd v hodnocení.
+
+### Development
+
+- Stahování testovacích stránek podporuje csfd.sk (`make login SITE=sk`, `make download-pages SITE=sk`), Python nástroje běží přes `uv` na Windows, Linuxu i WSL.
+- `make drift-check` stáhne čerstvé stránky CZ i SK a ověří, že selektory, na které se skript spoléhá, stále fungují (`tests/selectorContract.test.cjs`).
+- Stahování stránek už nepřepisuje `tests/pages`, přihlášení na ČSFD správně odešle přihlašovací formulář.
+
 ## 0.10.1
 
 ### Added
