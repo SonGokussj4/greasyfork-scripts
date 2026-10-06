@@ -24,6 +24,8 @@ A version-bump commit message is exactly `chore: bump version to x.y.z` with not
 
 `make setup` / `make login` / `make download-pages` (Python + Playwright under `scripts/`) re-download the ČSFD page fixtures used by tests. Login needs `CSFD_USERNAME` and `CSFD_PASSWORD`.
 
+Add `SITE=sk` to `make login` / `make download-pages` for csfd.sk (separate login and `tests/snapshots/<date>-sk/`). `make drift-check` downloads fresh CZ and SK pages and runs `tests/selectorContract.test.cjs`, which checks that selectors used by the script's CSS still match the live pages (manual, ~15 requests). The contract suite skips a site that has no snapshot.
+
 ## Architecture
 
 This is a Greasyfork userscript for csfd.cz / csfd.sk bundled with Rollup into a single IIFE file. There are no runtime dependencies; all code is vanilla JS + CSS.

@@ -1,9 +1,10 @@
 .DEFAULT_GOAL := help
 
-.PHONY: help bootstrap install build dev test test-hover clean doctor setup login download-pages
+.PHONY: help bootstrap install build dev test test-hover clean doctor setup login download-pages drift-check
 
 VENV_DIR  := scripts/.venv
 PYTHON    := $(VENV_DIR)/bin/python
+SITE      ?= cz
 PIP       := $(VENV_DIR)/bin/pip
 
 help:
@@ -21,8 +22,9 @@ help:
 	@echo ""
 	@echo "Test page snapshots (optional, Python + Playwright)"
 	@echo "  setup           Install Python venv & Playwright"
-	@echo "  login           Log in to ČSFD (saves auth state)"
-	@echo "  download-pages  Download test pages → tests/snapshots/<today>/"
+	@echo "  login           Log in to ČSFD (saves auth state; SITE=sk for csfd.sk)"
+	@echo "  download-pages  Download test pages → tests/snapshots/<today>[-sk]/ (SITE=cz|sk)"
+	@echo "  drift-check     Download fresh CZ+SK pages and verify the script's selectors still match"
 
 bootstrap: install build  # First-time setup
 
@@ -52,8 +54,13 @@ setup:  # Create venv, install Python deps + Playwright Chromium browser
 	$(PIP) install -r scripts/requirements.txt
 	$(PYTHON) -m playwright install chromium
 
-login:  # Log in to ČSFD and save browser auth state (needs CSFD_USERNAME & CSFD_PASSWORD)
-	$(PYTHON) scripts/download-test-pages.py login
+login:  # Log in to ČSFD and save browser auth state (SITE=cz|sk, needs CSFD_USERNAME & CSFD_PASSWORD)
+	$(PYTHON) scripts/download-test-pages.py login --site $(SITE)
 
 download-pages: # Download all pages from scripts/test-pages.txt into tests/snapshots/<today>/ and update the tests/pages symlink
-	$(PYTHON) scripts/download-test-pages.py download
+	$(PYTHON) scripts/download-test-pages.py download --site $(SITE)
+
+drift-check:  # Download fresh CZ + SK pages and check the selectors the script depends on still match (manual, ~15 requests)
+	$(PYTHON) scripts/download-test-pages.py download --site cz
+	$(PYTHON) scripts/download-test-pages.py download --site sk
+	node --experimental-vm-modules ./node_modules/jest/bin/jest.js tests/selectorContract.test.cjs --runInBand

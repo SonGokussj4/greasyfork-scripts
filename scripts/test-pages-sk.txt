@@ -1,0 +1,11 @@
+# Movies (csfd.sk - same film ids, Slovak paths)
+https://www.csfd.sk/film/9499-matrix/prehlad/
+https://www.csfd.sk/film/9499-matrix/recenzie/
+
+# Series
+https://www.csfd.sk/film/1417211-soso-no-frieren/prehlad/
+
+# My profile
+https://www.csfd.sk/uzivatel/78145-songokussj/prehlad/
+https://www.csfd.sk/uzivatel/78145-songokussj/hodnotenia/
+https://www.csfd.sk/uzivatel/78145-songokussj/recenzie/

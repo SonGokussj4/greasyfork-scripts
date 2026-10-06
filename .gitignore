@@ -21,6 +21,7 @@ test-results/*
 # Test page snapshots & Playwright auth state
 tests/snapshots/
 scripts/.auth-state.json
+scripts/.auth-state-sk.json
 scripts/.credentials.json
 **/.venv/
 
