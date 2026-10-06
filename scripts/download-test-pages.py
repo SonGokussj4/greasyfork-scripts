@@ -38,11 +38,34 @@ from playwright_stealth import Stealth
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
-AUTH_STATE_FILE = SCRIPT_DIR / ".auth-state.json"
 CREDENTIALS_FILE = SCRIPT_DIR / ".credentials.json"
-URL_LIST_FILE = SCRIPT_DIR / "test-pages.txt"
 SNAPSHOTS_DIR = PROJECT_ROOT / "tests" / "snapshots"
 PAGES_SYMLINK = PROJECT_ROOT / "tests" / "pages"
+
+# Per-locale settings. ČSFD logins are per domain, so each site has its own auth state.
+SITES = {
+    "cz": {
+        "origin": "https://www.csfd.cz",
+        "login_path": "/prihlaseni/",
+        "locale": "cs-CZ",
+        "languages": ("cs", "cs-CZ", "en"),
+        "auth_file": SCRIPT_DIR / ".auth-state.json",
+        "url_list": SCRIPT_DIR / "test-pages.txt",
+        "dir_suffix": "",
+        "submit_text": "Přihlásit",
+    },
+    "sk": {
+        "origin": "https://www.csfd.sk",
+        "login_path": "/prihlasenie/",
+        "locale": "sk-SK",
+        "languages": ("sk", "sk-SK", "en"),
+        "auth_file": SCRIPT_DIR / ".auth-state-sk.json",
+        "url_list": SCRIPT_DIR / "test-pages-sk.txt",
+        "dir_suffix": "-sk",
+        "submit_text": "Prihlásiť",
+    },
+}
+
 
 # ── helpers ──────────────────────────────────────────────────────────────
 
@@ -142,20 +165,23 @@ def _load_credentials() -> tuple[str, str]:
     return username, password
 
 
-def cmd_login(_args: argparse.Namespace) -> None:
+def cmd_login(args: argparse.Namespace) -> None:
     """Open a browser, log in to ČSFD, and persist the auth state."""
+    site = SITES[args.site]
+    auth_file = site["auth_file"]
     username, password = _load_credentials()
 
-    print("Logging in to ČSFD …")
+    print(f"Logging in to ČSFD ({args.site}) …")
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=False)
         context = browser.new_context()
         page = context.new_page()
 
-        page.goto("https://www.csfd.cz/prihlaseni/", wait_until="networkidle")
+        page.goto(site["origin"] + site["login_path"], wait_until="networkidle")
 
         # Dismiss cookie consent banner if present (common CMP buttons)
         for cookie_sel in [
+            'text=zůstat a už nenabízet',
             'button:has-text("Souhlasím")',
             'button:has-text("Přijmout")',
             'button:has-text("Accept")',
@@ -206,7 +232,7 @@ def cmd_login(_args: argparse.Namespace) -> None:
         for submit_sel in [
             'button[type="submit"]',
             'input[type="submit"]',
-            'button:has-text("Přihlásit")',
+            'button:has-text("' + site["submit_text"] + '")',
         ]:
             try:
                 submit_btn = page.locator(submit_sel).first
@@ -220,7 +246,7 @@ def cmd_login(_args: argparse.Namespace) -> None:
         # or a known logged-in element appears in the header.
         try:
             page.wait_for_url(
-                lambda url: "/prihlaseni" not in url and "/prihlaseni" not in url,
+                lambda url: "/prihlasen" not in url,
                 timeout=30_000,
             )
         except Exception:
@@ -228,22 +254,22 @@ def cmd_login(_args: argparse.Namespace) -> None:
             pass
 
         # Double-check: if we're still on the login page, something failed
-        if "/prihlaseni" in page.url:
+        if "/prihlasen" in page.url:
             sys.exit(
                 "Login failed - still on the login page after submit. "
                 "Check your credentials or complete any CAPTCHA manually."
             )
 
         # Save auth state
-        context.storage_state(path=str(AUTH_STATE_FILE))
+        context.storage_state(path=str(auth_file))
         browser.close()
 
-    print(f"  ✔ Auth state saved to {AUTH_STATE_FILE.relative_to(PROJECT_ROOT)}")
+    print(f"  ✔ Auth state saved to {auth_file.relative_to(PROJECT_ROOT)}")
 
 
 def cmd_download(args: argparse.Namespace) -> None:
     """Download every URL from the text-file list using saved auth state."""
-    asyncio.run(_async_download(headed=getattr(args, "headed", False)))
+    asyncio.run(_async_download(args.site, headed=getattr(args, "headed", False)))
 
 
 async def _wait_for_anubis(page, timeout_ms: int = 30_000) -> bool:
@@ -263,19 +289,21 @@ async def _wait_for_anubis(page, timeout_ms: int = 30_000) -> bool:
     return False
 
 
-async def _async_download(*, headed: bool = False) -> None:
-    if not AUTH_STATE_FILE.exists():
+async def _async_download(site_key: str, *, headed: bool = False) -> None:
+    site = SITES[site_key]
+    auth_file = site["auth_file"]
+    if not auth_file.exists():
         sys.exit(
-            f"Error: auth state not found at {AUTH_STATE_FILE.relative_to(PROJECT_ROOT)}.\n"
-            "Run 'make login' first."
+            f"Error: auth state not found at {auth_file.relative_to(PROJECT_ROOT)}.\n"
+            f"Run 'make login SITE={site_key}' first."
         )
 
-    urls = read_urls(URL_LIST_FILE)
+    urls = read_urls(site["url_list"])
     if not urls:
-        sys.exit(f"Error: no URLs found in {URL_LIST_FILE.relative_to(PROJECT_ROOT)}")
+        sys.exit(f"Error: no URLs found in {site['url_list'].relative_to(PROJECT_ROOT)}")
 
     today = date.today().isoformat()  # e.g. 2026-03-31
-    out_dir = SNAPSHOTS_DIR / today
+    out_dir = SNAPSHOTS_DIR / f"{today}{site['dir_suffix']}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     concurrency = min(6, len(urls))  # up to 6 parallel tabs
@@ -285,7 +313,7 @@ async def _async_download(*, headed: bool = False) -> None:
     semaphore = asyncio.Semaphore(concurrency)
 
     stealth = Stealth(
-        navigator_languages_override=("cs", "cs-CZ", "en"),
+        navigator_languages_override=site["languages"],
         navigator_platform_override="Linux x86_64",
         navigator_user_agent_override=(
             "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
@@ -307,9 +335,9 @@ async def _async_download(*, headed: bool = False) -> None:
             dest = out_dir / fname
             async with semaphore:
                 context = await browser.new_context(
-                    storage_state=str(AUTH_STATE_FILE),
+                    storage_state=str(auth_file),
                     viewport={"width": 1920, "height": 1080},
-                    locale="cs-CZ",
+                    locale=site["locale"],
                 )
                 page = await context.new_page()
                 try:
@@ -341,7 +369,8 @@ async def _async_download(*, headed: bool = False) -> None:
 
         await browser.close()
 
-    update_symlink(out_dir)
+    if site_key == "cz":
+        update_symlink(out_dir)  # tests/pages follows the CZ snapshot only
     ok = len(urls) - len(failed)
     print(f"\nDone. {ok}/{len(urls)} pages saved.")
     if failed:
@@ -359,8 +388,10 @@ def main() -> None:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("login", help="Log in to ČSFD and save auth state.")
-    dl = sub.add_parser("download", help="Download test pages listed in test-pages.txt.")
+    login = sub.add_parser("login", help="Log in to ČSFD and save auth state.")
+    dl = sub.add_parser("download", help="Download the test pages listed for the chosen site.")
+    for sp in (login, dl):
+        sp.add_argument("--site", choices=sorted(SITES), default="cz", help="ČSFD locale (default: cz).")
     dl.add_argument(
         "--headed", action="store_true",
         help="Run browser in headed (visible) mode to help bypass bot detection.",
