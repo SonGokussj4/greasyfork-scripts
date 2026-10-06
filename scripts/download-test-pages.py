@@ -23,7 +23,6 @@ import getpass
 import json
 import os
 import re
-import shutil
 import sys
 import time
 from datetime import date
@@ -40,7 +39,6 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 CREDENTIALS_FILE = SCRIPT_DIR / ".credentials.json"
 SNAPSHOTS_DIR = PROJECT_ROOT / "tests" / "snapshots"
-PAGES_SYMLINK = PROJECT_ROOT / "tests" / "pages"
 
 # Per-locale settings. ČSFD logins are per domain, so each site has its own auth state.
 SITES = {
@@ -96,30 +94,6 @@ def read_urls(path: Path) -> list[str]:
         if line and not line.startswith("#"):
             lines.append(line)
     return lines
-
-
-def update_symlink(target: Path) -> None:
-    """Point tests/pages → target (relative symlink)."""
-    if PAGES_SYMLINK.is_symlink():
-        PAGES_SYMLINK.unlink()
-    elif PAGES_SYMLINK.is_dir():
-        # First run: tests/pages is a real directory — back it up, then replace
-        backup = PAGES_SYMLINK.with_name("pages.bak")
-        if backup.exists():
-            shutil.rmtree(backup)
-        PAGES_SYMLINK.rename(backup)
-        print(f"  ⚠ Existing tests/pages/ moved to tests/pages.bak/")
-    elif PAGES_SYMLINK.exists():
-        PAGES_SYMLINK.unlink()
-    # Build a relative path so the symlink works regardless of checkout location
-    rel = os.path.relpath(target, PAGES_SYMLINK.parent)
-    try:
-        PAGES_SYMLINK.symlink_to(rel)
-        print(f"  ✔ symlink tests/pages → {rel}")
-    except OSError:
-        # Windows without symlink privilege: fall back to a plain copy
-        shutil.copytree(target, PAGES_SYMLINK)
-        print(f"  ✔ copied snapshot to tests/pages (symlinks not permitted)")
 
 
 # ── subcommands ──────────────────────────────────────────────────────────
@@ -380,8 +354,7 @@ async def _async_download(site_key: str, *, headed: bool = False) -> None:
 
         await browser.close()
 
-    if site_key == "cz":
-        update_symlink(out_dir)  # tests/pages follows the CZ snapshot only
+    # tests/pages holds committed fixtures: never replace them with a snapshot.
     ok = len(urls) - len(failed)
     print(f"\nDone. {ok}/{len(urls)} pages saved.")
     if failed:

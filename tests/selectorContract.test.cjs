@@ -43,7 +43,8 @@ for (const { site, dir } of SITES) {
 
   suite(`selector contract (${site})${dir ? '' : ' - no snapshot, run: make download-pages SITE=' + site}`, () => {
     const files = dir ? fs.readdirSync(dir).filter((f) => f.endsWith('.html')) : [];
-    const filmPages = files.filter((f) => /action-panel-list/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
+    // A film page is the one with ČSFD's film action panel (user profiles have a different one).
+    const filmPages = files.filter((f) => /id="snippet--actionLinkWatchlist"/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
 
     test('snapshot contains at least one film page with the action panel', () => {
       expect(filmPages.length).toBeGreaterThan(0);
@@ -55,12 +56,17 @@ for (const { site, dir } of SITES) {
       );
     });
 
-    test.each(filmPages.length ? filmPages : ['(none)'])('film action buttons match on %s', (file) => {
-      if (file === '(none)') return;
-      loadPage(path.join(dir, file));
-      for (const { id, selector } of filmActionSelectors()) {
-        expect({ id, matches: document.querySelectorAll(selector).length }).not.toMatchObject({ matches: 0 });
+    // Some buttons are legitimately missing on some pages (e.g. no review button on an unrated season),
+    // so each selector must match on at least one film page, not on every one.
+    test('every film action selector matches on some film page', () => {
+      const matches = Object.fromEntries(filmActionSelectors().map(({ id }) => [id, 0]));
+      for (const file of filmPages) {
+        loadPage(path.join(dir, file));
+        for (const { id, selector } of filmActionSelectors()) {
+          matches[id] += document.querySelectorAll(selector).length;
+        }
       }
+      expect(Object.entries(matches).filter(([, n]) => n === 0).map(([id]) => id)).toEqual([]);
     });
   });
 }
