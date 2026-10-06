@@ -233,19 +233,25 @@ def cmd_login(args: argparse.Namespace) -> None:
         if not filled:
             sys.exit("Error: could not find the login form fields on the page.")
 
-        # Submit
+        # Submit. Scope to the form that holds the password field: the header search box has
+        # its own visible submit button that an unscoped selector would click instead.
+        submitted = False
+        login_form = page.locator("form").filter(has=pass_input).first
         for submit_sel in [
             'button[type="submit"]',
             'input[type="submit"]',
             'button:has-text("' + site["submit_text"] + '")',
         ]:
             try:
-                submit_btn = page.locator(submit_sel).first
+                submit_btn = login_form.locator(submit_sel).first
                 if submit_btn.is_visible(timeout=2_000):
                     submit_btn.click()
+                    submitted = True
                     break
             except Exception:
                 continue
+        if not submitted:
+            pass_input.press("Enter")
 
         # Wait for successful login: either the URL leaves the login page
         # or a known logged-in element appears in the header.
