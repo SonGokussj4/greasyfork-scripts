@@ -9003,7 +9003,7 @@
           label: 'Skrýt tlačítka u filmu',
           tooltip: '',
           infoIcon: {
-            url: `${HELP_IMAGE_BASE}changelog/0.10.0-skryt-tlacitka-u-filmu.png`,
+            url: `${HELP_IMAGE_BASE}help/skryt-tlacitka-u-filmu.png`,
             text: 'Skryje vybraná tlačítka pod názvem filmu (Recenze, Chci vidět, Oblíbené, Seznamy, Filmotéka).\n\n👉 Klikni pro ukázku',
           },
           eventName: FILM_ACTIONS_UPDATED_EVENT,
