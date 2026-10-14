@@ -338,6 +338,23 @@ export function isSweepInSync({ totalRatings, directRatingsCount }) {
   return totalRatings > 0 && directRatingsCount === totalRatings;
 }
 
+/**
+ * How many ratings ČSFD may count in its total without listing them. Some accounts have a total
+ * that stays a few above the rows the list really shows (31 015 counted, 31 014 listed), so the
+ * count never matches and every load used to walk all pages.
+ */
+export const SWEEP_UNLISTED_TOLERANCE = 10;
+
+/**
+ * Stop early when a whole page brought nothing new and only a handful of ratings are still
+ * "missing": the list is newest first, so an unchanged page means everything older is already
+ * stored. More local than ČSFD (deletions) or a bigger gap (an earlier sweep was stopped) keep going.
+ */
+export function isSweepCaughtUp({ totalRatings, directRatingsCount, pageUnchanged }) {
+  const missing = totalRatings - directRatingsCount;
+  return pageUnchanged === true && totalRatings > 0 && missing > 0 && missing <= SWEEP_UNLISTED_TOLERANCE;
+}
+
 function updateProgressUI(progress, state) {
   const container = progress.container;
   const section = progress.section;
@@ -745,6 +762,8 @@ async function loadComputedParentRatingsForCurrentUser({
 /**
  * One sweep over the user's ČSFD ratings, newest page first. Ends when:
  * - 'in-sync': the local count matches ČSFD (unless `sweepToEnd`),
+ * - 'caught-up': a page brought nothing new and ČSFD counts only a few more than are stored
+ *   (see `isSweepCaughtUp`, unless `sweepToEnd`),
  * - 'stopped': the user pressed Stop (everything loaded so far is kept),
  * - 'completed': the last page was read; only then are ratings missing on ČSFD marked deleted.
  */
@@ -833,6 +852,17 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
       endReason = 'in-sync';
       break;
     }
+    const pageUnchanged = pageRatings.length > 0 && changedRecords.length === 0;
+    if (!sweepToEnd && isSweepCaughtUp({ totalRatings, directRatingsCount, pageUnchanged })) {
+      endReason = 'caught-up';
+      break;
+    }
+  }
+
+  // A full sweep that saw fewer ratings than ČSFD counts: name the gap so it can be traced.
+  const unlistedCount = endReason === 'completed' && totalRatings > 0 ? Math.max(0, totalRatings - seenMovieIds.size) : 0;
+  if (unlistedCount > 0) {
+    console.warn(`[CC] ČSFD counts ${totalRatings} ratings but the list shows only ${seenMovieIds.size}`);
   }
 
   let totalMarkedDeleted = 0;
@@ -859,13 +889,16 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
     totalMarkedDeleted,
     totalRatings,
     totalMissing,
+    unlistedCount,
     directRatingsCount,
   };
 }
 
 function describeSweepResult(result) {
   const warning = result.totalMissing ? ' · Pozor: celkový počet hodnocení z ČSFD se nepodařilo přečíst.' : '';
-  return describeSweepEnd(result) + warning;
+  const unlisted =
+    result.unlistedCount > 0 ? ` · ČSFD uvádí o ${result.unlistedCount} hodnocení víc, než ukazuje v seznamu.` : '';
+  return describeSweepEnd(result) + warning + unlisted;
 }
 
 function describeSweepEnd(result) {
@@ -873,6 +906,9 @@ function describeSweepEnd(result) {
   const pages = `${result.loadedPages}/${result.totalPages} str.`;
   if (result.endReason === 'in-sync') {
     return `Vše synchronizováno: ${changes} (${pages})`;
+  }
+  if (result.endReason === 'caught-up') {
+    return `Vše načteno: ${changes} (${pages}) · ČSFD uvádí o ${result.totalRatings - result.directRatingsCount} hodnocení víc, než se dá načíst`;
   }
   if (result.endReason === 'stopped') {
     return `Zastaveno: ${changes} uloženo (${pages})`;

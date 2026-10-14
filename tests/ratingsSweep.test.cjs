@@ -14,6 +14,7 @@ const PER_PAGE = 4;
 
 let loadRatingsForCurrentUser;
 let isSweepInSync;
+let isSweepCaughtUp;
 let storage;
 
 function ratingRow(id) {
@@ -21,7 +22,7 @@ function ratingRow(id) {
 }
 
 /** Serves a fake ČSFD ratings list (newest first) and records which pages were fetched. */
-function mockCsfdRatings(movieIds) {
+function mockCsfdRatings(movieIds, { reportedTotal = movieIds.length } = {}) {
   const pageCount = Math.ceil(movieIds.length / PER_PAGE);
   const fetchedPages = [];
   global.fetch = jest.fn(async (url) => {
@@ -31,7 +32,7 @@ function mockCsfdRatings(movieIds) {
     const pagination = Array.from({ length: pageCount - 1 }, (_, index) => index + 2)
       .map((n) => `<a href="/uzivatel/${USER}/hodnoceni/?page=${n}">${n}</a>`)
       .join('');
-    const html = `<h2>Upozornění</h2><h2>Hodnocení (${movieIds.length})</h2><div class="pagination">${pagination}</div><table>${rows}</table>`;
+    const html = `<h2>Upozornění</h2><h2>Hodnocení (${reportedTotal})</h2><div class="pagination">${pagination}</div><table>${rows}</table>`;
     return { ok: true, text: async () => html };
   });
   return fetchedPages;
@@ -65,7 +66,7 @@ const range = (from, to) => Array.from({ length: to - from + 1 }, (_, index) => 
 
 beforeAll(async () => {
   const loader = await import(pathToFileURL(path.resolve(__dirname, '../src/ratings-loader.js')).href);
-  ({ loadRatingsForCurrentUser, isSweepInSync } = loader);
+  ({ loadRatingsForCurrentUser, isSweepInSync, isSweepCaughtUp } = loader);
   storage = await import(pathToFileURL(path.resolve(__dirname, '../src/storage.js')).href);
 });
 
@@ -84,6 +85,18 @@ describe('isSweepInSync', () => {
     expect(isSweepInSync({ totalRatings: 12, directRatingsCount: 11 })).toBe(false);
     expect(isSweepInSync({ totalRatings: 12, directRatingsCount: 13 })).toBe(false);
     expect(isSweepInSync({ totalRatings: 0, directRatingsCount: 0 })).toBe(false);
+  });
+});
+
+describe('isSweepCaughtUp', () => {
+  test('stops on an unchanged page only when ČSFD counts a few more than are stored', () => {
+    expect(isSweepCaughtUp({ totalRatings: 31015, directRatingsCount: 31014, pageUnchanged: true })).toBe(true);
+    expect(isSweepCaughtUp({ totalRatings: 31015, directRatingsCount: 31014, pageUnchanged: false })).toBe(false);
+    // Large gap: an earlier sweep was stopped, the older pages are still missing.
+    expect(isSweepCaughtUp({ totalRatings: 31015, directRatingsCount: 150, pageUnchanged: true })).toBe(false);
+    // More local than ČSFD: keep going so deletions get resolved.
+    expect(isSweepCaughtUp({ totalRatings: 12, directRatingsCount: 13, pageUnchanged: true })).toBe(false);
+    expect(isSweepCaughtUp({ totalRatings: 0, directRatingsCount: 0, pageUnchanged: true })).toBe(false);
   });
 });
 
@@ -147,5 +160,27 @@ describe('ratings sweep', () => {
     warn.mockRestore();
 
     expect(result).toMatchObject({ totalRatings: 0, totalMissing: true, endReason: 'completed', totalMarkedDeleted: 0 });
+  });
+
+  test('ČSFD counts one rating it never lists: stops at the first unchanged page instead of walking all', async () => {
+    // 12 listed, total says 13 (like 31 015 vs 31 014): the count can never match.
+    const fetchedPages = mockCsfdRatings([14, ...range(1, 12).reverse()], { reportedTotal: 14 });
+    await seedLocal(range(1, 12));
+
+    const result = await loadRatingsForCurrentUser();
+
+    expect(result).toMatchObject({ endReason: 'caught-up', loadedPages: 2, totalUpserted: 1 });
+    expect(fetchedPages).toEqual([1, 2]);
+    expect(await localDirectIds()).toEqual([...range(1, 12), 14]);
+  });
+
+  test('a full sweep that sees fewer ratings than ČSFD counts reports the gap', async () => {
+    mockCsfdRatings(range(1, 12).reverse(), { reportedTotal: 13 });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await loadRatingsForCurrentUser(() => {}, { sweepToEnd: true });
+    warn.mockRestore();
+
+    expect(result).toMatchObject({ endReason: 'completed', unlistedCount: 1, totalMarkedDeleted: 0 });
   });
 });
