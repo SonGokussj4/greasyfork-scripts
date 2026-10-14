@@ -1,6 +1,7 @@
 import htmlContent from './settings-button-content.html';
 import { initializeRatingsLoader } from './ratings-loader.js';
 import { initializeRatingsSync, performCloudSync } from './ratings-sync.js';
+import { clearRatingsCheckReport, initializeRatingsCheckAlerts } from './ratings-check.js';
 import { deleteAllDataFromIndexedDB } from './storage.js';
 import {
   ADD_RATINGS_DATE_KEY,
@@ -29,6 +30,7 @@ import {
   LINK_ICONS_ENABLED_KEY,
   LINK_ICONS_UPDATED_EVENT,
   LINK_ICONS_POSITION_KEY,
+  RATINGS_CHECK_REPORT_KEY,
   RATINGS_ESTIMATE_KEY,
   RATINGS_FROM_FAVORITES_KEY,
   SETTINGSNAME,
@@ -946,6 +948,7 @@ async function addSettingsButton() {
     localStorage.removeItem(FILM_ACTIONS_SECTION_COLLAPSED_KEY);
     localStorage.removeItem(HIDE_SELECTED_REVIEWS_LIST_KEY);
     localStorage.removeItem(LINK_ICONS_POSITION_KEY);
+    if (localStorage.getItem(RATINGS_CHECK_REPORT_KEY) !== null) clearRatingsCheckReport();
     localStorage.removeItem(SHOW_RATINGS_IN_DIARIES_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_FOREIGN_REVIEWS_KEY);
     localStorage.removeItem(SHOW_RATINGS_IN_REVIEWS_KEY);
@@ -1230,6 +1233,7 @@ async function addSettingsButton() {
   const ratingsModalOptions = { getCurrentUserSlug, getMostFrequentUserSlug };
   const listBtn = settingsButton.querySelector('#cc-open-ratings-table-btn');
   if (listBtn) {
+    initializeRatingsCheckAlerts(settingsButton);
     const handler = (e) => {
       if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
       if (e.type === 'keydown') e.preventDefault();

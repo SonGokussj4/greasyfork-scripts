@@ -894,6 +894,73 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
   };
 }
 
+/** Rows that look like a rating row but could not be read (no film link or no movie id). */
+function findUnreadableRatingRows(doc, origin) {
+  return Array.from(doc.querySelectorAll('table tr'))
+    .filter((row) => row.querySelector('td.name, td.star-rating-only, td.date-only'))
+    .filter((row) => {
+      const record = parseRatingRow(row, origin);
+      return !record || !Number.isFinite(record.id);
+    })
+    .map((row) =>
+      Array.from(row.cells, (cell) => String(cell.textContent || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join(' · ')
+        .slice(0, 200),
+    );
+}
+
+/**
+ * Reads every page of the user's ČSFD ratings list without writing anything, for the ratings check.
+ * Returns the parsed ratings as storage records plus what could not be read.
+ */
+export async function scanCsfdRatingsList({ onProgress = () => {}, shouldStop = () => false } = {}) {
+  const profilePath = getCurrentProfilePath();
+  const userSlug = profilePath ? extractUserSlugFromProfilePath(profilePath) : '';
+  if (!userSlug) {
+    throw new Error('Profil uživatele nebyl nalezen.');
+  }
+
+  const firstDoc = await fetchRatingsPageDocument(buildRatingsPageUrl(profilePath, 1));
+  const totalRatings = parseTotalRatingsFromDocument(firstDoc);
+  const totalPages = Math.max(1, parseMaxPaginationPageFromDocument(firstDoc));
+  const paginationMode = detectPaginationModeFromDocument(firstDoc);
+
+  const records = [];
+  const unreadableRows = [];
+  let loadedPages = 0;
+  let completed = true;
+
+  for (let page = 1; page <= totalPages; page++) {
+    if (page > 1 && shouldStop()) {
+      completed = false;
+      break;
+    }
+
+    const doc =
+      page === 1
+        ? firstDoc
+        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
+            delayMs: getAllRatingsFetchDelayMs(),
+          });
+    const pageRatings = parseRatingsFromDocument(doc, location.origin).filter((rating) => Number.isFinite(rating.id));
+    for (const text of findUnreadableRatingRows(doc, location.origin)) {
+      unreadableRows.push({ page, text });
+    }
+    if (page > 1 && pageRatings.length === 0) {
+      break;
+    }
+
+    for (const rating of pageRatings) {
+      records.push({ ...toStorageRecord(rating, userSlug), page });
+    }
+    loadedPages += 1;
+    onProgress({ page, totalPages });
+  }
+
+  return { userSlug, totalRatings, totalPages, loadedPages, completed, records, unreadableRows };
+}
+
 function describeSweepResult(result) {
   const warning = result.totalMissing ? ' · Pozor: celkový počet hodnocení z ČSFD se nepodařilo přečíst.' : '';
   const unlisted =

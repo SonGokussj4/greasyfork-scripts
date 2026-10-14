@@ -3870,3 +3870,190 @@ article.article-forum:target {
         animation: none;
     }
 }
+
+/* Ratings check (Tabulka hodnocení → Kontrola) */
+.cc-ratings-check-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #333;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.cc-ratings-check-btn:hover {
+    border-color: var(--cc-color-red);
+    color: var(--cc-color-red);
+}
+
+.cc-ratings-check-alert {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    border-radius: 50%;
+    background: var(--cc-color-red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1;
+    box-shadow: 0 0 0 2px #fff;
+}
+
+.cc-ratings-check-btn .cc-ratings-check-alert {
+    margin-left: 0;
+}
+
+.cc-ratings-check-alert[hidden] {
+    display: none;
+}
+
+.cc-sync-modal-overlay.cc-ratings-check-overlay {
+    z-index: 10050;
+}
+
+.cc-sync-modal.cc-ratings-check-modal {
+    width: 760px;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    padding: 18px;
+    border-radius: 12px;
+}
+
+.cc-ratings-check-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+}
+
+.cc-ratings-check-head h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--cc-color-red);
+}
+
+.cc-ratings-check-close {
+    border: 0;
+    background: transparent;
+    font-size: 24px;
+    line-height: 1;
+    color: #666;
+    cursor: pointer;
+}
+
+.cc-ratings-check-body {
+    overflow-y: auto;
+    min-height: 0;
+    font-size: 13px;
+    color: #333;
+}
+
+.cc-ratings-check-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.cc-ratings-check-stats span {
+    background: #f5f5f5;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+.cc-ratings-check-status,
+.cc-ratings-check-note {
+    margin: 0 0 10px;
+    line-height: 1.5;
+}
+
+.cc-ratings-check-status {
+    font-weight: 600;
+}
+
+.cc-ratings-check-note {
+    background: #fff8f6;
+    border-left: 3px solid var(--cc-color-red);
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.cc-ratings-check-note.is-error {
+    color: var(--cc-color-red);
+}
+
+.cc-ratings-check-table-wrap {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: auto;
+    max-height: 50vh;
+}
+
+.cc-ratings-check-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.cc-ratings-check-table th {
+    position: sticky;
+    top: 0;
+    background: #f5f5f5;
+    padding: 8px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #555;
+    text-transform: uppercase;
+}
+
+.cc-ratings-check-table td {
+    padding: 8px 10px;
+    border-top: 1px solid #f0f0f0;
+    font-size: 12px;
+    vertical-align: top;
+}
+
+.cc-ratings-check-name {
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.cc-ratings-check-stars {
+    color: var(--cc-color-red);
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.cc-ratings-check-muted {
+    color: #888;
+    font-size: 11px;
+    font-weight: 400;
+}
+
+.cc-ratings-check-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.cc-ratings-check-actions .cc-button {
+    flex: 1;
+}
+
+.cc-ratings-check-actions .cc-button[hidden] {
+    display: none;
+}

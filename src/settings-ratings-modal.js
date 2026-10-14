@@ -1,4 +1,5 @@
 import { INDEXED_DB_NAME, RATINGS_STORE_NAME, normalizeCsfdShowType } from './config.js';
+import { openRatingsCheckModal, syncRatingsCheckAlerts } from './ratings-check.js';
 import { reconcileUserRatingRecords } from './ratings-records.js';
 import { getAllFromIndexedDB } from './storage.js';
 import { createDetailsModalController, formatDetailValue } from './ui-utils.js';
@@ -268,6 +269,7 @@ function getRatingsTableModal() {
         </div>
        <div style="flex: 1; display: flex; justify-content: flex-end; align-items: center; gap: 16px; padding-right: 4px;">
           <button type="button" class="cc-ratings-scope-dev-btn" data-scope="deleted">Smazané</button>
+          <button type="button" class="cc-ratings-check-btn" title="Porovná uložená hodnocení se seznamem na ČSFD a ukáže, kde je rozdíl.">Kontrola<span class="cc-ratings-check-alert" hidden>!</span></button>
           <button type="button" class="cc-ratings-table-close" aria-label="Zavřít">×</button>
         </div>
       </div>
@@ -523,6 +525,8 @@ function getRatingsTableModal() {
   };
 
   closeBtn.addEventListener('click', () => overlay.closeModal());
+  overlay.querySelector('.cc-ratings-check-btn').addEventListener('click', () => openRatingsCheckModal());
+  syncRatingsCheckAlerts(overlay);
   overlay.addEventListener('click', (event) => {
     if (event.target === overlay) overlay.closeModal();
   });

@@ -55,6 +55,7 @@ Feature toggles fire as `CustomEvent` on `window` (e.g. `cc-show-all-creator-tab
 | `src/settings-config.js` | Data-driven `MENU_CONFIG` — the source of truth for settings-menu categories, toggles and groups (rendered by `settings.js`) |
 | `src/storage.js` | IndexedDB singleton wrapper + `localStorage` settings helpers |
 | `src/ratings-loader.js` | One newest-first sweep over the user's ČSFD ratings pages (50–500 ms jitter per page): stops by itself when the local count equals the ČSFD total, Stop keeps what was loaded, only a sweep that reaches the last page marks ratings missing on ČSFD as deleted. Also the resumable computed-ratings loader. |
+| `src/ratings-check.js` | "Kontrola" in the ratings table: full read-only sweep of the ČSFD ratings list compared with IndexedDB, report kept in `localStorage` until cleared, "Opravit" writes the fixable differences, "!" alerts on the table and menu buttons |
 | `src/ratings-sync.js` | Cloud sync modal UI + merge/conflict logic |
 | `src/supabase-api.js` | Thin fetch wrappers for the Supabase REST API (token CRUD, upload, download) with 503-retry logic |
 | `src/ratings-records.js` | Pure data helpers: record ID construction, multi-user record reconciliation |
