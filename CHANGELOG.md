@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.3
+
+### Added
+
+- Tabulka všech hodnocení má nové tlačítko "Kontrola". Projde celý váš seznam hodnocení na ČSFD a porovná ho s uloženými hodnoceními: co chybí, co má jiné hodnocení nebo datum, co bylo na ČSFD smazané, řádky, které skript neumí přečíst, a kolik hodnocení ČSFD počítá, ale v seznamu neukazuje. U každého rozdílu poradí, co s ním.
+  Kontrola běží na pozadí, okno můžete zavřít. Report zůstane uložený, dokud ho nesmažete, tlačítko "Opravit" rozdíly zapíše. Když poslední kontrola něco našla, svítí u "Kontrola" i u "Tabulka všech hodnocení" červený vykřičník.
+
+### Fixed
+
+- "Načíst hodnocení" už neprochází pokaždé všechny stránky, když ČSFD v počtu hodnocení uvádí o pár víc, než jich ve vašem seznamu ukazuje (např. 31 015 uvedeno, 31 014 v seznamu). Načítání skončí na první stránce bez novinek.
+
 ## 0.10.2
 
 ### Added
