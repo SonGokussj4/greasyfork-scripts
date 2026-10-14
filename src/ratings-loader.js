@@ -85,10 +85,17 @@ function buildRatingsPageUrl(profilePath, pageNumber = 1) {
   return buildRatingsPageUrlWithMode(profilePath, pageNumber, 'path');
 }
 
+// The header profile link is "/uzivatel/123-name/" or "/uzivatel/123-name/prehled/"; the ratings
+// list always lives at "/uzivatel/123-name/hodnoceni/".
+const USER_PROFILE_BASE_REGEX = /^(\/uzivatel\/\d+-[^/]+)(?:\/|$)/i;
+
 function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
   const ratingsSegment = getRatingsSegment();
+  const profileBase = profilePath.match(USER_PROFILE_BASE_REGEX)?.[1];
   const overviewSegments = getCsfdPathSegmentPattern('overview');
-  const basePath = profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
+  const basePath = profileBase
+    ? `${profileBase}/${ratingsSegment}/`
+    : profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
   if (pageNumber <= 1) {
