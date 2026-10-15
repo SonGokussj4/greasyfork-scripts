@@ -183,4 +183,17 @@ describe('ratings sweep', () => {
 
     expect(result).toMatchObject({ endReason: 'completed', unlistedCount: 1, totalMarkedDeleted: 0 });
   });
+
+  test.each([`/uzivatel/${USER}/`, `/uzivatel/${USER}`, `/uzivatel/${USER}/prehled/`])(
+    'profile link %s: loads the ratings list, not the profile overview',
+    async (profileHref) => {
+      document.body.innerHTML = `<a class="profile" href="${profileHref}">me</a>`;
+      mockCsfdRatings(range(1, 4).reverse());
+
+      const result = await loadRatingsForCurrentUser();
+
+      expect(global.fetch.mock.calls[0][0]).toBe(`${location.origin}/uzivatel/${USER}/hodnoceni/`);
+      expect(result).toMatchObject({ endReason: 'in-sync', totalUpserted: 4 });
+    },
+  );
 });
