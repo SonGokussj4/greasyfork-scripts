@@ -1033,6 +1033,22 @@
     return value === 'true';
   }
 
+  // A film path: "/film/123-slug/", an episode or season "/film/123-slug/456-slug/", and films ČSFD
+  // gives no slug at all: "/film/410649/" (e.g. some music videos).
+  const FILM_PATH_REGEX = /\/film\/(\d+(?:-[^/?#]*)?)(?:\/(\d+(?:-[^/?#]*)?))?(?=[/?#]|$)/i;
+
+  /**
+   * Reads the film ids from a ČSFD film URL or path, with or without slugs.
+   * @param {string} url
+   * @returns {{ ids: number[], segments: string[] } | null} parent first; segments are "123-slug" or "123"
+   */
+  function parseFilmPath(url) {
+    const match = String(url || '').match(FILM_PATH_REGEX);
+    if (!match) return null;
+    const segments = [match[1], match[2]].filter(Boolean);
+    return { ids: segments.map((segment) => Number.parseInt(segment, 10)), segments };
+  }
+
   /**
    * Extract the movie/film ID from a ČSFD URL path.
    * @param {string} url - The URL or path to extract the movie ID from.
@@ -1040,6 +1056,8 @@
    */
   function getMovieIdFromUrl(url) {
     if (!url) return NaN;
+    const filmPath = parseFilmPath(url);
+    if (filmPath) return filmPath.ids[filmPath.ids.length - 1];
     // OPTIMIZATION: matchAll is slower. A simple regex match with global flag is faster.
     const matches = url.match(/\/(\d+)-/g);
     if (!matches || matches.length === 0) return NaN;
@@ -1172,6 +1190,118 @@
       host.appendChild(linksWrapper);
       pictureEl.dataset.ccGalleryLinksBound = 'true';
     });
+  }
+
+  /*
+   * Local activity log: a small ring buffer in localStorage that records what the
+   * script did (ratings loads, sync, errors), so a problem can be inspected or
+   * copied into a bug report. Nothing is ever sent anywhere.
+   */
+
+  const ACTIVITY_LOG_MAX_ENTRIES = 200;
+  const MAX_MESSAGE_LENGTH = 300;
+  const DEDUPE_WINDOW_MS = 5000;
+
+  /**
+   * Single line, no URLs or token-like strings (errors can contain keys or links), length-limited.
+   * Token-like = 24+ id characters containing a digit, so long setting names (cc_show_ratings_in_reviews) stay readable.
+   */
+  function sanitizeMessage(message) {
+    return String(message ?? '')
+      .replace(/https?:\/\/\S+/gi, '[url]')
+      .replace(/(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{24,}/g, '[redacted]')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, MAX_MESSAGE_LENGTH);
+  }
+
+  function readEntries() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(ACTIVITY_LOG_KEY) || '[]');
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function writeEntries(entries) {
+    try {
+      localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(entries.slice(-ACTIVITY_LOG_MAX_ENTRIES)));
+    } catch {
+      // Storage unavailable or full: logging must never break the script.
+    }
+  }
+
+  /** Appends one entry. level: 'info' | 'warn' | 'error'. */
+  function logActivity(area, message, level = 'info') {
+    const text = sanitizeMessage(message);
+    const entries = readEntries();
+    const last = entries.at(-1);
+    const now = Date.now();
+
+    // Collapse bursts of the same message (e.g. repeated failed fetches).
+    if (last && last.area === area && last.level === level && last.msg === text && now - last.t < DEDUPE_WINDOW_MS) {
+      return;
+    }
+
+    writeEntries([...entries, { t: now, level, area, msg: text }]);
+  }
+
+  function getActivityLog() {
+    return readEntries();
+  }
+
+  function clearActivityLog() {
+    try {
+      localStorage.removeItem(ACTIVITY_LOG_KEY);
+    } catch {
+      // Ignore.
+    }
+  }
+
+  const pad = (value) => String(value).padStart(2, '0');
+
+  function formatActivityTimestamp(timestamp) {
+    const d = new Date(timestamp);
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+  }
+
+  /** Plain-text version for the "Copy" button (newest last, one line per entry). */
+  function formatActivityLogText(entries = readEntries()) {
+    return entries
+      .map((e) => `${formatActivityTimestamp(e.t)} ${String(e.level).toUpperCase().padEnd(5)} [${e.area}] ${e.msg}`)
+      .join('\n');
+  }
+
+  let consoleCaptureInstalled = false;
+
+  /**
+   * Mirrors console.warn / console.error calls that start with a "[CC" tag into the log,
+   * so existing error reporting shows up without touching every call site.
+   */
+  function installConsoleCapture() {
+    if (consoleCaptureInstalled) return;
+    consoleCaptureInstalled = true;
+
+    for (const level of ['warn', 'error']) {
+      const original = console[level];
+      console[level] = function (...args) {
+        try {
+          const first = args[0];
+          if (typeof first === 'string' && /^(?:\S+\s+)?\[CC/.test(first)) {
+            const detail = args
+              .slice(1)
+              .map((a) => (a instanceof Error ? a.message : typeof a === 'string' ? a : ''))
+              .filter(Boolean)
+              .join(' ');
+            logActivity('console', `${first} ${detail}`, level);
+          }
+        } catch {
+          // Never let logging break the original call.
+        }
+        return original.apply(this, args);
+      };
+    }
   }
 
   /*
@@ -1662,10 +1792,9 @@
         return { movieId: NaN, urlSlug: '', parentId: NaN, parentName: '', fullUrl: '' };
       }
 
-      const slugMatches = Array.from(path.matchAll(/\/(\d+-[^/]+)/g)).map((m) => m[1]);
-      const idMatches = slugMatches
-        .map((slug) => Number.parseInt((slug.match(/^(\d+)-/) || [])[1], 10))
-        .filter((id) => Number.isFinite(id));
+      const filmPath = parseFilmPath(path);
+      const slugMatches = filmPath?.segments || [];
+      const idMatches = filmPath?.ids || [];
 
       const movieId = idMatches.length ? idMatches[idMatches.length - 1] : NaN;
       const parentId = idMatches.length > 1 ? idMatches[0] : NaN;
@@ -2063,7 +2192,12 @@
       if (!this.userSlug || !this.getIsLoggedIn()) return;
 
       const pageInfo = this.getCurrentItemUrlAndIds();
-      if (!Number.isFinite(pageInfo.movieId) || !pageInfo.urlSlug) return;
+      if (!Number.isFinite(pageInfo.movieId) || !pageInfo.urlSlug) {
+        if (location.pathname.includes('/film/')) {
+          logActivity('ratings', `Film page: could not read the film id from ${location.pathname}`, 'warn');
+        }
+        return;
+      }
 
       let pageRating = this.getCurrentPageOwnRating();
       if (pageRating === null) {
@@ -2088,6 +2222,7 @@
             await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, existingRecord.id);
           }
           this.stars[pageInfo.movieId] = tombstone;
+          logActivity('ratings', `Rating removed on film page: ${existingRecord.name || ''} (${pageInfo.movieId})`);
           window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
         }
         return;
@@ -2123,6 +2258,10 @@
         await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, existingRecord.id);
       }
       this.stars[pageInfo.movieId] = newRecord;
+      logActivity(
+        'ratings',
+        `Rating saved from film page: ${newRecord.name} (${pageInfo.movieId}) = ${pageRating === 0 ? 'odpad' : `${pageRating}*`}${newRecord.computed ? ' (computed)' : ''}`,
+      );
       window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
     }
 
@@ -2173,8 +2312,8 @@
 
       // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
       const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
-      // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
-      const validFilmRegex = /\/\d+-/;
+      // Links missing the expected numeric film ID ("/film/12345-slug/" or, without a slug, "/film/12345/")
+      const validFilmRegex = /\/film\/\d+(?:[-/?#]|$)/;
 
       return Array.from(
         new Set(searchRoots.flatMap((root) => Array.from(root.querySelectorAll('a[href*="/film/"]')))),
@@ -2776,118 +2915,6 @@
 
   var htmlContent = "<svg style=\"display: none;\" xmlns=\"http://www.w3.org/2000/svg\">\r\n    <symbol id=\"cc-icon-info\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <circle cx=\"12\" cy=\"12\" r=\"10\"></circle>\r\n        <line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line>\r\n        <line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-image\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <rect x=\"3\" y=\"3\" width=\"18\" height=\"18\" rx=\"2\" ry=\"2\"></rect>\r\n        <circle cx=\"8.5\" cy=\"8.5\" r=\"1.5\"></circle>\r\n        <polyline points=\"21 15 16 10 5 21\"></polyline>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-menu-logo\" viewBox=\"0 0 24 24\" fill=\"none\">\r\n        <text x=\"12\" y=\"12\" text-anchor=\"middle\" dominant-baseline=\"central\" fill=\"currentColor\" font-size=\"11\"\r\n            font-weight=\"800\" letter-spacing=\"0.2\">CC</text>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-download\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"></path>\r\n        <polyline points=\"7 10 12 15 17 10\"></polyline>\r\n        <line x1=\"12\" y1=\"15\" x2=\"12\" y2=\"3\"></line>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-star\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polygon\r\n            points=\"12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2\">\r\n        </polygon>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-cloud\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <path d=\"M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z\"></path>\r\n    </symbol>\r\n    <symbol id=\"cc-icon-chevron\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"\r\n        stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n        <polyline points=\"6 9 12 15 18 9\"></polyline>\r\n    </symbol>\r\n</svg>\r\n\r\n<a href=\"javascript:void(0)\" rel=\"dropdownContent\" class=\"user-link csfd-compare-menu initialized\">\r\n    <svg class=\"cc-menu-icon\" width=\"24\" height=\"24\">\r\n        <use href=\"#cc-icon-menu-logo\"></use>\r\n    </svg>\r\n    <span class=\"cc-menu-update-pill\" id=\"cc-menu-update-pill\" aria-hidden=\"true\">1</span>\r\n</a>\r\n\r\n<div id=\"dropdown-compare-menu\" class=\"dropdown-content cc-settings\">\r\n    <div class=\"cc-settings-shell\">\r\n        <div class=\"cc-settings-shell-head\">\r\n            <div class=\"dropdown-content-head\">\r\n                <div class=\"left-head\">\r\n                    <h2>CSFD-Compare</h2>\r\n                    <div class=\"cc-version-row\">\r\n                        <a class=\"cc-version-link\" id=\"cc-version-value\"\r\n                            href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\" target=\"_blank\"\r\n                            rel=\"noopener noreferrer\">v0.10.3</a>\r\n                        <a class=\"cc-version-status\" id=\"cc-version-status\"\r\n                            href=\"https://greasyfork.org/cs/scripts/425054-%C4%8Dsfd-compare\" target=\"_blank\"\r\n                            rel=\"noopener noreferrer\" tabindex=\"-1\" aria-hidden=\"true\"></a>\r\n                    </div>\r\n                </div>\r\n                <div class=\"right-head cc-ml-auto cc-head-right\">\r\n                    <div class=\"cc-head-tools\">\r\n                        <div class=\"cc-badges-pill\" title=\"Tvá uložená hodnocení\">\r\n                            <span id=\"cc-badge-red\" class=\"cc-badge cc-badge-red\"\r\n                                title=\"Uloženo / Celkem: Počet přímo načtených hodnocení\">0 / 0</span>\r\n                            <span id=\"cc-badge-black\" class=\"cc-badge cc-badge-black\"\r\n                                title=\"Spočtená hodnocení: Počet hodnocení automaticky dopočítaných pro seriály\">0</span>\r\n                        </div>\r\n\r\n                        <button type=\"button\" class=\"cc-sync-icon-btn\" id=\"cc-sync-cloud-btn\"\r\n                            title=\"Synchronizace s cloudem\">\r\n                            <svg width=\"14\" height=\"14\">\r\n                                <use href=\"#cc-icon-cloud\"></use>\r\n                            </svg>\r\n                        </button>\r\n\r\n                        <button type=\"button\" class=\"cc-sync-icon-btn cc-version-info-btn\" id=\"cc-version-info-btn\"\r\n                            title=\"Informace o verzi\">\r\n                            <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"\r\n                                stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n                                <circle cx=\"12\" cy=\"12\" r=\"10\"></circle>\r\n                                <line x1=\"12\" y1=\"16\" x2=\"12\" y2=\"12\"></line>\r\n                                <line x1=\"12\" y1=\"8\" x2=\"12.01\" y2=\"8\"></line>\r\n                            </svg>\r\n                        </button>\r\n\r\n                        <button type=\"button\" class=\"cc-sync-icon-btn cc-settings-pin-close\"\r\n                            id=\"cc-settings-pinned-close-btn\" title=\"Zavřít připnuté menu\"\r\n                            aria-label=\"Zavřít připnuté menu\">\r\n                            <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"\r\n                                stroke-width=\"2.2\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n                                <line x1=\"18\" y1=\"6\" x2=\"6\" y2=\"18\"></line>\r\n                                <line x1=\"6\" y1=\"6\" x2=\"18\" y2=\"18\"></line>\r\n                            </svg>\r\n                        </button>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n\r\n            <div class=\"cc-settings-section\">\r\n                <div class=\"cc-settings-section-content\">\r\n                    <div class=\"cc-settings-actions\">\r\n                        <button id=\"cc-load-ratings-btn\" class=\"cc-button cc-button-red cc-grow cc-button-iconed\"\r\n                            title=\"Projde váš profil a stáhne všechna vaše hodnocení do lokální databáze (nutné pro správné fungování ostatních funkcí).\">\r\n                            <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                                    <use href=\"#cc-icon-download\"></use>\r\n                                </svg></span>\r\n                            <span>Načíst hodnocení</span>\r\n                        </button>\r\n                        <button id=\"cc-load-computed-btn\" class=\"cc-button cc-button-black cc-button-iconed\"\r\n                            title=\"Z načtených hodnocení automaticky vypočítá a doplní hodnocení pro celé seriály nebo jejich série.\">\r\n                            <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\">\r\n                                    <use href=\"#cc-icon-star\"></use>\r\n                                </svg></span>\r\n                            <span>Načíst spočtené</span>\r\n                        </button>\r\n                        <button id=\"cc-open-ratings-table-btn\"\r\n                            class=\"cc-button cc-button-outline cc-button-iconed cc-span-all\"\r\n                            title=\"Otevře přehlednou tabulku všech vašich hodnocení s vyhledáváním, filtrováním a řazením.\">\r\n                            <span class=\"cc-button-icon\" aria-hidden=\"true\"><svg width=\"14\" height=\"14\"\r\n                                    viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\"\r\n                                    stroke-linecap=\"round\" stroke-linejoin=\"round\">\r\n                                    <line x1=\"8\" y1=\"6\" x2=\"21\" y2=\"6\"></line>\r\n                                    <line x1=\"8\" y1=\"12\" x2=\"21\" y2=\"12\"></line>\r\n                                    <line x1=\"8\" y1=\"18\" x2=\"21\" y2=\"18\"></line>\r\n                                    <line x1=\"3\" y1=\"6\" x2=\"3.01\" y2=\"6\"></line>\r\n                                    <line x1=\"3\" y1=\"12\" x2=\"3.01\" y2=\"12\"></line>\r\n                                    <line x1=\"3\" y1=\"18\" x2=\"3.01\" y2=\"18\"></line>\r\n                                </svg></span>\r\n                            <span>Tabulka všech hodnocení</span>\r\n                            <span class=\"cc-ratings-check-alert\" hidden\r\n                                title=\"Poslední kontrola hodnocení našla rozdíl. Detail v tabulce pod tlačítkem Kontrola.\">!</span>\r\n                        </button>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n\r\n        <div class=\"cc-settings-shell-body\">\r\n            <div class=\"cc-settings-scroll-region\">\r\n                <div class=\"cc-settings-section\" hidden>\r\n                    <div class=\"cc-settings-section-content\">\r\n                        <div id=\"cc-ratings-progress\" class=\"cc-ratings-progress\" hidden>\r\n                            <div class=\"cc-ratings-progress-head\">\r\n                                <span id=\"cc-ratings-progress-label\">Připravuji načítání…</span>\r\n                                <span id=\"cc-ratings-progress-count\">0 / 0</span>\r\n                            </div>\r\n                            <div class=\"cc-ratings-progress-track\">\r\n                                <div id=\"cc-ratings-progress-bar\" class=\"cc-ratings-progress-bar\" style=\"width: 0%\">\r\n                                </div>\r\n                            </div>\r\n                            <div class=\"cc-ratings-progress-actions\">\r\n                                <button id=\"cc-cancel-ratings-loader-btn\" class=\"cc-ratings-cancel-link\" hidden>Zrušit\r\n                                    načítání</button>\r\n                            </div>\r\n                        </div>\r\n                    </div>\r\n                </div>\r\n\r\n                <div class=\"cc-settings-section\">\r\n                    <div class=\"cc-settings-section-content\" style=\"padding-top: 8px;\"\r\n                        id=\"cc-dynamic-settings-container\">\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n\r\n        <div class=\"cc-settings-shell-foot\">\r\n            <div class=\"cc-settings-section\">\r\n                <div class=\"cc-settings-section-content\">\r\n                    <h3 class=\"cc-section-title\" style=\"margin-top: 0;\">Další akce</h3>\r\n                    <div class=\"cc-maint-actions\" style=\"width: 100%;\">\r\n                        <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-reset-btn\"\r\n                            title=\"Vrátí veškeré přepínače a nastavení tohoto doplňku (včetně skrytých uživatelů) do původního, výchozího stavu.\">\r\n                            Reset\r\n                        </button>\r\n                        <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-log-btn\" aria-label=\"Log aktivity\"\r\n                            title=\"Zobrazí, co skript naposledy udělal (načítání hodnocení, synchronizace, chyby). Data zůstávají jen v tomto prohlížeči.\">\r\n                            Log\r\n                        </button>\r\n                        <button type=\"button\" class=\"cc-button cc-button-red cc-button-small cc-dev-only\"\r\n                            id=\"cc-maint-clear-lc-btn\" title=\"Otevře okno pro manuální smazání dat z LocalStorage.\">\r\n                            LC\r\n                        </button>\r\n                        <button type=\"button\" class=\"cc-button cc-button-red cc-button-small cc-dev-only\"\r\n                            id=\"cc-maint-clear-db-btn\"\r\n                            title=\"Smaže lokální CC hodnocení (IndexedDB). CSFD.cz hodnocení zůstanou nedotčena.\">\r\n                            Smazat DB\r\n                        </button>\r\n\r\n                        <div style=\"flex-grow: 1;\"></div>\r\n\r\n                        <button type=\"button\" class=\"cc-button cc-button-black cc-button-small\" id=\"cc-maint-dev-btn\"\r\n                            title=\"Zapne/vypne vývojářský režim (skryje nebo zobrazí testovací prvky).\">DEV:\r\n                            OFF</button>\r\n                    </div>\r\n                </div>\r\n            </div>\r\n        </div>\r\n    </div>\r\n\r\n</div>";
 
-  /*
-   * Local activity log: a small ring buffer in localStorage that records what the
-   * script did (ratings loads, sync, errors), so a problem can be inspected or
-   * copied into a bug report. Nothing is ever sent anywhere.
-   */
-
-  const ACTIVITY_LOG_MAX_ENTRIES = 200;
-  const MAX_MESSAGE_LENGTH = 300;
-  const DEDUPE_WINDOW_MS = 5000;
-
-  /**
-   * Single line, no URLs or token-like strings (errors can contain keys or links), length-limited.
-   * Token-like = 24+ id characters containing a digit, so long setting names (cc_show_ratings_in_reviews) stay readable.
-   */
-  function sanitizeMessage(message) {
-    return String(message ?? '')
-      .replace(/https?:\/\/\S+/gi, '[url]')
-      .replace(/(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{24,}/g, '[redacted]')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, MAX_MESSAGE_LENGTH);
-  }
-
-  function readEntries() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem(ACTIVITY_LOG_KEY) || '[]');
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function writeEntries(entries) {
-    try {
-      localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(entries.slice(-ACTIVITY_LOG_MAX_ENTRIES)));
-    } catch {
-      // Storage unavailable or full: logging must never break the script.
-    }
-  }
-
-  /** Appends one entry. level: 'info' | 'warn' | 'error'. */
-  function logActivity(area, message, level = 'info') {
-    const text = sanitizeMessage(message);
-    const entries = readEntries();
-    const last = entries.at(-1);
-    const now = Date.now();
-
-    // Collapse bursts of the same message (e.g. repeated failed fetches).
-    if (last && last.area === area && last.level === level && last.msg === text && now - last.t < DEDUPE_WINDOW_MS) {
-      return;
-    }
-
-    writeEntries([...entries, { t: now, level, area, msg: text }]);
-  }
-
-  function getActivityLog() {
-    return readEntries();
-  }
-
-  function clearActivityLog() {
-    try {
-      localStorage.removeItem(ACTIVITY_LOG_KEY);
-    } catch {
-      // Ignore.
-    }
-  }
-
-  const pad = (value) => String(value).padStart(2, '0');
-
-  function formatActivityTimestamp(timestamp) {
-    const d = new Date(timestamp);
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-  }
-
-  /** Plain-text version for the "Copy" button (newest last, one line per entry). */
-  function formatActivityLogText(entries = readEntries()) {
-    return entries
-      .map((e) => `${formatActivityTimestamp(e.t)} ${String(e.level).toUpperCase().padEnd(5)} [${e.area}] ${e.msg}`)
-      .join('\n');
-  }
-
-  let consoleCaptureInstalled = false;
-
-  /**
-   * Mirrors console.warn / console.error calls that start with a "[CC" tag into the log,
-   * so existing error reporting shows up without touching every call site.
-   */
-  function installConsoleCapture() {
-    if (consoleCaptureInstalled) return;
-    consoleCaptureInstalled = true;
-
-    for (const level of ['warn', 'error']) {
-      const original = console[level];
-      console[level] = function (...args) {
-        try {
-          const first = args[0];
-          if (typeof first === 'string' && /^(?:\S+\s+)?\[CC/.test(first)) {
-            const detail = args
-              .slice(1)
-              .map((a) => (a instanceof Error ? a.message : typeof a === 'string' ? a : ''))
-              .filter(Boolean)
-              .join(' ');
-            logActivity('console', `${first} ${detail}`, level);
-          }
-        } catch {
-          // Never let logging break the original call.
-        }
-        return original.apply(this, args);
-      };
-    }
-  }
-
   const ALL_RATINGS_FETCH_DELAY_MIN_MS = 50;
   const ALL_RATINGS_FETCH_DELAY_MAX_MS = 500;
   const COMPUTED_REQUEST_DELAY_MIN_MS = 250;
@@ -3048,6 +3075,16 @@
   }
 
   function parseIdsFromUrl(relativeUrl) {
+    const filmPath = parseFilmPath(relativeUrl);
+    if (filmPath) {
+      const { ids, segments } = filmPath;
+      return {
+        id: ids[ids.length - 1],
+        parentId: ids.length > 1 ? ids[0] : NaN,
+        parentName: ids.length > 1 ? segments[0] : '',
+      };
+    }
+
     const matches = Array.from((relativeUrl || '').matchAll(/\/(\d+)-/g)).map((match) => Number.parseInt(match[1], 10));
 
     if (matches.length === 0) {
@@ -8061,7 +8098,7 @@
 
   function normalizeFilmUrl(href) {
     const url = createUrl(href);
-    const match = url?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+    const match = url?.pathname.match(/^\/film\/(\d+(?:-[^/]+)?)(?:\/(\d+(?:-[^/]+)?))?(?=\/|$)/i);
     if (!url || !match) return null;
 
     url.search = '';
@@ -8075,7 +8112,7 @@
     // String.raw is required — in a plain template literal `\d` cooks to `d`
     // and the regex would never match a real film path.
     const match = url?.pathname.match(
-      new RegExp(String.raw`^/film/(\d+-[^/]+)(?:/(\d+-[^/]+))?/(${REVIEWS_SEGMENTS_PATTERN})/?$`, 'i'),
+      new RegExp(String.raw`^/film/(\d+(?:-[^/]+)?)(?:/(\d+(?:-[^/]+)?))?/(${REVIEWS_SEGMENTS_PATTERN})/?$`, 'i'),
     );
     const reviewId = url?.searchParams.get('review') || '';
     if (!url || !match || !/^\d+$/.test(reviewId)) return null;
@@ -8158,7 +8195,7 @@
   }
 
   function getFilmEntityKey(url) {
-    const match = createUrl(url)?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+    const match = createUrl(url)?.pathname.match(/^\/film\/(\d+(?:-[^/]+)?)(?:\/(\d+(?:-[^/]+)?))?(?=\/|$)/i);
     if (!match) return null;
     return match[2] ? `${match[1]}__${match[2]}` : match[1];
   }
@@ -8875,7 +8912,7 @@
 
   function getFilmPosterGalleryUrl(url) {
     const parsed = createUrl(url);
-    const match = parsed?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+    const match = parsed?.pathname.match(/^\/film\/(\d+(?:-[^/]+)?)(?:\/(\d+(?:-[^/]+)?))?(?=\/|$)/i);
     if (!parsed || !match) return null;
 
     parsed.search = '';

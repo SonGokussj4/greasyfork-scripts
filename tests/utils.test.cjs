@@ -36,3 +36,33 @@ describe('user parsing helpers', () => {
     expect(csfd.username).toBe('test-user');
   });
 });
+
+describe('film path parsing (films with and without a slug)', () => {
+  test('reads ids from slugged, slug-less, episode and absolute film URLs', () => {
+    expect(utils.parseFilmPath('/film/9499-matrix/')).toEqual({ ids: [9499], segments: ['9499-matrix'] });
+    expect(utils.parseFilmPath('/film/410649/recenze/')).toEqual({ ids: [410649], segments: ['410649'] });
+    expect(utils.parseFilmPath('/film/410649')).toEqual({ ids: [410649], segments: ['410649'] });
+    expect(utils.parseFilmPath('https://www.csfd.cz/film/508444-velka-sestka/765973-hardlight/prehled/')).toEqual({
+      ids: [508444, 765973],
+      segments: ['508444-velka-sestka', '765973-hardlight'],
+    });
+    expect(utils.parseFilmPath('/film/410649/?page=2')).toEqual({ ids: [410649], segments: ['410649'] });
+    expect(utils.parseFilmPath('/uzivatel/123-me/hodnoceni/')).toBeNull();
+    expect(utils.parseFilmPath('/film/abc/')).toBeNull();
+  });
+
+  test('getMovieIdFromUrl handles a film without a slug', () => {
+    expect(utils.getMovieIdFromUrl('/film/410649/recenze/')).toBe(410649);
+    expect(utils.getMovieIdFromUrl('/film/508444-velka-sestka/765973-hardlight/')).toBe(765973);
+    expect(utils.getMovieIdFromUrl('/film/9499-matrix/')).toBe(9499);
+  });
+
+  test('the current film page id is read from a slug-less URL', () => {
+    window.history.pushState({}, '', '/film/410649/recenze/');
+    const info = Csfd.prototype.getCurrentItemUrlAndIds.call({});
+    window.history.pushState({}, '', '/');
+
+    expect(info).toMatchObject({ movieId: 410649, urlSlug: '410649', parentId: NaN, parentName: '' });
+    expect(info.fullUrl).toBe(`${location.origin}/film/410649/`);
+  });
+});

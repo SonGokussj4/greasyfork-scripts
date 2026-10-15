@@ -33,6 +33,7 @@ import {
 } from './link-icons.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, getSettings, saveToIndexedDB } from './storage.js';
 import * as galleryLinks from './gallery-links.js';
+import { logActivity } from './activity-log.js';
 import * as discussions from './discussions.js';
 import { createHomePanelsVisibilitySync, homePanelsListIncludes } from './home-panels.js';
 import {
@@ -42,6 +43,7 @@ import {
   getFeatureState,
   getMovieIdFromUrl,
   getProfileLinkElement,
+  parseFilmPath,
   parseRatingFromStars,
 } from './utils.js';
 
@@ -244,10 +246,9 @@ export class Csfd {
       return { movieId: NaN, urlSlug: '', parentId: NaN, parentName: '', fullUrl: '' };
     }
 
-    const slugMatches = Array.from(path.matchAll(/\/(\d+-[^/]+)/g)).map((m) => m[1]);
-    const idMatches = slugMatches
-      .map((slug) => Number.parseInt((slug.match(/^(\d+)-/) || [])[1], 10))
-      .filter((id) => Number.isFinite(id));
+    const filmPath = parseFilmPath(path);
+    const slugMatches = filmPath?.segments || [];
+    const idMatches = filmPath?.ids || [];
 
     const movieId = idMatches.length ? idMatches[idMatches.length - 1] : NaN;
     const parentId = idMatches.length > 1 ? idMatches[0] : NaN;
@@ -645,7 +646,12 @@ export class Csfd {
     if (!this.userSlug || !this.getIsLoggedIn()) return;
 
     const pageInfo = this.getCurrentItemUrlAndIds();
-    if (!Number.isFinite(pageInfo.movieId) || !pageInfo.urlSlug) return;
+    if (!Number.isFinite(pageInfo.movieId) || !pageInfo.urlSlug) {
+      if (location.pathname.includes('/film/')) {
+        logActivity('ratings', `Film page: could not read the film id from ${location.pathname}`, 'warn');
+      }
+      return;
+    }
 
     let pageRating = this.getCurrentPageOwnRating();
     if (pageRating === null) {
@@ -670,6 +676,7 @@ export class Csfd {
           await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, existingRecord.id);
         }
         this.stars[pageInfo.movieId] = tombstone;
+        logActivity('ratings', `Rating removed on film page: ${existingRecord.name || ''} (${pageInfo.movieId})`);
         window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
       }
       return;
@@ -705,6 +712,10 @@ export class Csfd {
       await deleteItemFromIndexedDB(INDEXED_DB_NAME, RATINGS_STORE_NAME, existingRecord.id);
     }
     this.stars[pageInfo.movieId] = newRecord;
+    logActivity(
+      'ratings',
+      `Rating saved from film page: ${newRecord.name} (${pageInfo.movieId}) = ${pageRating === 0 ? 'odpad' : `${pageRating}*`}${newRecord.computed ? ' (computed)' : ''}`,
+    );
     window.dispatchEvent(new CustomEvent('cc-ratings-updated'));
   }
 
@@ -756,8 +767,8 @@ export class Csfd {
 
     // Links containing 'page' or 'comment' query parameters (usually pagination or comment links)
     const ignoreParamRegex = /[?&](page|comment|modal|review)=/i;
-    // Links missing the expected numeric ID pattern (e.g., "/12345-slug/")
-    const validFilmRegex = /\/\d+-/;
+    // Links missing the expected numeric film ID ("/film/12345-slug/" or, without a slug, "/film/12345/")
+    const validFilmRegex = /\/film\/\d+(?:[-/?#]|$)/;
 
     return Array.from(
       new Set(searchRoots.flatMap((root) => Array.from(root.querySelectorAll('a[href*="/film/"]')))),
