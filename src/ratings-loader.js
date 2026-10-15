@@ -16,7 +16,7 @@ import {
 } from './ratings-records.js';
 import { logActivity } from './activity-log.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
-import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
+import { delay, extractUserSlug, getProfileLinkElement, parseFilmPath, parseRatingFromStars } from './utils.js';
 
 const ALL_RATINGS_FETCH_DELAY_MIN_MS = 50;
 const ALL_RATINGS_FETCH_DELAY_MAX_MS = 500;
@@ -184,6 +184,16 @@ export {
 };
 
 function parseIdsFromUrl(relativeUrl) {
+  const filmPath = parseFilmPath(relativeUrl);
+  if (filmPath) {
+    const { ids, segments } = filmPath;
+    return {
+      id: ids[ids.length - 1],
+      parentId: ids.length > 1 ? ids[0] : NaN,
+      parentName: ids.length > 1 ? segments[0] : '',
+    };
+  }
+
   const matches = Array.from((relativeUrl || '').matchAll(/\/(\d+)-/g)).map((match) => Number.parseInt(match[1], 10));
 
   if (matches.length === 0) {

@@ -76,6 +76,16 @@ describe('ratings-loader helpers', () => {
     expect(rec.type).to.equal('episode');
   });
 
+  it('parseRatingRow reads a film whose URL has no slug (e.g. /film/410649/)', () => {
+    const html = `<table><tr><td class="name"><h3 class="film-title-inline"><a href="/film/410649/" class="film-title-name">Fernando Saunders - Happiness</a><span class="film-title-info"><span class="info">2014</span><span class="info">hudební videoklip</span></span></h3></td><td class="star-rating-only"><span class="star-rating"><span class="stars stars-3"></span></span></td><td class="date-only">15.10.2026</td></tr></table>`;
+    const row = new DOMParser().parseFromString(html, 'text/html').querySelector('tr');
+    const rec = parseRatingRow(row, 'https://www.csfd.cz');
+    expect(rec.id).to.equal(410649);
+    expect(rec.parentId).to.be.NaN;
+    expect(rec.rating).to.equal(3);
+    expect(rec.fullUrl).to.equal('https://www.csfd.cz/film/410649/');
+  });
+
   it('parseRatingRow should derive token from name when not in info', () => {
     const html = `<table><tr><td class="name"><h3 class="film-title-inline"><a class="film-title-name" href="/film/1/">Andor - Episode 5</a><span class="film-title-info"><span class="info">2022</span><span class="info">epizoda</span></span></h3></td><td class="star-rating-only"><span class="star-rating"><span class="stars stars-4"></span></span></td><td class="date-only">02.02.2022</td></tr></table>`;
     const parser = new DOMParser();

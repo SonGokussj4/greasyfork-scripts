@@ -69,6 +69,22 @@ export function getFeatureState(key, defaultValue = true) {
   return value === 'true';
 }
 
+// A film path: "/film/123-slug/", an episode or season "/film/123-slug/456-slug/", and films ČSFD
+// gives no slug at all: "/film/410649/" (e.g. some music videos).
+const FILM_PATH_REGEX = /\/film\/(\d+(?:-[^/?#]*)?)(?:\/(\d+(?:-[^/?#]*)?))?(?=[/?#]|$)/i;
+
+/**
+ * Reads the film ids from a ČSFD film URL or path, with or without slugs.
+ * @param {string} url
+ * @returns {{ ids: number[], segments: string[] } | null} parent first; segments are "123-slug" or "123"
+ */
+export function parseFilmPath(url) {
+  const match = String(url || '').match(FILM_PATH_REGEX);
+  if (!match) return null;
+  const segments = [match[1], match[2]].filter(Boolean);
+  return { ids: segments.map((segment) => Number.parseInt(segment, 10)), segments };
+}
+
 /**
  * Extract the movie/film ID from a ČSFD URL path.
  * @param {string} url - The URL or path to extract the movie ID from.
@@ -76,6 +92,8 @@ export function getFeatureState(key, defaultValue = true) {
  */
 export function getMovieIdFromUrl(url) {
   if (!url) return NaN;
+  const filmPath = parseFilmPath(url);
+  if (filmPath) return filmPath.ids[filmPath.ids.length - 1];
   // OPTIMIZATION: matchAll is slower. A simple regex match with global flag is faster.
   const matches = url.match(/\/(\d+)-/g);
   if (!matches || matches.length === 0) return NaN;
