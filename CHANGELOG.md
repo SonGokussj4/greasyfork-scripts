@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.4
+
+### Fixed
+
+- Filmy, které mají na ČSFD adresu bez názvu (např. `/film/410649/`, typicky některé hudební videoklipy), se konečně načítají: hodnocení se uloží po ohodnocení na stránce filmu, při "Načíst hodnocení" i v Kontrole (dřív to byl "nečitelný řádek" a v počtu pořád chybělo jedno hodnocení). Fungují u nich i hvězdičky u odkazů a náhledy po najetí myší. Kdo má v počtu o jedno hodnocení méně, ať jednou spustí "Načíst hodnocení" se Shift+klik.
+- Načítání hodnocení a Kontrola najdou seznam hodnocení i tehdy, když odkaz na profil v hlavičce nekončí `/prehled/` (csfd.cz i csfd.sk).
+
+### Added
+
+- Log aktivit zapisuje uložení a smazání hodnocení na stránce filmu a varování, když se z adresy filmu nepodaří přečíst jeho ID.
+
 ## 0.10.3
 
 ### Added
