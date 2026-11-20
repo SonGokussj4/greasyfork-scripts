@@ -3568,6 +3568,18 @@ body.cc-revert-star-style section.others-rating .star-rating .stars::after {
     display: none !important;
 }
 
+/* Half stars: put the half star in front of the full ones and mirror it (grey left half,
+   red right half) so it reads as filling from the right. Bidi reordering can't place it, so use flex order. */
+body.cc-revert-star-style section.others-rating .star-rating .stars.stars-half {
+    display: inline-flex;
+    direction: ltr;
+}
+
+body.cc-revert-star-style section.others-rating .star-rating .stars .star-half {
+    order: -1;
+    transform: scaleX(-1);
+}
+
 /* =========================================
    REVIEW DRAFT AUTOSAVE — status pill + restore banner
    ========================================= */
