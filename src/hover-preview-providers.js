@@ -127,7 +127,7 @@ function getUserReviewsUrl(href) {
 
 function normalizeFilmUrl(href) {
   const url = createUrl(href);
-  const match = url?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+  const match = url?.pathname.match(/^\/film\/(\d+(?:-[^/]+)?)(?:\/(\d+(?:-[^/]+)?))?(?=\/|$)/i);
   if (!url || !match) return null;
 
   url.search = '';
@@ -141,7 +141,7 @@ function normalizeReviewUrl(href) {
   // String.raw is required — in a plain template literal `\d` cooks to `d`
   // and the regex would never match a real film path.
   const match = url?.pathname.match(
-    new RegExp(String.raw`^/film/(\d+-[^/]+)(?:/(\d+-[^/]+))?/(${REVIEWS_SEGMENTS_PATTERN})/?$`, 'i'),
+    new RegExp(String.raw`^/film/(\d+(?:-[^/]+)?)(?:/(\d+(?:-[^/]+)?))?/(${REVIEWS_SEGMENTS_PATTERN})/?$`, 'i'),
   );
   const reviewId = url?.searchParams.get('review') || '';
   if (!url || !match || !/^\d+$/.test(reviewId)) return null;
@@ -224,7 +224,7 @@ function getUserEntityKey(url) {
 }
 
 function getFilmEntityKey(url) {
-  const match = createUrl(url)?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+  const match = createUrl(url)?.pathname.match(/^\/film\/(\d+(?:-[^/]+)?)(?:\/(\d+(?:-[^/]+)?))?(?=\/|$)/i);
   if (!match) return null;
   return match[2] ? `${match[1]}__${match[2]}` : match[1];
 }
@@ -941,7 +941,7 @@ export function parseAniDbAnimePreviewDocument(doc) {
 
 function getFilmPosterGalleryUrl(url) {
   const parsed = createUrl(url);
-  const match = parsed?.pathname.match(/^\/film\/(\d+-[^/]+)(?:\/(\d+-[^/]+))?/i);
+  const match = parsed?.pathname.match(/^\/film\/(\d+(?:-[^/]+)?)(?:\/(\d+(?:-[^/]+)?))?(?=\/|$)/i);
   if (!parsed || !match) return null;
 
   parsed.search = '';

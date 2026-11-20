@@ -16,7 +16,7 @@ import {
 } from './ratings-records.js';
 import { logActivity } from './activity-log.js';
 import { deleteItemFromIndexedDB, getAllFromIndexedDB, saveToIndexedDB } from './storage.js';
-import { delay, extractUserSlug, getProfileLinkElement, parseRatingFromStars } from './utils.js';
+import { delay, extractUserSlug, getProfileLinkElement, parseFilmPath, parseRatingFromStars } from './utils.js';
 
 const ALL_RATINGS_FETCH_DELAY_MIN_MS = 50;
 const ALL_RATINGS_FETCH_DELAY_MAX_MS = 500;
@@ -85,10 +85,17 @@ function buildRatingsPageUrl(profilePath, pageNumber = 1) {
   return buildRatingsPageUrlWithMode(profilePath, pageNumber, 'path');
 }
 
+// The header profile link is "/uzivatel/123-name/" or "/uzivatel/123-name/prehled/"; the ratings
+// list always lives at "/uzivatel/123-name/hodnoceni/".
+const USER_PROFILE_BASE_REGEX = /^(\/uzivatel\/\d+-[^/]+)(?:\/|$)/i;
+
 function buildRatingsPageUrlWithMode(profilePath, pageNumber = 1, mode = 'path') {
   const ratingsSegment = getRatingsSegment();
+  const profileBase = profilePath.match(USER_PROFILE_BASE_REGEX)?.[1];
   const overviewSegments = getCsfdPathSegmentPattern('overview');
-  const basePath = profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
+  const basePath = profileBase
+    ? `${profileBase}/${ratingsSegment}/`
+    : profilePath.replace(new RegExp(`\/(${overviewSegments})\/?$`, 'i'), `/${ratingsSegment}/`);
   const normalizedBasePath = basePath.endsWith('/') ? basePath : `${basePath}/`;
 
   if (pageNumber <= 1) {
@@ -184,6 +191,16 @@ export {
 };
 
 function parseIdsFromUrl(relativeUrl) {
+  const filmPath = parseFilmPath(relativeUrl);
+  if (filmPath) {
+    const { ids, segments } = filmPath;
+    return {
+      id: ids[ids.length - 1],
+      parentId: ids.length > 1 ? ids[0] : NaN,
+      parentName: ids.length > 1 ? segments[0] : '',
+    };
+  }
+
   const matches = Array.from((relativeUrl || '').matchAll(/\/(\d+)-/g)).map((match) => Number.parseInt(match[1], 10));
 
   if (matches.length === 0) {
@@ -336,6 +353,23 @@ function hasRecordChanged(existingRecord, nextRecord) {
  */
 export function isSweepInSync({ totalRatings, directRatingsCount }) {
   return totalRatings > 0 && directRatingsCount === totalRatings;
+}
+
+/**
+ * How many ratings ČSFD may count in its total without listing them. Some accounts have a total
+ * that stays a few above the rows the list really shows (31 015 counted, 31 014 listed), so the
+ * count never matches and every load used to walk all pages.
+ */
+export const SWEEP_UNLISTED_TOLERANCE = 10;
+
+/**
+ * Stop early when a whole page brought nothing new and only a handful of ratings are still
+ * "missing": the list is newest first, so an unchanged page means everything older is already
+ * stored. More local than ČSFD (deletions) or a bigger gap (an earlier sweep was stopped) keep going.
+ */
+export function isSweepCaughtUp({ totalRatings, directRatingsCount, pageUnchanged }) {
+  const missing = totalRatings - directRatingsCount;
+  return pageUnchanged === true && totalRatings > 0 && missing > 0 && missing <= SWEEP_UNLISTED_TOLERANCE;
 }
 
 function updateProgressUI(progress, state) {
@@ -745,6 +779,8 @@ async function loadComputedParentRatingsForCurrentUser({
 /**
  * One sweep over the user's ČSFD ratings, newest page first. Ends when:
  * - 'in-sync': the local count matches ČSFD (unless `sweepToEnd`),
+ * - 'caught-up': a page brought nothing new and ČSFD counts only a few more than are stored
+ *   (see `isSweepCaughtUp`, unless `sweepToEnd`),
  * - 'stopped': the user pressed Stop (everything loaded so far is kept),
  * - 'completed': the last page was read; only then are ratings missing on ČSFD marked deleted.
  */
@@ -833,6 +869,17 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
       endReason = 'in-sync';
       break;
     }
+    const pageUnchanged = pageRatings.length > 0 && changedRecords.length === 0;
+    if (!sweepToEnd && isSweepCaughtUp({ totalRatings, directRatingsCount, pageUnchanged })) {
+      endReason = 'caught-up';
+      break;
+    }
+  }
+
+  // A full sweep that saw fewer ratings than ČSFD counts: name the gap so it can be traced.
+  const unlistedCount = endReason === 'completed' && totalRatings > 0 ? Math.max(0, totalRatings - seenMovieIds.size) : 0;
+  if (unlistedCount > 0) {
+    console.warn(`[CC] ČSFD counts ${totalRatings} ratings but the list shows only ${seenMovieIds.size}`);
   }
 
   let totalMarkedDeleted = 0;
@@ -859,13 +906,83 @@ async function loadRatingsForCurrentUser(onProgress = () => {}, { sweepToEnd = f
     totalMarkedDeleted,
     totalRatings,
     totalMissing,
+    unlistedCount,
     directRatingsCount,
   };
 }
 
+/** Rows that look like a rating row but could not be read (no film link or no movie id). */
+function findUnreadableRatingRows(doc, origin) {
+  return Array.from(doc.querySelectorAll('table tr'))
+    .filter((row) => row.querySelector('td.name, td.star-rating-only, td.date-only'))
+    .filter((row) => {
+      const record = parseRatingRow(row, origin);
+      return !record || !Number.isFinite(record.id);
+    })
+    .map((row) =>
+      Array.from(row.cells, (cell) => String(cell.textContent || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .join(' · ')
+        .slice(0, 200),
+    );
+}
+
+/**
+ * Reads every page of the user's ČSFD ratings list without writing anything, for the ratings check.
+ * Returns the parsed ratings as storage records plus what could not be read.
+ */
+export async function scanCsfdRatingsList({ onProgress = () => {}, shouldStop = () => false } = {}) {
+  const profilePath = getCurrentProfilePath();
+  const userSlug = profilePath ? extractUserSlugFromProfilePath(profilePath) : '';
+  if (!userSlug) {
+    throw new Error('Profil uživatele nebyl nalezen.');
+  }
+
+  const firstDoc = await fetchRatingsPageDocument(buildRatingsPageUrl(profilePath, 1));
+  const totalRatings = parseTotalRatingsFromDocument(firstDoc);
+  const totalPages = Math.max(1, parseMaxPaginationPageFromDocument(firstDoc));
+  const paginationMode = detectPaginationModeFromDocument(firstDoc);
+
+  const records = [];
+  const unreadableRows = [];
+  let loadedPages = 0;
+  let completed = true;
+
+  for (let page = 1; page <= totalPages; page++) {
+    if (page > 1 && shouldStop()) {
+      completed = false;
+      break;
+    }
+
+    const doc =
+      page === 1
+        ? firstDoc
+        : await fetchRatingsPageDocument(buildRatingsPageUrlWithMode(profilePath, page, paginationMode), {
+            delayMs: getAllRatingsFetchDelayMs(),
+          });
+    const pageRatings = parseRatingsFromDocument(doc, location.origin).filter((rating) => Number.isFinite(rating.id));
+    for (const text of findUnreadableRatingRows(doc, location.origin)) {
+      unreadableRows.push({ page, text });
+    }
+    if (page > 1 && pageRatings.length === 0) {
+      break;
+    }
+
+    for (const rating of pageRatings) {
+      records.push({ ...toStorageRecord(rating, userSlug), page });
+    }
+    loadedPages += 1;
+    onProgress({ page, totalPages });
+  }
+
+  return { userSlug, totalRatings, totalPages, loadedPages, completed, records, unreadableRows };
+}
+
 function describeSweepResult(result) {
   const warning = result.totalMissing ? ' · Pozor: celkový počet hodnocení z ČSFD se nepodařilo přečíst.' : '';
-  return describeSweepEnd(result) + warning;
+  const unlisted =
+    result.unlistedCount > 0 ? ` · ČSFD uvádí o ${result.unlistedCount} hodnocení víc, než ukazuje v seznamu.` : '';
+  return describeSweepEnd(result) + warning + unlisted;
 }
 
 function describeSweepEnd(result) {
@@ -873,6 +990,9 @@ function describeSweepEnd(result) {
   const pages = `${result.loadedPages}/${result.totalPages} str.`;
   if (result.endReason === 'in-sync') {
     return `Vše synchronizováno: ${changes} (${pages})`;
+  }
+  if (result.endReason === 'caught-up') {
+    return `Vše načteno: ${changes} (${pages}) · ČSFD uvádí o ${result.totalRatings - result.directRatingsCount} hodnocení víc, než se dá načíst`;
   }
   if (result.endReason === 'stopped') {
     return `Zastaveno: ${changes} uloženo (${pages})`;

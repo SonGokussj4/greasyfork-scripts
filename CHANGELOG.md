@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.10.5
+
+### Fixed
+
+- "Vrátit styl hvězd v hodnocení" umí nové půlhvězdičky ČSFD: půlhvězda je na začátku řady (vlevo šedá, vpravo červená, navazuje na celé hvězdy), hodnocení zůstává zarovnané doprava a ostatní šedé hvězdy jsou dál skryté. Dřív se půlhvězda zobrazovala deformovaně.
+
+## 0.10.4
+
+### Fixed
+
+- Filmy, které mají na ČSFD adresu bez názvu (např. `/film/410649/`, typicky některé hudební videoklipy), se konečně načítají: hodnocení se uloží po ohodnocení na stránce filmu, při "Načíst hodnocení" i v Kontrole (dřív to byl "nečitelný řádek" a v počtu pořád chybělo jedno hodnocení). Fungují u nich i hvězdičky u odkazů a náhledy po najetí myší. Kdo má v počtu o jedno hodnocení méně, ať jednou spustí "Načíst hodnocení" se Shift+klik.
+- Načítání hodnocení a Kontrola najdou seznam hodnocení i tehdy, když odkaz na profil v hlavičce nekončí `/prehled/` (csfd.cz i csfd.sk).
+
+### Added
+
+- Log aktivit zapisuje uložení a smazání hodnocení na stránce filmu a varování, když se z adresy filmu nepodaří přečíst jeho ID.
+
+## 0.10.3
+
+### Added
+
+- Tabulka všech hodnocení má nové tlačítko "Kontrola". Projde celý váš seznam hodnocení na ČSFD a porovná ho s uloženými hodnoceními: co chybí, co má jiné hodnocení nebo datum, co bylo na ČSFD smazané, řádky, které skript neumí přečíst, a kolik hodnocení ČSFD počítá, ale v seznamu neukazuje. U každého rozdílu poradí, co s ním.
+  Kontrola běží na pozadí, okno můžete zavřít. Report zůstane uložený, dokud ho nesmažete, tlačítko "Opravit" rozdíly zapíše. Když poslední kontrola něco našla, svítí u "Kontrola" i u "Tabulka všech hodnocení" červený vykřičník.
+
+### Fixed
+
+- "Načíst hodnocení" už neprochází pokaždé všechny stránky, když ČSFD v počtu hodnocení uvádí o pár víc, než jich ve vašem seznamu ukazuje (např. 31 015 uvedeno, 31 014 v seznamu). Načítání skončí na první stránce bez novinek.
+
 ## 0.10.2
 
 ### Added
