@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.10.5
+
+### Fixed
+
+- "Vrátit styl hvězd v hodnocení" umí nové půlhvězdičky ČSFD: půlhvězda je na začátku řady (vlevo šedá, vpravo červená, navazuje na celé hvězdy), hodnocení zůstává zarovnané doprava a ostatní šedé hvězdy jsou dál skryté. Dřív se půlhvězda zobrazovala deformovaně.
+
 ## 0.10.4
 
 ### Fixed
